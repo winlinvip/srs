@@ -140,13 +140,22 @@ if [[ $SRS_RTC == YES ]]; then
   LibSrtpRoot="${SRS_OBJS_DIR}/srtp2/include"; LibSrtpFile="${SRS_OBJS_DIR}/srtp2/lib/libsrtp2.a"
 fi
 
-# FFMPEG for WebRTC transcoding, such as aac to opus.
+# FFMPEG for WebRTC transcoding.
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
-  LibFfmpegRoot="${SRS_OBJS_DIR}/ffmpeg/include"; LibFfmpegFile="${SRS_OBJS_DIR}/ffmpeg/lib/libavcodec.a ${SRS_OBJS_DIR}/ffmpeg/lib/libswresample.a ${SRS_OBJS_DIR}/ffmpeg/lib/libavutil.a"
-  if [[ $SRS_CROSS_BUILD == NO ]]; then
-    LibFfmpegRoot="${LibFfmpegRoot} ${SRS_OBJS_DIR}/opus/include"; LibFfmpegFile="${LibFfmpegFile} ${SRS_OBJS_DIR}/opus/lib/libopus.a"
-  fi
-  if [[ $SRS_SHARED_FFMPEG == YES ]]; then LibFfmpegFile="-L${SRS_OBJS_DIR}/ffmpeg/lib -lavcodec -lswresample -lavutil -L${SRS_OBJS_DIR}/opus/lib -lopus"; fi
+    LibFfmpegRoot="${SRS_OBJS_DIR}/ffmpeg/include"
+    LibFfmpegFile="${SRS_OBJS_DIR}/ffmpeg/lib/libavcodec.a ${SRS_OBJS_DIR}/ffmpeg/lib/libswresample.a ${SRS_OBJS_DIR}/ffmpeg/lib/libavutil.a"
+    if [[ $SRS_SHARED_FFMPEG == YES ]]; then
+        LibFfmpegFile="-L${SRS_OBJS_DIR}/ffmpeg/lib -lavcodec -lswresample -lavutil";
+    fi
+fi
+
+# Use libopus for transcoding.
+if [[ $SRS_FFMPEG_FIT == YES && $SRS_FFMPEG_OPUS == NO && $SRS_CROSS_BUILD == NO ]]; then
+    LibFfmpegRoot="${LibFfmpegRoot} ${SRS_OBJS_DIR}/opus/include"
+    LibFfmpegFile="${LibFfmpegFile} ${SRS_OBJS_DIR}/opus/lib/libopus.a"
+    if [[ $SRS_SHARED_FFMPEG == YES ]]; then
+        LibFfmpegFile="${LibFfmpegFile} -L${SRS_OBJS_DIR}/opus/lib -lopus"
+    fi
 fi
 
 # openssl-1.1.0e, for the RTMP complex handshake.

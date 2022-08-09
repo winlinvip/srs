@@ -657,7 +657,7 @@ fi
 # libopus, for WebRTC to transcode AAC with Opus.
 #####################################################################################
 # For cross build, we use opus of FFmpeg, so we don't build the libopus.
-if [[ $SRS_RTC == YES && $SRS_CROSS_BUILD == NO ]]; then
+if [[ $SRS_RTC == YES && $SRS_CROSS_BUILD == NO && $SRS_FFMPEG_OPUS == NO ]]; then
     # Only build static libraries if no shared FFmpeg.
     if [[ $SRS_SHARED_FFMPEG == NO ]]; then
         OPUS_OPTIONS="--disable-shared --disable-doc"
@@ -689,11 +689,9 @@ fi
 # ffmpeg-fit, for WebRTC to transcode AAC with Opus.
 #####################################################################################
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
-    FFMPEG_OPTIONS=""
-    if [[ $SRS_CROSS_BUILD == YES ]]; then
-      FFMPEG_CONFIGURE=./configure
-    else
-      FFMPEG_CONFIGURE="env PKG_CONFIG_PATH=$(cd ${SRS_OBJS}/${SRS_PLATFORM} && pwd)/opus/lib/pkgconfig ./configure"
+    FFMPEG_CONFIGURE=./configure
+    if [[ $SRS_CROSS_BUILD == NO && $SRS_FFMPEG_OPUS == NO ]]; then
+      FFMPEG_CONFIGURE="env PKG_CONFIG_PATH=$(cd ${SRS_OBJS}/${SRS_PLATFORM} && pwd)/opus/lib/pkgconfig ${FFMPEG_CONFIGURE}"
     fi
 
     # Disable all asm for FFmpeg, to compatible with ARM CPU.
@@ -709,9 +707,11 @@ if [[ $SRS_FFMPEG_FIT == YES ]]; then
         if [[ $SRS_CROSS_BUILD_CPU != "" ]]; then FFMPEG_OPTIONS="$FFMPEG_OPTIONS --cpu=$SRS_CROSS_BUILD_CPU"; fi
         FFMPEG_OPTIONS="$FFMPEG_OPTIONS --cross-prefix=$SRS_CROSS_BUILD_PREFIX"
         FFMPEG_OPTIONS="$FFMPEG_OPTIONS --cc=${SRS_TOOL_CC} --cxx=${SRS_TOOL_CXX} --ar=${SRS_TOOL_AR} --ld=${SRS_TOOL_LD}"
-        FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-decoder=opus --enable-encoder=opus"
+    fi
+    if [[ $SRS_CROSS_BUILD == NO && $SRS_FFMPEG_OPUS == NO ]]; then
+        FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-libopus"
     else
-        FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-decoder=libopus --enable-encoder=libopus --enable-libopus"
+        FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-decoder=opus --enable-encoder=opus"
     fi
 
     if [[ -f ${SRS_OBJS}/${SRS_PLATFORM}/ffmpeg-4-fit/_release/lib/libavcodec.a ]]; then

@@ -15,6 +15,7 @@ SRS_STREAM_CASTER=YES
 SRS_INGEST=YES
 SRS_SSL=YES
 SRS_SSL_1_0=NO
+SRS_FFMPEG_OPUS=NO
 SRS_SSL_LOCAL=NO
 SRS_HTTPS=YES
 SRS_STAT=YES
@@ -168,6 +169,7 @@ Cross Build options:        @see https://ossrs.net/lts/zh-cn/docs/v4/doc/arm#ubu
 Experts:
   --sys-ssl=on|off          Do not compile ssl, use system ssl(-lssl) if required. Default: $(value2switch $SRS_USE_SYS_SSL)
   --ssl-1-0=on|off          Whether use openssl-1.0.*. Default: $(value2switch $SRS_SSL_1_0)
+  --ffmpeg-opus=on|off      Whether FFmpeg native opus, not libopus. Default: $(value2switch $SRS_FFMPEG_OPUS)
   --ssl-local=on|off        Whether use local openssl, not system even exists. Default: $(value2switch $SRS_SSL_LOCAL)
   --shared-st=on|off        Use shared libraries for ST which is MPL license. Default: $(value2switch $SRS_SHARED_ST)
   --shared-srt=on|off       Use shared libraries for SRT which is MPL license. Default: $(value2switch $SRS_SHARED_SRT)
@@ -257,6 +259,7 @@ function parse_user_option() {
         --ssl)                          SRS_SSL=$(switch2value $value) ;;
         --https)                        SRS_HTTPS=$(switch2value $value) ;;
         --ssl-1-0)                      SRS_SSL_1_0=$(switch2value $value) ;;
+        --ffmpeg-opus)                  SRS_FFMPEG_OPUS=$(switch2value $value) ;;
         --ssl-local)                    SRS_SSL_LOCAL=$(switch2value $value) ;;
 
         --with-hds)                     SRS_HDS=YES                 ;;
@@ -504,6 +507,7 @@ function regenerate_options() {
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --ssl=$(value2switch $SRS_SSL)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --https=$(value2switch $SRS_HTTPS)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --ssl-1-0=$(value2switch $SRS_SSL_1_0)"
+    SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --ffmpeg-opus=$(value2switch $SRS_FFMPEG_OPUS)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --ssl-local=$(value2switch $SRS_SSL_LOCAL)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sys-ssl=$(value2switch $SRS_USE_SYS_SSL)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --transcode=$(value2switch $SRS_TRANSCODE)"

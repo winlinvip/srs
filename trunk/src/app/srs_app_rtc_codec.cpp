@@ -15,11 +15,7 @@ static const AVCodec* srs_find_decoder_by_id(SrsAudioCodecId id)
     if (id == SrsAudioCodecIdAAC) {
         return avcodec_find_decoder_by_name("aac");
     } else if (id == SrsAudioCodecIdOpus) {
-        const AVCodec* codec = avcodec_find_decoder_by_name("libopus");
-        if (!codec) {
-            codec = avcodec_find_decoder_by_name("opus");
-        }
-        return codec;
+        return avcodec_find_decoder_by_name("opus");
     }
     return NULL;
 }
@@ -29,11 +25,7 @@ static const AVCodec* srs_find_encoder_by_id(SrsAudioCodecId id)
     if (id == SrsAudioCodecIdAAC) {
         return avcodec_find_encoder_by_name("aac");
     } else if (id == SrsAudioCodecIdOpus) {
-        const AVCodec* codec = avcodec_find_encoder_by_name("libopus");
-        if (!codec) {
-            codec = avcodec_find_encoder_by_name("opus");
-        }
-        return codec;
+        return avcodec_find_encoder_by_name("opus");
     }
     return NULL;
 }

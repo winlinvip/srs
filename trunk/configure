@@ -143,10 +143,7 @@ fi
 # FFMPEG for WebRTC transcoding, such as aac to opus.
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
   LibFfmpegRoot="${SRS_OBJS_DIR}/ffmpeg/include"; LibFfmpegFile="${SRS_OBJS_DIR}/ffmpeg/lib/libavcodec.a ${SRS_OBJS_DIR}/ffmpeg/lib/libswresample.a ${SRS_OBJS_DIR}/ffmpeg/lib/libavutil.a"
-  if [[ $SRS_CROSS_BUILD == NO ]]; then
-    LibFfmpegRoot="${LibFfmpegRoot} ${SRS_OBJS_DIR}/opus/include"; LibFfmpegFile="${LibFfmpegFile} ${SRS_OBJS_DIR}/opus/lib/libopus.a"
-  fi
-  if [[ $SRS_SHARED_FFMPEG == YES ]]; then LibFfmpegFile="-L${SRS_OBJS_DIR}/ffmpeg/lib -lavcodec -lswresample -lavutil -L${SRS_OBJS_DIR}/opus/lib -lopus"; fi
+  if [[ $SRS_SHARED_FFMPEG == YES ]]; then LibFfmpegFile="-L${SRS_OBJS_DIR}/ffmpeg/lib -lavcodec -lswresample -lavutil"; fi
 fi
 
 # openssl-1.1.0e, for the RTMP complex handshake.
@@ -443,7 +440,7 @@ mv ${SRS_WORKDIR}/${SRS_MAKEFILE} ${SRS_WORKDIR}/${SRS_MAKEFILE}.bk
 # generate phony header
 cat << END > ${SRS_WORKDIR}/${SRS_MAKEFILE}
 .PHONY: default all _default install help clean destroy server srs_ingest_hls utest _prepare_dir $__mphonys
-.PHONY: clean_srs clean_modules clean_openssl clean_srtp2 clean_opus clean_ffmpeg clean_st
+.PHONY: clean_srs clean_modules clean_openssl clean_srtp2 clean_ffmpeg clean_st
 .PHONY: st ffmpeg
 
 GCC = ${SRS_TOOL_CC}
@@ -483,7 +480,6 @@ help:
 	@echo "To reconfigure special depends:"
 	@echo "     clean_openssl   Remove the openssl cache."
 	@echo "     clean_srtp2     Remove the libsrtp2 cache."
-	@echo "     clean_opus      Remove the opus cache."
 	@echo "     clean_ffmpeg    Remove the FFmpeg cache."
 	@echo "     clean_st        Remove the ST cache."
 	@echo "For example:"
@@ -516,10 +512,6 @@ clean_openssl:
 clean_srtp2:
 	(cd ${SRS_OBJS_DIR}/${SRS_PLATFORM} && rm -rf libsrtp-2.0.0)
 	@echo "Please rebuild libsrtp2 by: ./configure"
-
-clean_opus:
-	(cd ${SRS_OBJS_DIR}/${SRS_PLATFORM} && rm -rf opus-1.3.1)
-	@echo "Please rebuild opus by: ./configure"
 
 clean_ffmpeg:
 	(cd ${SRS_OBJS_DIR}/${SRS_PLATFORM} && rm -rf ffmpeg-4.2-fit)

@@ -654,48 +654,11 @@ if [[ $SRS_RTC == YES ]]; then
 fi
 
 #####################################################################################
-# libopus, for WebRTC to transcode AAC with Opus.
-#####################################################################################
-# For cross build, we use opus of FFmpeg, so we don't build the libopus.
-if [[ $SRS_RTC == YES && $SRS_CROSS_BUILD == NO ]]; then
-    # Only build static libraries if no shared FFmpeg.
-    if [[ $SRS_SHARED_FFMPEG == NO ]]; then
-        OPUS_OPTIONS="--disable-shared --disable-doc"
-    fi
-    if [[ $OS_IS_LOONGARCH = YES ]]; then
-        OPUS_OPTIONS="$OPUS_OPTIONS --build=loongarch64-unknown-linux-gnu"
-    fi
-    if [[ -f ${SRS_OBJS}/${SRS_PLATFORM}/opus-1.3.1/_release/lib/libopus.a ]]; then
-        echo "The opus-1.3.1 is ok.";
-    else
-        echo "Building opus-1.3.1.";
-        (
-            rm -rf ${SRS_OBJS}/${SRS_PLATFORM}/opus-1.3.1 && cd ${SRS_OBJS}/${SRS_PLATFORM} &&
-            tar xf ../../3rdparty/opus-1.3.1.tar.gz && cd opus-1.3.1 &&
-            ./configure --prefix=`pwd`/_release --enable-static $OPUS_OPTIONS &&
-            make ${SRS_JOBS} && make install &&
-            cd .. && rm -rf opus && ln -sf opus-1.3.1/_release opus
-        )
-    fi
-    # check status
-    ret=$?; if [[ $ret -ne 0 ]]; then echo "Build opus-1.3.1 failed, ret=$ret"; exit $ret; fi
-    # Always update the links.
-    (cd ${SRS_OBJS}/${SRS_PLATFORM} && rm -rf opus && ln -sf opus-1.3.1/_release opus)
-    (cd ${SRS_OBJS} && rm -rf opus && ln -sf ${SRS_PLATFORM}/opus-1.3.1/_release opus)
-    if [ ! -f ${SRS_OBJS}/opus/lib/libopus.a ]; then echo "Build opus-1.3.1 failed."; exit -1; fi
-fi
-
-#####################################################################################
 # ffmpeg-fit, for WebRTC to transcode AAC with Opus.
 #####################################################################################
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
-    FFMPEG_OPTIONS=""
-    if [[ $SRS_CROSS_BUILD == YES ]]; then
-      FFMPEG_CONFIGURE=./configure
-    else
-      FFMPEG_CONFIGURE="env PKG_CONFIG_PATH=$(cd ${SRS_OBJS}/${SRS_PLATFORM} && pwd)/opus/lib/pkgconfig ./configure"
-    fi
-
+    # Use default configure without pkgconfig path PKG_CONFIG_PATH.
+    FFMPEG_CONFIGURE=./configure
     # Disable all asm for FFmpeg, to compatible with ARM CPU.
     FFMPEG_OPTIONS="--disable-asm --disable-x86asm --disable-inline-asm"
     # Only build static libraries if no shared FFmpeg.
@@ -709,10 +672,11 @@ if [[ $SRS_FFMPEG_FIT == YES ]]; then
         if [[ $SRS_CROSS_BUILD_CPU != "" ]]; then FFMPEG_OPTIONS="$FFMPEG_OPTIONS --cpu=$SRS_CROSS_BUILD_CPU"; fi
         FFMPEG_OPTIONS="$FFMPEG_OPTIONS --cross-prefix=$SRS_CROSS_BUILD_PREFIX"
         FFMPEG_OPTIONS="$FFMPEG_OPTIONS --cc=${SRS_TOOL_CC} --cxx=${SRS_TOOL_CXX} --ar=${SRS_TOOL_AR} --ld=${SRS_TOOL_LD}"
-        FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-decoder=opus --enable-encoder=opus"
-    else
-        FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-decoder=libopus --enable-encoder=libopus --enable-libopus"
     fi
+    # Use FFmpeg native opus codec.
+    FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-encoder=opus --enable-decoder=opus"
+    # Use FFmpeg native aac codec.
+    FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-encoder=aac --enable-decoder=aac --enable-decoder=aac_fixed --enable-decoder=aac_latm"
 
     if [[ -f ${SRS_OBJS}/${SRS_PLATFORM}/ffmpeg-4-fit/_release/lib/libavcodec.a ]]; then
         echo "The ffmpeg-4-fit is ok.";
@@ -733,8 +697,7 @@ if [[ $SRS_FFMPEG_FIT == YES ]]; then
               --disable-hwaccels --disable-devices --disable-audiotoolbox --disable-videotoolbox --disable-cuvid \
               --disable-d3d11va --disable-dxva2 --disable-ffnvcodec --disable-nvdec --disable-nvenc --disable-v4l2-m2m --disable-vaapi \
               --disable-vdpau --disable-appkit --disable-coreimage --disable-avfoundation --disable-securetransport --disable-iconv \
-              --disable-lzma --disable-sdl2 --enable-decoder=aac --enable-decoder=aac_fixed --enable-decoder=aac_latm \
-              --enable-encoder=aac &&
+              --disable-lzma --disable-sdl2 &&
             # See https://www.laoyuyu.me/2019/05/23/android/clang_compile_ffmpeg/
             if [[ $SRS_CROSS_BUILD == YES ]]; then
               sed -i -e 's/#define getenv(x) NULL/\/\*#define getenv(x) NULL\*\//g' config.h &&

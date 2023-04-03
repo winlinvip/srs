@@ -909,6 +909,7 @@ srs_error_t SrsHttpCorsMux::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessag
         h->set("Access-Control-Allow-Credentials", "false");
         // CORS header for private network access, starting in Chrome 104
         // See https://developer.chrome.com/blog/private-network-access-preflight/
+        // See https://developer.chrome.com/blog/private-network-access-update/
         h->set("Access-Control-Allow-Private-Network", "true");
     }
     

@@ -69,7 +69,7 @@ typedef struct _st_jmp_buf {
      * Linux    __mips__/__mips64       long[13]
      * Linux    __riscv                 long[14]
      * Linux    __loongarch64           long[12]
-     * Cygwin64 __amd64__/__x86_64__    long[8]
+     * Cygwin64 __amd64__/__x86_64__    long[12]
      */
     long __jmpbuf[22];
 } _st_jmp_buf_t[1];

@@ -37,7 +37,7 @@
         movq %r14, (JB_R14*8)(%rdi)     /* Save r14 to env[4], *(int64_t*)(rdi+4)=r14 */
         movq %r15, (JB_R15*8)(%rdi)     /* Save r15 to env[5], *(int64_t*)(rdi+5)=r15 */
         /* Save SP */
-        leaq 8(%rsp), %r8              /* Save *(int64_t*)(rsp+8) to r8, https://github.com/ossrs/state-threads/issues/11#issuecomment-888709759 */
+        leaq 8(%rsp), %r8              /* Save (rsp+8) to r8, which is the rsp of caller, https://github.com/ossrs/state-threads/issues/11#issuecomment-888709759 */
         movq %r8, (JB_RSP*8)(%rdi)     /* Save r8(rsp) to env[6], *(int64_t*)(rdi+6)=r8 */
         /* Save PC we are returning to */
         movq (%rsp), %r9               /* Save PC(parent function address) %(rsp) to r9 */

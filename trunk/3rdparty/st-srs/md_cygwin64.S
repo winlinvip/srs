@@ -15,10 +15,14 @@
     #define JB_RBP  1
     #define JB_R12  2                   /* R12:R15	Nonvolatile	Must be preserved by callee */
     #define JB_R13  3                   /* @see https://docs.microsoft.com/en-us/cpp/build/x64-software-conventions?view=msvc-160#register-usage */
-    #define JB_R14  4                   /* RBX, RBP, RDI, RSI, R12, R14, R14, and R15 must be saved in any function using them. */
+    #define JB_R14  4                   /* RBX, RBP, RDI, RSI, R12, R13, R14, and R15 must be saved in any function using them. */
     #define JB_R15  5                   /* @see https://software.intel.com/content/www/us/en/develop/articles/introduction-to-x64-assembly.html */
     #define JB_RSP  6
     #define JB_PC   7
+    #define JB_RDI  8
+    #define JB_RSI  9
+    #define JB_MXCSR 10                 /* The register state also includes MXCSR. See https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170#mxcsr */
+    #define JB_FS    11                 /* The FS register for SEH exceptions. */
 
     .file "md_cygwin64.S"
     .text
@@ -36,8 +40,12 @@
         movq %r13, (JB_R13*8)(%rcx)     /* Save r13 to env[3], *(int64_t*)(rcx+3)=r13 */
         movq %r14, (JB_R14*8)(%rcx)     /* Save r14 to env[4], *(int64_t*)(rcx+4)=r14 */
         movq %r15, (JB_R15*8)(%rcx)     /* Save r15 to env[5], *(int64_t*)(rcx+5)=r15 */
+        movq %rdi, (JB_RDI*8)(%rcx)     /* Save rdi to env[8], *(int64_t*)(rcx+8)=rdi */
+        movq %rsi, (JB_RSI*8)(%rcx)     /* Save rsi to env[9], *(int64_t*)(rcx+9)=rsi */
+        stmxcsr (JB_MXCSR*8)(%rcx)      /* Save MXCSR to env[10], *(int32_t*)(rcx+10)=MXCSR */
+        mov %fs, (JB_FS*8)(%rcx)       /* Save fs to env[11], *(int64_t*)(rcx+11)=fs */
         /* Save SP */
-        leaq 8(%rsp), %r8               /* Save *(int64_t*)(rsp+8) to r8, https://github.com/ossrs/state-threads/issues/20#issuecomment-887569093 */
+        leaq 8(%rsp), %r8               /* Save (rsp+8) to r8, which is the rsp of caller, https://github.com/ossrs/state-threads/issues/20#issuecomment-887569093 */
         movq %r8, (JB_RSP*8)(%rcx)      /* Save r8(rsp) to env[6], *(int64_t*)(rcx+6)=r8 */
         /* Save PC we are returning to */
         movq (%rsp), %r9               /* Save PC(parent function address) %(rsp) to r9, https://github.com/ossrs/state-threads/issues/20#issuecomment-887569093 */
@@ -61,6 +69,10 @@
         movq (JB_R13*8)(%rcx), %r13     /* Load r13 from env[3] */
         movq (JB_R14*8)(%rcx), %r14     /* Load r14 from env[4] */
         movq (JB_R15*8)(%rcx), %r15     /* Load r15 from env[5] */
+        movq (JB_RDI*8)(%rcx), %rdi     /* Load rdi from env[8] */
+        movq (JB_RSI*8)(%rcx), %rsi     /* Load rsi from env[9] */
+        ldmxcsr (JB_MXCSR*8)(%rcx)      /* Load MXCSR from env[10] */
+        mov (JB_FS*8)(%rcx), %fs       /* Load fs from env[11] */
         /* Set return value */          /* The edx is param1 val, the eax is return value */
         test %edx, %edx                 /*      if (!val) {         */
         mov $01, %eax                   /*          val=1;          */

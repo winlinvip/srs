@@ -4,7 +4,7 @@
 help=no
 # feature options
 SRS_HDS=NO
-SRS_SRT=YES
+SRS_SRT=RESERVED
 SRS_RTC=YES
 SRS_H265=YES
 SRS_GB28181=NO
@@ -84,7 +84,7 @@ SRS_BUILD_TAG= # Set the object files tag name.
 SRS_CLEAN=YES # Whether do "make clean" when configure.
 SRS_SIMULATOR=NO # Whether enable RTC simulate API.
 SRS_GENERATE_OBJS=NO # Whether generate objs and quit.
-SRS_SINGLE_THREAD=NO # Whether force single thread mode.
+SRS_SINGLE_THREAD=RESERVED # Whether force single thread mode.
 #
 ################################################################
 # Performance options.
@@ -573,17 +573,31 @@ function apply_auto_options() {
         echo "Disable address sanitizer for cygwin64"
         SRS_SANITIZER=NO
     fi
-    # TODO: FIXME: Should fix bug for SRT for cygwin64. Build ok, but fail in SrsSrtSocket::accept.
-    # See https://github.com/ossrs/srs/issues/3251
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SRT == YES ]]; then
-        echo "Disable SRT for cygwin64"
-        SRS_SRT=NO
+
+    # Set the default value of SRT.
+    if [[ $SRS_SRT == RESERVED ]]; then
+        # TODO: FIXME: Should fix bug for SRT for cygwin64. Build ok, but fail in SrsSrtSocket::accept.
+        # See https://github.com/ossrs/srs/issues/3251
+        if [[ $SRS_CYGWIN64 == YES ]]; then
+            echo "Disable SRT for cygwin64"
+            SRS_SRT=NO
+        else
+            echo "Enable SRT for not cygwin64"
+            SRS_SRT=YES
+        fi
     fi
-    # TODO: FIXME: Cygwin: ST stuck when working in multiple threads mode.
-    # See https://github.com/ossrs/srs/issues/3253
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SINGLE_THREAD != YES ]]; then
-        echo "Force single thread for cygwin64"
-        SRS_SINGLE_THREAD=YES
+
+    # Set the default value of single thread.
+    if [[ $SRS_SINGLE_THREAD == RESERVED ]]; then
+        # TODO: FIXME: Cygwin: ST stuck when working in multiple threads mode.
+        # See https://github.com/ossrs/srs/issues/3253
+        if [[ $SRS_CYGWIN64 == YES ]]; then
+            echo "Force single thread for cygwin64"
+            SRS_SINGLE_THREAD=YES
+        else
+            echo "Enable multiple thread for not cygwin64"
+            SRS_SINGLE_THREAD=NO
+        fi
     fi
 
     # parse the jobs for make

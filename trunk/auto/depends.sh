@@ -323,7 +323,7 @@ cp -rf $SRS_WORKDIR/research/players ${SRS_OBJS}/nginx/html/ &&
 
 # for favicon.ico
 rm -rf ${SRS_OBJS}/nginx/html/favicon.ico &&
-cp -f $SRS_WORKDIR/research/api-server/static-dir/favicon.ico ${SRS_OBJS}/nginx/html/favicon.ico &&
+cp -f $SRS_WORKDIR/research/favicon.ico ${SRS_OBJS}/nginx/html/favicon.ico &&
 
 # For srs-console.
 rm -rf ${SRS_OBJS}/nginx/html/console &&
@@ -335,7 +335,7 @@ cp -rf $SRS_WORKDIR/3rdparty/signaling/www/demos ${SRS_OBJS}/nginx/html/ &&
 
 # For home page index.html
 rm -rf ${SRS_OBJS}/nginx/html/index.html &&
-cp -f $SRS_WORKDIR/research/api-server/static-dir/index.html ${SRS_OBJS}/nginx/html/index.html &&
+cp -f $SRS_WORKDIR/research/index.html ${SRS_OBJS}/nginx/html/index.html &&
 
 # nginx.html to detect whether nginx is alive
 echo "Nginx is ok." > ${SRS_OBJS}/nginx/html/nginx.html
@@ -698,7 +698,11 @@ if [[ $SRS_SRT == YES && $SRS_USE_SYS_SRT == NO ]]; then
         echo "Build srt-1-fit" &&
         rm -rf ${SRS_OBJS}/${SRS_PLATFORM}/srt-1-fit ${SRS_OBJS}/${SRS_PLATFORM}/3rdparty/srt ${SRS_OBJS}/srt &&
         cp -rf ${SRS_WORKDIR}/3rdparty/srt-1-fit ${SRS_OBJS}/${SRS_PLATFORM}/ &&
-        patch -p0 -R ${SRS_OBJS}/${SRS_PLATFORM}/srt-1-fit/srtcore/api.cpp ${SRS_WORKDIR}/3rdparty/patches/srt/api.cpp-01.patch &&
+        if [[ $SRS_CYGWIN64 == YES ]]; then
+            sed -i 's|LOGC(cnlog.Error, log << "srt_accept: no pending|LOGC(cnlog.Debug, log << "srt_accept: no pending|g' ${SRS_OBJS}/${SRS_PLATFORM}/srt-1-fit/srtcore/api.cpp
+        else
+            patch -p0 -R ${SRS_OBJS}/${SRS_PLATFORM}/srt-1-fit/srtcore/api.cpp ${SRS_WORKDIR}/3rdparty/patches/srt/api.cpp-01.patch
+        fi &&
         (
             cd ${SRS_OBJS}/${SRS_PLATFORM}/srt-1-fit &&
             env PKG_CONFIG_PATH=${SRS_DEPENDS_LIBS}/openssl/lib/pkgconfig \

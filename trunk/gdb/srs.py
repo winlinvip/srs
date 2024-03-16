@@ -1,6 +1,8 @@
 import gdb, traceback;
 
 '''
+Load by:
+    gdb ./hello-world -x ~/git/srs/trunk/gdb/srs.py
 Usage:
     nn_coroutines
     nn_coroutines 1000

@@ -1119,8 +1119,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("127.0.0.1", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1132,8 +1132,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("192.168.0.1", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1177,8 +1177,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("2001:da8:6000:291:21f:d0ff:fed4:928c", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_TRUE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1188,8 +1188,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("3ffe:dead:beef::1", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_TRUE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1201,8 +1201,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("::", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1214,8 +1214,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("fec0::", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1227,8 +1227,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("FE80::", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }
@@ -1240,8 +1240,8 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("::1", NULL, &hints, &r));
+        SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
     }

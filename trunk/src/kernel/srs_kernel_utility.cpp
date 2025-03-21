@@ -157,10 +157,10 @@ string srs_dns_resolve(string host, int& family)
     hints.ai_family = family;
     
     addrinfo* r = NULL;
-    SrsAutoFreeH(addrinfo, r, freeaddrinfo);
     if(getaddrinfo(host.c_str(), NULL, &hints, &r)) {
         return "";
     }
+    SrsUniquePtr<addrinfo> r2(r, freeaddrinfo);
     
     char shost[64];
     memset(shost, 0, sizeof(shost));

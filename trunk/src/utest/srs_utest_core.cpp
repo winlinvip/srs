@@ -516,7 +516,7 @@ class MockSlice
 public:
     const char* bytes_;
 public:
-MockSlice(const char* bytes) {
+    MockSlice(const char* bytes) {
         bytes_ = bytes;
     }
     virtual ~MockSlice() {
@@ -549,14 +549,14 @@ public:
         size_ = size;
     }
     virtual ~MockSpecialPacket() {
-        srs_freepa(bytes_);
+        srs_freep(bytes_);
     }
 public:
     static void deleter(vector<MockSpecialPacket*>* pkts) {
         vector<MockSpecialPacket*>::iterator it;
         for (it = pkts->begin(); it != pkts->end(); ++it) {
             MockSpecialPacket* pkt = *it;
-            srs_freepa(pkt->bytes_);
+            srs_freep(pkt);
         }
         pkts->clear();
     }

@@ -1018,6 +1018,20 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream* chunk, char fmt)
         pp[1] = *p++;
         pp[0] = *p++;
         pp[3] = 0;
+        
+        // fmt: 0
+        // timestamp: 3 bytes
+        // If the timestamp is greater than or equal to 16777215
+        // (hexadecimal 0x00ffffff), this value MUST be 16777215, and the
+        // 'extended timestamp header' MUST be present. Otherwise, this value
+        // SHOULD be the entire timestamp.
+        //
+        // fmt: 1 or 2
+        // timestamp delta: 3 bytes
+        // If the delta is greater than or equal to 16777215 (hexadecimal
+        // 0x00ffffff), this value MUST be 16777215, and the 'extended
+        // timestamp header' MUST be present. Otherwise, this value SHOULD be
+        // the entire delta.
         chunk->has_extended_timestamp = (chunk->header.timestamp_delta >= RTMP_EXTENDED_TIMESTAMP);
         
         if (fmt <= RTMP_FMT_TYPE1) {

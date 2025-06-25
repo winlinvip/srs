@@ -55,6 +55,11 @@ key_components:
   - name: "SrsLiveSource"
     description: "Central management of live stream sources for RTMP/HTTP-FLV/HLS/DASH"
 
+build:
+  command: "cd trunk && make -j"
+  description: "Build the SRS server using parallel make in the trunk directory"
+  working_directory: "trunk"
+
 ignore:
   # Build artifacts
   - "**/objs/**"

@@ -1676,7 +1676,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video(SrsRtpPacket* src)
     return err;
 }
 
-srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
+srs_error_t SrsRtcFrameBuilder::packet_sequence_header_avc(SrsRtpPacket* pkt)
 {
     srs_error_t err = srs_success;
 
@@ -1715,15 +1715,27 @@ srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
         }
 
         // Packet SPS/PPS to RTMP keyframe.
-        err = packet_sps_pps(pkt, sps, pps);
+        err = do_packet_sequence_header_avc(pkt, sps, pps);
 
         // Always reset the SPS/PPS cache after used it.
         srs_freep(obs_whip_sps_);
         srs_freep(obs_whip_pps_);
-        
+
         if (err != srs_success) {
             return srs_error_wrap(err, "packet sps/pps");
         }
+    }
+
+    return err;
+}
+
+srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
+{
+    srs_error_t err = srs_success;
+
+    err = packet_sequence_header_avc(pkt);
+    if (err != srs_success) {
+        return srs_error_wrap(err, "packet video key frame");
     }
 
     if (-1 == rtp_key_frame_ts_) {
@@ -1779,7 +1791,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
     return err;
 }
 
-srs_error_t SrsRtcFrameBuilder::packet_sps_pps(SrsRtpPacket* pkt, SrsSample* sps, SrsSample* pps)
+srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_avc(SrsRtpPacket* pkt, SrsSample* sps, SrsSample* pps)
 {
     srs_error_t err = srs_success;
 

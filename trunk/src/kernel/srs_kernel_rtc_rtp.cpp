@@ -946,21 +946,16 @@ srs_error_t SrsRtpPacket::decode(SrsBuffer* buf)
     return err;
 }
 
-bool SrsRtpPacket::is_keyframe()
+// Helper function to check if H.264 RTP packet is a keyframe
+bool srs_rtp_packet_h264_is_keyframe(uint8_t nalu_type, ISrsRtpPayloader* payload)
 {
-    // False if audio packet
-    if(SrsFrameTypeAudio == frame_type) {
-        return false;
-    }
-
-    // It's normal H264 video rtp packet
     if (nalu_type == kStapA) {
-        SrsRtpSTAPPayload* stap_payload = dynamic_cast<SrsRtpSTAPPayload*>(payload_);
+        SrsRtpSTAPPayload* stap_payload = dynamic_cast<SrsRtpSTAPPayload*>(payload);
         if(NULL != stap_payload->get_sps() || NULL != stap_payload->get_pps()) {
             return true;
         }
     } else if (nalu_type == kFuA) {
-        SrsRtpFUAPayload2* fua_payload = dynamic_cast<SrsRtpFUAPayload2*>(payload_);
+        SrsRtpFUAPayload2* fua_payload = dynamic_cast<SrsRtpFUAPayload2*>(payload);
         if(SrsAvcNaluTypeIDR == fua_payload->nalu_type) {
             return true;
         }
@@ -968,26 +963,54 @@ bool SrsRtpPacket::is_keyframe()
         if((SrsAvcNaluTypeIDR == nalu_type) || (SrsAvcNaluTypeSPS == nalu_type) || (SrsAvcNaluTypePPS == nalu_type)) {
             return true;
         }
-#ifdef SRS_H265
-        if(nalu_type == kStapHevc) {
-            SrsRtpSTAPPayloadHevc* stap_payload = dynamic_cast<SrsRtpSTAPPayloadHevc*>(payload_);
-            if(NULL != stap_payload->get_vps() || NULL != stap_payload->get_sps() || NULL != stap_payload->get_pps()) {
-                return true;
-            }
-        } else if(nalu_type == kFuHevc) {
-            SrsRtpFUAPayloadHevc2* fua_payload = dynamic_cast<SrsRtpFUAPayloadHevc2*>(payload_);
-            if(fua_payload->nalu_type >= SrsHevcNaluType_CODED_SLICE_BLA && fua_payload->nalu_type <= SrsHevcNaluType_RESERVED_23) {
-                return true;
-            }
-        } else {
-            if((SrsHevcNaluType_VPS == nalu_type) || (SrsHevcNaluType_SPS == nalu_type) || (SrsHevcNaluType_PPS == nalu_type)) {
-                return true;
-            }
-        }
-#endif
     }
 
     return false;
+}
+
+#ifdef SRS_H265
+// Helper function to check if H.265 RTP packet is a keyframe
+bool srs_rtp_packet_h265_is_keyframe(uint8_t nalu_type, ISrsRtpPayloader* payload)
+{
+    if(nalu_type == kStapHevc) {
+        SrsRtpSTAPPayloadHevc* stap_payload = dynamic_cast<SrsRtpSTAPPayloadHevc*>(payload);
+        if(NULL != stap_payload->get_vps() || NULL != stap_payload->get_sps() || NULL != stap_payload->get_pps()) {
+            return true;
+        }
+    } else if(nalu_type == kFuHevc) {
+        SrsRtpFUAPayloadHevc2* fua_payload = dynamic_cast<SrsRtpFUAPayloadHevc2*>(payload);
+        if(fua_payload->nalu_type >= SrsHevcNaluType_CODED_SLICE_BLA && fua_payload->nalu_type <= SrsHevcNaluType_RESERVED_23) {
+            return true;
+        }
+    } else {
+        if((SrsHevcNaluType_VPS == nalu_type) || (SrsHevcNaluType_SPS == nalu_type) || (SrsHevcNaluType_PPS == nalu_type)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif
+
+bool SrsRtpPacket::is_keyframe()
+{
+    // False if audio packet
+    if(SrsFrameTypeAudio == frame_type) {
+        return false;
+    }
+
+    // Check H.264 keyframe types
+    if (nalu_type == kStapA || nalu_type == kFuA ||
+        nalu_type == SrsAvcNaluTypeIDR || nalu_type == SrsAvcNaluTypeSPS || nalu_type == SrsAvcNaluTypePPS) {
+        return srs_rtp_packet_h264_is_keyframe(nalu_type, payload_);
+    }
+
+#ifdef SRS_H265
+    // Check H.265 keyframe types
+    return srs_rtp_packet_h265_is_keyframe(nalu_type, payload_);
+#else
+    return false;
+#endif
 }
 
 SrsRtpRawPayload::SrsRtpRawPayload()

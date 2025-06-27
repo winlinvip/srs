@@ -1676,59 +1676,6 @@ srs_error_t SrsRtcFrameBuilder::packet_video(SrsRtpPacket* src)
     return err;
 }
 
-srs_error_t SrsRtcFrameBuilder::packet_sequence_header_avc(SrsRtpPacket* pkt)
-{
-    srs_error_t err = srs_success;
-
-    // For OBS WHIP, it uses RTP Raw packet with SPS/PPS/IDR frame. Note that not all
-    // raw payload is SPS/PPS.
-    bool has_sps_pps_in_raw_payload = false;
-    SrsRtpRawPayload* raw_payload = dynamic_cast<SrsRtpRawPayload*>(pkt->payload());
-    if (raw_payload) {
-        if (pkt->nalu_type == SrsAvcNaluTypeSPS) {
-            has_sps_pps_in_raw_payload = true;
-            srs_freep(obs_whip_sps_);
-            obs_whip_sps_ = pkt->copy();
-        } else if (pkt->nalu_type == SrsAvcNaluTypePPS) {
-            has_sps_pps_in_raw_payload = true;
-            srs_freep(obs_whip_pps_);
-            obs_whip_pps_ = pkt->copy();
-        }
-        // Ignore if one of OBS WHIP SPS/PPS is not ready.
-        if (has_sps_pps_in_raw_payload && (!obs_whip_sps_ || !obs_whip_pps_)) {
-            return err;
-        }
-    }
-
-    // Generally, there will be SPS+PPS+IDR in a STAP-A packet.
-    SrsRtpSTAPPayload* stap_payload = dynamic_cast<SrsRtpSTAPPayload*>(pkt->payload());
-
-    // Handle SPS/PPS in cache or STAP-A packet.
-    if (stap_payload || has_sps_pps_in_raw_payload) {
-        // Get the SPS/PPS from cache or STAP-A packet.
-        SrsSample* sps = stap_payload ? stap_payload->get_sps() : NULL;
-        if (!sps && obs_whip_sps_) sps = dynamic_cast<SrsRtpRawPayload*>(obs_whip_sps_->payload())->sample_;
-        SrsSample* pps = stap_payload ? stap_payload->get_pps() : NULL;
-        if (!pps && obs_whip_pps_) pps = dynamic_cast<SrsRtpRawPayload*>(obs_whip_pps_->payload())->sample_;
-        if (!sps || !pps) {
-            return srs_error_new(ERROR_RTC_RTP_MUXER, "no sps or pps in stap-a rtp. sps: %p, pps:%p", sps, pps);
-        }
-
-        // Packet SPS/PPS to RTMP keyframe.
-        err = do_packet_sequence_header_avc(pkt, sps, pps);
-
-        // Always reset the SPS/PPS cache after used it.
-        srs_freep(obs_whip_sps_);
-        srs_freep(obs_whip_pps_);
-
-        if (err != srs_success) {
-            return srs_error_wrap(err, "packet sps/pps");
-        }
-    }
-
-    return err;
-}
-
 srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
 {
     srs_error_t err = srs_success;
@@ -1786,6 +1733,59 @@ srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
         return srs_error_new(ERROR_RTC_RTP_MUXER, "video cache is overflow");
     } else {
         lost_sn_ = (uint16_t)sn;
+    }
+
+    return err;
+}
+
+srs_error_t SrsRtcFrameBuilder::packet_sequence_header_avc(SrsRtpPacket* pkt)
+{
+    srs_error_t err = srs_success;
+
+    // For OBS WHIP, it uses RTP Raw packet with SPS/PPS/IDR frame. Note that not all
+    // raw payload is SPS/PPS.
+    bool has_sps_pps_in_raw_payload = false;
+    SrsRtpRawPayload* raw_payload = dynamic_cast<SrsRtpRawPayload*>(pkt->payload());
+    if (raw_payload) {
+        if (pkt->nalu_type == SrsAvcNaluTypeSPS) {
+            has_sps_pps_in_raw_payload = true;
+            srs_freep(obs_whip_sps_);
+            obs_whip_sps_ = pkt->copy();
+        } else if (pkt->nalu_type == SrsAvcNaluTypePPS) {
+            has_sps_pps_in_raw_payload = true;
+            srs_freep(obs_whip_pps_);
+            obs_whip_pps_ = pkt->copy();
+        }
+        // Ignore if one of OBS WHIP SPS/PPS is not ready.
+        if (has_sps_pps_in_raw_payload && (!obs_whip_sps_ || !obs_whip_pps_)) {
+            return err;
+        }
+    }
+
+    // Generally, there will be SPS+PPS+IDR in a STAP-A packet.
+    SrsRtpSTAPPayload* stap_payload = dynamic_cast<SrsRtpSTAPPayload*>(pkt->payload());
+
+    // Handle SPS/PPS in cache or STAP-A packet.
+    if (stap_payload || has_sps_pps_in_raw_payload) {
+        // Get the SPS/PPS from cache or STAP-A packet.
+        SrsSample* sps = stap_payload ? stap_payload->get_sps() : NULL;
+        if (!sps && obs_whip_sps_) sps = dynamic_cast<SrsRtpRawPayload*>(obs_whip_sps_->payload())->sample_;
+        SrsSample* pps = stap_payload ? stap_payload->get_pps() : NULL;
+        if (!pps && obs_whip_pps_) pps = dynamic_cast<SrsRtpRawPayload*>(obs_whip_pps_->payload())->sample_;
+        if (!sps || !pps) {
+            return srs_error_new(ERROR_RTC_RTP_MUXER, "no sps or pps in stap-a rtp. sps: %p, pps:%p", sps, pps);
+        }
+
+        // Packet SPS/PPS to RTMP keyframe.
+        err = do_packet_sequence_header_avc(pkt, sps, pps);
+
+        // Always reset the SPS/PPS cache after used it.
+        srs_freep(obs_whip_sps_);
+        srs_freep(obs_whip_pps_);
+
+        if (err != srs_success) {
+            return srs_error_wrap(err, "packet sps/pps");
+        }
     }
 
     return err;

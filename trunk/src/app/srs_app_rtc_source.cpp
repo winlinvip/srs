@@ -1228,12 +1228,13 @@ srs_error_t SrsRtcRtpBuilder::package_stap_a(SrsSharedPtrMessage* msg, SrsRtpPac
 
     if (format->vcodec->id == SrsVideoCodecIdHEVC) {
         for (size_t i = 0; i < format->vcodec->hevc_dec_conf_record_.nalu_vec.size(); i++) {
-            if (format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_unit_type == SrsHevcNaluType_VPS
-                || format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_unit_type == SrsHevcNaluType_SPS
-                || format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_unit_type == SrsHevcNaluType_PPS) {
-                vector<char>& nalu = (vector<char>&)format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_data_vec[0].nal_unit_data;
-                params.push_back(&nalu);
-                size += format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_data_vec[0].nal_unit_length;
+            const SrsHevcHvccNalu& nalu = format->vcodec->hevc_dec_conf_record_.nalu_vec[i];
+            if (nalu.nal_unit_type == SrsHevcNaluType_VPS
+                || nalu.nal_unit_type == SrsHevcNaluType_SPS
+                || nalu.nal_unit_type == SrsHevcNaluType_PPS) {
+                const SrsHevcNalData& nal_data = nalu.nal_data_vec[0];
+                params.push_back(&(vector<char>&)nal_data.nal_unit_data);
+                size += nal_data.nal_unit_length;
             }
         }
 

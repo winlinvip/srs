@@ -1097,8 +1097,11 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsSharedPtrMessage* msg)
         return err;
     }
 
+    // Update codec format when source uses H.265, since RTC track description defaults to H.264.
+    // This ensures SDP negotiation returns the correct codec (H.265) instead of always defaulting to H.264.
+    // Only non-H.264 codecs require updates as H.264 is the default initialization codec.
     if ((err = bridge_->update_codec(vcodec)) != srs_success) {
-        return srs_error_wrap(err, "update codec");
+        return srs_error_wrap(err, "update codec %d(%s)", vcodec, srs_video_codec_id2str(vcodec).c_str());
     }
 
     bool has_idr = false;

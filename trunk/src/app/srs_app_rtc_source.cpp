@@ -467,22 +467,42 @@ void SrsRtcSource::init_for_play_before_publishing()
         audio_track_desc->media_ = new SrsAudioPayload(kAudioPayloadType, "opus", kAudioSamplerate, kAudioChannel);
     }
 
-    // video track description
+    // video track descriptions - support both H.264 and H.265 for play before publishing
+    // This allows clients to choose their preferred codec during SDP negotiation
     if (true) {
-        SrsRtcTrackDescription* video_track_desc = new SrsRtcTrackDescription();
-        stream_desc->video_track_descs_.push_back(video_track_desc);
+        // H.264 track description
+        SrsRtcTrackDescription* h264_track_desc = new SrsRtcTrackDescription();
+        stream_desc->video_track_descs_.push_back(h264_track_desc);
 
-        video_track_desc->type_ = "video";
-        video_track_desc->id_ = "video-" + srs_random_str(8);
+        h264_track_desc->type_ = "video";
+        h264_track_desc->id_ = "video-h264-" + srs_random_str(8);
 
-        uint32_t video_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
-        video_track_desc->ssrc_ = video_ssrc;
-        video_track_desc->direction_ = "recvonly";
+        uint32_t h264_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
+        h264_track_desc->ssrc_ = h264_ssrc;
+        h264_track_desc->direction_ = "recvonly";
 
-        SrsVideoPayload* video_payload = new SrsVideoPayload(kVideoPayloadType, "H264", kVideoSamplerate);
-        video_track_desc->media_ = video_payload;
+        SrsVideoPayload* h264_payload = new SrsVideoPayload(kVideoPayloadType, "H264", kVideoSamplerate);
+        h264_track_desc->media_ = h264_payload;
 
-        video_payload->set_h264_param_desc("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f");
+        h264_payload->set_h264_param_desc("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f");
+    }
+
+    if (true) {
+        // H.265 track description
+        SrsRtcTrackDescription* h265_track_desc = new SrsRtcTrackDescription();
+        stream_desc->video_track_descs_.push_back(h265_track_desc);
+
+        h265_track_desc->type_ = "video";
+        h265_track_desc->id_ = "video-h265-" + srs_random_str(8);
+
+        uint32_t h265_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
+        h265_track_desc->ssrc_ = h265_ssrc;
+        h265_track_desc->direction_ = "recvonly";
+
+        SrsVideoPayload* h265_payload = new SrsVideoPayload(KVideoPayloadTypeHevc, "H265", kVideoSamplerate);
+        h265_track_desc->media_ = h265_payload;
+
+        h265_payload->set_h265_param_desc("level-id=156;profile-id=1;tier-flag=0;tx-mode=SRST");
     }
 
     set_stream_desc(stream_desc.get());

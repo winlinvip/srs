@@ -89,16 +89,19 @@ github.com/pion/ice/v4/internal/atomic
 github.com/pion/ice/v4/internal/fakenet
 github.com/pion/ice/v4/internal/stun
 github.com/pion/ice/v4/internal/taskloop
-# github.com/pion/interceptor v0.1.37
+# github.com/pion/interceptor v0.1.40
 ## explicit; go 1.20
 github.com/pion/interceptor
 github.com/pion/interceptor/internal/ntp
+github.com/pion/interceptor/internal/rtpbuffer
 github.com/pion/interceptor/internal/sequencenumber
+github.com/pion/interceptor/pkg/flexfec
+github.com/pion/interceptor/pkg/flexfec/util
 github.com/pion/interceptor/pkg/nack
 github.com/pion/interceptor/pkg/report
 github.com/pion/interceptor/pkg/rfc8888
 github.com/pion/interceptor/pkg/twcc
-# github.com/pion/logging v0.2.3
+# github.com/pion/logging v0.2.4
 ## explicit; go 1.20
 github.com/pion/logging
 # github.com/pion/mdns/v2 v2.0.7
@@ -110,7 +113,7 @@ github.com/pion/randutil
 # github.com/pion/rtcp v1.2.15
 ## explicit; go 1.20
 github.com/pion/rtcp
-# github.com/pion/rtp v1.8.15
+# github.com/pion/rtp v1.8.20
 ## explicit; go 1.20
 github.com/pion/rtp
 github.com/pion/rtp/codecs
@@ -119,10 +122,10 @@ github.com/pion/rtp/codecs/vp9
 # github.com/pion/sctp v1.8.39
 ## explicit; go 1.20
 github.com/pion/sctp
-# github.com/pion/sdp/v3 v3.0.11
+# github.com/pion/sdp/v3 v3.0.14
 ## explicit; go 1.20
 github.com/pion/sdp/v3
-# github.com/pion/srtp/v3 v3.0.4
+# github.com/pion/srtp/v3 v3.0.6
 ## explicit; go 1.20
 github.com/pion/srtp/v3
 # github.com/pion/stun/v3 v3.0.0
@@ -147,7 +150,7 @@ github.com/pion/turn/v4/internal/client
 github.com/pion/turn/v4/internal/ipnet
 github.com/pion/turn/v4/internal/proto
 github.com/pion/turn/v4/internal/server
-# github.com/pion/webrtc/v4 v4.1.1
+# github.com/pion/webrtc/v4 v4.1.3
 ## explicit; go 1.20
 github.com/pion/webrtc/v4
 github.com/pion/webrtc/v4/internal/fmtp

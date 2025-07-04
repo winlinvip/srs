@@ -893,6 +893,53 @@ SrsRtcRtpBuilder::~SrsRtcRtpBuilder()
     srs_freep(meta);
 }
 
+srs_error_t SrsRtcRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
+{
+    srs_error_t err = srs_success;
+
+    // Get the audio track description for the specified codec, as we will always 
+    // transcode to opus for WebRTC.
+    std::string codec_name = "opus";
+    std::vector<SrsRtcTrackDescription*> descs = source_->get_track_desc("audio", "opus");
+
+    if (!descs.empty()) {
+        // Note we must use the PT of source, see https://github.com/ossrs/srs/pull/3079
+        SrsRtcTrackDescription* track = descs.at(0);
+        audio_ssrc_ = track->ssrc_;
+        audio_payload_type_ = track->media_->pt_;
+    } else {
+        audio_payload_type_ = kAudioPayloadType;
+    }
+
+    srs_trace("RTMP2RTC: Initialize audio track for %s with codec=%s, ssrc=%u, pt=%d",
+        srs_audio_codec_id2str(codec).c_str(), codec_name.c_str(), audio_ssrc_, audio_payload_type_);
+
+    return err;
+}
+
+srs_error_t SrsRtcRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
+{
+    srs_error_t err = srs_success;
+
+    // Get the video track description for the detected codec
+    std::string codec_name = srs_video_codec_id2str(codec);
+    std::vector<SrsRtcTrackDescription*> descs = source_->get_track_desc("video", codec_name);
+
+    if (!descs.empty()) {
+        // Note we must use the PT of source, see https://github.com/ossrs/srs/pull/3079
+        SrsRtcTrackDescription* track = descs.at(0);
+        video_ssrc_ = track->ssrc_;
+        video_payload_type_ = track->media_->pt_;
+    } else {
+        video_payload_type_ = kVideoPayloadType;
+    }
+
+    srs_trace("RTMP2RTC: Initialize video track with codec=%s, ssrc=%u, pt=%d",
+              codec_name.c_str(), video_ssrc_, video_payload_type_);
+
+    return err;
+}
+
 srs_error_t SrsRtcRtpBuilder::initialize(SrsRequest* r)
 {
     srs_error_t err = srs_success;
@@ -944,53 +991,6 @@ srs_error_t SrsRtcRtpBuilder::on_frame(SrsSharedPtrMessage* frame)
     return srs_success;
 }
 
-srs_error_t SrsRtcRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
-{
-    srs_error_t err = srs_success;
-
-    // Get the audio track description for the specified codec, as we will always 
-    // transcode to opus for WebRTC.
-    std::string codec_name = "opus";
-    std::vector<SrsRtcTrackDescription*> descs = source_->get_track_desc("audio", "opus");
-
-    if (!descs.empty()) {
-        // Note we must use the PT of source, see https://github.com/ossrs/srs/pull/3079
-        SrsRtcTrackDescription* track = descs.at(0);
-        audio_ssrc_ = track->ssrc_;
-        audio_payload_type_ = track->media_->pt_;
-    } else {
-        audio_payload_type_ = kAudioPayloadType;
-    }
-
-    srs_trace("RTMP2RTC: Initialize audio track for %s with codec=%s, ssrc=%u, pt=%d",
-        srs_audio_codec_id2str(codec).c_str(), codec_name.c_str(), audio_ssrc_, audio_payload_type_);
-
-    return err;
-}
-
-srs_error_t SrsRtcRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
-{
-    srs_error_t err = srs_success;
-
-    // Get the video track description for the detected codec
-    std::string codec_name = srs_video_codec_id2str(codec);
-    std::vector<SrsRtcTrackDescription*> descs = source_->get_track_desc("video", codec_name);
-
-    if (!descs.empty()) {
-        // Note we must use the PT of source, see https://github.com/ossrs/srs/pull/3079
-        SrsRtcTrackDescription* track = descs.at(0);
-        video_ssrc_ = track->ssrc_;
-        video_payload_type_ = track->media_->pt_;
-    } else {
-        video_payload_type_ = kVideoPayloadType;
-    }
-
-    srs_trace("RTMP2RTC: Initialize video track with codec=%s, ssrc=%u, pt=%d",
-              codec_name.c_str(), video_ssrc_, video_payload_type_);
-
-    return err;
-}
-
 srs_error_t SrsRtcRtpBuilder::on_audio(SrsSharedPtrMessage* msg)
 {
     srs_error_t err = srs_success;
@@ -1023,6 +1023,14 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsSharedPtrMessage* msg)
     SrsAudioCodecId acodec = format->acodec->id;
     if (acodec != SrsAudioCodecIdAAC && acodec != SrsAudioCodecIdMP3) {
         return err;
+    }
+
+    // Initialize audio track on first packet with actual codec
+    if (!audio_initialized_) {
+        if ((err = initialize_audio_track(acodec)) != srs_success) {
+            return srs_error_wrap(err, "init audio track");
+        }
+        audio_initialized_ = true;
     }
 
     // ignore sequence header

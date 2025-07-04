@@ -1,6 +1,6 @@
 module github.com/ossrs/srs-bench
 
-go 1.21
+go 1.23.0
 
 require (
 	github.com/ghettovoice/gosip v0.0.0-20220929080231-de8ba881be83
@@ -37,14 +37,14 @@ require (
 	github.com/pion/sctp v1.8.39 // indirect
 	github.com/pion/srtp/v3 v3.0.6 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
-	github.com/pion/turn/v4 v4.0.0 // indirect
+	github.com/pion/turn/v4 v4.0.2 // indirect
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
 )

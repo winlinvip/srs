@@ -1000,14 +1000,6 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsSharedPtrMessage* msg)
         return srs_error_wrap(err, "format consume audio");
     }
 
-    // Initialize audio track on first packet with actual codec
-    if (!audio_initialized_) {
-        if ((err = initialize_audio_track(format->acodec->id)) != srs_success) {
-            return srs_error_wrap(err, "init audio track");
-        }
-        audio_initialized_ = true;
-    }
-
     // Try to init codec when startup or codec changed.
     if (format->acodec && (err = init_codec(format->acodec->id)) != srs_success) {
         return srs_error_wrap(err, "init codec");

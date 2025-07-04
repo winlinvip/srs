@@ -48,6 +48,8 @@ class SrsLiveSource;
 const int kAudioPayloadType     = 111;
 // Firefox defaults as 126, Chrome is 102.
 const int kVideoPayloadType = 102;
+// Chrome HEVC defaults as 49.
+const int KVideoPayloadTypeHevc = 49;
 
 class SrsNtp
 {

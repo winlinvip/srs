@@ -1705,8 +1705,8 @@ func (v *RTMPPublisher) Ingest(ctx context.Context, input string) error {
 	if strings.HasSuffix(strings.ToLower(input), ".h265") {
 		err = v.ingestH265(ctx, input)
 	} else {
-		// Default to FLV format
-		err = v.ingest(ctx, input)
+		// Default to FLV format for H.264
+		err = v.ingestFLV(ctx, input)
 	}
 	if err == io.EOF {
 		return nil
@@ -1717,7 +1717,7 @@ func (v *RTMPPublisher) Ingest(ctx context.Context, input string) error {
 	return err
 }
 
-func (v *RTMPPublisher) ingest(ctx context.Context, flvInput string) error {
+func (v *RTMPPublisher) ingestFLV(ctx context.Context, flvInput string) error {
 	p := v.client
 
 	fs, err := os.Open(flvInput)
@@ -1886,12 +1886,12 @@ func (v *RTMPPublisher) sendH265SequenceHeader(p *RTMPClient, vps, sps, pps []by
 	// Format: [IsExHeader | FrameType | PacketType] [fourcc 'hvc1'] [HEVCDecoderConfigurationRecord]
 	// @see: https://veovera.org/docs/enhanced/enhanced-rtmp-v1.pdf, page 9
 
-	const SRS_FLV_IS_EX_HEADER = 0x80
-	const SrsVideoAvcFrameTypeKeyFrame = 1
-	const SrsVideoHEVCFrameTraitPacketTypeSequenceStart = 0
+	const flvIsExHeader = 0x80
+	const videoAvcFrameTypeKeyFrame = 1
+	const videoHEVCFrameTraitPacketTypeSequenceStart = 0
 
 	// IsExHeader | FrameType | PacketType
-	frameTypeAndPacket := byte(SRS_FLV_IS_EX_HEADER | (SrsVideoAvcFrameTypeKeyFrame << 4) | SrsVideoHEVCFrameTraitPacketTypeSequenceStart)
+	frameTypeAndPacket := byte(flvIsExHeader | (videoAvcFrameTypeKeyFrame << 4) | videoHEVCFrameTraitPacketTypeSequenceStart)
 
 	// Enhanced-RTMP fourcc 'hvc1' for HEVC (0x68766331)
 	fourcc := []byte{'h', 'v', 'c', '1'}
@@ -1984,18 +1984,18 @@ func (v *RTMPPublisher) sendH265Frame(p *RTMPClient, nalData []byte, timestamp u
 	// Format: [IsExHeader | FrameType | PacketType] [fourcc 'hvc1'] [NALU data]
 	// @see: https://veovera.org/docs/enhanced/enhanced-rtmp-v1.pdf, page 9
 
-	const SRS_FLV_IS_EX_HEADER = 0x80
-	const SrsVideoAvcFrameTypeKeyFrame = 1
-	const SrsVideoAvcFrameTypeInterFrame = 2
-	const SrsVideoHEVCFrameTraitPacketTypeCodedFramesX = 3
+	const flvIsExHeader = 0x80
+	const videoAvcFrameTypeKeyFrame = 1
+	const videoAvcFrameTypeInterFrame = 2
+	const videoHEVCFrameTraitPacketTypeCodedFramesX = 3
 
-	var frameType byte = SrsVideoAvcFrameTypeInterFrame
+	var frameType byte = videoAvcFrameTypeInterFrame
 	if isKeyFrame {
-		frameType = SrsVideoAvcFrameTypeKeyFrame
+		frameType = videoAvcFrameTypeKeyFrame
 	}
 
 	// IsExHeader | FrameType | PacketType
-	frameTypeAndPacket := byte(SRS_FLV_IS_EX_HEADER | (frameType << 4) | SrsVideoHEVCFrameTraitPacketTypeCodedFramesX)
+	frameTypeAndPacket := byte(flvIsExHeader | (frameType << 4) | videoHEVCFrameTraitPacketTypeCodedFramesX)
 
 	// Enhanced-RTMP fourcc 'hvc1' for HEVC (0x68766331)
 	fourcc := []byte{'h', 'v', 'c', '1'}
@@ -2220,7 +2220,7 @@ func (v *FLVPlayer) consume(ctx context.Context) (err error) {
 	}
 }
 
-func IsAvccrEquals(a, b *avc.AVCDecoderConfigurationRecord) bool {
+func isAvccrEquals(a, b *avc.AVCDecoderConfigurationRecord) bool {
 	if a == nil || b == nil {
 		return false
 	}
@@ -2234,13 +2234,13 @@ func IsAvccrEquals(a, b *avc.AVCDecoderConfigurationRecord) bool {
 	}
 
 	for i := 0; i < len(a.SequenceParameterSetNALUnits); i++ {
-		if !IsNALUEquals(a.SequenceParameterSetNALUnits[i], b.SequenceParameterSetNALUnits[i]) {
+		if !isNALUEquals(a.SequenceParameterSetNALUnits[i], b.SequenceParameterSetNALUnits[i]) {
 			return false
 		}
 	}
 
 	for i := 0; i < len(a.PictureParameterSetNALUnits); i++ {
-		if !IsNALUEquals(a.PictureParameterSetNALUnits[i], b.PictureParameterSetNALUnits[i]) {
+		if !isNALUEquals(a.PictureParameterSetNALUnits[i], b.PictureParameterSetNALUnits[i]) {
 			return false
 		}
 	}
@@ -2248,7 +2248,7 @@ func IsAvccrEquals(a, b *avc.AVCDecoderConfigurationRecord) bool {
 	return true
 }
 
-func IsNALUEquals(a, b *avc.NALU) bool {
+func isNALUEquals(a, b *avc.NALU) bool {
 	if a == nil || b == nil {
 		return false
 	}
@@ -2260,7 +2260,7 @@ func IsNALUEquals(a, b *avc.NALU) bool {
 	return bytes.Equal(a.Data, b.Data)
 }
 
-func DemuxRtpSpsPps(payload []byte) ([]byte, []*avc.NALU, error) {
+func demuxRtpSpsPps(payload []byte) ([]byte, []*avc.NALU, error) {
 	// Parse RTP packet.
 	pkt := rtp.Packet{}
 	if err := pkt.Unmarshal(payload); err != nil {

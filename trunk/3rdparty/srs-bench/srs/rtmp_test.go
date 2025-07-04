@@ -119,11 +119,11 @@ func TestRtmpPublish_RtcPlay_AVC(t *testing.T) {
 			return err
 		}
 
-		// Setup the RTC player with HEVC codec support.
+		// Setup the RTC player with AVC codec support.
 		var thePlayer *testPlayer
-		if thePlayer, err = newTestPlayer(registerHEVCCodecs, func(play *testPlayer) error {
+		if thePlayer, err = newTestPlayer(registerMiniCodecs, func(play *testPlayer) error {
 			play.streamSuffix = streamSuffix
-			play.streamCodec = "hevc"
+			play.streamCodec = "h264"
 			var nnPlayReadRTP uint64
 			return play.Setup(*srsVnetClientIP, func(api *testWebRTCAPI) {
 				api.registry.Add(newRTPInterceptor(func(i *rtpInterceptor) {
@@ -235,7 +235,7 @@ func TestRtmpPublish_MultipleSequences(t *testing.T) {
 				}
 
 				// Ingore the duplicated sps/pps.
-				if IsAvccrEquals(previousAvccr, avccr) {
+				if isAvccrEquals(previousAvccr, avccr) {
 					return nil
 				}
 				previousAvccr = avccr
@@ -317,7 +317,7 @@ func TestRtmpPublish_MultipleSequences_RtcPlay(t *testing.T) {
 							return nn, attr, err
 						}
 
-						annexb, nalus, err := DemuxRtpSpsPps(payload[:nn])
+						annexb, nalus, err := demuxRtpSpsPps(payload[:nn])
 						if err != nil || len(nalus) == 0 ||
 							(nalus[0].NALUType != avc.NALUTypeSPS && nalus[0].NALUType != avc.NALUTypePPS) ||
 							bytes.Equal(annexb, previousSpsPps) {
@@ -664,7 +664,8 @@ func TestRtmpPublish_RtcPlay_HEVC(t *testing.T) {
 		// Setup the RTC player with HEVC codec support.
 		var thePlayer *testPlayer
 		if thePlayer, err = newTestPlayer(registerHEVCCodecs, func(play *testPlayer) error {
-			play.streamSuffix = streamSuffix + "?codec=hevc"
+			play.streamSuffix = streamSuffix
+			play.streamCodec = "hevc"
 			var nnPlayReadRTP uint64
 			return play.Setup(*srsVnetClientIP, func(api *testWebRTCAPI) {
 				api.registry.Add(newRTPInterceptor(func(i *rtpInterceptor) {

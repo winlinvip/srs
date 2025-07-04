@@ -1689,8 +1689,8 @@ VOID TEST(KernelRTCTest, H265RtpSTAPPayload)
 
         // Test decoding
         SrsRtpSTAPPayloadHevc decode_stap;
-        encode_buf.skip(-encode_buf.pos()); // Reset buffer position
-        HELPER_EXPECT_SUCCESS(decode_stap.decode(&encode_buf));
+        SrsBuffer decode_buf(buf, encode_buf.pos()); // Create new buffer with encoded data
+        HELPER_EXPECT_SUCCESS(decode_stap.decode(&decode_buf));
 
         // Verify decoded NALUs
         EXPECT_EQ(3, (int)decode_stap.nalus.size());
@@ -1774,8 +1774,8 @@ VOID TEST(KernelRTCTest, H265RtpFUAPayload)
 
         // Test decoding
         SrsRtpFUAPayloadHevc decode_fua;
-        encode_buf.skip(-encode_buf.pos()); // Reset buffer position
-        HELPER_EXPECT_SUCCESS(decode_fua.decode(&encode_buf));
+        SrsBuffer decode_buf(buf, encode_buf.pos()); // Create new buffer with encoded data
+        HELPER_EXPECT_SUCCESS(decode_fua.decode(&decode_buf));
 
         // Verify decoded values
         EXPECT_TRUE(decode_fua.start);
@@ -1818,8 +1818,8 @@ VOID TEST(KernelRTCTest, H265RtpFUAPayload)
 
         // Test decoding
         SrsRtpFUAPayloadHevc2 decode_fua2;
-        encode_buf.skip(-encode_buf.pos()); // Reset buffer position
-        HELPER_EXPECT_SUCCESS(decode_fua2.decode(&encode_buf));
+        SrsBuffer decode_buf2(buf, encode_buf.pos()); // Create new buffer with encoded data
+        HELPER_EXPECT_SUCCESS(decode_fua2.decode(&decode_buf2));
 
         // Verify decoded values
         EXPECT_FALSE(decode_fua2.start);

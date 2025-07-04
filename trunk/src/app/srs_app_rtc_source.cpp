@@ -838,10 +838,12 @@ srs_error_t SrsRtcSource::on_timer(srs_utime_t interval)
 
 #ifdef SRS_FFMPEG_FIT
 
-SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge* bridge, uint32_t assrc, uint8_t apt, uint32_t vssrc, uint8_t vpt)
+SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge* bridge, SrsSharedPtr<SrsRtcSource> source)
 {
-    req = NULL;
     bridge_ = bridge;
+    source_ = source;
+    
+    req = NULL;
     format = new SrsRtmpFormat();
     codec_ = new SrsAudioTranscoder();
     latest_codec_ = SrsAudioCodecIdForbidden;
@@ -852,10 +854,15 @@ SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge* bridge, uint32_t assrc, 
     audio_sequence = 0;
     video_sequence = 0;
 
-    audio_ssrc_ = assrc;
-    audio_payload_type_ = apt;
-    video_ssrc_ = vssrc;
-    video_payload_type_ = vpt;
+    // Initialize with default values - will be set during lazy initialization
+    audio_ssrc_ = 0;
+    audio_payload_type_ = 0;
+    video_ssrc_ = 0;
+    video_payload_type_ = 0;
+
+    // Lazy initialization flags
+    audio_initialized_ = false;
+    video_initialized_ = false;
 }
 
 SrsRtcRtpBuilder::~SrsRtcRtpBuilder()
@@ -863,6 +870,53 @@ SrsRtcRtpBuilder::~SrsRtcRtpBuilder()
     srs_freep(format);
     srs_freep(codec_);
     srs_freep(meta);
+}
+
+srs_error_t SrsRtcRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
+{
+    srs_error_t err = srs_success;
+
+    // Get the audio track description for the specified codec, as we will always 
+    // transcode to opus for WebRTC.
+    std::string codec_name = "opus";
+    std::vector<SrsRtcTrackDescription*> descs = source_->get_track_desc("audio", "opus");
+
+    if (!descs.empty()) {
+        // Note we must use the PT of source, see https://github.com/ossrs/srs/pull/3079
+        SrsRtcTrackDescription* track = descs.at(0);
+        audio_ssrc_ = track->ssrc_;
+        audio_payload_type_ = track->media_->pt_;
+    } else {
+        audio_payload_type_ = kAudioPayloadType;
+    }
+
+    srs_trace("RTMP2RTC: Initialize audio track for %s with codec=%s, ssrc=%u, pt=%d",
+        srs_audio_codec_id2str(codec).c_str(), codec_name.c_str(), audio_ssrc_, audio_payload_type_);
+
+    return err;
+}
+
+srs_error_t SrsRtcRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
+{
+    srs_error_t err = srs_success;
+
+    // Get the video track description for the detected codec
+    std::string codec_name = srs_video_codec_id2str(codec);
+    std::vector<SrsRtcTrackDescription*> descs = source_->get_track_desc("video", codec_name);
+
+    if (!descs.empty()) {
+        // Note we must use the PT of source, see https://github.com/ossrs/srs/pull/3079
+        SrsRtcTrackDescription* track = descs.at(0);
+        video_ssrc_ = track->ssrc_;
+        video_payload_type_ = track->media_->pt_;
+    } else {
+        video_payload_type_ = kVideoPayloadType;
+    }
+
+    srs_trace("RTMP2RTC: Initialize video track with codec=%s, ssrc=%u, pt=%d",
+              codec_name.c_str(), video_ssrc_, video_payload_type_);
+
+    return err;
 }
 
 srs_error_t SrsRtcRtpBuilder::initialize(SrsRequest* r)
@@ -942,6 +996,14 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsSharedPtrMessage* msg)
         return err;
     }
 
+    // Initialize audio track on first packet with actual codec
+    if (!audio_initialized_) {
+        if ((err = initialize_audio_track(acodec)) != srs_success) {
+            return srs_error_wrap(err, "init audio track");
+        }
+        audio_initialized_ = true;
+    }
+
     // ignore sequence header
     srs_assert(format->audio);
 
@@ -997,10 +1059,10 @@ srs_error_t SrsRtcRtpBuilder::init_codec(SrsAudioCodecId codec)
 
     // Update the latest codec in stream.
     if (latest_codec_ == SrsAudioCodecIdForbidden) {
-        srs_trace("RTMP2RTC: Init audio codec to %d(%s)", codec, srs_audio_codec_id2str(codec).c_str());
+        srs_trace("RTMP2RTC: Init audio transcoder codec to %d(%s)", codec, srs_audio_codec_id2str(codec).c_str());
     } else {
-        srs_trace("RTMP2RTC: Switch audio codec %d(%s) to %d(%s)", latest_codec_, srs_audio_codec_id2str(latest_codec_).c_str(),
-                  codec, srs_audio_codec_id2str(codec).c_str());
+        srs_trace("RTMP2RTC: Switch audio transcoder codec %d(%s) to %d(%s)", latest_codec_, srs_audio_codec_id2str(latest_codec_).c_str(),
+                codec, srs_audio_codec_id2str(codec).c_str());
     }
     latest_codec_ = codec;
 
@@ -1097,8 +1159,12 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsSharedPtrMessage* msg)
         return err;
     }
 
-    if ((err = bridge_->update_codec(vcodec)) != srs_success) {
-        return srs_error_wrap(err, "update codec");
+    // Initialize video track on first packet with actual codec
+    if (!video_initialized_) {
+        if ((err = initialize_video_track(vcodec)) != srs_success) {
+            return srs_error_wrap(err, "init video track");
+        }
+        video_initialized_ = true;
     }
 
     bool has_idr = false;

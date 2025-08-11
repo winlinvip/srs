@@ -1321,7 +1321,7 @@ srs_error_t SrsHttpStreamDestroy::call()
 
     // Wait for cache and stream to stop.
     int i = 0;
-    for (; i < 1024; i++) {
+    for (; i < 3000; i++) {
         if (!cache->alive() && !stream->alive()) {
             break;
         }
@@ -1329,7 +1329,9 @@ srs_error_t SrsHttpStreamDestroy::call()
     }
 
     if (cache->alive() || stream->alive()) {
-        srs_warn("http: try to free a alive stream, cache=%d, stream=%d", cache->alive(), stream->alive());
+        srs_error("http: try to free an alive stream, sid=%s, cache=%d, stream=%d", 
+            sid_.c_str(), cache->alive(), stream->alive());
+        srs_assert(false);
     }
 
     // Remove the entry from handlers.

@@ -621,6 +621,26 @@ srs_error_t SrsLiveStream::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessage
 
     SrsHttpMessage* hr = dynamic_cast<SrsHttpMessage*>(r);
     SrsHttpConn* hc = dynamic_cast<SrsHttpConn*>(hr->connection());
+
+    // Add the viewer to the viewers list.
+    viewers_.push_back(hc);
+
+    err = serve_http_impl(w, r);
+
+    // Remove viewer from the viewers list.
+    vector<ISrsExpire*>::iterator it = std::find(viewers_.begin(), viewers_.end(), hc);
+    srs_assert (it != viewers_.end());
+    viewers_.erase(it);
+    
+    return err;
+}
+
+srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter* w, ISrsHttpMessage* r)
+{
+    srs_error_t err = srs_success;
+
+    SrsHttpMessage* hr = dynamic_cast<SrsHttpMessage*>(r);
+    SrsHttpConn* hc = dynamic_cast<SrsHttpConn*>(hr->connection());
     SrsHttpxConn* hxc = dynamic_cast<SrsHttpxConn*>(hc->handler());
 
     // Note that we should enable stat for HTTP streaming client, because each HTTP streaming connection is a real
@@ -651,6 +671,11 @@ srs_error_t SrsLiveStream::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessage
         return srs_error_wrap(err, "http hook");
     }
 
+    // Fast check whether stream is still available.
+    if (!entry->enabled) {
+        return srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "stream not found");
+    }
+
     // Always try to create the source, because http handler won't create it.
     SrsSharedPtr<SrsLiveSource> live_source;
     if ((err = _srs_sources->fetch_or_create(req, server_, live_source)) != srs_success) {
@@ -673,16 +698,13 @@ srs_error_t SrsLiveStream::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessage
     // object is not alive.
     SrsUniquePtr<SrsLiveConsumer> consumer(consumer_raw);
 
-    // Add the viewer to the viewers list.
-    viewers_.push_back(hc);
+    // Fast check whether stream is still available.
+    if (!entry->enabled) {
+        return srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "stream not found");
+    }
 
     // Serve the viewer connection.
     err = do_serve_http(live_source.get(), consumer.get(), w, r);
-
-    // Remove viewer from the viewers list.
-    vector<ISrsExpire*>::iterator it = std::find(viewers_.begin(), viewers_.end(), hc);
-    srs_assert (it != viewers_.end());
-    viewers_.erase(it);
     
     // Do hook after serving.
     http_hooks_on_stop(r);

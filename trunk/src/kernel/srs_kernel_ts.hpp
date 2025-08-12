@@ -155,11 +155,11 @@ enum SrsTsPESStreamId {
     // program_stream_map
     SrsTsPESStreamIdProgramStreamMap = 0xbc, // 0b10111100
                                              // private_stream_1
-    SrsTsPESStreamIdPrivateStream1 = 0xbd, // 0b10111101
-                                           // padding_stream
-    SrsTsPESStreamIdPaddingStream = 0xbe, // 0b10111110
-                                          // private_stream_2
-    SrsTsPESStreamIdPrivateStream2 = 0xbf, // 0b10111111
+    SrsTsPESStreamIdPrivateStream1 = 0xbd,   // 0b10111101
+                                             // padding_stream
+    SrsTsPESStreamIdPaddingStream = 0xbe,    // 0b10111110
+                                             // private_stream_2
+    SrsTsPESStreamIdPrivateStream2 = 0xbf,   // 0b10111111
 
     // 110x xxxx
     // ISO/IEC 13818-3 or ISO/IEC 11172-3 or ISO/IEC 13818-7 or ISO/IEC
@@ -178,32 +178,32 @@ enum SrsTsPESStreamId {
     SrsTsPESStreamIdVideoCommon = 0xe0,
 
     // ECM_stream
-    SrsTsPESStreamIdEcmStream = 0xf0, // 0b11110000
-                                      // EMM_stream
-    SrsTsPESStreamIdEmmStream = 0xf1, // 0b11110001
-                                      // DSMCC_stream
-    SrsTsPESStreamIdDsmccStream = 0xf2, // 0b11110010
-                                        // 13522_stream
-    SrsTsPESStreamId13522Stream = 0xf3, // 0b11110011
-                                        // H_222_1_type_A
-    SrsTsPESStreamIdH2221TypeA = 0xf4, // 0b11110100
-                                       // H_222_1_type_B
-    SrsTsPESStreamIdH2221TypeB = 0xf5, // 0b11110101
-                                       // H_222_1_type_C
-    SrsTsPESStreamIdH2221TypeC = 0xf6, // 0b11110110
-                                       // H_222_1_type_D
-    SrsTsPESStreamIdH2221TypeD = 0xf7, // 0b11110111
-                                       // H_222_1_type_E
-    SrsTsPESStreamIdH2221TypeE = 0xf8, // 0b11111000
-                                       // ancillary_stream
-    SrsTsPESStreamIdAncillaryStream = 0xf9, // 0b11111001
-                                            // SL_packetized_stream
-    SrsTsPESStreamIdSlPacketizedStream = 0xfa, // 0b11111010
-                                               // FlexMux_stream
-    SrsTsPESStreamIdFlexMuxStream = 0xfb, // 0b11111011
-                                          // reserved data stream
-                                          // 1111 1100 ... 1111 1110
-                                          // program_stream_directory
+    SrsTsPESStreamIdEcmStream = 0xf0,              // 0b11110000
+                                                   // EMM_stream
+    SrsTsPESStreamIdEmmStream = 0xf1,              // 0b11110001
+                                                   // DSMCC_stream
+    SrsTsPESStreamIdDsmccStream = 0xf2,            // 0b11110010
+                                                   // 13522_stream
+    SrsTsPESStreamId13522Stream = 0xf3,            // 0b11110011
+                                                   // H_222_1_type_A
+    SrsTsPESStreamIdH2221TypeA = 0xf4,             // 0b11110100
+                                                   // H_222_1_type_B
+    SrsTsPESStreamIdH2221TypeB = 0xf5,             // 0b11110101
+                                                   // H_222_1_type_C
+    SrsTsPESStreamIdH2221TypeC = 0xf6,             // 0b11110110
+                                                   // H_222_1_type_D
+    SrsTsPESStreamIdH2221TypeD = 0xf7,             // 0b11110111
+                                                   // H_222_1_type_E
+    SrsTsPESStreamIdH2221TypeE = 0xf8,             // 0b11111000
+                                                   // ancillary_stream
+    SrsTsPESStreamIdAncillaryStream = 0xf9,        // 0b11111001
+                                                   // SL_packetized_stream
+    SrsTsPESStreamIdSlPacketizedStream = 0xfa,     // 0b11111010
+                                                   // FlexMux_stream
+    SrsTsPESStreamIdFlexMuxStream = 0xfb,          // 0b11111011
+                                                   // reserved data stream
+                                                   // 1111 1100 ... 1111 1110
+                                                   // program_stream_directory
     SrsTsPESStreamIdProgramStreamDirectory = 0xff, // 0b11111111
 };
 

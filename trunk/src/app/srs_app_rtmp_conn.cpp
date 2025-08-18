@@ -92,21 +92,14 @@ SrsClientInfo::~SrsClientInfo()
     srs_freep(res);
 }
 
-SrsRtmpTransport::SrsRtmpTransport(srs_netfd_t c, bool rtmps)
+SrsRtmpTransport::SrsRtmpTransport(srs_netfd_t c)
 {
     stfd_ = c;
     skt_ = new SrsTcpConnection(c);
-    rtmps_ = rtmps;
-    ssl_ = NULL;
-
-    if (rtmps_) {
-        ssl_ = new SrsSslConnection(skt_);
-    }
 }
 
 SrsRtmpTransport::~SrsRtmpTransport()
 {
-    srs_freep(ssl_);
     srs_freep(skt_);
 }
 
@@ -117,36 +110,17 @@ srs_netfd_t SrsRtmpTransport::fd()
 
 ISrsProtocolReadWriter* SrsRtmpTransport::io()
 {
-    if (rtmps_) {
-        return ssl_;
-    }
     return skt_;
 }
 
 srs_error_t SrsRtmpTransport::handshake()
 {
-    if (!rtmps_) {
-        return srs_success;
-    }
-
-    string crt_file = _srs_config->get_rtmps_ssl_cert();
-    string key_file = _srs_config->get_rtmps_ssl_key();
-    srs_error_t err = ssl_->handshake(key_file, crt_file);
-    if (err != srs_success) {
-        return srs_error_wrap(err, "ssl handshake");
-    }
-
     return srs_success;
-}
-
-bool SrsRtmpTransport::is_rtmps()
-{
-    return rtmps_;
 }
 
 const char* SrsRtmpTransport::transport_type()
 {
-    return rtmps_ ? "ssl" : "plaintext";
+    return "plaintext";
 }
 
 srs_error_t SrsRtmpTransport::set_socket_buffer(srs_utime_t buffer_v)
@@ -167,6 +141,38 @@ int64_t SrsRtmpTransport::get_recv_bytes()
 int64_t SrsRtmpTransport::get_send_bytes()
 {
     return skt_->get_send_bytes();
+}
+
+SrsRtmpsTransport::SrsRtmpsTransport(srs_netfd_t c) : SrsRtmpTransport(c)
+{
+    ssl_ = new SrsSslConnection(skt_);
+}
+
+SrsRtmpsTransport::~SrsRtmpsTransport()
+{
+    srs_freep(ssl_);
+}
+
+ISrsProtocolReadWriter* SrsRtmpsTransport::io()
+{
+    return ssl_;
+}
+
+srs_error_t SrsRtmpsTransport::handshake()
+{
+    string crt_file = _srs_config->get_rtmps_ssl_cert();
+    string key_file = _srs_config->get_rtmps_ssl_key();
+    srs_error_t err = ssl_->handshake(key_file, crt_file);
+    if (err != srs_success) {
+        return srs_error_wrap(err, "ssl handshake");
+    }
+
+    return srs_success;
+}
+
+const char* SrsRtmpsTransport::transport_type()
+{
+    return "ssl";
 }
 
 SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip, int cport)

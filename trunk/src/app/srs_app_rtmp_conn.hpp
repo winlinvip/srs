@@ -71,28 +71,24 @@ public:
     virtual ~SrsClientInfo();
 };
 
-// The transport layer for RTMP connections, supporting both plain TCP and SSL/TLS.
+// The base transport layer for RTMP connections over plain TCP.
 class SrsRtmpTransport
 {
-private:
+protected:
     srs_netfd_t stfd_;
     SrsTcpConnection *skt_;
-    bool rtmps_;
-    SrsSslConnection* ssl_;
 
 public:
-    SrsRtmpTransport(srs_netfd_t c, bool rtmps);
+    SrsRtmpTransport(srs_netfd_t c);
     virtual ~SrsRtmpTransport();
 
 public:
     // Get the file descriptor for logging and identification
     virtual srs_netfd_t fd();
-    // Get the appropriate I/O interface (SSL or plain TCP)
+    // Get the appropriate I/O interface (TCP)
     virtual ISrsProtocolReadWriter* io();
-    // Perform SSL handshake if RTMPS is enabled
+    // Perform handshake (no-op for plain RTMP)
     virtual srs_error_t handshake();
-    // Check if this is an RTMPS connection
-    virtual bool is_rtmps();
     // Get transport type description for logging
     virtual const char* transport_type();
     // Set socket buffer size
@@ -102,6 +98,25 @@ public:
     // Get network statistics
     virtual int64_t get_recv_bytes();
     virtual int64_t get_send_bytes();
+};
+
+// The SSL/TLS transport layer for RTMPS connections.
+class SrsRtmpsTransport : public SrsRtmpTransport
+{
+private:
+    SrsSslConnection* ssl_;
+
+public:
+    SrsRtmpsTransport(srs_netfd_t c);
+    virtual ~SrsRtmpsTransport();
+
+public:
+    // Get the appropriate I/O interface (SSL)
+    virtual ISrsProtocolReadWriter* io();
+    // Perform SSL handshake
+    virtual srs_error_t handshake();
+    // Get transport type description for logging
+    virtual const char* transport_type();
 };
 
 class SrsRtmpConn : public ISrsConnection, public ISrsStartable, public ISrsReloadHandler, public ISrsCoroutineHandler, public ISrsExpire

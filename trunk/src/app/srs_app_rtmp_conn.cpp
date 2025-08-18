@@ -92,15 +92,21 @@ SrsClientInfo::~SrsClientInfo()
     srs_freep(res);
 }
 
-SrsRtmpConn::SrsRtmpConn(SrsServer *svr, srs_netfd_t c, string cip, int cport)
+SrsRtmpConn::SrsRtmpConn(SrsServer *svr, srs_netfd_t c, string cip, int cport, bool rtmps)
 {
     // Create a identify for this client.
     _srs_context->set_id(_srs_context->generate_id());
 
     server = svr;
 
+    rtmps_ = rtmps;
+    ssl_ = NULL;
+
     stfd = c;
     skt = new SrsTcpConnection(c);
+    if (rtmps_) {
+        ssl_ = new SrsSslConnection(skt);
+    }
     manager = svr;
     ip = cip;
     port = cport;
@@ -117,7 +123,11 @@ SrsRtmpConn::SrsRtmpConn(SrsServer *svr, srs_netfd_t c, string cip, int cport)
     delta_ = new SrsNetworkDelta();
     delta_->set_io(skt, skt);
 
-    rtmp = new SrsRtmpServer(skt);
+    if (rtmps_) {
+        rtmp = new SrsRtmpServer(ssl_);
+    } else {
+        rtmp = new SrsRtmpServer(skt);
+    }
     refer = new SrsRefer();
     security = new SrsSecurity();
     duration = 0;
@@ -149,6 +159,7 @@ SrsRtmpConn::~SrsRtmpConn()
 
     srs_freep(kbps);
     srs_freep(delta_);
+    srs_freep(ssl_);
     srs_freep(skt);
 
     srs_freep(info);
@@ -186,11 +197,19 @@ srs_error_t SrsRtmpConn::do_cycle()
 #endif
 
 #ifdef SRS_APM
-    srs_trace("RTMP client ip=%s:%d, fd=%d, trace=%s, span=%s", ip.c_str(), port, srs_netfd_fileno(stfd),
+    srs_trace("%s client ip=%s:%d, fd=%d, trace=%s, span=%s", (rtmps_ ? "RTMPS" : "RTMP"), ip.c_str(), port, srs_netfd_fileno(stfd),
               span_main_->format_trace_id(), span_main_->format_span_id());
 #else
-    srs_trace("RTMP client ip=%s:%d, fd=%d", ip.c_str(), port, srs_netfd_fileno(stfd));
+    srs_trace("%s client ip=%s:%d, fd=%d", (rtmps_ ? "RTMPS" : "RTMP"), ip.c_str(), port, srs_netfd_fileno(stfd));
 #endif
+
+    if (rtmps_) {
+        string crt_file = _srs_config->get_rtmps_ssl_cert();
+        string key_file = _srs_config->get_rtmps_ssl_key();
+        if ((err = ssl_->handshake(key_file, crt_file)) != srs_success) {
+            return srs_error_wrap(err, "ssl handshake");
+        }
+    }
 
     rtmp->set_recv_timeout(SRS_CONSTS_RTMP_TIMEOUT);
     rtmp->set_send_timeout(SRS_CONSTS_RTMP_TIMEOUT);

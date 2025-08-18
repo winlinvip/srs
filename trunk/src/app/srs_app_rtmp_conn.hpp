@@ -71,6 +71,8 @@ public:
 };
 
 // The client provides the main logic control for RTMP clients.
+class SrsSslConnection;
+
 class SrsRtmpConn : public ISrsConnection, public ISrsStartable, public ISrsReloadHandler, public ISrsCoroutineHandler, public ISrsExpire
 {
     // For the thread to directly access any field of connection.
@@ -126,9 +128,12 @@ private:
     ISrsApmSpan *span_main_;
     ISrsApmSpan *span_connect_;
     ISrsApmSpan *span_client_;
+    // Rtmps.
+    bool rtmps_;
+    SrsSslConnection* ssl_;
 
 public:
-    SrsRtmpConn(SrsServer *svr, srs_netfd_t c, std::string cip, int port);
+    SrsRtmpConn(SrsServer *svr, srs_netfd_t c, std::string cip, int port, bool rtmps);
     virtual ~SrsRtmpConn();
     // Interface ISrsResource.
 public:

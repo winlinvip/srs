@@ -2366,7 +2366,7 @@ srs_error_t SrsConfig::check_normal_config()
     for (int i = 0; i < (int)root->directives.size(); i++) {
         SrsConfDirective *conf = root->at(i);
         std::string n = conf->name;
-        if (n != "listen" && n != "pid" && n != "chunk_size" && n != "ff_log_dir" && n != "srs_log_tank" && n != "srs_log_level" && n != "srs_log_level_v2" && n != "srs_log_file" && n != "max_connections" && n != "daemon" && n != "heartbeat" && n != "tencentcloud_apm" && n != "http_api" && n != "stats" && n != "vhost" && n != "pithy_print_ms" && n != "http_server" && n != "stream_caster" && n != "rtc_server" && n != "srt_server" && n != "utc_time" && n != "work_dir" && n != "asprocess" && n != "server_id" && n != "ff_log_level" && n != "grace_final_wait" && n != "force_grace_quit" && n != "grace_start_wait" && n != "empty_ip_ok" && n != "disable_daemon_for_docker" && n != "inotify_auto_reload" && n != "auto_reload_for_docker" && n != "tcmalloc_release_rate" && n != "query_latest_version" && n != "first_wait_for_qlv" && n != "threads" && n != "circuit_breaker" && n != "is_full" && n != "in_docker" && n != "tencentcloud_cls" && n != "exporter" && n != "rtsp_server") {
+        if (n != "listen" && n != "pid" && n != "chunk_size" && n != "ff_log_dir" && n != "srs_log_tank" && n != "srs_log_level" && n != "srs_log_level_v2" && n != "srs_log_file" && n != "max_connections" && n != "daemon" && n != "heartbeat" && n != "tencentcloud_apm" && n != "http_api" && n != "stats" && n != "vhost" && n != "pithy_print_ms" && n != "http_server" && n != "stream_caster" && n != "rtc_server" && n != "srt_server" && n != "utc_time" && n != "work_dir" && n != "asprocess" && n != "server_id" && n != "ff_log_level" && n != "grace_final_wait" && n != "force_grace_quit" && n != "grace_start_wait" && n != "empty_ip_ok" && n != "disable_daemon_for_docker" && n != "inotify_auto_reload" && n != "auto_reload_for_docker" && n != "tcmalloc_release_rate" && n != "query_latest_version" && n != "first_wait_for_qlv" && n != "threads" && n != "circuit_breaker" && n != "is_full" && n != "in_docker" && n != "tencentcloud_cls" && n != "exporter" && n != "rtsp_server" && n != "rtmps") {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal directive %s", n.c_str());
         }
     }
@@ -2449,6 +2449,15 @@ srs_error_t SrsConfig::check_normal_config()
             string n = conf->at(i)->name;
             if (n != "enabled" && n != "listen") {
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal rtsp_server.%s", n.c_str());
+            }
+        }
+    }
+    if (true) {
+        SrsConfDirective *conf = root->get("rtmps");
+        for (int i = 0; conf && i < (int)conf->directives.size(); i++) {
+            string n = conf->at(i)->name;
+            if (n != "enabled" && n != "listen" && n != "key" && n != "cert") {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal rtmps.%s", n.c_str());
             }
         }
     }
@@ -8998,4 +9007,96 @@ SrsConfDirective *SrsConfig::get_stats_disk_device()
     }
 
     return conf;
+}
+
+SrsConfDirective* SrsConfig::get_rtmps()
+{
+    SrsConfDirective* conf = root->get("rtmps");
+    if (!conf) {
+        return NULL;
+    }
+
+    return conf;
+}
+
+bool SrsConfig::get_rtmps_enabled()
+{
+    SRS_OVERWRITE_BY_ENV_BOOL("srs.rtmps.enabled"); // SRS_RTMPS_ENABLED
+
+    static bool DEFAULT = false;
+
+    SrsConfDirective* conf = get_rtmps();
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("enabled");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return SRS_CONF_PREFER_FALSE(conf->arg0());
+}
+
+vector<string> SrsConfig::get_rtmps_listen()
+{
+    if (!srs_getenv("srs.rtmps.listen").empty()) { // SRS_RTMPS_LISTEN
+        return srs_string_split(srs_getenv("srs.rtmps.listen"), " ");
+    }
+
+    std::vector<string> ports;
+
+    SrsConfDirective* conf = get_rtmps();
+    if (!conf) {
+        return ports;
+    }
+
+    conf = conf->get("listen");
+    if (!conf) {
+        return ports;
+    }
+
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        ports.push_back(conf->args.at(i));
+    }
+
+    return ports;
+}
+
+string SrsConfig::get_rtmps_ssl_key()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.rtmps.key"); // SRS_RTMPS_KEY
+
+    static string DEFAULT = "./conf/server.key";
+
+    SrsConfDirective* conf = get_rtmps();
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("key");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
+}
+
+string SrsConfig::get_rtmps_ssl_cert()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.rtmps.cert"); // SRS_RTMPS_CERT
+
+    static string DEFAULT = "./conf/server.crt";
+
+    SrsConfDirective* conf = get_rtmps();
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("cert");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
 }

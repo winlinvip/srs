@@ -71,16 +71,16 @@ srs_error_t SrsSslClient::handshake(const std::string &host)
 
     // TODO: Setup callback, see SSL_set_ex_data and SSL_set_info_callback
     if ((ssl = SSL_new(ssl_ctx)) == NULL) {
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "SSL_new ssl");
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "SSL_new ssl");
     }
 
     if ((bio_in = BIO_new(BIO_s_mem())) == NULL) {
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_new in");
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_new in");
     }
 
     if ((bio_out = BIO_new(BIO_s_mem())) == NULL) {
         BIO_free(bio_in);
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_new out");
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_new out");
     }
 
     SSL_set_bio(ssl, bio_in, bio_out);
@@ -98,22 +98,22 @@ srs_error_t SrsSslClient::handshake(const std::string &host)
     int r1 = SSL_get_error(ssl, r0);
     ERR_clear_error();
     if (r0 != -1 || r1 != SSL_ERROR_WANT_READ) {
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
     }
 
     uint8_t *data = NULL;
     int size = BIO_get_mem_data(bio_out, &data);
     if (!data || size <= 0) {
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "handshake data=%p, size=%d", data, size);
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake data=%p, size=%d", data, size);
     }
     if ((err = transport->write(data, size, NULL)) != srs_success) {
         return srs_error_wrap(err, "handshake: write data=%p, size=%d", data, size);
     }
     if ((r0 = BIO_reset(bio_out)) != 1) {
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_reset r0=%d", r0);
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
     }
 
-    srs_info("https: ClientHello done");
+    srs_info("tls: ClientHello done");
 
     // Receive ServerHello, Certificate, Server Key Exchange, Server Hello Done
     while (true) {
@@ -125,36 +125,36 @@ srs_error_t SrsSslClient::handshake(const std::string &host)
 
         if ((r0 = BIO_write(bio_in, buf, nn)) <= 0) {
             // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
-            return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_write r0=%d, data=%p, size=%d", r0, buf, nn);
+            return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_write r0=%d, data=%p, size=%d", r0, buf, nn);
         }
 
         r0 = SSL_do_handshake(ssl);
         r1 = SSL_get_error(ssl, r0);
         ERR_clear_error();
         if (r0 != -1 || r1 != SSL_ERROR_WANT_READ) {
-            return srs_error_new(ERROR_HTTPS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
+            return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
         }
 
         if ((size = BIO_get_mem_data(bio_out, &data)) > 0) {
             // OK, reset it for the next write.
             if ((r0 = BIO_reset(bio_in)) != 1) {
-                return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_reset r0=%d", r0);
+                return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
             }
             break;
         }
     }
 
-    srs_info("https: ServerHello done");
+    srs_info("tls: ServerHello done");
 
     // Send Client Key Exchange, Change Cipher Spec, Encrypted Handshake Message
     if ((err = transport->write(data, size, NULL)) != srs_success) {
         return srs_error_wrap(err, "handshake: write data=%p, size=%d", data, size);
     }
     if ((r0 = BIO_reset(bio_out)) != 1) {
-        return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_reset r0=%d", r0);
+        return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
     }
 
-    srs_info("https: Client done");
+    srs_info("tls: Client done");
 
     // Receive New Session Ticket, Change Cipher Spec, Encrypted Handshake Message
     while (true) {
@@ -166,7 +166,7 @@ srs_error_t SrsSslClient::handshake(const std::string &host)
 
         if ((r0 = BIO_write(bio_in, buf, nn)) <= 0) {
             // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
-            return srs_error_new(ERROR_HTTPS_HANDSHAKE, "BIO_write r0=%d, data=%p, size=%d", r0, buf, nn);
+            return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_write r0=%d, data=%p, size=%d", r0, buf, nn);
         }
 
         r0 = SSL_do_handshake(ssl);
@@ -177,11 +177,11 @@ srs_error_t SrsSslClient::handshake(const std::string &host)
         }
 
         if (r0 != -1 || r1 != SSL_ERROR_WANT_READ) {
-            return srs_error_new(ERROR_HTTPS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
+            return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
         }
     }
 
-    srs_info("https: Server done");
+    srs_info("tls: Server done");
 
     return err;
 }
@@ -222,14 +222,14 @@ srs_error_t SrsSslClient::read(void *plaintext, size_t nn_plaintext, ssize_t *nr
             int r0 = BIO_write(bio_in, cipher.get(), nn);
             if (r0 <= 0) {
                 // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
-                return srs_error_new(ERROR_HTTPS_READ, "BIO_write r0=%d, cipher=%p, size=%d", r0, cipher.get(), nn);
+                return srs_error_new(ERROR_TLS_READ, "BIO_write r0=%d, cipher=%p, size=%d", r0, cipher.get(), nn);
             }
             continue;
         }
 
         // Fail for error.
         if (r0 <= 0) {
-            return srs_error_new(ERROR_HTTPS_READ, "SSL_read r0=%d, r1=%d, r2=%d, r3=%d",
+            return srs_error_new(ERROR_TLS_READ, "SSL_read r0=%d, r1=%d, r2=%d, r3=%d",
                                  r0, r1, r2, r3);
         }
     }
@@ -245,7 +245,7 @@ srs_error_t SrsSslClient::write(void *plaintext, size_t nn_plaintext, ssize_t *n
         int r1 = SSL_get_error(ssl, r0);
         ERR_clear_error();
         if (r0 <= 0) {
-            return srs_error_new(ERROR_HTTPS_WRITE, "https: write data=%p, size=%d, r0=%d, r1=%d", p, left, r0, r1);
+            return srs_error_new(ERROR_TLS_WRITE, "tls: write data=%p, size=%d, r0=%d, r1=%d", p, left, r0, r1);
         }
 
         // Move p to the next writing position.
@@ -257,10 +257,10 @@ srs_error_t SrsSslClient::write(void *plaintext, size_t nn_plaintext, ssize_t *n
         uint8_t *data = NULL;
         int size = BIO_get_mem_data(bio_out, &data);
         if ((err = transport->write(data, size, NULL)) != srs_success) {
-            return srs_error_wrap(err, "https: write data=%p, size=%d", data, size);
+            return srs_error_wrap(err, "tls: write data=%p, size=%d", data, size);
         }
         if ((r0 = BIO_reset(bio_out)) != 1) {
-            return srs_error_new(ERROR_HTTPS_WRITE, "BIO_reset r0=%d", r0);
+            return srs_error_new(ERROR_TLS_WRITE, "BIO_reset r0=%d", r0);
         }
     }
 

@@ -92,21 +92,91 @@ SrsClientInfo::~SrsClientInfo()
     srs_freep(res);
 }
 
-SrsRtmpConn::SrsRtmpConn(SrsServer *svr, srs_netfd_t c, string cip, int cport, bool rtmps)
+SrsRtmpTransport::SrsRtmpTransport(srs_netfd_t c, bool rtmps)
+{
+    stfd_ = c;
+    skt_ = new SrsTcpConnection(c);
+    rtmps_ = rtmps;
+    ssl_ = NULL;
+
+    if (rtmps_) {
+        ssl_ = new SrsSslConnection(skt_);
+    }
+}
+
+SrsRtmpTransport::~SrsRtmpTransport()
+{
+    srs_freep(ssl_);
+    srs_freep(skt_);
+}
+
+srs_netfd_t SrsRtmpTransport::fd()
+{
+    return stfd_;
+}
+
+ISrsProtocolReadWriter* SrsRtmpTransport::io()
+{
+    if (rtmps_) {
+        return ssl_;
+    }
+    return skt_;
+}
+
+srs_error_t SrsRtmpTransport::handshake()
+{
+    if (!rtmps_) {
+        return srs_success;
+    }
+
+    string crt_file = _srs_config->get_rtmps_ssl_cert();
+    string key_file = _srs_config->get_rtmps_ssl_key();
+    srs_error_t err = ssl_->handshake(key_file, crt_file);
+    if (err != srs_success) {
+        return srs_error_wrap(err, "ssl handshake");
+    }
+
+    return srs_success;
+}
+
+bool SrsRtmpTransport::is_rtmps()
+{
+    return rtmps_;
+}
+
+const char* SrsRtmpTransport::transport_type()
+{
+    return rtmps_ ? "ssl" : "plaintext";
+}
+
+srs_error_t SrsRtmpTransport::set_socket_buffer(srs_utime_t buffer_v)
+{
+    return skt_->set_socket_buffer(buffer_v);
+}
+
+srs_error_t SrsRtmpTransport::set_tcp_nodelay(bool v)
+{
+    return skt_->set_tcp_nodelay(v);
+}
+
+int64_t SrsRtmpTransport::get_recv_bytes()
+{
+    return skt_->get_recv_bytes();
+}
+
+int64_t SrsRtmpTransport::get_send_bytes()
+{
+    return skt_->get_send_bytes();
+}
+
+SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip, int cport)
 {
     // Create a identify for this client.
     _srs_context->set_id(_srs_context->generate_id());
 
     server = svr;
 
-    rtmps_ = rtmps;
-    ssl_ = NULL;
-
-    stfd = c;
-    skt = new SrsTcpConnection(c);
-    if (rtmps_) {
-        ssl_ = new SrsSslConnection(skt);
-    }
+    transport_ = transport;
     manager = svr;
     ip = cip;
     port = cport;
@@ -119,15 +189,11 @@ SrsRtmpConn::SrsRtmpConn(SrsServer *svr, srs_netfd_t c, string cip, int cport, b
     trd = new SrsSTCoroutine("rtmp", this, _srs_context->get_id());
 
     kbps = new SrsNetworkKbps();
-    kbps->set_io(skt, skt);
+    kbps->set_io(transport_->io(), transport_->io());
     delta_ = new SrsNetworkDelta();
-    delta_->set_io(skt, skt);
+    delta_->set_io(transport_->io(), transport_->io());
 
-    if (rtmps_) {
-        rtmp = new SrsRtmpServer(ssl_);
-    } else {
-        rtmp = new SrsRtmpServer(skt);
-    }
+    rtmp = new SrsRtmpServer(transport_->io());
     refer = new SrsRefer();
     security = new SrsSecurity();
     duration = 0;
@@ -159,8 +225,7 @@ SrsRtmpConn::~SrsRtmpConn()
 
     srs_freep(kbps);
     srs_freep(delta_);
-    srs_freep(ssl_);
-    srs_freep(skt);
+    srs_freep(transport_);
 
     srs_freep(info);
     srs_freep(rtmp);
@@ -197,18 +262,14 @@ srs_error_t SrsRtmpConn::do_cycle()
 #endif
 
 #ifdef SRS_APM
-    srs_trace("%s client ip=%s:%d, fd=%d, trace=%s, span=%s", (rtmps_ ? "RTMPS" : "RTMP"), ip.c_str(), port, srs_netfd_fileno(stfd),
+    srs_trace("RTMP client transport=%s, ip=%s:%d, fd=%d, trace=%s, span=%s", transport_->transport_type(), ip.c_str(), port, srs_netfd_fileno(transport_->fd()),
               span_main_->format_trace_id(), span_main_->format_span_id());
 #else
-    srs_trace("%s client ip=%s:%d, fd=%d", (rtmps_ ? "RTMPS" : "RTMP"), ip.c_str(), port, srs_netfd_fileno(stfd));
+    srs_trace("RTMP client transport=%s, ip=%s:%d, fd=%d", transport_->transport_type(), ip.c_str(), port, srs_netfd_fileno(transport_->fd()));
 #endif
 
-    if (rtmps_) {
-        string crt_file = _srs_config->get_rtmps_ssl_cert();
-        string key_file = _srs_config->get_rtmps_ssl_key();
-        if ((err = ssl_->handshake(key_file, crt_file)) != srs_success) {
-            return srs_error_wrap(err, "ssl handshake");
-        }
+    if ((err = transport_->handshake()) != srs_success) {
+        return srs_error_wrap(err, "transport handshake");
     }
 
     rtmp->set_recv_timeout(SRS_CONSTS_RTMP_TIMEOUT);
@@ -340,7 +401,7 @@ srs_error_t SrsRtmpConn::on_reload_vhost_play(string vhost)
 
     mw_msgs = _srs_config->get_mw_msgs(req->vhost, realtime);
     mw_sleep = _srs_config->get_mw_sleep(req->vhost);
-    skt->set_socket_buffer(mw_sleep);
+    transport_->set_socket_buffer(mw_sleep);
 
     return err;
 }
@@ -378,7 +439,7 @@ srs_error_t SrsRtmpConn::on_reload_vhost_realtime(string vhost)
 
     mw_msgs = _srs_config->get_mw_msgs(req->vhost, realtime);
     mw_sleep = _srs_config->get_mw_sleep(req->vhost);
-    skt->set_socket_buffer(mw_sleep);
+    transport_->set_socket_buffer(mw_sleep);
 
     return err;
 }
@@ -434,7 +495,7 @@ srs_error_t SrsRtmpConn::service_cycle()
     }
 
     // get the ip which client connected.
-    std::string local_ip = srs_get_local_ip(srs_netfd_fileno(stfd));
+    std::string local_ip = srs_get_local_ip(srs_netfd_fileno(transport_->fd()));
 
     // set chunk size to larger.
     // set the chunk size before any larger response greater than 128,
@@ -826,7 +887,7 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
     // when mw_sleep changed, resize the socket send buffer.
     mw_msgs = _srs_config->get_mw_msgs(req->vhost, realtime);
     mw_sleep = _srs_config->get_mw_sleep(req->vhost);
-    skt->set_socket_buffer(mw_sleep);
+    transport_->set_socket_buffer(mw_sleep);
     // initialize the send_min_interval
     send_min_interval = _srs_config->get_send_min_interval(req->vhost);
 
@@ -966,7 +1027,7 @@ srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsLiveSource> source)
     if ((err = acquire_err) == srs_success) {
         // use isolate thread to recv,
         // @see: https://github.com/ossrs/srs/issues/237
-        SrsPublishRecvThread rtrd(rtmp, req, srs_netfd_fileno(stfd), 0, this, source, _srs_context->get_id());
+        SrsPublishRecvThread rtrd(rtmp, req, srs_netfd_fileno(transport_->fd()), 0, this, source, _srs_context->get_id());
         err = do_publishing(source, &rtrd);
         rtrd.stop();
     }
@@ -1345,7 +1406,7 @@ void SrsRtmpConn::set_sock_options()
     if (nvalue != tcp_nodelay) {
         tcp_nodelay = nvalue;
 
-        srs_error_t err = skt->set_tcp_nodelay(tcp_nodelay);
+        srs_error_t err = transport_->set_tcp_nodelay(tcp_nodelay);
         if (err != srs_success) {
             srs_warn("ignore err %s", srs_error_desc(err).c_str());
             srs_freep(err);
@@ -1482,7 +1543,7 @@ void SrsRtmpConn::http_hooks_on_close()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_close(url, req, skt->get_send_bytes(), skt->get_recv_bytes());
+        SrsHttpHooks::on_close(url, req, transport_->get_send_bytes(), transport_->get_recv_bytes());
     }
 }
 

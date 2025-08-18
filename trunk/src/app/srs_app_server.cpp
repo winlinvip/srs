@@ -1304,9 +1304,11 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     // Create resource by normal listeners.
     if (!resource) {
         if (listener == rtmp_listener_) {
-            resource = new SrsRtmpConn(this, stfd2, ip, port, false);
+            SrsRtmpTransport *transport = new SrsRtmpTransport(stfd2, false);
+            resource = new SrsRtmpConn(this, transport, ip, port);
         } else if (listener == rtmps_listener_) {
-            resource = new SrsRtmpConn(this, stfd2, ip, port, true);
+            SrsRtmpTransport *transport = new SrsRtmpTransport(stfd2, true);
+            resource = new SrsRtmpConn(this, transport, ip, port);
         } else if (listener == api_listener_ || listener == apis_listener_) {
             string key = listener == apis_listener_ ? _srs_config->get_https_api_ssl_key() : "";
             string cert = listener == apis_listener_ ? _srs_config->get_https_api_ssl_cert() : "";

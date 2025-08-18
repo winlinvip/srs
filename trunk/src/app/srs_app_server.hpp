@@ -41,6 +41,7 @@ class SrsMultipleTcpListeners;
 class SrsHttpFlvListener;
 class SrsUdpCasterListener;
 class SrsGbListener;
+class SrsRtmpTransport;
 
 // Convert signal to io,
 // @see: st-1.9/docs/notes.html

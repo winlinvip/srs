@@ -86,11 +86,11 @@ public:
     // Get the file descriptor for logging and identification
     virtual srs_netfd_t fd();
     // Get the appropriate I/O interface (TCP)
-    virtual ISrsProtocolReadWriter* io();
+    virtual ISrsProtocolReadWriter *io();
     // Perform handshake (no-op for plain RTMP)
     virtual srs_error_t handshake();
     // Get transport type description for logging
-    virtual const char* transport_type();
+    virtual const char *transport_type();
     // Set socket buffer size
     virtual srs_error_t set_socket_buffer(srs_utime_t buffer_v);
     // Set TCP nodelay option
@@ -104,7 +104,7 @@ public:
 class SrsRtmpsTransport : public SrsRtmpTransport
 {
 private:
-    SrsSslConnection* ssl_;
+    SrsSslConnection *ssl_;
 
 public:
     SrsRtmpsTransport(srs_netfd_t c);
@@ -112,11 +112,11 @@ public:
 
 public:
     // Get the appropriate I/O interface (SSL)
-    virtual ISrsProtocolReadWriter* io();
+    virtual ISrsProtocolReadWriter *io();
     // Perform SSL handshake
     virtual srs_error_t handshake();
     // Get transport type description for logging
-    virtual const char* transport_type();
+    virtual const char *transport_type();
 };
 
 class SrsRtmpConn : public ISrsConnection, public ISrsStartable, public ISrsReloadHandler, public ISrsCoroutineHandler, public ISrsExpire

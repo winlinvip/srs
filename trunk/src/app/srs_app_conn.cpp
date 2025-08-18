@@ -876,10 +876,10 @@ srs_error_t SrsSslConnection::read_fully(void *buf, size_t size, ssize_t *nread)
 {
     srs_error_t err = srs_success;
     ssize_t nb = 0;
-    void* p = buf;
+    void *p = buf;
     while (nb < size) {
         ssize_t once_nb = 0;
-        if ((err = read((char*)p + nb, size - nb, &once_nb)) != srs_success) {
+        if ((err = read((char *)p + nb, size - nb, &once_nb)) != srs_success) {
             return srs_error_wrap(err, "tls: read");
         }
         nb += once_nb;

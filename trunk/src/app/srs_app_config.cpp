@@ -9009,9 +9009,9 @@ SrsConfDirective *SrsConfig::get_stats_disk_device()
     return conf;
 }
 
-SrsConfDirective* SrsConfig::get_rtmps()
+SrsConfDirective *SrsConfig::get_rtmps()
 {
-    SrsConfDirective* conf = root->get("rtmps");
+    SrsConfDirective *conf = root->get("rtmps");
     if (!conf) {
         return NULL;
     }
@@ -9025,7 +9025,7 @@ bool SrsConfig::get_rtmps_enabled()
 
     static bool DEFAULT = false;
 
-    SrsConfDirective* conf = get_rtmps();
+    SrsConfDirective *conf = get_rtmps();
     if (!conf) {
         return DEFAULT;
     }
@@ -9046,7 +9046,7 @@ vector<string> SrsConfig::get_rtmps_listen()
 
     std::vector<string> ports;
 
-    SrsConfDirective* conf = get_rtmps();
+    SrsConfDirective *conf = get_rtmps();
     if (!conf) {
         return ports;
     }
@@ -9069,7 +9069,7 @@ string SrsConfig::get_rtmps_ssl_key()
 
     static string DEFAULT = "./conf/server.key";
 
-    SrsConfDirective* conf = get_rtmps();
+    SrsConfDirective *conf = get_rtmps();
     if (!conf) {
         return DEFAULT;
     }
@@ -9088,7 +9088,7 @@ string SrsConfig::get_rtmps_ssl_cert()
 
     static string DEFAULT = "./conf/server.crt";
 
-    SrsConfDirective* conf = get_rtmps();
+    SrsConfDirective *conf = get_rtmps();
     if (!conf) {
         return DEFAULT;
     }

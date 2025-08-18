@@ -1129,9 +1129,10 @@ public:
     virtual std::string get_https_stream_listen();
     virtual std::string get_https_stream_ssl_key();
     virtual std::string get_https_stream_ssl_cert();
-// rtmps section
+    // rtmps section
 private:
-    SrsConfDirective* get_rtmps();
+    SrsConfDirective *get_rtmps();
+
 public:
     virtual bool get_rtmps_enabled();
     virtual std::vector<std::string> get_rtmps_listen();

@@ -108,7 +108,7 @@ srs_netfd_t SrsRtmpTransport::fd()
     return stfd_;
 }
 
-ISrsProtocolReadWriter* SrsRtmpTransport::io()
+ISrsProtocolReadWriter *SrsRtmpTransport::io()
 {
     return skt_;
 }
@@ -118,7 +118,7 @@ srs_error_t SrsRtmpTransport::handshake()
     return srs_success;
 }
 
-const char* SrsRtmpTransport::transport_type()
+const char *SrsRtmpTransport::transport_type()
 {
     return "plaintext";
 }
@@ -153,7 +153,7 @@ SrsRtmpsTransport::~SrsRtmpsTransport()
     srs_freep(ssl_);
 }
 
-ISrsProtocolReadWriter* SrsRtmpsTransport::io()
+ISrsProtocolReadWriter *SrsRtmpsTransport::io()
 {
     return ssl_;
 }
@@ -170,7 +170,7 @@ srs_error_t SrsRtmpsTransport::handshake()
     return srs_success;
 }
 
-const char* SrsRtmpsTransport::transport_type()
+const char *SrsRtmpsTransport::transport_type()
 {
     return "ssl";
 }

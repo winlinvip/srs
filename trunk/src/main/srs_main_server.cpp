@@ -31,6 +31,7 @@ using namespace std;
 #include <unistd.h>
 using namespace std;
 
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_hybrid.hpp>
 #include <srs_app_log.hpp>

@@ -9,6 +9,7 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_conn.hpp>
 #include <srs_app_log.hpp>

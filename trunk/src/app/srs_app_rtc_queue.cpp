@@ -12,6 +12,7 @@
 
 using namespace std;
 
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_threads.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_error.hpp>

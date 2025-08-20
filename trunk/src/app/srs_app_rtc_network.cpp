@@ -708,7 +708,7 @@ void SrsRtcTcpNetwork::dispose()
 
 #define SRS_RTC_TCP_PACKET_MAX 1500
 
-SrsRtcTcpConn::SrsRtcTcpConn()
+void SrsRtcTcpConn::setup()
 {
     wrapper_ = NULL;
     owner_coroutine_ = NULL;
@@ -720,8 +720,15 @@ SrsRtcTcpConn::SrsRtcTcpConn()
     skt_ = NULL;
 }
 
-SrsRtcTcpConn::SrsRtcTcpConn(ISrsProtocolReadWriter *skt, std::string cip, int port) : SrsRtcTcpConn()
+SrsRtcTcpConn::SrsRtcTcpConn()
 {
+    setup();
+}
+
+SrsRtcTcpConn::SrsRtcTcpConn(ISrsProtocolReadWriter *skt, std::string cip, int port)
+{
+    setup();
+    
     ip_ = cip;
     port_ = port;
     skt_ = skt;

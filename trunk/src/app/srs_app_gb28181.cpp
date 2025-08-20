@@ -1963,8 +1963,10 @@ srs_error_t SrsGbMuxer::write_h265_vps_sps_pps(uint32_t dts, uint32_t pts)
         return err;
     }
 
+    std::vector<std::string> h265_pps;
+    h265_pps.push_back(h265_pps_);
+
     std::string sh;
-    std::vector<string> h265_pps = {h265_pps_};
     if ((err = hevc_->mux_sequence_header(h265_vps_, h265_sps_, h265_pps, sh)) != srs_success) {
         return srs_error_wrap(err, "hevc mux sequence header");
     }

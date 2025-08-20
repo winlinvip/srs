@@ -273,6 +273,9 @@ private:
     ISrsContextIdSetter *owner_cid_;
     SrsContextId cid_;
 
+private:
+    void setup();
+
 public:
     SrsRtcTcpConn();
     SrsRtcTcpConn(ISrsProtocolReadWriter *skt, std::string cip, int port);

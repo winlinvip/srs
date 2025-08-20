@@ -10,7 +10,7 @@ SRS_RTSP=NO
 # SRS_H265 is always enabled, no longer configurable
 SRS_H265=RESERVED
 SRS_GB28181=NO
-SRS_CXX11=YES
+SRS_CXX11=NO
 SRS_CXX14=NO
 SRS_BACKTRACE=YES
 SRS_NGINX=NO
@@ -187,7 +187,6 @@ Features:
   --rtc=on|off              Whether build the WebRTC. Default: $(value2switch $SRS_RTC)
   --rtsp=on|off             Whether build the RTSP (requires RTC). Default: $(value2switch $SRS_RTSP)
   --gb28181=on|off          Whether build the GB28181. Default: $(value2switch $SRS_GB28181)
-  --cxx11=on|off            Whether enable the C++11. Default: $(value2switch $SRS_CXX11)
   --cxx14=on|off            Whether enable the C++14. Default: $(value2switch $SRS_CXX14)
   --ffmpeg-fit=on|off       Whether enable the FFmpeg fit(source code). Default: $(value2switch $SRS_FFMPEG_FIT)
   --ffmpeg-opus=on|off      Whether enable the FFmpeg native opus codec. Default: $(value2switch $SRS_FFMPEG_OPUS)
@@ -257,7 +256,8 @@ Experts:
   --generic-linux=on|off    Whether run as generic linux, if not CentOS or Ubuntu. Default: $(value2switch $SRS_GENERIC_LINUX)
 
 Deprecated:
-  --single-thread=on|off    Whether force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
+  --single-thread=on        Always force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
+  --cxx11=off               Always disable C++11, force C++98 compatibility. Default: $(value2switch $SRS_CXX11)
   --cross-build             Enable cross-build, please set bellow Toolchain also. Default: $(value2switch $SRS_CROSS_BUILD)
   --hds=on|off              Whether build the hds streaming, mux RTMP to F4M/F4V files. Default: $(value2switch $SRS_HDS)
   --osx                     Enable build for OSX/Darwin AppleOS. Deprecated for automatically detecting the OS.
@@ -600,6 +600,12 @@ function apply_auto_options() {
     if [[ $SRS_SINGLE_THREAD != YES ]]; then
         echo "Warning: Multi-threading support has been removed. Forcing single thread mode."
         SRS_SINGLE_THREAD=YES
+    fi
+
+    # Force disable C++11 always - C++98 compatibility is required
+    if [[ $SRS_CXX11 != NO ]]; then
+        echo "Warning: C++11 support has been disabled. Forcing C++98 compatibility mode."
+        SRS_CXX11=NO
     fi
 
     # parse the jobs for make

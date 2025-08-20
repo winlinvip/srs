@@ -65,21 +65,21 @@ public:
 
 private:
     // Copy the unique ptr.
-    SrsUniquePtr(const SrsUniquePtr<T> &) = delete;
+    SrsUniquePtr(const SrsUniquePtr<T> &);
     // The assign operator.
-    SrsUniquePtr<T> &operator=(const SrsUniquePtr<T> &) = delete;
+    SrsUniquePtr<T> &operator=(const SrsUniquePtr<T> &);
 
 private:
     // Overload the * operator.
-    T &operator*() = delete;
+    T &operator*();
     // Overload the bool operator.
-    operator bool() const = delete;
+    operator bool() const;
 #if __cplusplus >= 201103L // C++11
 private:
     // The move constructor.
-    SrsUniquePtr(SrsUniquePtr<T> &&) = delete;
+    SrsUniquePtr(SrsUniquePtr<T> &&);
     // The move assign operator.
-    SrsUniquePtr<T> &operator=(SrsUniquePtr<T> &&) = delete;
+    SrsUniquePtr<T> &operator=(SrsUniquePtr<T> &&);
 #endif
 };
 
@@ -127,21 +127,21 @@ public:
 
 private:
     // Copy the unique ptr.
-    SrsUniquePtr(const SrsUniquePtr<T> &) = delete;
+    SrsUniquePtr(const SrsUniquePtr<T> &);
     // The assign operator.
-    SrsUniquePtr<T> &operator=(const SrsUniquePtr<T> &) = delete;
+    SrsUniquePtr<T> &operator=(const SrsUniquePtr<T> &);
 
 private:
     // Overload the * operator.
-    T &operator*() = delete;
+    T &operator*();
     // Overload the bool operator.
-    operator bool() const = delete;
+    operator bool() const;
 #if __cplusplus >= 201103L // C++11
 private:
     // The move constructor.
-    SrsUniquePtr(SrsUniquePtr<T> &&) = delete;
+    SrsUniquePtr(SrsUniquePtr<T> &&);
     // The move assign operator.
-    SrsUniquePtr<T> &operator=(SrsUniquePtr<T> &&) = delete;
+    SrsUniquePtr<T> &operator=(SrsUniquePtr<T> &&);
 #endif
 };
 

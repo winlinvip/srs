@@ -614,7 +614,7 @@ srs_error_t SrsMpegtsSrtConn::http_hooks_on_connect()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_connect(url, req_)) != srs_success) {
+        if ((err = _srs_hooks->on_connect(url, req_)) != srs_success) {
             return srs_error_wrap(err, "srt on_connect %s", url.c_str());
         }
     }
@@ -645,7 +645,7 @@ void SrsMpegtsSrtConn::http_hooks_on_close()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_close(url, req_, srt_conn_->get_send_bytes(), srt_conn_->get_recv_bytes());
+        _srs_hooks->on_close(url, req_, srt_conn_->get_send_bytes(), srt_conn_->get_recv_bytes());
     }
 }
 
@@ -674,7 +674,7 @@ srs_error_t SrsMpegtsSrtConn::http_hooks_on_publish()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_publish(url, req_)) != srs_success) {
+        if ((err = _srs_hooks->on_publish(url, req_)) != srs_success) {
             return srs_error_wrap(err, "srt on_publish %s", url.c_str());
         }
     }
@@ -705,7 +705,7 @@ void SrsMpegtsSrtConn::http_hooks_on_unpublish()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_unpublish(url, req_);
+        _srs_hooks->on_unpublish(url, req_);
     }
 }
 
@@ -734,7 +734,7 @@ srs_error_t SrsMpegtsSrtConn::http_hooks_on_play()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_play(url, req_)) != srs_success) {
+        if ((err = _srs_hooks->on_play(url, req_)) != srs_success) {
             return srs_error_wrap(err, "srt on_play %s", url.c_str());
         }
     }
@@ -765,7 +765,7 @@ void SrsMpegtsSrtConn::http_hooks_on_stop()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_stop(url, req_);
+        _srs_hooks->on_stop(url, req_);
     }
 
     return;

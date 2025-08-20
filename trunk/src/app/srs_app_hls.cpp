@@ -296,7 +296,7 @@ srs_error_t SrsDvrAsyncCallOnHls::call()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_hls(cid, url, req, path, ts_url, m3u8, m3u8_url, seq_no, duration)) != srs_success) {
+        if ((err = _srs_hooks->on_hls(cid, url, req, path, ts_url, m3u8, m3u8_url, seq_no, duration)) != srs_success) {
             return srs_error_wrap(err, "callback on_hls %s", url.c_str());
         }
     }
@@ -347,7 +347,7 @@ srs_error_t SrsDvrAsyncCallOnHlsNotify::call()
     int nb_notify = _srs_config->get_vhost_hls_nb_notify(req->vhost);
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_hls_notify(cid, url, req, ts_url, nb_notify)) != srs_success) {
+        if ((err = _srs_hooks->on_hls_notify(cid, url, req, ts_url, nb_notify)) != srs_success) {
             return srs_error_wrap(err, "callback on_hls_notify %s", url.c_str());
         }
     }

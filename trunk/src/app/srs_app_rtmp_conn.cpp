@@ -807,7 +807,7 @@ srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
             string coworker = coworkers.at(i);
 
             string url = "http://" + coworker + "/api/v1/clusters?" + "vhost=" + req->vhost + "&ip=" + req->host + "&app=" + req->app + "&stream=" + req->stream + "&coworker=" + coworker;
-            if ((err = SrsHttpHooks::discover_co_workers(url, host, port)) != srs_success) {
+            if ((err = _srs_hooks->discover_co_workers(url, host, port)) != srs_success) {
                 // If failed to discovery stream in this coworker, we should request the next one util the last.
                 // @see https://github.com/ossrs/srs/issues/1223
                 if (i < (int)coworkers.size() - 1) {
@@ -1516,7 +1516,7 @@ srs_error_t SrsRtmpConn::http_hooks_on_connect()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_connect(url, req)) != srs_success) {
+        if ((err = _srs_hooks->on_connect(url, req)) != srs_success) {
             return srs_error_wrap(err, "rtmp on_connect %s", url.c_str());
         }
     }
@@ -1549,7 +1549,7 @@ void SrsRtmpConn::http_hooks_on_close()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_close(url, req, transport_->get_send_bytes(), transport_->get_recv_bytes());
+        _srs_hooks->on_close(url, req, transport_->get_send_bytes(), transport_->get_recv_bytes());
     }
 }
 
@@ -1580,7 +1580,7 @@ srs_error_t SrsRtmpConn::http_hooks_on_publish()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_publish(url, req)) != srs_success) {
+        if ((err = _srs_hooks->on_publish(url, req)) != srs_success) {
             return srs_error_wrap(err, "rtmp on_publish %s", url.c_str());
         }
     }
@@ -1613,7 +1613,7 @@ void SrsRtmpConn::http_hooks_on_unpublish()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_unpublish(url, req);
+        _srs_hooks->on_unpublish(url, req);
     }
 }
 
@@ -1644,7 +1644,7 @@ srs_error_t SrsRtmpConn::http_hooks_on_play()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_play(url, req)) != srs_success) {
+        if ((err = _srs_hooks->on_play(url, req)) != srs_success) {
             return srs_error_wrap(err, "rtmp on_play %s", url.c_str());
         }
     }
@@ -1677,7 +1677,7 @@ void SrsRtmpConn::http_hooks_on_stop()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_stop(url, req);
+        _srs_hooks->on_stop(url, req);
     }
 
     return;

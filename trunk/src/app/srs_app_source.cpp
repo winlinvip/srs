@@ -1514,7 +1514,7 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
 
     // get urls on forward backend
     std::vector<std::string> urls;
-    if ((err = SrsHttpHooks::on_forward_backend(backend_url, req_, urls)) != srs_success) {
+    if ((err = _srs_hooks->on_forward_backend(backend_url, req_, urls)) != srs_success) {
         return srs_error_wrap(err, "get forward backend failed, backend=%s", backend_url.c_str());
     }
 

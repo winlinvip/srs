@@ -551,7 +551,7 @@ srs_error_t SrsDvrAsyncCallOnDvr::call()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_dvr(cid, url, req, path)) != srs_success) {
+        if ((err = _srs_hooks->on_dvr(cid, url, req, path)) != srs_success) {
             return srs_error_wrap(err, "callback on_dvr %s", url.c_str());
         }
     }

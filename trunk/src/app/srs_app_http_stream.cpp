@@ -906,7 +906,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = SrsHttpHooks::on_play(url, nreq.get())) != srs_success) {
+        if ((err = _srs_hooks->on_play(url, nreq.get())) != srs_success) {
             return srs_error_wrap(err, "http on_play %s", url.c_str());
         }
     }
@@ -942,7 +942,7 @@ void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        SrsHttpHooks::on_stop(url, nreq.get());
+        _srs_hooks->on_stop(url, nreq.get());
     }
 
     return;

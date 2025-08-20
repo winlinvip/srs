@@ -9,6 +9,7 @@
 #include <srs_app_async_call.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_conn.hpp>
+#include <srs_app_http_hooks.hpp>
 #include <srs_app_hybrid.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_pithy_print.hpp>
@@ -323,6 +324,7 @@ srs_error_t srs_global_initialize()
     _srs_sources = new SrsLiveSourceManager();
     _srs_stages = new SrsStageManager();
     _srs_circuit_breaker = new SrsCircuitBreaker();
+    _srs_hooks = new SrsHttpHooks();
 
 #ifdef SRS_SRT
     _srs_srt_sources = new SrsSrtSourceManager();

@@ -11,11 +11,44 @@
 
 #include <srs_app_hourglass.hpp>
 
-// Protect server in high load.
-class SrsCircuitBreaker : public ISrsFastTimer
+// Interface for circuit breaker functionality to protect server in high load conditions.
+// The circuit breaker monitors CPU usage and enables different levels of protection:
+// - High water level: Disables some unnecessary features to reduce CPU load
+// - Critical water level: Disables more features to high-level protections
+// - Dying water level: Disables even normal features should be disabled to prevent server crash
+class ISrsCircuitBreaker
+{
+public:
+    ISrsCircuitBreaker();
+    virtual ~ISrsCircuitBreaker();
+
+public:
+    // Initialize the circuit breaker with configuration settings.
+    // @return srs_success on success, error code otherwise.
+    virtual srs_error_t initialize() = 0;
+
+public:
+    // Check if server is in high water level state.
+    // When true, some unnecessary features should be disabled to reduce CPU load.
+    // @return true if high water level is active, false otherwise.
+    virtual bool hybrid_high_water_level() = 0;
+
+    // Check if server is in critical water level state.
+    // When true, more features should be disabled to reduce CPU load.
+    // This includes all protections from high water level.
+    // @return true if critical water level is active, false otherwise.
+    virtual bool hybrid_critical_water_level() = 0;
+
+    // Check if server is in dying water level state.
+    // When true, even normal features should be disabled to prevent server crash.
+    // This is the most severe protection level.
+    // @return true if dying water level is active, false otherwise.
+    virtual bool hybrid_dying_water_level() = 0;
+};
+
+class SrsCircuitBreaker : public ISrsCircuitBreaker, public ISrsFastTimer
 {
 private:
-    // The config for high/critical water level.
     bool enabled_;
     int high_threshold_;
     int high_pulse_;
@@ -25,8 +58,6 @@ private:
     int dying_pulse_;
 
 private:
-    // Reset the water-level when CPU is low for N times.
-    // @note To avoid the CPU change rapidly.
     int hybrid_high_water_level_;
     int hybrid_critical_water_level_;
     int hybrid_dying_water_level_;
@@ -39,15 +70,14 @@ public:
     srs_error_t initialize();
 
 public:
-    // Whether hybrid server water-level is high.
     bool hybrid_high_water_level();
     bool hybrid_critical_water_level();
     bool hybrid_dying_water_level();
-    // interface ISrsFastTimer
+
 private:
     srs_error_t on_timer(srs_utime_t interval);
 };
 
-extern SrsCircuitBreaker *_srs_circuit_breaker;
+extern ISrsCircuitBreaker *_srs_circuit_breaker;
 
 #endif

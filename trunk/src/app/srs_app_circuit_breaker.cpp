@@ -22,6 +22,14 @@ extern SrsPps *_srs_pps_snack4;
 
 using namespace std;
 
+ISrsCircuitBreaker::ISrsCircuitBreaker()
+{
+}
+
+ISrsCircuitBreaker::~ISrsCircuitBreaker()
+{
+}
+
 SrsCircuitBreaker::SrsCircuitBreaker()
 {
     enabled_ = false;
@@ -138,4 +146,4 @@ srs_error_t SrsCircuitBreaker::on_timer(srs_utime_t interval)
     return err;
 }
 
-SrsCircuitBreaker *_srs_circuit_breaker = NULL;
+ISrsCircuitBreaker *_srs_circuit_breaker = NULL;

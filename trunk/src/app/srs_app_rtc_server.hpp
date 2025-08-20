@@ -124,14 +124,14 @@ private:
 };
 
 // The RTC server adapter.
-class RtcServerAdapter : public ISrsHybridServer
+class SrsRtcServerAdapter : public ISrsHybridServer
 {
 private:
     SrsRtcServer *rtc;
 
 public:
-    RtcServerAdapter();
-    virtual ~RtcServerAdapter();
+    SrsRtcServerAdapter();
+    virtual ~SrsRtcServerAdapter();
 
 public:
     virtual srs_error_t initialize();

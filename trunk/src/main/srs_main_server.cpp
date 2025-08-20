@@ -468,7 +468,7 @@ srs_error_t run_hybrid_server()
 #endif
 
 #ifdef SRS_RTC
-    _srs_hybrid->register_server(new RtcServerAdapter());
+    _srs_hybrid->register_server(new SrsRtcServerAdapter());
 #endif
 
     // Do some system initialize.

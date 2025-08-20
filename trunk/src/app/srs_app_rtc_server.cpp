@@ -742,17 +742,17 @@ srs_error_t SrsRtcServer::on_timer(srs_utime_t interval)
     return err;
 }
 
-RtcServerAdapter::RtcServerAdapter()
+SrsRtcServerAdapter::SrsRtcServerAdapter()
 {
     rtc = new SrsRtcServer();
 }
 
-RtcServerAdapter::~RtcServerAdapter()
+SrsRtcServerAdapter::~SrsRtcServerAdapter()
 {
     srs_freep(rtc);
 }
 
-srs_error_t RtcServerAdapter::initialize()
+srs_error_t SrsRtcServerAdapter::initialize()
 {
     srs_error_t err = srs_success;
 
@@ -767,7 +767,7 @@ srs_error_t RtcServerAdapter::initialize()
     return err;
 }
 
-srs_error_t RtcServerAdapter::run(SrsWaitGroup *wg)
+srs_error_t SrsRtcServerAdapter::run(SrsWaitGroup *wg)
 {
     srs_error_t err = srs_success;
 
@@ -786,7 +786,7 @@ srs_error_t RtcServerAdapter::run(SrsWaitGroup *wg)
     return err;
 }
 
-void RtcServerAdapter::stop()
+void SrsRtcServerAdapter::stop()
 {
 }
 

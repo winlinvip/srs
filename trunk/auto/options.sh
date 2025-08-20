@@ -243,7 +243,6 @@ Experts:
   --clean=on|off            Whether do 'make clean' when configure. Default: $(value2switch $SRS_CLEAN)
   --simulator=on|off        RTC: Whether enable network simulator. Default: $(value2switch $SRS_SIMULATOR)
   --generate-objs=on|off    RTC: Whether generate objs and quit. Default: $(value2switch $SRS_GENERATE_OBJS)
-  --single-thread=on|off    Whether force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
   --signal-api=on|off       Whether support sending signal by HTTP API. Default: $(value2switch $SRS_SIGNAL_API)
   --build-tag=<TAG>         Set the build object directory suffix.
   --debug=on|off            Whether enable the debug code, may hurt performance. Default: $(value2switch $SRS_DEBUG)
@@ -258,6 +257,7 @@ Experts:
   --generic-linux=on|off    Whether run as generic linux, if not CentOS or Ubuntu. Default: $(value2switch $SRS_GENERIC_LINUX)
 
 Deprecated:
+  --single-thread=on|off    Whether force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
   --cross-build             Enable cross-build, please set bellow Toolchain also. Default: $(value2switch $SRS_CROSS_BUILD)
   --hds=on|off              Whether build the hds streaming, mux RTMP to F4M/F4V files. Default: $(value2switch $SRS_HDS)
   --osx                     Enable build for OSX/Darwin AppleOS. Deprecated for automatically detecting the OS.
@@ -595,10 +595,10 @@ function apply_auto_options() {
         echo "Disable SRT for cygwin64"
         SRS_SRT=NO
     fi
-    # TODO: FIXME: Cygwin: ST stuck when working in multiple threads mode.
-    # See https://github.com/ossrs/srs/issues/3253
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SINGLE_THREAD != YES ]]; then
-        echo "Force single thread for cygwin64"
+
+    # Force single thread mode always - multi-threading support has been removed
+    if [[ $SRS_SINGLE_THREAD != YES ]]; then
+        echo "Warning: Multi-threading support has been removed. Forcing single thread mode."
         SRS_SINGLE_THREAD=YES
     fi
 

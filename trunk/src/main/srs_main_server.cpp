@@ -470,19 +470,8 @@ srs_error_t run_in_thread_pool()
         return srs_error_wrap(err, "init thread pool");
     }
 
-#ifdef SRS_SINGLE_THREAD
     srs_trace("Run in single thread mode");
     return run_hybrid_server(NULL);
-#else
-    // Start the hybrid service worker thread, for RTMP and RTC server, etc.
-    if ((err = _srs_thread_pool->execute("hybrid", run_hybrid_server, (void *)NULL)) != srs_success) {
-        return srs_error_wrap(err, "start hybrid server thread");
-    }
-
-    srs_trace("Pool: Start threads primordial=1, hybrids=1 ok");
-
-    return _srs_thread_pool->run();
-#endif
 }
 
 #include <srs_app_tencentcloud.hpp>

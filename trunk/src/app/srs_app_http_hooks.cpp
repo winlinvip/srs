@@ -34,7 +34,15 @@ using namespace std;
 #define SRS_HLS_NOTIFY_TIMEOUT (10 * SRS_UTIME_SECONDS)
 
 // Global HTTP hooks instance
-SrsHttpHooks* _srs_hooks = NULL;
+ISrsHttpHooks* _srs_hooks = NULL;
+
+ISrsHttpHooks::ISrsHttpHooks()
+{
+}
+
+ISrsHttpHooks::~ISrsHttpHooks()
+{
+}
 
 SrsHttpHooks::SrsHttpHooks()
 {

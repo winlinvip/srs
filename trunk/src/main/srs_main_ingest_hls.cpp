@@ -13,7 +13,6 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>

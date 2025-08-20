@@ -8,10 +8,9 @@
 
 #include <srs_app_config.hpp>
 #include <srs_app_hybrid.hpp>
-#include <srs_app_threads.hpp>
-#include <srs_kernel_utility.hpp>
-#include <srs_kernel_kbps.hpp>
 #include <srs_app_utility.hpp>
+#include <srs_kernel_kbps.hpp>
+#include <srs_kernel_utility.hpp>
 
 #ifdef SRS_RTC
 #include <srs_app_statistic.hpp>

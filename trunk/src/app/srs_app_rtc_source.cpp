@@ -18,7 +18,6 @@
 #include <srs_app_rtc_queue.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_core_deprecated.hpp>
 #include <srs_kernel_buffer.hpp>

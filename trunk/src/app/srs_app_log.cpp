@@ -15,7 +15,6 @@
 #include <unistd.h>
 
 #include <srs_app_config.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>
@@ -36,8 +35,6 @@ SrsFileLog::SrsFileLog()
     fd = -1;
     log_to_file_tank = false;
     utc = false;
-
-    mutex_ = new SrsThreadMutex();
 }
 
 SrsFileLog::~SrsFileLog()
@@ -52,8 +49,6 @@ SrsFileLog::~SrsFileLog()
     if (_srs_config) {
         _srs_config->unsubscribe(this);
     }
-
-    srs_freep(mutex_);
 }
 
 srs_error_t SrsFileLog::initialize()
@@ -90,8 +85,6 @@ void SrsFileLog::log(SrsLogLevel level, const char *tag, const SrsContextId &con
     if (level < level_ || level >= SrsLogLevelDisabled) {
         return;
     }
-
-    SrsThreadLocker(mutex_);
 
     int size = 0;
     bool header_ok = srs_log_header(

@@ -36,7 +36,6 @@ using namespace std;
 #include <srs_app_hybrid.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_server.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_core_performance.hpp>
@@ -56,7 +55,7 @@ using namespace std;
 
 // pre-declare
 srs_error_t run_directly_or_daemon();
-srs_error_t run_in_thread_pool();
+srs_error_t run_hybrid_server();
 void show_macro_features();
 
 // @global log and context.
@@ -108,10 +107,6 @@ srs_error_t do_main(int argc, char **argv, char **envp)
     // Initialize global and thread-local variables.
     if ((err = srs_global_initialize()) != srs_success) {
         return srs_error_wrap(err, "global init");
-    }
-
-    if ((err = SrsThreadPool::setup_thread_locals()) != srs_success) {
-        return srs_error_wrap(err, "thread init");
     }
 
     // For background context id.
@@ -416,8 +411,8 @@ srs_error_t run_directly_or_daemon()
 
     // If not daemon, directly run hybrid server.
     if (!run_as_daemon) {
-        if ((err = run_in_thread_pool()) != srs_success) {
-            return srs_error_wrap(err, "run thread pool");
+        if ((err = run_hybrid_server()) != srs_success) {
+            return srs_error_wrap(err, "run server");
         }
         return srs_success;
     }
@@ -453,29 +448,15 @@ srs_error_t run_directly_or_daemon()
     // son
     srs_trace("son(daemon) process running.");
 
-    if ((err = run_in_thread_pool()) != srs_success) {
-        return srs_error_wrap(err, "daemon run thread pool");
+    if ((err = run_hybrid_server()) != srs_success) {
+        return srs_error_wrap(err, "daemon run server");
     }
 
     return err;
 }
 
-srs_error_t run_hybrid_server(void *arg);
-srs_error_t run_in_thread_pool()
-{
-    srs_error_t err = srs_success;
-
-    // Initialize the thread pool, even if we run in single thread mode.
-    if ((err = _srs_thread_pool->initialize()) != srs_success) {
-        return srs_error_wrap(err, "init thread pool");
-    }
-
-    srs_trace("Run in single thread mode");
-    return run_hybrid_server(NULL);
-}
-
 #include <srs_app_tencentcloud.hpp>
-srs_error_t run_hybrid_server(void * /*arg*/)
+srs_error_t run_hybrid_server()
 {
     srs_error_t err = srs_success;
 

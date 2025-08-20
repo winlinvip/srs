@@ -17,6 +17,9 @@ class SrsServer;
 class SrsServerAdapter;
 class SrsWaitGroup;
 
+// Initialize global shared variables cross all threads.
+extern srs_error_t srs_global_initialize();
+
 // The hibrid server interfaces, we could register many servers.
 class ISrsHybridServer
 {
@@ -44,6 +47,13 @@ private:
     SrsFastTimer *timer5s_;
     SrsClockWallMonitor *clock_monitor_;
 
+private:
+    // The pid file fd, lock the file write when server is running.
+    // @remark the init.d script should cleanup the pid file, when stop service,
+    //       for the server never delete the file; when system startup, the pid in pid file
+    //       maybe valid but the process is not SRS, the init.d script will never start server.
+    int pid_fd;
+
 public:
     SrsHybridServer();
     virtual ~SrsHybridServer();
@@ -65,6 +75,10 @@ public:
     // interface ISrsFastTimer
 private:
     srs_error_t on_timer(srs_utime_t interval);
+
+private:
+    // Require the PID file for the whole process.
+    virtual srs_error_t acquire_pid_file();
 };
 
 extern SrsHybridServer *_srs_hybrid;

@@ -13,7 +13,6 @@
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_stream_bridge.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_codec.hpp>
 #include <srs_kernel_error.hpp>

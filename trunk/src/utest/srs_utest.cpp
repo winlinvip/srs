@@ -10,7 +10,6 @@
 #include <srs_app_log.hpp>
 #include <srs_app_rtc_dtls.hpp>
 #include <srs_app_server.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
 
@@ -61,10 +60,6 @@ srs_error_t prepare_main()
 
     if ((err = srs_global_initialize()) != srs_success) {
         return srs_error_wrap(err, "init global");
-    }
-
-    if ((err = SrsThreadPool::setup_thread_locals()) != srs_success) {
-        return srs_error_wrap(err, "init thread");
     }
 
     srs_freep(_srs_log);

@@ -18,7 +18,6 @@ using namespace std;
 #include <srs_app_rtsp_source.hpp>
 #include <srs_app_security.hpp>
 #include <srs_app_statistic.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>

@@ -21,9 +21,7 @@ using namespace std;
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 
-#ifdef SRS_RTC
 #include <srs_app_rtc_sdp.hpp>
-#endif
 
 MockEmptyIO::MockEmptyIO()
 {
@@ -5517,7 +5515,6 @@ VOID TEST(ProtocolRTSPTest, RTSPTcpOnlyTransport)
     }
 }
 
-#ifdef SRS_RTC
 // Test SDP advertisement of TCP-only transport
 VOID TEST(ProtocolRTSPTest, RTSPSdpTcpOnlyAdvertisement)
 {
@@ -5567,7 +5564,6 @@ VOID TEST(ProtocolRTSPTest, RTSPSdpTcpOnlyAdvertisement)
         srs_trace("Generated TCP-only SDP:\n%s", sdp_content.c_str());
     }
 }
-#endif
 
 // Invalid RTSP Request
 VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
@@ -5893,4 +5889,3 @@ VOID TEST(ProtocolRTSPTest, RTSPIncompleteRTCPPacket)
         bio.in_buffer.erase(bio.in_buffer.length());
     }
 }
-#endif

@@ -2131,7 +2131,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_hevc(SrsRtpPacket *pkt
 
     std::vector<string> h265_pps;
     h265_pps.push_back(string(pps->bytes, pps->size));
-    
+
     std::string sh;
     if ((err = hevc->mux_sequence_header(string(vps->bytes, vps->size), string(sps->bytes, sps->size), h265_pps, sh)) != srs_success) {
         return srs_error_wrap(err, "mux sequence header");

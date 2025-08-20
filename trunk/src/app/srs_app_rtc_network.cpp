@@ -728,7 +728,7 @@ SrsRtcTcpConn::SrsRtcTcpConn()
 SrsRtcTcpConn::SrsRtcTcpConn(ISrsProtocolReadWriter *skt, std::string cip, int port)
 {
     setup();
-    
+
     ip_ = cip;
     port_ = port;
     skt_ = skt;

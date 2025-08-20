@@ -1223,7 +1223,7 @@ srs_error_t SrsRtcPublishStream::initialize(SrsRequest *r, SrsRtcSourceDescripti
 #endif
 
     // Bridge to rtmp
-#if defined(SRS_RTC) && defined(SRS_FFMPEG_FIT)
+#if defined(SRS_FFMPEG_FIT)
     bool rtc_to_rtmp = _srs_config->get_rtc_to_rtmp(req_->vhost);
     if (rtc_to_rtmp) {
         if ((err = _srs_sources->fetch_or_create(r, _srs_hybrid->srs()->instance(), live_source)) != srs_success) {

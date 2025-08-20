@@ -14,6 +14,8 @@
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_pithy_print.hpp>
+#include <srs_app_rtc_conn.hpp>
+#include <srs_app_rtc_dtls.hpp>
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_server.hpp>
@@ -23,10 +25,6 @@
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_st.hpp>
-#ifdef SRS_RTC
-#include <srs_app_rtc_conn.hpp>
-#include <srs_app_rtc_dtls.hpp>
-#endif
 #ifdef SRS_SRT
 #include <srs_app_srt_source.hpp>
 #endif
@@ -153,12 +151,10 @@ extern SrsConfig *_srs_config;
 
 extern SrsStageManager *_srs_stages;
 
-#ifdef SRS_RTC
 extern SrsRtcBlackhole *_srs_blackhole;
 extern SrsResourceManager *_srs_rtc_manager;
 
 extern SrsDtlsCertificate *_srs_rtc_dtls_certificate;
-#endif
 
 SrsPps *_srs_pps_aloss2 = NULL;
 
@@ -568,7 +564,6 @@ srs_error_t SrsHybridServer::on_timer(srs_utime_t interval)
 #endif
 
     string objs_desc;
-#ifdef SRS_RTC
     _srs_pps_objs_rtps->update();
     _srs_pps_objs_rraw->update();
     _srs_pps_objs_rfua->update();
@@ -581,7 +576,6 @@ srs_error_t SrsHybridServer::on_timer(srs_utime_t interval)
                  _srs_pps_objs_msgs->r10s(), _srs_pps_objs_rothers->r10s(), _srs_pps_objs_rbuf->r10s());
         objs_desc = buf;
     }
-#endif
 
     srs_trace("Hybrid cpu=%.2f%%,%dMB%s%s%s%s%s%s%s%s%s%s%s",
               u->percent * 100, memory,
@@ -697,13 +691,11 @@ srs_error_t srs_global_initialize()
     _srs_srt_sources = new SrsSrtSourceManager();
 #endif
 
-#ifdef SRS_RTC
     _srs_rtc_sources = new SrsRtcSourceManager();
     _srs_blackhole = new SrsRtcBlackhole();
 
     _srs_rtc_manager = new SrsResourceManager("RTC", true);
     _srs_rtc_dtls_certificate = new SrsDtlsCertificate();
-#endif
 #ifdef SRS_RTSP
     _srs_rtsp_sources = new SrsRtspSourceManager();
     _srs_rtsp_manager = new SrsResourceManager("RTSP", true);
@@ -722,7 +714,6 @@ srs_error_t srs_global_initialize()
     _srs_pps_conn = new SrsPps();
     _srs_pps_pub = new SrsPps();
 
-#ifdef SRS_RTC
     _srs_pps_snack = new SrsPps();
     _srs_pps_snack2 = new SrsPps();
     _srs_pps_snack3 = new SrsPps();
@@ -734,7 +725,6 @@ srs_error_t srs_global_initialize()
     _srs_pps_rnack2 = new SrsPps();
     _srs_pps_rhnack = new SrsPps();
     _srs_pps_rmnack = new SrsPps();
-#endif
 
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_recvfrom = new SrsPps();
@@ -794,7 +784,6 @@ srs_error_t srs_global_initialize()
     _srs_pps_spkts = new SrsPps();
     _srs_pps_objs_msgs = new SrsPps();
 
-#ifdef SRS_RTC
     _srs_pps_sstuns = new SrsPps();
     _srs_pps_srtcps = new SrsPps();
     _srs_pps_srtps = new SrsPps();
@@ -814,7 +803,6 @@ srs_error_t srs_global_initialize()
     _srs_pps_objs_rfua = new SrsPps();
     _srs_pps_objs_rbuf = new SrsPps();
     _srs_pps_objs_rothers = new SrsPps();
-#endif
 
     // Create global async worker for DVR.
     _srs_dvr_async = new SrsAsyncCallWorker();

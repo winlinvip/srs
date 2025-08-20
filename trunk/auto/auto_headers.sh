@@ -74,11 +74,7 @@ else
     srs_undefine_macro "SRS_BACKTRACE" $SRS_AUTO_HEADERS_H
 fi
 
-if [[ $SRS_RTC == YES ]]; then
-    srs_define_macro "SRS_RTC" $SRS_AUTO_HEADERS_H
-else
-    srs_undefine_macro "SRS_RTC" $SRS_AUTO_HEADERS_H
-fi
+srs_define_macro "SRS_RTC" $SRS_AUTO_HEADERS_H
 
 if [[ $SRS_RTSP == YES ]]; then
     srs_define_macro "SRS_RTSP" $SRS_AUTO_HEADERS_H

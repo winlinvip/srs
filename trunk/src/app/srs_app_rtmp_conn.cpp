@@ -1159,7 +1159,6 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
     }
 
     // Check whether RTC stream is busy.
-#ifdef SRS_RTC
     SrsSharedPtr<SrsRtcSource> rtc;
     bool rtc_server_enabled = _srs_config->get_rtc_server_enabled();
     bool rtc_enabled = _srs_config->get_rtc_enabled(req->vhost);
@@ -1172,7 +1171,6 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
             return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtc stream %s busy", req->get_stream_url().c_str());
         }
     }
-#endif
 
     // Check whether SRT stream is busy.
 #ifdef SRS_SRT
@@ -1206,7 +1204,7 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
     // TODO: FIXME: Need to convert RTMP to SRT.
     SrsCompositeBridge *bridge = new SrsCompositeBridge();
 
-#if defined(SRS_RTC) && defined(SRS_FFMPEG_FIT)
+#if defined(SRS_FFMPEG_FIT)
     if (rtc.get() && _srs_config->get_rtc_from_rtmp(req->vhost)) {
         bridge->append(new SrsFrameToRtcBridge(rtc));
     }

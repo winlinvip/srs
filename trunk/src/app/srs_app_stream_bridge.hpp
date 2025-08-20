@@ -62,7 +62,6 @@ public:
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame);
 };
 
-#ifdef SRS_RTC
 // A bridge to covert AV frame to WebRTC stream.
 class SrsFrameToRtcBridge : public ISrsStreamBridge
 {
@@ -84,7 +83,6 @@ public:
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame);
     srs_error_t on_rtp(SrsRtpPacket *pkt);
 };
-#endif
 
 #ifdef SRS_RTSP
 // A bridge to covert AV frame to RTSP stream.

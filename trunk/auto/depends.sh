@@ -412,7 +412,7 @@ if [[ $SRS_SSL == YES && $SRS_USE_SYS_SSL != YES ]]; then
     if [[ $OS_IS_MIPS64 == YES ]]; then OPENSSL_CONFIG="./Configure linux64-mips64"; fi
     if [[ $OS_IS_LOONGSON == YES ]]; then OPENSSL_OPTIONS="$OPENSSL_OPTIONS -no-asm"; fi
     # For RTC, we should use ASM to improve performance, not a little improving.
-    if [[ $SRS_RTC == NO || $SRS_NASM == NO ]]; then
+    if [[ $SRS_NASM == NO ]]; then
         OPENSSL_OPTIONS="$OPENSSL_OPTIONS -no-asm"
         echo "Warning: NASM is off, performance is hurt"
     fi
@@ -466,10 +466,10 @@ fi
 #####################################################################################
 # srtp
 #####################################################################################
-if [[ $SRS_RTC == YES && $SRS_USE_SYS_SRTP == YES ]]; then
+if [[ $SRS_USE_SYS_SRTP == YES ]]; then
     echo "Warning: Use system libsrtp, without compiling srtp."
 fi
-if [[ $SRS_RTC == YES && $SRS_USE_SYS_SRTP == NO ]]; then
+if [[ $SRS_USE_SYS_SRTP == NO ]]; then
     SRTP_OPTIONS=""
     # To eliminate warnings, see https://stackoverflow.com/a/34208904/17679565
     #       was built for newer macOS version (11.6) than being linked (11.0)
@@ -536,7 +536,7 @@ fi
 # libopus, for WebRTC to transcode AAC with Opus.
 #####################################################################################
 # For cross build, we use opus of FFmpeg, so we don't build the libopus.
-if [[ $SRS_RTC == YES && $SRS_USE_SYS_FFMPEG != YES && $SRS_FFMPEG_OPUS != YES ]]; then
+if [[ $SRS_USE_SYS_FFMPEG != YES && $SRS_FFMPEG_OPUS != YES ]]; then
     # Only build static libraries if no shared FFmpeg.
     if [[ $SRS_SHARED_FFMPEG != YES ]]; then
         OPUS_OPTIONS="--disable-shared --disable-doc"

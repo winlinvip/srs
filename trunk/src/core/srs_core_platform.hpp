@@ -19,7 +19,7 @@
 #endif
 
 // For RTC/FFMPEG build.
-#if defined(SRS_RTC) && !defined(__STDC_CONSTANT_MACROS)
+#if !defined(__STDC_CONSTANT_MACROS)
 #define __STDC_CONSTANT_MACROS
 #endif
 

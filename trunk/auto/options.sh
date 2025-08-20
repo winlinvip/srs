@@ -184,7 +184,6 @@ Features:
   --https=on|off            Whether enable HTTPS client and server. Default: $(value2switch $SRS_HTTPS)
   --utest=on|off            Whether build the utest. Default: $(value2switch $SRS_UTEST)
   --srt=on|off              Whether build the SRT. Default: $(value2switch $SRS_SRT)
-  --rtc=on|off              Whether build the WebRTC. Default: $(value2switch $SRS_RTC)
   --rtsp=on|off             Whether build the RTSP (requires RTC). Default: $(value2switch $SRS_RTSP)
   --gb28181=on|off          Whether build the GB28181. Default: $(value2switch $SRS_GB28181)
   --ffmpeg-fit=on|off       Whether enable the FFmpeg fit(source code). Default: $(value2switch $SRS_FFMPEG_FIT)
@@ -257,6 +256,7 @@ Deprecated:
   --h265=on                 Always enable the build for the HEVC(H.265) support.
   --cxx11=off               Always disable C++11, force C++98 compatibility. Default: $(value2switch $SRS_CXX11)
   --cxx14=off               Always disable C++14, force C++98 compatibility. Default: $(value2switch $SRS_CXX14)
+  --rtc=on                  Always enable WebRTC support. Default: $(value2switch $SRS_RTC)
   --single-thread=on        Always force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
   --cross-build             Enable cross-build, please set bellow Toolchain also. Default: $(value2switch $SRS_CROSS_BUILD)
   --hds=on|off              Whether build the hds streaming, mux RTMP to F4M/F4V files. Default: $(value2switch $SRS_HDS)
@@ -537,7 +537,7 @@ function apply_auto_options() {
     fi
 
     # Enable FFmpeg fit for RTC to transcode audio from AAC to OPUS, if user enabled it.
-    if [[ $SRS_RTC == YES && $SRS_FFMPEG_FIT == RESERVED ]]; then
+    if [[ $SRS_FFMPEG_FIT == RESERVED ]]; then
         SRS_FFMPEG_FIT=YES
     fi
 
@@ -573,9 +573,10 @@ function apply_auto_options() {
     if [[ $SRS_TRANSCODE == YES ]]; then SRS_FFMPEG_STUB=YES; fi
     if [[ $SRS_INGEST == YES ]]; then SRS_FFMPEG_STUB=YES; fi
 
-    if [[ $SRS_SRTP_ASM == YES && $SRS_RTC == NO ]]; then
-        echo "Disable SRTP-ASM, because RTC is disabled."
-        SRS_SRTP_ASM=NO
+    # Force enable RTC always - WebRTC support is required
+    if [[ $SRS_RTC != YES ]]; then
+        echo "Warning: WebRTC support is always enabled. Forcing RTC mode."
+        SRS_RTC=YES
     fi
 
     if [[ $SRS_SRTP_ASM == YES && $SRS_NASM == NO ]]; then

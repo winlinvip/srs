@@ -27,6 +27,9 @@ using namespace std;
 #include <srs_app_ingest.hpp>
 #include <srs_app_latest_version.hpp>
 #include <srs_app_mpegts_udp.hpp>
+#include <srs_app_rtc_network.hpp>
+#include <srs_app_rtc_server.hpp>
+#include <srs_app_rtc_source.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
@@ -36,11 +39,6 @@ using namespace std;
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_log.hpp>
-#ifdef SRS_RTC
-#include <srs_app_rtc_network.hpp>
-#include <srs_app_rtc_server.hpp>
-#include <srs_app_rtc_source.hpp>
-#endif
 #ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
 #endif
@@ -514,7 +512,6 @@ srs_error_t SrsServer::initialize()
     string http_listen = _srs_config->get_http_stream_listen();
     string https_listen = _srs_config->get_https_stream_listen();
 
-#ifdef SRS_RTC
     bool rtc = _srs_config->get_rtc_server_enabled();
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
     string rtc_listen = srs_int2str(_srs_config->get_rtc_server_tcp_listen());
@@ -527,7 +524,6 @@ srs_error_t SrsServer::initialize()
         srs_trace("WebRTC tcp=%s reuses https=%s server", rtc_listen.c_str(), https_listen.c_str());
         reuse_rtc_over_server_ = true;
     }
-#endif
 
     // If enabled and the listen is the same value, reuse port.
     bool api = _srs_config->get_http_api_enabled();
@@ -649,14 +645,12 @@ srs_error_t SrsServer::listen()
     }
 
     // Start WebRTC over TCP listener.
-#ifdef SRS_RTC
     if (!reuse_rtc_over_server_ && _srs_config->get_rtc_server_tcp_enabled()) {
         webrtc_listener_->set_endpoint(srs_int2str(_srs_config->get_rtc_server_tcp_listen()))->set_label("WebRTC");
         if ((err = webrtc_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "webrtc tcp listen");
         }
     }
-#endif
 
 #ifdef SRS_RTSP
     // Start RTSP listener. RTC is a critical dependency.
@@ -870,11 +864,9 @@ srs_error_t SrsServer::start(SrsWaitGroup *wg)
     }
 #endif
 
-#ifdef SRS_RTC
     if ((err = _srs_rtc_sources->initialize()) != srs_success) {
         return srs_error_wrap(err, "rtc sources");
     }
-#endif
 
 #ifdef SRS_RTSP
     if ((err = _srs_rtsp_sources->initialize()) != srs_success) {
@@ -1208,13 +1200,11 @@ void SrsServer::resample_kbps()
         }
 #endif
 
-#ifdef SRS_RTC
         SrsRtcTcpConn *tcp = dynamic_cast<SrsRtcTcpConn *>(c);
         if (tcp) {
             stat->kbps_add_delta(c->get_id().c_str(), tcp->delta());
             continue;
         }
-#endif
 
         // Impossible path, because we only create these connections above.
         srs_assert(false);
@@ -1269,7 +1259,6 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     srs_netfd_t stfd2 = stfd;
     stfd = NULL;
 
-#ifdef SRS_RTC
     // If reuse HTTP server with WebRTC TCP, peek to detect the client.
     if (reuse_rtc_over_server_ && (listener == http_listener_ || listener == https_listener_)) {
         SrsTcpConnection *skt = new SrsTcpConnection(stfd2);
@@ -1299,7 +1288,6 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
             resource = new SrsHttpxConn(this, io, http_server, ip, port, key, cert);
         }
     }
-#endif
 
     // Create resource by normal listeners.
     if (!resource) {
@@ -1317,10 +1305,8 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
             string key = listener == https_listener_ ? _srs_config->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? _srs_config->get_https_stream_ssl_cert() : "";
             resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_server, ip, port, key, cert);
-#ifdef SRS_RTC
         } else if (listener == webrtc_listener_) {
             resource = new SrsRtcTcpConn(new SrsTcpConnection(stfd2), ip, port);
-#endif
 #ifdef SRS_RTSP
         } else if (listener == rtsp_listener_) {
             resource = new SrsRtspConnection(this, new SrsTcpConnection(stfd2), ip, port);
@@ -1335,7 +1321,6 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         }
     }
 
-#ifdef SRS_RTC
     // For RTC TCP connection, use resource executor to manage the resource.
     SrsRtcTcpConn *raw_conn = dynamic_cast<SrsRtcTcpConn *>(resource);
     if (raw_conn) {
@@ -1348,7 +1333,6 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         }
         return err;
     }
-#endif
 
     // Use connection manager to manage all the resources.
     srs_assert(resource);

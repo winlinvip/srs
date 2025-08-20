@@ -154,15 +154,13 @@ LibSTRoot="${SRS_OBJS}/st"; LibSTfile="${LibSTRoot}/libst.a"
 if [[ $SRS_SHARED_ST == YES ]]; then LibSTfile="-L${LibSTRoot} -lst"; fi
 
 # srtp
-if [[ $SRS_RTC == YES ]]; then
-  LibSrtpRoot="${SRS_OBJS}/srtp2/include"; LibSrtpFile="${SRS_OBJS}/srtp2/lib/libsrtp2.a"
-  if [[ $SRS_USE_SYS_SRTP == YES ]]; then
-      LibSrtpRoot=""; LibSrtpFile="libsrtp2.a"
-      if [[ $SRS_SHARED_SRTP == YES ]]; then
-          LibSrtpFile=""; 
-          SrsLinkOptions="${SrsLinkOptions} -lsrtp2";
-      fi
-  fi
+LibSrtpRoot="${SRS_OBJS}/srtp2/include"; LibSrtpFile="${SRS_OBJS}/srtp2/lib/libsrtp2.a"
+if [[ $SRS_USE_SYS_SRTP == YES ]]; then
+    LibSrtpRoot=""; LibSrtpFile="libsrtp2.a"
+    if [[ $SRS_SHARED_SRTP == YES ]]; then
+        LibSrtpFile="";
+        SrsLinkOptions="${SrsLinkOptions} -lsrtp2";
+    fi
 fi
 
 # FFMPEG for WebRTC transcoding, such as aac to opus.
@@ -233,7 +231,7 @@ if [[ $SRS_GCOV == YES ]]; then
 fi
 
 # For FFMPEG/RTC on Linux.
-if [[ $SRS_OSX != YES && $SRS_CYGWIN64 != YES && $SRS_RTC == YES && $SRS_FFMPEG_FIT == YES ]]; then
+if [[ $SRS_OSX != YES && $SRS_CYGWIN64 != YES && $SRS_FFMPEG_FIT == YES ]]; then
     SrsLinkOptions="${SrsLinkOptions} -lrt";
 fi
 
@@ -281,10 +279,7 @@ MODULE_FILES=("srs_kernel_error" "srs_kernel_log" "srs_kernel_buffer"
         "srs_kernel_utility" "srs_kernel_flv" "srs_kernel_codec" "srs_kernel_io"
         "srs_kernel_consts" "srs_kernel_aac" "srs_kernel_mp3" "srs_kernel_ts" "srs_kernel_ps"
         "srs_kernel_stream" "srs_kernel_balance" "srs_kernel_mp4" "srs_kernel_file"
-        "srs_kernel_kbps")
-if [[ $SRS_RTC == YES ]]; then
-    MODULE_FILES+=("srs_kernel_rtc_rtp" "srs_kernel_rtc_rtcp")
-fi
+        "srs_kernel_kbps" "srs_kernel_rtc_rtp" "srs_kernel_rtc_rtcp")
 KERNEL_INCS="src/kernel"; MODULE_DIR=${KERNEL_INCS} . $SRS_WORKDIR/auto/modules.sh
 KERNEL_OBJS="${MODULE_OBJS[@]}"
 #
@@ -301,9 +296,7 @@ if [[ $SRS_SRT == YES ]]; then
     MODULE_FILES+=("srs_protocol_srt")
     ModuleLibIncs+=(${LibSRTRoot})
 fi
-if [[ $SRS_RTC == YES ]]; then
-    MODULE_FILES+=("srs_protocol_rtc_stun" "srs_protocol_rtp")
-fi
+MODULE_FILES+=("srs_protocol_rtc_stun" "srs_protocol_rtp")
 if [[ $SRS_RTSP == YES ]]; then
     MODULE_FILES+=("srs_protocol_rtsp_stack")
 fi
@@ -314,12 +307,9 @@ PROTOCOL_OBJS="${MODULE_OBJS[@]}"
 #App Module, for SRS server only.
 MODULE_ID="APP"
 MODULE_DEPENDS=("CORE" "KERNEL" "PROTOCOL")
-ModuleLibIncs=(${SRS_OBJS} ${LibSSLRoot})
+ModuleLibIncs=(${SRS_OBJS} ${LibSSLRoot} ${LibSrtpRoot})
 if [[ $SRS_GPERF == YES ]]; then
     ModuleLibIncs+=(${LibGperfRoot})
-fi
-if [[ $SRS_RTC == YES ]]; then
-    ModuleLibIncs+=(${LibSrtpRoot})
 fi
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
     ModuleLibIncs+=("${LibFfmpegRoot[*]}")
@@ -338,10 +328,8 @@ MODULE_FILES=("srs_app_server" "srs_app_conn" "srs_app_rtmp_conn" "srs_app_sourc
 if [[ $SRS_SRT == YES ]]; then
     MODULE_FILES+=("srs_app_srt_server" "srs_app_srt_listener" "srs_app_srt_conn" "srs_app_srt_utility" "srs_app_srt_source")
 fi
-if [[ $SRS_RTC == YES ]]; then
-    MODULE_FILES+=("srs_app_rtc_conn" "srs_app_rtc_dtls" "srs_app_rtc_sdp" "srs_app_rtc_network"
-        "srs_app_rtc_queue" "srs_app_rtc_server" "srs_app_rtc_source" "srs_app_rtc_api")
-fi
+MODULE_FILES+=("srs_app_rtc_conn" "srs_app_rtc_dtls" "srs_app_rtc_sdp" "srs_app_rtc_network"
+    "srs_app_rtc_queue" "srs_app_rtc_server" "srs_app_rtc_source" "srs_app_rtc_api")
 if [[ $SRS_RTSP == YES ]]; then
     MODULE_FILES+=("srs_app_rtsp_source" "srs_app_rtsp_conn")
 fi
@@ -368,10 +356,7 @@ APP_OBJS="${MODULE_OBJS[@]}"
 #Server Module, for SRS only.
 MODULE_ID="SERVER"
 MODULE_DEPENDS=("CORE" "KERNEL" "PROTOCOL" "APP")
-ModuleLibIncs=(${SRS_OBJS} ${LibGperfRoot} ${LibSSLRoot})
-if [[ $SRS_RTC == YES ]]; then
-    ModuleLibIncs+=(${LibSrtpRoot})
-fi
+ModuleLibIncs=(${SRS_OBJS} ${LibGperfRoot} ${LibSSLRoot} ${LibSrtpRoot})
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
     ModuleLibIncs+=("${LibFfmpegRoot[*]}")
 fi
@@ -382,10 +367,7 @@ SERVER_OBJS="${MODULE_OBJS[@]}"
 #Main Module, for app from modules.
 MODULE_ID="MAIN"
 MODULE_DEPENDS=("CORE" "KERNEL" "PROTOCOL" "APP")
-ModuleLibIncs=(${SRS_OBJS} ${LibGperfRoot} ${LibSSLRoot})
-if [[ $SRS_RTC == YES ]]; then
-    ModuleLibIncs+=(${LibSrtpRoot})
-fi
+ModuleLibIncs=(${SRS_OBJS} ${LibGperfRoot} ${LibSSLRoot} ${LibSrtpRoot})
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
     ModuleLibIncs+=("${LibFfmpegRoot[*]}")
 fi
@@ -412,10 +394,7 @@ for SRS_MODULE in ${SRS_MODULES[*]}; do
 done
 #
 # all depends libraries
-ModuleLibFiles=(${LibSTfile} ${LibSSLfile} ${LibGperfFile})
-if [[ $SRS_RTC == YES ]]; then
-    ModuleLibFiles+=(${LibSrtpFile})
-fi
+ModuleLibFiles=(${LibSTfile} ${LibSSLfile} ${LibGperfFile} ${LibSrtpFile})
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
     ModuleLibFiles+=("${LibFfmpegFile[*]}")
 fi
@@ -424,10 +403,7 @@ if [[ $SRS_SRT == YES ]]; then
 fi
 # all depends objects
 MODULE_OBJS="${CORE_OBJS[@]} ${KERNEL_OBJS[@]} ${PROTOCOL_OBJS[@]} ${APP_OBJS[@]} ${SERVER_OBJS[@]}"
-ModuleLibIncs=(${SRS_OBJS} ${LibSTRoot} ${LibGperfRoot} ${LibSSLRoot})
-if [[ $SRS_RTC == YES ]]; then
-    ModuleLibIncs+=(${LibSrtpRoot})
-fi
+ModuleLibIncs=(${SRS_OBJS} ${LibSTRoot} ${LibGperfRoot} ${LibSSLRoot} ${LibSrtpRoot})
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
     ModuleLibIncs+=("${LibFfmpegRoot[*]}")
 fi
@@ -442,10 +418,7 @@ BUILD_KEY="srs" APP_MAIN="srs_main_server" APP_NAME="srs" . $SRS_WORKDIR/auto/ap
 #
 # For modules, with the app module.
 MODULE_OBJS="${CORE_OBJS[@]} ${KERNEL_OBJS[@]} ${PROTOCOL_OBJS[@]} ${APP_OBJS[@]} ${MAIN_OBJS[@]}"
-ModuleLibFiles=(${LibSTfile} ${LibSSLfile} ${LibGperfFile})
-if [[ $SRS_RTC == YES ]]; then
-    ModuleLibFiles+=(${LibSrtpFile})
-fi
+ModuleLibFiles=(${LibSTfile} ${LibSSLfile} ${LibGperfFile} ${LibSrtpFile})
 if [[ $SRS_FFMPEG_FIT == YES ]]; then
     ModuleLibFiles+=("${LibFfmpegFile[*]}")
 fi
@@ -478,20 +451,14 @@ if [[ $SRS_UTEST == YES ]]; then
     if [[ $SRS_GB28181 == YES ]]; then
         MODULE_FILES+=("srs_utest_gb28181")
     fi
-    ModuleLibIncs=(${SRS_OBJS} ${LibSTRoot} ${LibSSLRoot})
-    if [[ $SRS_RTC == YES ]]; then
-        ModuleLibIncs+=(${LibSrtpRoot})
-    fi
+    ModuleLibIncs=(${SRS_OBJS} ${LibSTRoot} ${LibSSLRoot} ${LibSrtpRoot})
     if [[ $SRS_FFMPEG_FIT == YES ]]; then
         ModuleLibIncs+=("${LibFfmpegRoot[*]}")
     fi
     if [[ $SRS_SRT == YES ]]; then
         ModuleLibIncs+=("${LibSRTRoot[*]}")
     fi
-    ModuleLibFiles=(${LibSTfile} ${LibSSLfile})
-    if [[ $SRS_RTC == YES ]]; then
-        ModuleLibFiles+=(${LibSrtpFile})
-    fi
+    ModuleLibFiles=(${LibSTfile} ${LibSSLfile} ${LibSrtpFile})
     if [[ $SRS_FFMPEG_FIT == YES ]]; then
         ModuleLibFiles+=("${LibFfmpegFile[*]}")
     fi
@@ -748,11 +715,7 @@ if [[ $SRS_SRT == YES ]]; then
 else
     echo -e "${GREEN}Warning: SRT is disabled.${BLACK}"
 fi
-if [[ $SRS_RTC == YES ]]; then
-    echo -e "${YELLOW}Experiment: RTC is enabled. https://github.com/ossrs/srs/issues/307${BLACK}"
-else
-    echo -e "${GREEN}Warning: RTC is disabled.${BLACK}"
-fi
+echo -e "${YELLOW}Experiment: RTC is enabled. https://github.com/ossrs/srs/issues/307${BLACK}"
 if [[ $SRS_RTSP == YES ]]; then
     echo -e "${YELLOW}Experiment: RTSP is enabled (requires RTC).${BLACK}"
 else

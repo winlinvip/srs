@@ -12,12 +12,10 @@
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
 
-#ifdef SRS_RTC
 #include <srs_app_statistic.hpp>
 extern SrsPps *_srs_pps_snack2;
 extern SrsPps *_srs_pps_snack3;
 extern SrsPps *_srs_pps_snack4;
-#endif
 
 using namespace std;
 
@@ -124,7 +122,6 @@ srs_error_t SrsCircuitBreaker::on_timer(srs_utime_t interval)
     float thread_percent = stat->percent * 100;
 
     string snk_desc;
-#ifdef SRS_RTC
     static char buf[128];
     if (_srs_pps_snack2->r10s()) {
         snprintf(buf, sizeof(buf), ", snk=%d,%d,%d",
@@ -132,7 +129,6 @@ srs_error_t SrsCircuitBreaker::on_timer(srs_utime_t interval)
         );
         snk_desc = buf;
     }
-#endif
 
     if (enabled_ && (hybrid_high_water_level() || hybrid_critical_water_level())) {
         srs_trace("CircuitBreaker: cpu=%.2f%%,%dMB, break=%d,%d,%d, cond=%.2f%%%s",

@@ -65,7 +65,6 @@ srs_error_t SrsFrameToRtmpBridge::on_frame(SrsSharedPtrMessage *frame)
     return source_->on_frame(frame);
 }
 
-#ifdef SRS_RTC
 SrsFrameToRtcBridge::SrsFrameToRtcBridge(SrsSharedPtr<SrsRtcSource> source)
 {
     source_ = source;
@@ -134,8 +133,6 @@ srs_error_t SrsFrameToRtcBridge::on_rtp(SrsRtpPacket *pkt)
 {
     return source_->on_rtp(pkt);
 }
-
-#endif
 
 #ifdef SRS_RTSP
 SrsFrameToRtspBridge::SrsFrameToRtspBridge(SrsSharedPtr<SrsRtspSource> source)

@@ -6,13 +6,11 @@
 
 #include <srs_kernel_utility.hpp>
 
-#ifndef _WIN32
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
-#endif
-
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>

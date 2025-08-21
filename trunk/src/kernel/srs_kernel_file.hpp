@@ -12,6 +12,7 @@
 #include <srs_kernel_io.hpp>
 
 #include <string>
+#include <cstdio>
 
 // for srs-librtmp, @see https://github.com/ossrs/srs/issues/213
 #ifndef _WIN32

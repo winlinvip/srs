@@ -5889,3 +5889,4 @@ VOID TEST(ProtocolRTSPTest, RTSPIncompleteRTCPPacket)
         bio.in_buffer.erase(bio.in_buffer.length());
     }
 }
+#endif

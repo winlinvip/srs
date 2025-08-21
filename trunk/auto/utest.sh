@@ -21,9 +21,7 @@ GTEST_DIR=../3rdparty/gtest/googletest
 
 # Whether enable C++11 or higher versions.
 # For linux, always use C++11 for gtest required, see https://github.com/google/googletest
-# For cygwin64, ignore because it use -std=gnu++11 by default.
 SRS_CPP_VERSION="-std=c++11"
-if [[ $SRS_CYGWIN64 == YES ]]; then SRS_CPP_VERSION="-std=gnu++11"; fi
 
 cat << END > ${FILE}
 # user must run make the ${SRS_OBJS}/utest dir

@@ -93,11 +93,9 @@ WarnLevel=" -Wall"
 CppStd="-ansi"
 if [[ $SRS_CXX11 == YES ]]; then
     CppStd="-std=c++11"
-    if [[ $SRS_CYGWIN64 == YES ]]; then CppStd="-std=gnu++11"; fi
 fi
 if [[ $SRS_CXX14 == YES ]]; then
     CppStd="-std=c++14"
-    if [[ $SRS_CYGWIN64 == YES ]]; then CppStd="-std=gnu++14"; fi
 fi
 # performance of gprof
 SrsGprof=""; SrsGprofLink=""; if [[ $SRS_GPROF == YES ]]; then SrsGprof=" -pg -lc_p"; SrsGprofLink=" -pg"; fi
@@ -231,7 +229,7 @@ if [[ $SRS_GCOV == YES ]]; then
 fi
 
 # For FFMPEG/RTC on Linux.
-if [[ $SRS_OSX != YES && $SRS_CYGWIN64 != YES && $SRS_FFMPEG_FIT == YES ]]; then
+if [[ $SRS_OSX != YES && $SRS_FFMPEG_FIT == YES ]]; then
     SrsLinkOptions="${SrsLinkOptions} -lrt";
 fi
 
@@ -249,10 +247,7 @@ if [[ $SRS_SANITIZER == YES ]]; then
     fi
 fi
 
-# For FFMPEG/RTC on windows.
-if [[ $SRS_CYGWIN64 == YES && $SRS_FFMPEG_FIT == YES ]]; then
-    SrsLinkOptions="${SrsLinkOptions} -lbcrypt";
-fi
+
 
 # User configed options.
 if [[ $SRS_EXTRA_LDFLAGS != '' ]]; then

@@ -24,9 +24,7 @@
 #endif
 
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
-#ifndef _WIN32
 #include <inttypes.h>
-#endif
 
 #include <stddef.h>
 #include <sys/types.h>

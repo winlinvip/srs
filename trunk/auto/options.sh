@@ -102,7 +102,6 @@ SRS_GPROF=NO # Performance test: gprof
 # Preset options
 SRS_GENERIC_LINUX= # Try to run as generic linux, not CentOS or Ubuntu.
 SRS_OSX= #For OSX/macOS/Darwin PC.
-SRS_CYGWIN64= # For Cygwin64 for Windows PC or servers.
 SRS_CROSS_BUILD= #For cross build, for example, on Ubuntu.
 # For cross build, the cpu, for example(FFmpeg), --cpu=24kc
 SRS_CROSS_BUILD_CPU=
@@ -139,7 +138,6 @@ SRS_DEBUG_NACK_DROP=NO
 function apply_system_options() {
     OS_IS_OSX=$(uname -s |grep -q Darwin && echo YES)
     OS_IS_LINUX=$(uname -s |grep -q Linux && echo YES)
-    OS_IS_CYGWIN=$(uname -s |grep -q CYGWIN && echo YES)
 
     OS_IS_CENTOS=$(yum --version >/dev/null 2>&1 && echo YES)
     # For Debian, we think it's ubuntu also.
@@ -158,15 +156,14 @@ function apply_system_options() {
     if [[ $OS_IS_OSX == YES ]]; then
         SRS_OSX=YES;
     fi
-    if [[ $OS_IS_CYGWIN == YES ]]; then SRS_CYGWIN64=YES; fi
 
     if [[ $OS_IS_OSX == YES ]]; then SRS_JOBS=$(sysctl -n hw.ncpu 2>/dev/null || echo 1); fi
-    if [[ $OS_IS_LINUX == YES || $OS_IS_CYGWIN == YES ]]; then
+    if [[ $OS_IS_LINUX == YES ]]; then
         SRS_JOBS=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1)
     fi
 
-    if [[ $OS_IS_UBUNTU != YES && $OS_IS_CENTOS != YES && $OS_IS_OSX != YES && $SRS_CYGWIN64 != YES ]]; then
-        echo "Warning: Your OS is not Ubuntu(no apt-get), CentOS(no yum), maxOS(not Darwin), Windows(not CYGWIN)"
+    if [[ $OS_IS_UBUNTU != YES && $OS_IS_CENTOS != YES && $OS_IS_OSX != YES ]]; then
+        echo "Warning: Your OS is not Ubuntu(no apt-get), CentOS(no yum), or macOS(not Darwin)"
     fi
 }
 apply_system_options
@@ -254,8 +251,6 @@ Experts:
 
 Deprecated:
   --h265=on                 Always enable the build for the HEVC(H.265) support.
-  --cxx11=off               Always disable C++11, force C++98 compatibility. Default: $(value2switch $SRS_CXX11)
-  --cxx14=off               Always disable C++14, force C++98 compatibility. Default: $(value2switch $SRS_CXX14)
   --rtc=on                  Always enable WebRTC support. Default: $(value2switch $SRS_RTC)
   --single-thread=on        Always force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
   --cross-build             Enable cross-build, please set bellow Toolchain also. Default: $(value2switch $SRS_CROSS_BUILD)
@@ -263,9 +258,13 @@ Deprecated:
   --osx                     Enable build for OSX/Darwin AppleOS. Deprecated for automatically detecting the OS.
   --x86-64                  Enable build for __x86_64 systems. Deprecated for automatically detecting the OS.
   --x86-x64                 Enable build for __x86_64 systems. Deprecated for automatically detecting the OS.
-  --cygwin64                Use cygwin64 to build for Windows. Deprecated for automatically detecting the OS.
   --nginx                   Build nginx tool. Deprecated for not depends on it.
   --ffmpeg                  Build FFmpeg tool. Deprecated for not build it, user should do it.
+
+Removed:
+  --cygwin64                No support cygwin64 anymore.
+  --cxx11=off               Always disable C++11, force C++98 compatibility. Default: $(value2switch $SRS_CXX11)
+  --cxx14=off               Always disable C++14, force C++98 compatibility. Default: $(value2switch $SRS_CXX14)
 
 For example:
     ./configure
@@ -439,7 +438,7 @@ function parse_user_option() {
 
         ##########################################################################################
         --osx)                          SRS_OSX=YES                 ;; # Deprecated, might be removed in future.
-        --cygwin64)                     SRS_CYGWIN64=YES            ;; # Deprecated, might be removed in future.
+
         --x86-x64)                      SRS_X86_X64=YES             ;; # Deprecated, might be removed in future.
         --x86-64)                       SRS_X86_X64=YES             ;; # Deprecated, might be removed in future.
         --with-nginx)                   SRS_NGINX=YES               ;; # Deprecated, might be removed in future.
@@ -505,9 +504,6 @@ fi
 # Apply auto options
 #####################################################################################
 function apply_auto_options() {
-    if [[ $OS_IS_CYGWIN == YES ]]; then
-        SRS_CYGWIN64=YES
-    fi
 
     if [[ $SRS_CROSS_BUILD == YES ]]; then
         if [[ $SRS_CROSS_BUILD_PREFIX != "" && $SRS_CROSS_BUILD_HOST == "" ]]; then
@@ -584,18 +580,7 @@ function apply_auto_options() {
         SRS_SRTP_ASM=NO
     fi
 
-    # TODO: FIXME: Should build address sanitizer for cygwin64.
-    # See https://github.com/ossrs/srs/issues/3252
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SANITIZER == YES ]]; then
-        echo "Disable address sanitizer for cygwin64"
-        SRS_SANITIZER=NO
-    fi
-    # TODO: FIXME: Should fix bug for SRT for cygwin64. Build ok, but fail in SrsSrtSocket::accept.
-    # See https://github.com/ossrs/srs/issues/3251
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SRT == YES ]]; then
-        echo "Disable SRT for cygwin64"
-        SRS_SRT=NO
-    fi
+
 
     # Force single thread mode always - multi-threading support has been removed
     if [[ $SRS_SINGLE_THREAD != YES ]]; then
@@ -716,7 +701,7 @@ function regenerate_options() {
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sanitizer=$(value2switch $SRS_SANITIZER)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sanitizer-static=$(value2switch $SRS_SANITIZER_STATIC)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sanitizer-log=$(value2switch $SRS_SANITIZER_LOG)"
-    SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --cygwin64=$(value2switch $SRS_CYGWIN64)"
+
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --single-thread=$(value2switch $SRS_SINGLE_THREAD)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --signal-api=$(value2switch $SRS_SIGNAL_API)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --generic-linux=$(value2switch $SRS_GENERIC_LINUX)"

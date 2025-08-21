@@ -9,9 +9,7 @@
 
 #include <srs_core.hpp>
 
-#ifndef _WIN32
 #include <sys/uio.h>
-#endif
 
 #include <map>
 #include <sstream>

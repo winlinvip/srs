@@ -6,10 +6,6 @@
 
 #include <srs_app_uuid.hpp>
 
-#if defined(SRS_CYGWIN64)
-#define HAVE_LOFF_T
-#endif
-
 #include <stdio.h>
 #include <sys/file.h>
 #include <unistd.h>
@@ -512,18 +508,9 @@ void uuid_unpack(const uuid_t in, struct uuid *uu);
 #define _SVID_SOURCE
 #endif
 
-#ifdef _WIN32
-#define _WIN32_WINNT 0x0500
-#include <windows.h>
-#define UUID MYUUID
-#endif
 #include <stdio.h>
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -617,28 +604,7 @@ static int flock(int fd, int op)
 
 #endif /* LOCK_EX */
 
-#ifdef _WIN32
-static void gettimeofday(struct timeval *tv, void *dummy)
-{
-    FILETIME ftime;
-    uint64_t n;
 
-    GetSystemTimeAsFileTime(&ftime);
-    n = (((uint64_t)ftime.dwHighDateTime << 32) + (uint64_t)ftime.dwLowDateTime);
-    if (n) {
-        n /= 10;
-        n -= ((369 * 365 + 89) * (uint64_t)86400) * 1000000;
-    }
-
-    tv->tv_sec = n / 1000000;
-    tv->tv_usec = n % 1000000;
-}
-
-static int getuid(void)
-{
-    return 1;
-}
-#endif
 
 /*
  * Get the ethernet hardware address, if we can find it...

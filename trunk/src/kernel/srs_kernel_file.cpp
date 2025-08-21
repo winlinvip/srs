@@ -7,10 +7,8 @@
 #include <srs_kernel_file.hpp>
 
 // for srs-librtmp, @see https://github.com/ossrs/srs/issues/213
-#ifndef _WIN32
 #include <sys/uio.h>
 #include <unistd.h>
-#endif
 
 #include <fcntl.h>
 #include <sstream>
@@ -282,11 +280,7 @@ srs_error_t SrsFileReader::read(void *buf, size_t count, ssize_t *pnread)
 
     ssize_t nread;
     // TODO: FIXME: use st_read.
-#ifdef _WIN32
-    if ((nread = _read(fd, buf, (unsigned int)count)) < 0) {
-#else
     if ((nread = _srs_read_fn(fd, buf, count)) < 0) {
-#endif
         return srs_error_new(ERROR_SYSTEM_FILE_READ, "read from file %s failed", path.c_str());
     }
 

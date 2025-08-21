@@ -6,9 +6,7 @@
 
 #include <srs_protocol_utility.hpp>
 
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 
 #include <arpa/inet.h>
 #include <sstream>
@@ -368,12 +366,8 @@ srs_error_t srs_write_large_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int s
     srs_error_t err = srs_success;
 
     // the limits of writev iovs.
-#ifndef _WIN32
     // for linux, generally it's 1024.
     static int limits = (int)sysconf(_SC_IOV_MAX);
-#else
-    static int limits = 1024;
-#endif
 
     // send in a time.
     if (size <= limits) {

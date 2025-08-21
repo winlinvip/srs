@@ -15,9 +15,7 @@
 #include <cstdio>
 
 // for srs-librtmp, @see https://github.com/ossrs/srs/issues/213
-#ifndef _WIN32
 #include <sys/uio.h>
-#endif
 
 class SrsFileReader;
 

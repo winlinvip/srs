@@ -14,7 +14,7 @@
 #####################################################################################
 # Check OS and CPU architectures.
 #####################################################################################
-if [[ $OS_IS_UBUNTU != YES && $OS_IS_CENTOS != YES && $OS_IS_OSX != YES && $SRS_CYGWIN64 != YES ]]; then
+if [[ $OS_IS_UBUNTU != YES && $OS_IS_CENTOS != YES && $OS_IS_OSX != YES ]]; then
     if [[ $SRS_CROSS_BUILD != YES && $SRS_GENERIC_LINUX != YES ]]; then
         echo "Your OS `uname -s` is not supported."
         if [[ $(uname -s) == "Linux" ]]; then
@@ -29,7 +29,7 @@ SRS_DEPENDS_LIBS=$(mkdir -p $SRS_OBJS && cd $SRS_OBJS && pwd)
 echo -n "SRS_JOBS: $SRS_JOBS, SRS_DEPENDS_LIBS: ${SRS_DEPENDS_LIBS}"
 if [[ ! -z $OS_IS_LINUX ]]; then echo -n ", OS_IS_LINUX: $OS_IS_LINUX"; fi
 if [[ ! -z $OS_IS_OSX ]]; then echo -n ", OS_IS_OSX: $OS_IS_OSX"; fi
-if [[ ! -z $OS_IS_CYGWIN ]]; then echo -n ", OS_IS_CYGWIN: $OS_IS_CYGWIN"; fi
+
 if [[ ! -z $OS_IS_UBUNTU ]]; then echo -n ", OS_IS_UBUNTU: $OS_IS_UBUNTU"; fi
 if [[ ! -z $OS_IS_CENTOS ]]; then echo -n ", OS_IS_CENTOS: $OS_IS_CENTOS"; fi
 if [[ ! -z $SRS_CROSS_BUILD ]]; then echo -n ", SRS_CROSS_BUILD: $SRS_CROSS_BUILD"; fi
@@ -270,10 +270,7 @@ if [[ $SRS_OSX == YES ]]; then
         _ST_EXTRA_CFLAGS="$_ST_EXTRA_CFLAGS -DMD_OSX_NO_CLOCK_GETTIME"
     fi
 fi
-# for windows/cygwin
-if [[ $SRS_CYGWIN64 = YES ]]; then
-    _ST_MAKE=cygwin64-debug && _ST_OBJ="CYGWIN64_`uname -s`_DBG"
-fi
+
 # For Ubuntu, the epoll detection might be fail.
 if [[ $OS_IS_UBUNTU == YES ]]; then
     _ST_EXTRA_CFLAGS="$_ST_EXTRA_CFLAGS -DMD_HAVE_EPOLL"
@@ -501,12 +498,8 @@ if [[ $SRS_USE_SYS_SRTP == NO ]]; then
         rm -rf ${SRS_OBJS}/${SRS_PLATFORM}/libsrtp-2-fit ${SRS_OBJS}/${SRS_PLATFORM}/3rdparty/srtp2 \
             ${SRS_OBJS}/srtp2 &&
         cp -rf ${SRS_WORKDIR}/3rdparty/libsrtp-2-fit ${SRS_OBJS}/${SRS_PLATFORM}/ &&
-        # For cygwin64, the patch is not available, so use sed instead.
-        if [[ $SRS_CYGWIN64 == YES ]]; then
-            sed -i 's/char bit_string/static char bit_string/g' ${SRS_OBJS}/${SRS_PLATFORM}/libsrtp-2-fit/crypto/math/datatypes.c
-        else
-            patch -p0 ${SRS_OBJS}/${SRS_PLATFORM}/libsrtp-2-fit/crypto/math/datatypes.c ${SRS_WORKDIR}/3rdparty/patches/srtp/gcc10-01.patch
-        fi &&
+        # Apply patch for GCC 10 compatibility.
+        patch -p0 ${SRS_OBJS}/${SRS_PLATFORM}/libsrtp-2-fit/crypto/math/datatypes.c ${SRS_WORKDIR}/3rdparty/patches/srtp/gcc10-01.patch &&
         # Patch the cpu arch guessing for RISCV.
         if [[ $OS_IS_RISCV == YES ]]; then
             patch -p0 ${SRS_OBJS}/${SRS_PLATFORM}/libsrtp-2-fit/config.guess ${SRS_WORKDIR}/3rdparty/patches/srtp/config.guess-02.patch
@@ -703,10 +696,7 @@ if [[ $SRS_SRT == YES && $SRS_USE_SYS_SRT == NO ]]; then
     else
         LIBSRT_OPTIONS="$LIBSRT_OPTIONS --enable-shared=0"
     fi
-    # For windows build, over cygwin
-    if [[ $SRS_CYGWIN64 == YES ]]; then
-        LIBSRT_OPTIONS="$LIBSRT_OPTIONS --cygwin-use-posix"
-    fi
+
     # For cross-build.
     if [[ $SRS_CROSS_BUILD == YES ]]; then
         TOOL_GCC_REALPATH=$(realpath $(which $SRS_TOOL_CC))

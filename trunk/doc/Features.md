@@ -17,14 +17,14 @@ The features of SRS.
 - [x] System: Support x86_64, armv7 and aarch64 docker image, [#3058](https://github.com/ossrs/srs/pull/3058). v5.0.29+
 - [x] System: [Experimental] Enhance HTTP Stream Server for HTTP-FLV, HTTPS, HLS etc. [#1657](https://github.com/ossrs/srs/issues/1657).
 - [x] System: [Experimental] Support DVR in MP4 format, read [#738](https://github.com/ossrs/srs/issues/738). v3.0.86+
-- [x] System: [Experimental] Support Cygwin64 and MIPS cpu. v5.0.13+
+- [x] System: [Experimental] Support Cygwin64 and MIPS cpu. v5.0.13+ (Removed in 7.0)
 - [x] System: [Experimental] Support RISCV cpu, [#3115](https://github.com/ossrs/srs/pull/3115). v5.0.33+
 - [x] System: [Experimental] Support loongarch, loongson CPU, [#2689](https://github.com/ossrs/srs/issues/2689).  v5.0.38+
 - [x] System: [Experimental] Support Apple Silicon M1(aarch64), [#2747](https://github.com/ossrs/srs/issues/2747). v5.0.41+
 - [x] System: [Experimental] Support distributed tracing by Tencent Cloud APM. v5.0.64+
 - [x] System: [Experimental] Support grab backtrace stack when assert fail. v5.0.80+
 - [x] System: [Experimental] Support Google Address Sanitizer, [#3216](https://github.com/ossrs/srs/issues/3216). v5.0.81+
-- [x] System: [Experimental] Windows: Support cygwin pipline and packager, [#2532](https://github.com/ossrs/srs/issues/2532). v5.0.89+
+- [x] System: [Experimental] Windows: Support cygwin pipline and packager, [#2532](https://github.com/ossrs/srs/issues/2532). v5.0.89+ (Removed in 7.0)
 - [x] System: [Experimental] Support H.265 over RTMP and HTTP-FLV, [#465](https://github.com/ossrs/srs/issues/465). v6.0.2+
 - [x] System: [Experimental] Support H.265 over HTTP-TS and HLS, [#465](https://github.com/ossrs/srs/issues/465). v6.0.11+
 - [x] System: [Experimental] Support H.265 over MPEG-DASH and DVR to MP4/FLV, [#465](https://github.com/ossrs/srs/issues/465). v6.0.14+

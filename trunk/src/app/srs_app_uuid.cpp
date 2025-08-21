@@ -508,14 +508,14 @@ void uuid_unpack(const uuid_t in, struct uuid *uu);
 #define _SVID_SOURCE
 #endif
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -603,8 +603,6 @@ static int flock(int fd, int op)
 }
 
 #endif /* LOCK_EX */
-
-
 
 /*
  * Get the ethernet hardware address, if we can find it...

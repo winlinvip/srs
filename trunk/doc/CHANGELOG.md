@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-08-21, Merge [#4447](https://github.com/ossrs/srs/pull/4447): AI: Always enable WebRTC and enforce C++98 compatibility. v7.0.60 (#4447)
 * v7.0, 2025-08-20, Merge [#4445](https://github.com/ossrs/srs/pull/4445): AI: Remove multi-threading support and change to single-thread architecture. v7.0.59 (#4445)
 * v7.0, 2025-08-19, Merge [#4444](https://github.com/ossrs/srs/pull/4444): AI: Refine hooks from static to instance functions. v7.0.58 (#4444)
 * v7.0, 2025-08-19, Merge [#3126](https://github.com/ossrs/srs/pull/3126): HLS: restore HLS information when republish stream.(#3088). v7.0.57 (#3126)

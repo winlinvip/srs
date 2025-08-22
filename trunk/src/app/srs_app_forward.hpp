@@ -19,7 +19,7 @@ class SrsOnMetaDataPacket;
 class SrsMessageQueue;
 class SrsRtmpJitter;
 class SrsRtmpClient;
-class SrsRequest;
+class ISrsRequest;
 class SrsLiveSource;
 class SrsOriginHub;
 class SrsKbps;
@@ -31,7 +31,7 @@ class SrsForwarder : public ISrsCoroutineHandler
 private:
     // The ep to forward, server[:port].
     std::string ep_forward;
-    SrsRequest *req;
+    ISrsRequest *req;
 
 private:
     // The source or stream context id to bind to.
@@ -54,7 +54,7 @@ public:
     virtual ~SrsForwarder();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r, std::string ep);
+    virtual srs_error_t initialize(ISrsRequest *r, std::string ep);
     virtual void set_queue_size(srs_utime_t queue_size);
 
 public:

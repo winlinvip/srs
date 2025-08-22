@@ -14,7 +14,7 @@
 
 #include <srs_app_st.hpp>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsPithyPrint;
 class SrsProcess;
 
@@ -34,7 +34,7 @@ public:
     virtual ~SrsNgExec();
 
 public:
-    virtual srs_error_t on_publish(SrsRequest *req);
+    virtual srs_error_t on_publish(ISrsRequest *req);
     virtual void on_unpublish();
     // Interface ISrsReusableThreadHandler.
 public:
@@ -44,10 +44,10 @@ private:
     virtual srs_error_t do_cycle();
 
 private:
-    virtual srs_error_t parse_exec_publish(SrsRequest *req);
+    virtual srs_error_t parse_exec_publish(ISrsRequest *req);
     virtual void clear_exec_publish();
     virtual void show_exec_log_message();
-    virtual std::string parse(SrsRequest *req, std::string tmpl);
+    virtual std::string parse(ISrsRequest *req, std::string tmpl);
 };
 
 #endif

@@ -70,7 +70,7 @@ string serialFlv(SrsSharedPtrMessage *msg)
 class SrsHdsFragment
 {
 public:
-    SrsHdsFragment(SrsRequest *r)
+    SrsHdsFragment(ISrsRequest *r)
         : req(r), index(-1), start_time(0), videoSh(NULL), audioSh(NULL)
     {
     }
@@ -218,7 +218,7 @@ public:
     }
 
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     list<SrsSharedPtrMessage *> msgs;
 
     /*!
@@ -241,7 +241,7 @@ SrsHds::~SrsHds()
 {
 }
 
-srs_error_t SrsHds::on_publish(SrsRequest *req)
+srs_error_t SrsHds::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 

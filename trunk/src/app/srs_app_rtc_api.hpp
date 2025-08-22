@@ -12,7 +12,7 @@
 #include <srs_protocol_http_stack.hpp>
 
 class SrsRtcServer;
-class SrsRequest;
+class ISrsRequest;
 class SrsSdp;
 class SrsRtcUserConfig;
 
@@ -39,7 +39,7 @@ private:
     srs_error_t check_remote_sdp(const SrsSdp &remote_sdp);
 
 private:
-    virtual srs_error_t http_hooks_on_play(SrsRequest *req);
+    virtual srs_error_t http_hooks_on_play(ISrsRequest *req);
 };
 
 class SrsGoApiRtcPublish : public ISrsHttpHandler
@@ -65,7 +65,7 @@ private:
     srs_error_t check_remote_sdp(const SrsSdp &remote_sdp);
 
 private:
-    virtual srs_error_t http_hooks_on_publish(SrsRequest *req);
+    virtual srs_error_t http_hooks_on_publish(ISrsRequest *req);
 };
 
 // See https://datatracker.ietf.org/doc/draft-ietf-wish-whip/

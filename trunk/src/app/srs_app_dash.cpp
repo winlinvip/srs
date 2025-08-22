@@ -79,7 +79,7 @@ SrsFragmentedMp4::~SrsFragmentedMp4()
     srs_freep(fw);
 }
 
-srs_error_t SrsFragmentedMp4::initialize(SrsRequest *r, bool video, int64_t time, SrsMpdWriter *mpd, uint32_t tid)
+srs_error_t SrsFragmentedMp4::initialize(ISrsRequest *r, bool video, int64_t time, SrsMpdWriter *mpd, uint32_t tid)
 {
     srs_error_t err = srs_success;
 
@@ -185,7 +185,7 @@ void SrsMpdWriter::dispose()
     }
 }
 
-srs_error_t SrsMpdWriter::initialize(SrsRequest *r)
+srs_error_t SrsMpdWriter::initialize(ISrsRequest *r)
 {
     req = r;
     return srs_success;
@@ -193,7 +193,7 @@ srs_error_t SrsMpdWriter::initialize(SrsRequest *r)
 
 srs_error_t SrsMpdWriter::on_publish()
 {
-    SrsRequest *r = req;
+    ISrsRequest *r = req;
 
     fragment = _srs_config->get_dash_fragment(r->vhost);
     update_period = _srs_config->get_dash_update_period(r->vhost);
@@ -394,7 +394,7 @@ void SrsDashController::dispose()
     srs_trace("gracefully dispose dash %s", req ? req->get_stream_url().c_str() : "");
 }
 
-srs_error_t SrsDashController::initialize(SrsRequest *r)
+srs_error_t SrsDashController::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -411,7 +411,7 @@ srs_error_t SrsDashController::on_publish()
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *r = req;
+    ISrsRequest *r = req;
 
     fragment = _srs_config->get_dash_fragment(r->vhost);
     home = _srs_config->get_dash_path(r->vhost);
@@ -737,7 +737,7 @@ srs_utime_t SrsDash::cleanup_delay()
     return _srs_config->get_dash_dispose(req->vhost) * 1.1;
 }
 
-srs_error_t SrsDash::initialize(SrsOriginHub *h, SrsRequest *r)
+srs_error_t SrsDash::initialize(SrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 

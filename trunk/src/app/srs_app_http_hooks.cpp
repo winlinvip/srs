@@ -52,7 +52,7 @@ SrsHttpHooks::~SrsHttpHooks()
 {
 }
 
-srs_error_t SrsHttpHooks::on_connect(string url, SrsRequest *req)
+srs_error_t SrsHttpHooks::on_connect(string url, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -88,7 +88,7 @@ srs_error_t SrsHttpHooks::on_connect(string url, SrsRequest *req)
     return err;
 }
 
-void SrsHttpHooks::on_close(string url, SrsRequest *req, int64_t send_bytes, int64_t recv_bytes)
+void SrsHttpHooks::on_close(string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes)
 {
     srs_error_t err = srs_success;
 
@@ -125,7 +125,7 @@ void SrsHttpHooks::on_close(string url, SrsRequest *req, int64_t send_bytes, int
     return;
 }
 
-srs_error_t SrsHttpHooks::on_publish(string url, SrsRequest *req)
+srs_error_t SrsHttpHooks::on_publish(string url, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -166,7 +166,7 @@ srs_error_t SrsHttpHooks::on_publish(string url, SrsRequest *req)
     return err;
 }
 
-void SrsHttpHooks::on_unpublish(string url, SrsRequest *req)
+void SrsHttpHooks::on_unpublish(string url, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -210,7 +210,7 @@ void SrsHttpHooks::on_unpublish(string url, SrsRequest *req)
     return;
 }
 
-srs_error_t SrsHttpHooks::on_play(string url, SrsRequest *req)
+srs_error_t SrsHttpHooks::on_play(string url, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -252,7 +252,7 @@ srs_error_t SrsHttpHooks::on_play(string url, SrsRequest *req)
     return err;
 }
 
-void SrsHttpHooks::on_stop(string url, SrsRequest *req)
+void SrsHttpHooks::on_stop(string url, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -296,7 +296,7 @@ void SrsHttpHooks::on_stop(string url, SrsRequest *req)
     return;
 }
 
-srs_error_t SrsHttpHooks::on_dvr(SrsContextId c, string url, SrsRequest *req, string file)
+srs_error_t SrsHttpHooks::on_dvr(SrsContextId c, string url, ISrsRequest *req, string file)
 {
     srs_error_t err = srs_success;
 
@@ -341,7 +341,7 @@ srs_error_t SrsHttpHooks::on_dvr(SrsContextId c, string url, SrsRequest *req, st
     return err;
 }
 
-srs_error_t SrsHttpHooks::on_hls(SrsContextId c, string url, SrsRequest *req, string file, string ts_url, string m3u8, string m3u8_url, int sn, srs_utime_t duration)
+srs_error_t SrsHttpHooks::on_hls(SrsContextId c, string url, ISrsRequest *req, string file, string ts_url, string m3u8, string m3u8_url, int sn, srs_utime_t duration)
 {
     srs_error_t err = srs_success;
 
@@ -396,7 +396,7 @@ srs_error_t SrsHttpHooks::on_hls(SrsContextId c, string url, SrsRequest *req, st
     return err;
 }
 
-srs_error_t SrsHttpHooks::on_hls_notify(SrsContextId c, std::string url, SrsRequest *req, std::string ts_url, int nb_notify)
+srs_error_t SrsHttpHooks::on_hls_notify(SrsContextId c, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify)
 {
     srs_error_t err = srs_success;
 
@@ -520,7 +520,7 @@ srs_error_t SrsHttpHooks::discover_co_workers(string url, string &host, int &por
     return err;
 }
 
-srs_error_t SrsHttpHooks::on_forward_backend(string url, SrsRequest *req, std::vector<std::string> &rtmp_urls)
+srs_error_t SrsHttpHooks::on_forward_backend(string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls)
 {
     srs_error_t err = srs_success;
 

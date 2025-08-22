@@ -19,7 +19,7 @@ class SrsConfDirective;
 class SrsSimpleStream;
 class SrsRtmpClient;
 class SrsStSocket;
-class SrsRequest;
+class ISrsRequest;
 class SrsRawH264Stream;
 class SrsSharedPtrMessage;
 class SrsRawAacStream;

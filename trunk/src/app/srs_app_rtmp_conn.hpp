@@ -20,7 +20,7 @@
 
 class SrsServer;
 class SrsRtmpServer;
-class SrsRequest;
+class ISrsRequest;
 class SrsResponse;
 class SrsLiveSource;
 class SrsRefer;
@@ -62,7 +62,7 @@ public:
     // Whether the client connected at the edge server.
     bool edge;
     // Original request object from client.
-    SrsRequest *req;
+    ISrsRequest *req;
     // Response object to client.
     SrsResponse *res;
 

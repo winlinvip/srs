@@ -22,7 +22,7 @@ class SrsRtmpServer;
 class SrsCommonMessage;
 class SrsRtmpConn;
 class SrsLiveSource;
-class SrsRequest;
+class ISrsRequest;
 class SrsLiveConsumer;
 class SrsHttpConn;
 class SrsHttpxConn;
@@ -141,7 +141,7 @@ private:
     uint32_t nn_msgs_for_yield_;
     SrsRecvThread trd;
     SrsRtmpServer *rtmp;
-    SrsRequest *req;
+    ISrsRequest *req;
     // The msgs already got.
     int64_t _nb_msgs;
     // The video frames we got.
@@ -165,7 +165,7 @@ private:
     SrsContextId ncid;
 
 public:
-    SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, SrsRequest *_req,
+    SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
                          int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid);
     virtual ~SrsPublishRecvThread();
 

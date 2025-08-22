@@ -19,7 +19,7 @@ SrsSecurity::~SrsSecurity()
 {
 }
 
-srs_error_t SrsSecurity::check(SrsRtmpConnType type, string ip, SrsRequest *req)
+srs_error_t SrsSecurity::check(SrsRtmpConnType type, string ip, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -33,7 +33,7 @@ srs_error_t SrsSecurity::check(SrsRtmpConnType type, string ip, SrsRequest *req)
     return do_check(rules, type, ip, req);
 }
 
-srs_error_t SrsSecurity::do_check(SrsConfDirective *rules, SrsRtmpConnType type, string ip, SrsRequest *req)
+srs_error_t SrsSecurity::do_check(SrsConfDirective *rules, SrsRtmpConnType type, string ip, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 

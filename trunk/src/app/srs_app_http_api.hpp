@@ -16,7 +16,7 @@ class SrsServer;
 class SrsRtcServer;
 class SrsJsonObject;
 class SrsSdp;
-class SrsRequest;
+class ISrsRequest;
 class ISrsHttpResponseWriter;
 class SrsHttpConn;
 

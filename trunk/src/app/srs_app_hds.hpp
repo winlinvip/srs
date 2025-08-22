@@ -13,7 +13,7 @@
 
 #include <list>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsSharedPtrMessage;
 class SrsHdsFragment;
 class SrsLiveSource;
@@ -25,7 +25,7 @@ public:
     SrsHds();
     virtual ~SrsHds();
 
-    srs_error_t on_publish(SrsRequest *req);
+    srs_error_t on_publish(ISrsRequest *req);
     srs_error_t on_unpublish();
 
     srs_error_t on_video(SrsSharedPtrMessage *msg);
@@ -43,7 +43,7 @@ private:
     SrsSharedPtrMessage *video_sh;
     SrsSharedPtrMessage *audio_sh;
 
-    SrsRequest *hds_req;
+    ISrsRequest *hds_req;
     bool hds_enabled;
 };
 

@@ -14,7 +14,7 @@
 #include <srs_kernel_log.hpp>
 #include <srs_protocol_utility.hpp>
 
-class SrsRequest;
+class ISrsRequest;
 
 enum SrtMode {
     SrtModePull = 1,
@@ -25,6 +25,6 @@ enum SrtMode {
 extern bool srs_srt_streamid_info(const std::string &streamid, SrtMode &mode, std::string &vhost, std::string &url_subpath);
 
 // SRT streamid to request.
-extern bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, SrsRequest *request);
+extern bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, ISrsRequest *request);
 
 #endif

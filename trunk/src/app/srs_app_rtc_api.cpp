@@ -292,7 +292,7 @@ srs_error_t SrsGoApiRtcPlay::check_remote_sdp(const SrsSdp &remote_sdp)
     return err;
 }
 
-srs_error_t SrsGoApiRtcPlay::http_hooks_on_play(SrsRequest *req)
+srs_error_t SrsGoApiRtcPlay::http_hooks_on_play(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -567,7 +567,7 @@ srs_error_t SrsGoApiRtcPublish::check_remote_sdp(const SrsSdp &remote_sdp)
     return err;
 }
 
-srs_error_t SrsGoApiRtcPublish::http_hooks_on_publish(SrsRequest *req)
+srs_error_t SrsGoApiRtcPublish::http_hooks_on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 

@@ -22,7 +22,7 @@
 
 class SrsServer;
 class SrsLiveSource;
-class SrsRequest;
+class ISrsRequest;
 class SrsLiveConsumer;
 class SrsStSocket;
 class SrsHttpParser;
@@ -30,7 +30,6 @@ class ISrsHttpMessage;
 class SrsHttpHandler;
 class SrsMessageQueue;
 class SrsSharedPtrMessage;
-class SrsRequest;
 class SrsFastStream;
 class SrsHttpUri;
 class SrsHttpMessage;
@@ -104,12 +103,12 @@ public:
 
 private:
     virtual srs_error_t do_cycle();
-    virtual srs_error_t process_requests(SrsRequest **preq);
+    virtual srs_error_t process_requests(ISrsRequest **preq);
     virtual srs_error_t process_request(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, int rid);
     // When the connection disconnect, call this method.
     // e.g. log msg of connection and report to other system.
     // @param request: request which is converted by the last http message.
-    virtual srs_error_t on_disconnect(SrsRequest *req);
+    virtual srs_error_t on_disconnect(ISrsRequest *req);
 
 public:
     // Get the HTTP message handler.
@@ -202,8 +201,8 @@ public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
 public:
-    virtual srs_error_t http_mount(SrsRequest *r);
-    virtual void http_unmount(SrsRequest *r);
+    virtual srs_error_t http_mount(ISrsRequest *r);
+    virtual void http_unmount(ISrsRequest *r);
 };
 
 #endif

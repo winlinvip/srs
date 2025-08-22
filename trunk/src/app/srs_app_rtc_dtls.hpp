@@ -17,7 +17,7 @@
 
 #include <srs_app_st.hpp>
 
-class SrsRequest;
+class ISrsRequest;
 
 class SrsDtlsCertificate
 {

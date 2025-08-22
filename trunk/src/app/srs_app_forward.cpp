@@ -56,7 +56,7 @@ SrsForwarder::~SrsForwarder()
     srs_freep(req);
 }
 
-srs_error_t SrsForwarder::initialize(SrsRequest *r, string ep)
+srs_error_t SrsForwarder::initialize(ISrsRequest *r, string ep)
 {
     srs_error_t err = srs_success;
 

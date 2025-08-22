@@ -34,7 +34,7 @@ SrsNgExec::~SrsNgExec()
     srs_freep(pprint);
 }
 
-srs_error_t SrsNgExec::on_publish(SrsRequest *req)
+srs_error_t SrsNgExec::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -120,7 +120,7 @@ srs_error_t SrsNgExec::do_cycle()
     return err;
 }
 
-srs_error_t SrsNgExec::parse_exec_publish(SrsRequest *req)
+srs_error_t SrsNgExec::parse_exec_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -193,7 +193,7 @@ void SrsNgExec::show_exec_log_message()
     }
 }
 
-string SrsNgExec::parse(SrsRequest *req, string tmpl)
+string SrsNgExec::parse(ISrsRequest *req, string tmpl)
 {
     string output = tmpl;
 

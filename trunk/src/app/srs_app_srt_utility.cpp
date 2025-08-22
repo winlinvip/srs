@@ -112,7 +112,7 @@ bool srs_srt_streamid_info(const std::string &streamid, SrtMode &mode, std::stri
     return true;
 }
 
-bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, SrsRequest *request)
+bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, ISrsRequest *request)
 {
     string url_subpath = "";
     bool ret = srs_srt_streamid_info(streamid, mode, request->vhost, url_subpath);

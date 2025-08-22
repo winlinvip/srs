@@ -500,7 +500,7 @@ srs_error_t SrsRtcServer::create_session(SrsRtcUserConfig *ruc, SrsSdp &local_sd
 
     SrsContextId cid = _srs_context->get_id();
 
-    SrsRequest *req = ruc->req_;
+    ISrsRequest *req = ruc->req_;
 
     SrsSharedPtr<SrsRtcSource> source;
     if ((err = _srs_rtc_sources->fetch_or_create(req, source)) != srs_success) {
@@ -527,7 +527,7 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *req = ruc->req_;
+    ISrsRequest *req = ruc->req_;
 
     // first add publisher/player for negotiate sdp media info
     if (ruc->publish_) {

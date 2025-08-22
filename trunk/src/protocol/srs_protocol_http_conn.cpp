@@ -593,9 +593,9 @@ SrsHttpHeader *SrsHttpMessage::header()
     return &_header;
 }
 
-SrsRequest *SrsHttpMessage::to_request(string vhost)
+ISrsRequest *SrsHttpMessage::to_request(string vhost)
 {
-    SrsRequest *req = new SrsRequest();
+    ISrsRequest *req = new SrsRequest();
 
     // http path, for instance, /live/livestream.flv, parse to
     //      app: /live

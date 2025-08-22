@@ -342,7 +342,7 @@ bool srs_stream_caster_is_gb28181(string caster)
     return caster == "gb28181";
 }
 
-bool srs_config_apply_filter(SrsConfDirective *dvr_apply, SrsRequest *req)
+bool srs_config_apply_filter(SrsConfDirective *dvr_apply, ISrsRequest *req)
 {
     static bool DEFAULT = true;
 

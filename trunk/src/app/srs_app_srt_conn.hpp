@@ -134,7 +134,7 @@ private:
     int port_;
     SrsCoroutine *trd_;
 
-    SrsRequest *req_;
+    ISrsRequest *req_;
     SrsSharedPtr<SrsSrtSource> srt_source_;
     SrsSecurity *security_;
 };

@@ -23,7 +23,7 @@ class SrsSharedPtrMessage;
 class SrsAmf0Object;
 class SrsRtmpJitter;
 class SrsTsContextWriter;
-class SrsRequest;
+class ISrsRequest;
 class SrsPithyPrint;
 class SrsLiveSource;
 class SrsOriginHub;
@@ -132,12 +132,12 @@ private:
     std::string m3u8;
     std::string m3u8_url;
     int seq_no;
-    SrsRequest *req;
+    ISrsRequest *req;
     srs_utime_t duration;
 
 public:
     // TODO: FIXME: Use TBN 1000.
-    SrsDvrAsyncCallOnHls(SrsContextId c, SrsRequest *r, std::string p, std::string t, std::string m, std::string mu, int s, srs_utime_t d);
+    SrsDvrAsyncCallOnHls(SrsContextId c, ISrsRequest *r, std::string p, std::string t, std::string m, std::string mu, int s, srs_utime_t d);
     virtual ~SrsDvrAsyncCallOnHls();
 
 public:
@@ -151,10 +151,10 @@ class SrsDvrAsyncCallOnHlsNotify : public ISrsAsyncCallTask
 private:
     SrsContextId cid;
     std::string ts_url;
-    SrsRequest *req;
+    ISrsRequest *req;
 
 public:
-    SrsDvrAsyncCallOnHlsNotify(SrsContextId c, SrsRequest *r, std::string u);
+    SrsDvrAsyncCallOnHlsNotify(SrsContextId c, ISrsRequest *r, std::string u);
     virtual ~SrsDvrAsyncCallOnHlsNotify();
 
 public:
@@ -172,7 +172,7 @@ public:
 class SrsHlsMuxer
 {
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
 
 private:
     std::string hls_entry_prefix;
@@ -257,10 +257,10 @@ public:
     // Initialize the hls muxer.
     virtual srs_error_t initialize();
     // When publish or unpublish stream.
-    virtual srs_error_t on_publish(SrsRequest *req);
+    virtual srs_error_t on_publish(ISrsRequest *req);
     virtual srs_error_t on_unpublish();
     // When publish, update the config for muxer.
-    virtual srs_error_t update_config(SrsRequest *r, std::string entry_prefix,
+    virtual srs_error_t update_config(ISrsRequest *r, std::string entry_prefix,
                                       std::string path, std::string m3u8_file, std::string ts_file,
                                       srs_utime_t fragment, srs_utime_t window, bool ts_floor, double aof_ratio,
                                       bool cleanup, bool wait_keyframe, bool keys, int fragments_per_key,
@@ -308,7 +308,7 @@ public:
 class SrsHlsFmp4Muxer
 {
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
 
 private:
     std::string hls_entry_prefix_;
@@ -406,7 +406,7 @@ public:
     // Initialize the hls muxer.
     virtual srs_error_t initialize(int v_tid, int a_tid);
     // When publish or unpublish stream.
-    virtual srs_error_t on_publish(SrsRequest *req);
+    virtual srs_error_t on_publish(ISrsRequest *req);
 
 public:
     virtual srs_error_t write_init_mp4(SrsFormat *format, bool has_video, bool has_audio);
@@ -416,7 +416,7 @@ public:
 public:
     virtual srs_error_t on_unpublish();
     // When publish, update the config for muxer.
-    virtual srs_error_t update_config(SrsRequest *r);
+    virtual srs_error_t update_config(ISrsRequest *r);
     // Open a new segment(a new ts file)
     virtual srs_error_t segment_open(srs_utime_t basetime);
     virtual srs_error_t on_sequence_header();
@@ -455,7 +455,7 @@ public:
     virtual srs_error_t initialize() = 0;
     virtual void dispose() = 0;
     // When publish or unpublish stream.
-    virtual srs_error_t on_publish(SrsRequest *req) = 0;
+    virtual srs_error_t on_publish(ISrsRequest *req) = 0;
     virtual srs_error_t on_unpublish() = 0;
 
 public:
@@ -518,7 +518,7 @@ public:
 
 public:
     // When publish or unpublish stream.
-    virtual srs_error_t on_publish(SrsRequest *req);
+    virtual srs_error_t on_publish(ISrsRequest *req);
     virtual srs_error_t on_unpublish();
     // When get sequence header,
     // must write a #EXT-X-DISCONTINUITY to m3u8.
@@ -557,7 +557,7 @@ private:
     uint64_t video_dts_;
 
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
 
 private:
     SrsHlsFmp4Muxer *muxer_;
@@ -570,7 +570,7 @@ public:
     virtual srs_error_t initialize();
     virtual void dispose();
     // When publish or unpublish stream.
-    virtual srs_error_t on_publish(SrsRequest *req);
+    virtual srs_error_t on_publish(ISrsRequest *req);
     virtual srs_error_t on_unpublish();
     virtual srs_error_t write_audio(SrsSharedPtrMessage *shared_audio, SrsFormat *format);
     virtual srs_error_t write_video(SrsSharedPtrMessage *shared_video, SrsFormat *format);
@@ -591,7 +591,7 @@ private:
     ISrsHlsController *controller;
 
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     // Whether the HLS is enabled.
     bool enabled;
     // Whether the HLS stream is able to be disposed.
@@ -627,7 +627,7 @@ public:
 
 public:
     // Initialize the hls by handler and source.
-    virtual srs_error_t initialize(SrsOriginHub *h, SrsRequest *r);
+    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
     // Publish stream event, continue to write the m3u8,
     // for the muxer object not destroyed.
     // @param fetch_sequence_header whether fetch sequence from source.

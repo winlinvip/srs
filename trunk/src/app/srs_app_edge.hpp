@@ -17,7 +17,7 @@
 class SrsStSocket;
 class SrsRtmpServer;
 class SrsLiveSource;
-class SrsRequest;
+class ISrsRequest;
 class SrsPlayEdge;
 class SrsPublishEdge;
 class SrsRtmpClient;
@@ -65,7 +65,7 @@ public:
     virtual ~SrsEdgeUpstream();
 
 public:
-    virtual srs_error_t connect(SrsRequest *r, SrsLbRoundRobin *lb) = 0;
+    virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb) = 0;
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg) = 0;
     virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket) = 0;
     virtual void close() = 0;
@@ -95,7 +95,7 @@ public:
     virtual ~SrsEdgeRtmpUpstream();
 
 public:
-    virtual srs_error_t connect(SrsRequest *r, SrsLbRoundRobin *lb);
+    virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb);
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
     virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
     virtual void close();
@@ -119,7 +119,7 @@ private:
 
 private:
     // We might modify the request by HTTP redirect.
-    SrsRequest *req_;
+    ISrsRequest *req_;
     // Current selected server, the ip:port.
     std::string selected_ip;
     int selected_port;
@@ -129,10 +129,10 @@ public:
     virtual ~SrsEdgeFlvUpstream();
 
 public:
-    virtual srs_error_t connect(SrsRequest *r, SrsLbRoundRobin *lb);
+    virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb);
 
 private:
-    virtual srs_error_t do_connect(SrsRequest *r, SrsLbRoundRobin *lb, int redirect_depth);
+    virtual srs_error_t do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, int redirect_depth);
 
 public:
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
@@ -154,7 +154,7 @@ private:
 
 private:
     SrsPlayEdge *edge;
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsCoroutine *trd;
     SrsLbRoundRobin *lb;
     SrsEdgeUpstream *upstream;
@@ -166,7 +166,7 @@ public:
     virtual ~SrsEdgeIngester();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, SrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
     virtual std::string get_curr_origin();
@@ -195,7 +195,7 @@ private:
 
 private:
     SrsPublishEdge *edge;
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsCoroutine *trd;
     SrsSimpleRtmpClient *sdk;
     SrsLbRoundRobin *lb;
@@ -215,7 +215,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size);
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPublishEdge *e, SrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPublishEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
     // Interface ISrsReusableThread2Handler
@@ -244,7 +244,7 @@ public:
     // Always use the req of source,
     // For we assume all client to edge is invalid,
     // if auth open, edge must valid it from origin, then service it.
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> source, SrsRequest *req);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req);
     // When client play stream on edge.
     virtual srs_error_t on_client_play();
     // When all client stopped play, disconnect to origin.
@@ -271,7 +271,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size);
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> source, SrsRequest *req);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req);
     virtual bool can_publish();
     // When client publish stream on edge.
     virtual srs_error_t on_client_publish();

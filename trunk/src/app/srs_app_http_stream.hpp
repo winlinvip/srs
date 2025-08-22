@@ -29,13 +29,13 @@ private:
 
 private:
     SrsMessageQueue *queue;
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsCoroutine *trd;
 
 public:
-    SrsBufferCache(SrsServer *s, SrsRequest *r);
+    SrsBufferCache(SrsServer *s, ISrsRequest *r);
     virtual ~SrsBufferCache();
-    virtual srs_error_t update_auth(SrsRequest *r);
+    virtual srs_error_t update_auth(ISrsRequest *r);
 
 public:
     virtual srs_error_t start();
@@ -209,7 +209,7 @@ public:
 class SrsLiveStream : public ISrsHttpHandler, public ISrsExpire
 {
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsBufferCache *cache;
     SrsSecurity *security_;
     SrsServer *server_;
@@ -219,9 +219,9 @@ private:
     std::vector<ISrsExpire *> viewers_;
 
 public:
-    SrsLiveStream(SrsServer *s, SrsRequest *r, SrsBufferCache *c);
+    SrsLiveStream(SrsServer *s, ISrsRequest *r, SrsBufferCache *c);
     virtual ~SrsLiveStream();
-    virtual srs_error_t update_auth(SrsRequest *r);
+    virtual srs_error_t update_auth(ISrsRequest *r);
 
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
@@ -252,7 +252,7 @@ private:
 
 public:
     // We will free the request.
-    SrsRequest *req;
+    ISrsRequest *req;
 
 public:
     // For template, the mount contains variables.
@@ -298,8 +298,8 @@ public:
 
 public:
     // HTTP flv/ts/mp3/aac stream
-    virtual srs_error_t http_mount(SrsRequest *r);
-    virtual void http_unmount(SrsRequest *r);
+    virtual srs_error_t http_mount(ISrsRequest *r);
+    virtual void http_unmount(ISrsRequest *r);
     // Interface ISrsHttpMatchHijacker
 public:
     virtual srs_error_t hijack(ISrsHttpMessage *request, ISrsHttpHandler **ph);

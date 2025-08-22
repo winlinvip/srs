@@ -16,7 +16,7 @@ class SrsConfDirective;
 class SrsHttpServeMux;
 class SrsRtmpClient;
 class SrsStSocket;
-class SrsRequest;
+class ISrsRequest;
 class SrsPithyPrint;
 class ISrsHttpResponseReader;
 class SrsFlvDecoder;

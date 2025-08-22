@@ -154,9 +154,9 @@ srs_error_t SrsHttpConn::do_cycle()
     }
 
     // process all http messages.
-    SrsRequest *last_req_raw = NULL;
+    ISrsRequest *last_req_raw = NULL;
     err = process_requests(&last_req_raw);
-    SrsUniquePtr<SrsRequest> last_req(last_req_raw);
+    SrsUniquePtr<ISrsRequest> last_req(last_req_raw);
 
     srs_error_t r0 = srs_success;
     if ((r0 = on_disconnect(last_req.get())) != srs_success) {
@@ -167,7 +167,7 @@ srs_error_t SrsHttpConn::do_cycle()
     return err;
 }
 
-srs_error_t SrsHttpConn::process_requests(SrsRequest **preq)
+srs_error_t SrsHttpConn::process_requests(ISrsRequest **preq)
 {
     srs_error_t err = srs_success;
 
@@ -236,7 +236,7 @@ srs_error_t SrsHttpConn::process_request(ISrsHttpResponseWriter *w, ISrsHttpMess
     return err;
 }
 
-srs_error_t SrsHttpConn::on_disconnect(SrsRequest *req)
+srs_error_t SrsHttpConn::on_disconnect(ISrsRequest *req)
 {
     // TODO: FIXME: Implements it.
     return srs_success;
@@ -539,12 +539,12 @@ srs_error_t SrsHttpServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage
     return http_static->mux.serve_http(w, r);
 }
 
-srs_error_t SrsHttpServer::http_mount(SrsRequest *r)
+srs_error_t SrsHttpServer::http_mount(ISrsRequest *r)
 {
     return http_stream->http_mount(r);
 }
 
-void SrsHttpServer::http_unmount(SrsRequest *r)
+void SrsHttpServer::http_unmount(ISrsRequest *r)
 {
     http_stream->http_unmount(r);
 }

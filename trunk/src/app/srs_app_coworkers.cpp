@@ -24,9 +24,9 @@ SrsCoWorkers::SrsCoWorkers()
 
 SrsCoWorkers::~SrsCoWorkers()
 {
-    map<string, SrsRequest *>::iterator it;
+    map<string, ISrsRequest *>::iterator it;
     for (it = streams.begin(); it != streams.end(); ++it) {
-        SrsRequest *r = it->second;
+        ISrsRequest *r = it->second;
         srs_freep(r);
     }
     streams.clear();
@@ -42,7 +42,7 @@ SrsCoWorkers *SrsCoWorkers::instance()
 
 SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, string stream)
 {
-    SrsRequest *r = find_stream_info(vhost, app, stream);
+    ISrsRequest *r = find_stream_info(vhost, app, stream);
     if (!r) {
         // TODO: FIXME: Find stream from our origin util return to the start point.
         return SrsJsonAny::null();
@@ -103,7 +103,7 @@ SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, strin
         ->set("routers", routers);
 }
 
-SrsRequest *SrsCoWorkers::find_stream_info(string vhost, string app, string stream)
+ISrsRequest *SrsCoWorkers::find_stream_info(string vhost, string app, string stream)
 {
     // First, we should parse the vhost, if not exists, try default vhost instead.
     SrsConfDirective *conf = _srs_config->get_vhost(vhost, true);
@@ -113,7 +113,7 @@ SrsRequest *SrsCoWorkers::find_stream_info(string vhost, string app, string stre
 
     // Get stream information from local cache.
     string url = srs_generate_stream_url(conf->arg0(), app, stream);
-    map<string, SrsRequest *>::iterator it = streams.find(url);
+    map<string, ISrsRequest *>::iterator it = streams.find(url);
     if (it == streams.end()) {
         return NULL;
     }
@@ -121,14 +121,14 @@ SrsRequest *SrsCoWorkers::find_stream_info(string vhost, string app, string stre
     return it->second;
 }
 
-srs_error_t SrsCoWorkers::on_publish(SrsRequest *r)
+srs_error_t SrsCoWorkers::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
     string url = r->get_stream_url();
 
     // Delete the previous stream informations.
-    map<string, SrsRequest *>::iterator it = streams.find(url);
+    map<string, ISrsRequest *>::iterator it = streams.find(url);
     if (it != streams.end()) {
         srs_freep(it->second);
     }
@@ -139,11 +139,11 @@ srs_error_t SrsCoWorkers::on_publish(SrsRequest *r)
     return err;
 }
 
-void SrsCoWorkers::on_unpublish(SrsRequest *r)
+void SrsCoWorkers::on_unpublish(ISrsRequest *r)
 {
     string url = r->get_stream_url();
 
-    map<string, SrsRequest *>::iterator it = streams.find(url);
+    map<string, ISrsRequest *>::iterator it = streams.find(url);
     if (it != streams.end()) {
         srs_freep(it->second);
         streams.erase(it);

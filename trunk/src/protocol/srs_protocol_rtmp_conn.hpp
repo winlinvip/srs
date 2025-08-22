@@ -11,7 +11,7 @@
 
 #include <string>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsTcpClient;
 class SrsRtmpClient;
 class SrsCommonMessage;
@@ -36,7 +36,7 @@ private:
     srs_utime_t stream_timeout;
 
 protected:
-    SrsRequest *req;
+    ISrsRequest *req;
 
 private:
     SrsTcpClient *transport;

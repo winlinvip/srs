@@ -661,7 +661,7 @@ private:
     int64_t raw_aac_dts;
 
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsBasicRtmpClient *sdk;
 
 private:

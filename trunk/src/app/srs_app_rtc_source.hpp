@@ -22,7 +22,7 @@
 #include <srs_protocol_format.hpp>
 #include <srs_protocol_st.hpp>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsMetaCache;
 class SrsSharedPtrMessage;
 class SrsCommonMessage;
@@ -150,11 +150,11 @@ public:
     //  create source when fetch from cache failed.
     // @param r the client request.
     // @param pps the matched source, if success never be NULL.
-    virtual srs_error_t fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps);
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps);
 
 public:
     // Get the exists source, NULL when not exists.
-    virtual SrsSharedPtr<SrsRtcSource> fetch(SrsRequest *r);
+    virtual SrsSharedPtr<SrsRtcSource> fetch(ISrsRequest *r);
 };
 
 // Global singleton instance.
@@ -198,7 +198,7 @@ private:
     SrsContextId _source_id;
     // previous source id.
     SrsContextId _pre_source_id;
-    SrsRequest *req;
+    ISrsRequest *req;
     ISrsRtcPublishStream *publish_stream_;
     // Steam description for this steam.
     SrsRtcSourceDescription *stream_desc_;
@@ -235,7 +235,7 @@ public:
     virtual ~SrsRtcSource();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
 
 public:
     // Whether stream is dead, which is no publisher or player.
@@ -246,7 +246,7 @@ private:
 
 public:
     // Update the authentication information in request.
-    virtual void update_auth(SrsRequest *r);
+    virtual void update_auth(ISrsRequest *r);
 
 private:
     // The stream source changed.
@@ -306,7 +306,7 @@ private:
 class SrsRtcRtpBuilder
 {
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsFrameToRtcBridge *bridge_;
     // The format, codec information.
     SrsRtmpFormat *format;
@@ -343,7 +343,7 @@ private:
     srs_error_t initialize_video_track(SrsVideoCodecId codec);
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame);
@@ -490,7 +490,7 @@ public:
     virtual ~SrsRtcFrameBuilder();
 
 public:
-    srs_error_t initialize(SrsRequest *r, SrsAudioCodecId audio_codec, SrsVideoCodecId video_codec);
+    srs_error_t initialize(ISrsRequest *r, SrsAudioCodecId audio_codec, SrsVideoCodecId video_codec);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     virtual srs_error_t on_rtp(SrsRtpPacket *pkt);

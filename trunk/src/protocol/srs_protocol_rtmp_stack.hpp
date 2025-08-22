@@ -408,8 +408,7 @@ public:
     virtual ~SrsChunkStream();
 };
 
-// The original request from client.
-class SrsRequest
+class ISrsRequest
 {
 public:
     // The client ip.
@@ -458,33 +457,54 @@ public:
     SrsAmf0Object *args;
 
 public:
-    SrsRequest();
-    virtual ~SrsRequest();
-
-public:
-    // Deep copy the request, for source to use it to support reload,
-    // For when initialize the source, the request is valid,
-    // When reload it, the request maybe invalid, so need to copy it.
-    virtual SrsRequest *copy();
-    // update the auth info of request,
-    // To keep the current request ptr is ok,
-    // For many components use the ptr of request.
-    virtual void update_auth(SrsRequest *req);
-    // Get the stream identify, vhost/app/stream.
-    virtual std::string get_stream_url();
-    // To strip url, user must strip when update the url.
-    virtual void strip();
-
-public:
-    // Transform it as HTTP request.
-    virtual SrsRequest *as_http();
-
-public:
     // The protocol of client:
     //      rtmp, Adobe RTMP protocol.
     //      flv, HTTP-FLV protocol.
     //      flvs, HTTPS-FLV protocol.
     std::string protocol;
+
+public:
+    ISrsRequest();
+    virtual ~ISrsRequest();
+
+public:
+    // Deep copy the request, for source to use it to support reload,
+    // For when initialize the source, the request is valid,
+    // When reload it, the request maybe invalid, so need to copy it.
+    virtual ISrsRequest *copy() = 0;
+    // update the auth info of request,
+    // To keep the current request ptr is ok,
+    // For many components use the ptr of request.
+    virtual void update_auth(ISrsRequest *req) = 0;
+    // Get the stream identify, vhost/app/stream.
+    virtual std::string get_stream_url() = 0;
+    // To strip url, user must strip when update the url.
+    virtual void strip() = 0;
+
+public:
+    // Transform it as HTTP request.
+    virtual ISrsRequest *as_http() = 0;
+
+public:
+    // Callback when source is created.
+    virtual void on_source_created();
+};
+
+// The original request from client.
+class SrsRequest : public ISrsRequest
+{
+public:
+    SrsRequest();
+    virtual ~SrsRequest();
+
+public:
+    virtual ISrsRequest *copy();
+    virtual void update_auth(ISrsRequest *req);
+    virtual std::string get_stream_url();
+    virtual void strip();
+
+public:
+    virtual ISrsRequest *as_http();
 };
 
 // The response to client.
@@ -601,7 +621,7 @@ public:
     // @param req, the optional req object, use the swfUrl/pageUrl if specified. NULL to ignore.
     // @param dsu, Whether debug SRS upnode. For edge, set to true to send its info to upnode.
     // @param si, The server information, retrieve from response of connect app request. NULL to ignore.
-    virtual srs_error_t connect_app(std::string app, std::string tcUrl, SrsRequest *r, bool dsu, SrsServerInfo *si);
+    virtual srs_error_t connect_app(std::string app, std::string tcUrl, ISrsRequest *r, bool dsu, SrsServerInfo *si);
     // Create a stream, then play/publish data over this stream.
     virtual srs_error_t create_stream(int &stream_id);
     // start play stream.
@@ -722,7 +742,7 @@ public:
     // Do handshake with client, try complex then simple.
     virtual srs_error_t handshake();
     // Do connect app with client, to discovery tcUrl.
-    virtual srs_error_t connect_app(SrsRequest *req);
+    virtual srs_error_t connect_app(ISrsRequest *req);
     // Set output ack size to client, client will send ack-size for each ack window
     virtual srs_error_t set_window_ack_size(int ack_size);
     // Set the default input ack size value.
@@ -731,13 +751,13 @@ public:
     // using the Limit type field.
     virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
     // @param server_ip the ip of server.
-    virtual srs_error_t response_connect_app(SrsRequest *req, const char *server_ip = NULL);
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip = NULL);
     // Redirect the connection to another rtmp server.
     // @param a RTMP url to redirect to.
     // @param whether the client accept the redirect.
-    virtual srs_error_t redirect(SrsRequest *r, std::string url, bool &accepted);
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
     // Reject the connect app request.
-    virtual void response_connect_reject(SrsRequest *req, const char *desc);
+    virtual void response_connect_reject(ISrsRequest *req, const char *desc);
     // Response  client the onBWDone message.
     virtual srs_error_t on_bw_done();
     // Recv some message to identify the client.

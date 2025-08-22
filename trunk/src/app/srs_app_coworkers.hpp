@@ -13,7 +13,7 @@
 #include <string>
 
 class SrsJsonAny;
-class SrsRequest;
+class ISrsRequest;
 class SrsLiveSource;
 
 // For origin cluster.
@@ -23,7 +23,7 @@ private:
     static SrsCoWorkers *_instance;
 
 private:
-    std::map<std::string, SrsRequest *> streams;
+    std::map<std::string, ISrsRequest *> streams;
 
 private:
     SrsCoWorkers();
@@ -36,11 +36,11 @@ public:
     virtual SrsJsonAny *dumps(std::string vhost, std::string coworker, std::string app, std::string stream);
 
 private:
-    virtual SrsRequest *find_stream_info(std::string vhost, std::string app, std::string stream);
+    virtual ISrsRequest *find_stream_info(std::string vhost, std::string app, std::string stream);
 
 public:
-    virtual srs_error_t on_publish(SrsRequest *r);
-    virtual void on_unpublish(SrsRequest *r);
+    virtual srs_error_t on_publish(ISrsRequest *r);
+    virtual void on_unpublish(ISrsRequest *r);
 };
 
 #endif

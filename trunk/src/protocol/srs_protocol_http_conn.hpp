@@ -16,7 +16,7 @@
 
 class ISrsConnection;
 class SrsFastStream;
-class SrsRequest;
+class ISrsRequest;
 class ISrsReader;
 class SrsHttpResponseReader;
 class ISrsProtocolReadWriter;
@@ -192,7 +192,7 @@ public:
 public:
     // Convert the http message to a request.
     // @remark user must free the return request.
-    virtual SrsRequest *to_request(std::string vhost);
+    virtual ISrsRequest *to_request(std::string vhost);
 
 public:
     virtual bool is_jsonp();

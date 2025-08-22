@@ -80,7 +80,7 @@ SrsRtspPlayStream::~SrsRtspPlayStream()
     stat->on_disconnect(cid_.c_str(), srs_success);
 }
 
-srs_error_t SrsRtspPlayStream::initialize(SrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
+srs_error_t SrsRtspPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
 {
     srs_error_t err = srs_success;
 
@@ -850,7 +850,7 @@ srs_error_t SrsRtspConnection::do_teardown()
     return srs_success;
 }
 
-srs_error_t SrsRtspConnection::http_hooks_on_play(SrsRequest *req)
+srs_error_t SrsRtspConnection::http_hooks_on_play(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 

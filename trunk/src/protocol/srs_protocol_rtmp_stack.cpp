@@ -1459,6 +1459,18 @@ SrsChunkStream::~SrsChunkStream()
     srs_freep(msg);
 }
 
+ISrsRequest::ISrsRequest()
+{
+}
+
+ISrsRequest::~ISrsRequest()
+{
+}
+
+void ISrsRequest::on_source_created()
+{
+}
+
 SrsRequest::SrsRequest()
 {
     objectEncoding = RTMP_SIG_AMF0_VER;
@@ -1474,7 +1486,7 @@ SrsRequest::~SrsRequest()
     srs_freep(args);
 }
 
-SrsRequest *SrsRequest::copy()
+ISrsRequest *SrsRequest::copy()
 {
     SrsRequest *cp = new SrsRequest();
 
@@ -1500,7 +1512,7 @@ SrsRequest *SrsRequest::copy()
     return cp;
 }
 
-void SrsRequest::update_auth(SrsRequest *req)
+void SrsRequest::update_auth(ISrsRequest *req)
 {
     pageUrl = req->pageUrl;
     swfUrl = req->swfUrl;
@@ -1551,7 +1563,7 @@ void SrsRequest::strip()
     stream = srs_string_trim_start(stream, "/");
 }
 
-SrsRequest *SrsRequest::as_http()
+ISrsRequest *SrsRequest::as_http()
 {
     schema = "http";
     tcUrl = srs_generate_tc_url(schema, host, vhost, app, port);
@@ -1883,7 +1895,7 @@ srs_error_t SrsRtmpClient::complex_handshake()
     return err;
 }
 
-srs_error_t SrsRtmpClient::connect_app(string app, string tcUrl, SrsRequest *r, bool dsu, SrsServerInfo *si)
+srs_error_t SrsRtmpClient::connect_app(string app, string tcUrl, ISrsRequest *r, bool dsu, SrsServerInfo *si)
 {
     srs_error_t err = srs_success;
 
@@ -2256,7 +2268,7 @@ srs_error_t SrsRtmpServer::handshake()
     return err;
 }
 
-srs_error_t SrsRtmpServer::connect_app(SrsRequest *req)
+srs_error_t SrsRtmpServer::connect_app(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -2331,7 +2343,7 @@ srs_error_t SrsRtmpServer::set_peer_bandwidth(int bandwidth, int type)
     return err;
 }
 
-srs_error_t SrsRtmpServer::response_connect_app(SrsRequest *req, const char *server_ip)
+srs_error_t SrsRtmpServer::response_connect_app(ISrsRequest *req, const char *server_ip)
 {
     srs_error_t err = srs_success;
 
@@ -2372,7 +2384,7 @@ srs_error_t SrsRtmpServer::response_connect_app(SrsRequest *req, const char *ser
 }
 
 #define SRS_RTMP_REDIRECT_TIMEOUT (3 * SRS_UTIME_SECONDS)
-srs_error_t SrsRtmpServer::redirect(SrsRequest *r, string url, bool &accepted)
+srs_error_t SrsRtmpServer::redirect(ISrsRequest *r, string url, bool &accepted)
 {
     srs_error_t err = srs_success;
 
@@ -2423,7 +2435,7 @@ srs_error_t SrsRtmpServer::redirect(SrsRequest *r, string url, bool &accepted)
     return err;
 }
 
-void SrsRtmpServer::response_connect_reject(SrsRequest * /*req*/, const char *desc)
+void SrsRtmpServer::response_connect_reject(ISrsRequest * /*req*/, const char *desc)
 {
     srs_error_t err = srs_success;
 

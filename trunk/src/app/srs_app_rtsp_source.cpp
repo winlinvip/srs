@@ -168,7 +168,7 @@ srs_error_t SrsRtspSourceManager::notify(int event, srs_utime_t interval, srs_ut
     return err;
 }
 
-srs_error_t SrsRtspSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsRtspSource> &pps)
+srs_error_t SrsRtspSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtspSource> &pps)
 {
     srs_error_t err = srs_success;
 
@@ -210,7 +210,7 @@ srs_error_t SrsRtspSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<Sr
     return err;
 }
 
-SrsSharedPtr<SrsRtspSource> SrsRtspSourceManager::fetch(SrsRequest *r)
+SrsSharedPtr<SrsRtspSource> SrsRtspSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
@@ -261,7 +261,19 @@ SrsRtspSource::~SrsRtspSource()
     srs_trace("free rtc source id=[%s]", cid.c_str());
 }
 
-srs_error_t SrsRtspSource::initialize(SrsRequest *r)
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches
+// before completing the basic field setup.
+//
+// If context switches occur before all fields are properly initialized, other coroutines
+// accessing this source from the pool may encounter uninitialized state, leading to crashes
+// or undefined behavior.
+//
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
+srs_error_t SrsRtspSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -291,7 +303,7 @@ bool SrsRtspSource::stream_is_dead()
     return true;
 }
 
-void SrsRtspSource::update_auth(SrsRequest *r)
+void SrsRtspSource::update_auth(ISrsRequest *r)
 {
     req->update_auth(r);
 }
@@ -644,7 +656,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
     return err;
 }
 
-srs_error_t SrsRtspRtpBuilder::initialize(SrsRequest *r)
+srs_error_t SrsRtspRtpBuilder::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 

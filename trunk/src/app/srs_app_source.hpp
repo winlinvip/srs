@@ -31,7 +31,7 @@ class SrsCommonMessage;
 class SrsOnMetaDataPacket;
 class SrsSharedPtrMessage;
 class SrsForwarder;
-class SrsRequest;
+class ISrsRequest;
 class SrsStSocket;
 class SrsRtmpServer;
 class SrsEdgeProxyContext;
@@ -306,9 +306,9 @@ public:
 
 public:
     // when stream start publish, mount stream.
-    virtual srs_error_t on_publish(SrsRequest *r) = 0;
+    virtual srs_error_t on_publish(ISrsRequest *r) = 0;
     // when stream stop publish, unmount stream.
-    virtual void on_unpublish(SrsRequest *r) = 0;
+    virtual void on_unpublish(ISrsRequest *r) = 0;
 };
 
 // The mix queue to correct the timestamp for mix_correct algorithm.
@@ -339,7 +339,7 @@ private:
     SrsLiveSource *source_;
 
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
     bool is_active;
 
 private:
@@ -367,7 +367,7 @@ public:
 public:
     // Initialize the hub with source and request.
     // @param r The request object, managed by source.
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r);
     // Dispose the hub, release utilities resource,
     // For example, delete all HLS pieces.
     virtual void dispose();
@@ -492,11 +492,11 @@ public:
     // @param r the client request.
     // @param h the event handler for source.
     // @param pps the matched source, if success never be NULL.
-    virtual srs_error_t fetch_or_create(SrsRequest *r, ISrsLiveSourceHandler *h, SrsSharedPtr<SrsLiveSource> &pps);
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps);
 
 public:
     // Get the exists source, NULL when not exists.
-    virtual SrsSharedPtr<SrsLiveSource> fetch(SrsRequest *r);
+    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r);
 
 public:
     // dispose and cycle all sources.
@@ -529,7 +529,7 @@ private:
     // previous source id.
     SrsContextId _pre_source_id;
     // deep copy of client request.
-    SrsRequest *req;
+    ISrsRequest *req;
     // To delivery stream to clients.
     std::vector<SrsLiveConsumer *> consumers;
     // The time jitter algorithm for vhost.
@@ -547,8 +547,6 @@ private:
     bool is_monotonically_increase;
     // The time of the packet we just got.
     int64_t last_packet_time;
-    // The event handler.
-    ISrsLiveSourceHandler *handler;
     // The source bridge for other source.
     ISrsStreamBridge *bridge_;
     // The edge control service
@@ -585,7 +583,7 @@ public:
 
 public:
     // Initialize the hls with handlers.
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> wrapper, SrsRequest *r, ISrsLiveSourceHandler *h);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r);
     // Bridge to other source, forward packets to it.
     void set_bridge(ISrsStreamBridge *v);
     // Interface ISrsReloadHandler
@@ -602,7 +600,7 @@ public:
     // @remark For edge, it's inactive util stream has been pulled from origin.
     virtual bool inactive();
     // Update the authentication information in request.
-    virtual void update_auth(SrsRequest *r);
+    virtual void update_auth(ISrsRequest *r);
 
 public:
     virtual bool can_publish(bool is_edge);

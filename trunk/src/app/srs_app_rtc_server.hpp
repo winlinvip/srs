@@ -22,7 +22,7 @@
 class SrsRtcServer;
 class SrsHourGlass;
 class SrsRtcConnection;
-class SrsRequest;
+class ISrsRequest;
 class SrsSdp;
 class SrsRtcSource;
 class SrsResourceManager;
@@ -68,7 +68,7 @@ public:
     std::string token_;
 
     // Generated data.
-    SrsRequest *req_;
+    ISrsRequest *req_;
     bool publish_;
     bool dtls_;
     bool srtp_;

@@ -257,7 +257,7 @@ void SrsQueueRecvThread::on_stop()
     rtmp->set_auto_response(true);
 }
 
-SrsPublishRecvThread::SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, SrsRequest *_req,
+SrsPublishRecvThread::SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
                                            int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid)
     : trd(this, rtmp_sdk, tm, parent_cid)
 {

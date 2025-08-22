@@ -51,7 +51,7 @@ SrsDvrSegmenter::~SrsDvrSegmenter()
     srs_freep(fs);
 }
 
-srs_error_t SrsDvrSegmenter::initialize(SrsDvrPlan *p, SrsRequest *r)
+srs_error_t SrsDvrSegmenter::initialize(SrsDvrPlan *p, ISrsRequest *r)
 {
     req = r;
     plan = p;
@@ -517,7 +517,7 @@ srs_error_t SrsDvrMp4Segmenter::close_encoder()
     return err;
 }
 
-SrsDvrAsyncCallOnDvr::SrsDvrAsyncCallOnDvr(SrsContextId c, SrsRequest *r, string p)
+SrsDvrAsyncCallOnDvr::SrsDvrAsyncCallOnDvr(SrsContextId c, ISrsRequest *r, string p)
 {
     cid = c;
     req = r->copy();
@@ -581,7 +581,7 @@ SrsDvrPlan::~SrsDvrPlan()
     srs_freep(req);
 }
 
-srs_error_t SrsDvrPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, SrsRequest *r)
+srs_error_t SrsDvrPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -596,7 +596,7 @@ srs_error_t SrsDvrPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, SrsReque
     return err;
 }
 
-srs_error_t SrsDvrPlan::on_publish(SrsRequest *r)
+srs_error_t SrsDvrPlan::on_publish(ISrsRequest *r)
 {
     // @see https://github.com/ossrs/srs/issues/1613#issuecomment-960623359
     srs_freep(req);
@@ -689,7 +689,7 @@ SrsDvrSessionPlan::~SrsDvrSessionPlan()
 {
 }
 
-srs_error_t SrsDvrSessionPlan::on_publish(SrsRequest *r)
+srs_error_t SrsDvrSessionPlan::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -751,7 +751,7 @@ SrsDvrSegmentPlan::~SrsDvrSegmentPlan()
 {
 }
 
-srs_error_t SrsDvrSegmentPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, SrsRequest *r)
+srs_error_t SrsDvrSegmentPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -766,7 +766,7 @@ srs_error_t SrsDvrSegmentPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, S
     return srs_success;
 }
 
-srs_error_t SrsDvrSegmentPlan::on_publish(SrsRequest *r)
+srs_error_t SrsDvrSegmentPlan::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -932,7 +932,7 @@ SrsDvr::~SrsDvr()
     srs_freep(req);
 }
 
-srs_error_t SrsDvr::initialize(SrsOriginHub *h, SrsRequest *r)
+srs_error_t SrsDvr::initialize(SrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -962,7 +962,7 @@ srs_error_t SrsDvr::initialize(SrsOriginHub *h, SrsRequest *r)
     return err;
 }
 
-srs_error_t SrsDvr::on_publish(SrsRequest *r)
+srs_error_t SrsDvr::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 

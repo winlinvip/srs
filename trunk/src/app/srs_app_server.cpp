@@ -1396,7 +1396,7 @@ srs_error_t SrsServer::on_reload_listen()
     return err;
 }
 
-srs_error_t SrsServer::on_publish(SrsRequest *r)
+srs_error_t SrsServer::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1412,7 +1412,7 @@ srs_error_t SrsServer::on_publish(SrsRequest *r)
     return err;
 }
 
-void SrsServer::on_unpublish(SrsRequest *r)
+void SrsServer::on_unpublish(ISrsRequest *r)
 {
     http_server->http_unmount(r);
 

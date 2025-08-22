@@ -14,7 +14,7 @@
 
 class SrsHttpUri;
 class SrsStSocket;
-class SrsRequest;
+class ISrsRequest;
 class SrsHttpParser;
 class SrsHttpClient;
 
@@ -41,14 +41,14 @@ public:
     // @param url The HTTP callback URL for publish validation. If empty, hook is ignored.
     // @param req The publish request information including stream details.
     // @return srs_success if publishing is allowed, error otherwise to reject publishing.
-    virtual srs_error_t on_publish(std::string url, SrsRequest *req) = 0;
+    virtual srs_error_t on_publish(std::string url, ISrsRequest *req) = 0;
 
     // Stream stop publishing notification hook.
     // Called when a client (encoder) stops publishing a stream.
     // This is a notification-only hook that cannot prevent the unpublishing.
     // @param url The HTTP callback URL for unpublish notification. If empty, hook is ignored.
     // @param req The unpublish request information.
-    virtual void on_unpublish(std::string url, SrsRequest *req) = 0;
+    virtual void on_unpublish(std::string url, ISrsRequest *req) = 0;
 
     // Stream start playing validation hook.
     // Called when a client attempts to start playing/subscribing to a stream.
@@ -56,14 +56,14 @@ public:
     // @param url The HTTP callback URL for play validation. If empty, hook is ignored.
     // @param req The play request information including stream details.
     // @return srs_success if playing is allowed, error otherwise to reject playing.
-    virtual srs_error_t on_play(std::string url, SrsRequest *req) = 0;
+    virtual srs_error_t on_play(std::string url, ISrsRequest *req) = 0;
 
     // Stream stop playing notification hook.
     // Called when a client stops playing/subscribing to a stream.
     // This is a notification-only hook that cannot prevent the stop operation.
     // @param url The HTTP callback URL for stop notification. If empty, hook is ignored.
     // @param req The stop request information.
-    virtual void on_stop(std::string url, SrsRequest *req) = 0;
+    virtual void on_stop(std::string url, ISrsRequest *req) = 0;
 
 public:
     // DVR file completion notification hook.
@@ -75,7 +75,7 @@ public:
     // @param req The original stream request information.
     // @param file The completed DVR file path (can be relative or absolute).
     // @return srs_success if processing succeeds, error otherwise (logged but doesn't affect DVR).
-    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, SrsRequest *req, std::string file) = 0;
+    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file) = 0;
 
 public:
     // HLS segment completion notification hook.
@@ -92,7 +92,7 @@ public:
     // @param sn The sequence number of the TS segment in the HLS playlist.
     // @param duration The segment duration in microseconds (srs_utime_t).
     // @return srs_success if processing succeeds, error otherwise (logged but doesn't affect HLS).
-    virtual srs_error_t on_hls(SrsContextId cid, std::string url, SrsRequest *req, std::string file, std::string ts_url,
+    virtual srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
                                std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration) = 0;
 
     // HLS segment notification hook with custom URL template.
@@ -105,7 +105,7 @@ public:
     // @param ts_url The TS segment URL to replace [ts_url] variable in the callback URL.
     // @param nb_notify Maximum bytes to read from the notification server response.
     // @return srs_success if processing succeeds, error otherwise (logged but doesn't affect HLS).
-    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, SrsRequest *req, std::string ts_url, int nb_notify) = 0;
+    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify) = 0;
 
 public:
     // Origin cluster co-worker discovery hook.
@@ -125,7 +125,7 @@ public:
     // @param req The publish request information.
     // @param rtmp_urls Output parameter to receive the list of RTMP URLs for forwarding.
     // @return srs_success if backends are discovered, error otherwise.
-    virtual srs_error_t on_forward_backend(std::string url, SrsRequest *req, std::vector<std::string> &rtmp_urls) = 0;
+    virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls) = 0;
 
     // Deprecated hooks.
 public:
@@ -135,7 +135,7 @@ public:
     // @param url The HTTP callback URL for client validation. If empty, hook is ignored.
     // @param req The client request information including IP, vhost, app, stream, etc.
     // @return srs_success if connection is allowed, error otherwise to reject connection.
-    virtual srs_error_t on_connect(std::string url, SrsRequest *req) = 0;
+    virtual srs_error_t on_connect(std::string url, ISrsRequest *req) = 0;
 
     // Client disconnection notification hook.
     // Called when a client disconnects from the SRS server.
@@ -144,7 +144,7 @@ public:
     // @param req The client request information.
     // @param send_bytes Total bytes sent to the client during the session.
     // @param recv_bytes Total bytes received from the client during the session.
-    virtual void on_close(std::string url, SrsRequest *req, int64_t send_bytes, int64_t recv_bytes) = 0;
+    virtual void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes) = 0;
 };
 
 class SrsHttpHooks : public ISrsHttpHooks
@@ -154,18 +154,18 @@ public:
     virtual ~SrsHttpHooks();
 
 public:
-    srs_error_t on_connect(std::string url, SrsRequest *req);
-    void on_close(std::string url, SrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
-    srs_error_t on_publish(std::string url, SrsRequest *req);
-    void on_unpublish(std::string url, SrsRequest *req);
-    srs_error_t on_play(std::string url, SrsRequest *req);
-    void on_stop(std::string url, SrsRequest *req);
-    srs_error_t on_dvr(SrsContextId cid, std::string url, SrsRequest *req, std::string file);
-    srs_error_t on_hls(SrsContextId cid, std::string url, SrsRequest *req, std::string file, std::string ts_url,
+    srs_error_t on_connect(std::string url, ISrsRequest *req);
+    void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
+    srs_error_t on_publish(std::string url, ISrsRequest *req);
+    void on_unpublish(std::string url, ISrsRequest *req);
+    srs_error_t on_play(std::string url, ISrsRequest *req);
+    void on_stop(std::string url, ISrsRequest *req);
+    srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file);
+    srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
                        std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration);
-    srs_error_t on_hls_notify(SrsContextId cid, std::string url, SrsRequest *req, std::string ts_url, int nb_notify);
+    srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify);
     srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
-    srs_error_t on_forward_backend(std::string url, SrsRequest *req, std::vector<std::string> &rtmp_urls);
+    srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
 
 private:
     srs_error_t do_post(SrsHttpClient *hc, std::string url, std::string req, int &code, std::string &res);

@@ -254,7 +254,7 @@ srs_error_t SrsHlsM4sSegment::reap(uint64_t dts)
     return err;
 }
 
-SrsDvrAsyncCallOnHls::SrsDvrAsyncCallOnHls(SrsContextId c, SrsRequest *r, string p, string t, string m, string mu, int s, srs_utime_t d)
+SrsDvrAsyncCallOnHls::SrsDvrAsyncCallOnHls(SrsContextId c, ISrsRequest *r, string p, string t, string m, string mu, int s, srs_utime_t d)
 {
     req = r->copy();
     cid = c;
@@ -309,7 +309,7 @@ string SrsDvrAsyncCallOnHls::to_string()
     return "on_hls: " + path;
 }
 
-SrsDvrAsyncCallOnHlsNotify::SrsDvrAsyncCallOnHlsNotify(SrsContextId c, SrsRequest *r, string u)
+SrsDvrAsyncCallOnHlsNotify::SrsDvrAsyncCallOnHlsNotify(SrsContextId c, ISrsRequest *r, string u)
 {
     cid = c;
     req = r->copy();
@@ -473,7 +473,7 @@ srs_error_t SrsHlsFmp4Muxer::initialize(int v_tid, int a_tid)
     return srs_success;
 }
 
-srs_error_t SrsHlsFmp4Muxer::on_publish(SrsRequest *req)
+srs_error_t SrsHlsFmp4Muxer::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -632,7 +632,7 @@ srs_error_t SrsHlsFmp4Muxer::on_unpublish()
     return srs_success;
 }
 
-srs_error_t SrsHlsFmp4Muxer::update_config(SrsRequest *r)
+srs_error_t SrsHlsFmp4Muxer::update_config(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1177,7 +1177,7 @@ srs_error_t SrsHlsMuxer::initialize()
     return srs_success;
 }
 
-srs_error_t SrsHlsMuxer::on_publish(SrsRequest *req)
+srs_error_t SrsHlsMuxer::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -1194,7 +1194,7 @@ srs_error_t SrsHlsMuxer::on_unpublish()
     return srs_success;
 }
 
-srs_error_t SrsHlsMuxer::update_config(SrsRequest *r, string entry_prefix,
+srs_error_t SrsHlsMuxer::update_config(ISrsRequest *r, string entry_prefix,
                                        string path, string m3u8_file, string ts_file, srs_utime_t fragment, srs_utime_t window,
                                        bool ts_floor, double aof_ratio, bool cleanup, bool wait_keyframe, bool keys,
                                        int fragments_per_key, string key_file, string key_file_path, string key_url)
@@ -1935,7 +1935,7 @@ int SrsHlsController::deviation()
     return muxer->deviation();
 }
 
-srs_error_t SrsHlsController::on_publish(SrsRequest *req)
+srs_error_t SrsHlsController::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -2239,7 +2239,7 @@ void SrsHlsMp4Controller::dispose()
     muxer_->dispose();
 }
 
-srs_error_t SrsHlsMp4Controller::on_publish(SrsRequest *req)
+srs_error_t SrsHlsMp4Controller::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -2514,7 +2514,7 @@ srs_utime_t SrsHls::cleanup_delay()
     return _srs_config->get_hls_dispose(req->vhost) * 1.1;
 }
 
-srs_error_t SrsHls::initialize(SrsOriginHub *h, SrsRequest *r)
+srs_error_t SrsHls::initialize(SrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 

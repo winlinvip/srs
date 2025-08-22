@@ -15,7 +15,7 @@
 #include <srs_app_st.hpp>
 
 class SrsConfDirective;
-class SrsRequest;
+class ISrsRequest;
 class SrsPithyPrint;
 class SrsFFMPEG;
 
@@ -36,7 +36,7 @@ public:
     virtual ~SrsEncoder();
 
 public:
-    virtual srs_error_t on_publish(SrsRequest *req);
+    virtual srs_error_t on_publish(ISrsRequest *req);
     virtual void on_unpublish();
     // Interface ISrsReusableThreadHandler.
 public:
@@ -48,9 +48,9 @@ private:
 private:
     virtual void clear_engines();
     virtual SrsFFMPEG *at(int index);
-    virtual srs_error_t parse_scope_engines(SrsRequest *req);
-    virtual srs_error_t parse_ffmpeg(SrsRequest *req, SrsConfDirective *conf);
-    virtual srs_error_t initialize_ffmpeg(SrsFFMPEG *ffmpeg, SrsRequest *req, SrsConfDirective *engine);
+    virtual srs_error_t parse_scope_engines(ISrsRequest *req);
+    virtual srs_error_t parse_ffmpeg(ISrsRequest *req, SrsConfDirective *conf);
+    virtual srs_error_t initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, SrsConfDirective *engine);
     virtual void show_encode_log_message();
 };
 

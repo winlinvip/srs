@@ -14,7 +14,7 @@
 
 #include <srs_app_fragment.hpp>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsOriginHub;
 class SrsSharedPtrMessage;
 class SrsFormat;
@@ -52,7 +52,7 @@ public:
 
 public:
     // Initialize the fragment, create the home dir, open the file.
-    virtual srs_error_t initialize(SrsRequest *r, bool video, int64_t time, SrsMpdWriter *mpd, uint32_t tid);
+    virtual srs_error_t initialize(ISrsRequest *r, bool video, int64_t time, SrsMpdWriter *mpd, uint32_t tid);
     // Write media message to fragment.
     virtual srs_error_t write(SrsSharedPtrMessage *shared_msg, SrsFormat *format);
     // Reap the fragment, close the fd and rename tmp to official file.
@@ -63,7 +63,7 @@ public:
 class SrsMpdWriter
 {
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
 
 private:
     // The duration of fragment in srs_utime_t.
@@ -97,7 +97,7 @@ public:
     virtual void dispose();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     // Write MPD according to parsed format of stream.
@@ -116,7 +116,7 @@ public:
 class SrsDashController
 {
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsFormat *format_;
     SrsMpdWriter *mpd;
 
@@ -151,7 +151,7 @@ public:
     virtual void dispose();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     virtual srs_error_t on_audio(SrsSharedPtrMessage *shared_audio, SrsFormat *format);
@@ -171,7 +171,7 @@ private:
     srs_utime_t last_update_time_;
 
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsOriginHub *hub;
     SrsDashController *controller;
 
@@ -186,7 +186,7 @@ public:
 
 public:
     // Initalize the encoder.
-    virtual srs_error_t initialize(SrsOriginHub *h, SrsRequest *r);
+    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
     // When stream start publishing.
     virtual srs_error_t on_publish();
     // When got an shared audio message.

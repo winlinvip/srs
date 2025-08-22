@@ -211,10 +211,10 @@ class SrsRtcAsyncCallOnStop : public ISrsAsyncCallTask
 {
 private:
     SrsContextId cid;
-    SrsRequest *req;
+    ISrsRequest *req;
 
 public:
-    SrsRtcAsyncCallOnStop(SrsContextId c, SrsRequest *r);
+    SrsRtcAsyncCallOnStop(SrsContextId c, ISrsRequest *r);
     virtual ~SrsRtcAsyncCallOnStop();
 
 public:
@@ -232,7 +232,7 @@ private:
     SrsRtcPLIWorker *pli_worker_;
 
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
     SrsSharedPtr<SrsRtcSource> source_;
     // key: publish_ssrc, value: send track to process rtp/rtcp
     std::map<uint32_t, SrsRtcAudioSendTrack *> audio_tracks_;
@@ -266,7 +266,7 @@ public:
     virtual ~SrsRtcPlayStream();
 
 public:
-    srs_error_t initialize(SrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
+    srs_error_t initialize(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
     // Interface ISrsRtcSourceChangeCallback
 public:
     void on_stream_change(SrsRtcSourceDescription *desc);
@@ -337,10 +337,10 @@ class SrsRtcAsyncCallOnUnpublish : public ISrsAsyncCallTask
 {
 private:
     SrsContextId cid;
-    SrsRequest *req;
+    ISrsRequest *req;
 
 public:
-    SrsRtcAsyncCallOnUnpublish(SrsContextId c, SrsRequest *r);
+    SrsRtcAsyncCallOnUnpublish(SrsContextId c, ISrsRequest *r);
     virtual ~SrsRtcAsyncCallOnUnpublish();
 
 public:
@@ -376,7 +376,7 @@ private:
     SrsErrorPithyPrint *pli_epp;
 
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
     SrsSharedPtr<SrsRtcSource> source_;
     // Simulators.
     int nn_simulate_nack_drop;
@@ -399,7 +399,7 @@ public:
     virtual ~SrsRtcPublishStream();
 
 public:
-    srs_error_t initialize(SrsRequest *req, SrsRtcSourceDescription *stream_desc);
+    srs_error_t initialize(ISrsRequest *req, SrsRtcSourceDescription *stream_desc);
     srs_error_t start();
     // Directly set the status of track, generally for init to set the default value.
     void set_all_tracks_status(bool status);
@@ -516,7 +516,7 @@ private:
 private:
     // For each RTC session, we use a specified cid for debugging logs.
     SrsContextId cid_;
-    SrsRequest *req_;
+    ISrsRequest *req_;
     SrsSdp remote_sdp;
     SrsSdp local_sdp;
 
@@ -572,7 +572,7 @@ public:
 
 public:
     // Before initialize, user must set the local SDP, which is used to inititlize DTLS.
-    srs_error_t initialize(SrsRequest *r, bool dtls, bool srtp, std::string username);
+    srs_error_t initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username);
     srs_error_t on_rtp_cipher(char *data, int nb_data);
     srs_error_t on_rtp_plaintext(char *data, int nb_data);
 
@@ -623,17 +623,17 @@ public:
 private:
     // publish media capabilitiy negotiate
     srs_error_t negotiate_publish_capability(SrsRtcUserConfig *ruc, SrsRtcSourceDescription *stream_desc);
-    srs_error_t generate_publish_local_sdp(SrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
+    srs_error_t generate_publish_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
     srs_error_t generate_publish_local_sdp_for_audio(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc);
     srs_error_t generate_publish_local_sdp_for_video(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan);
     // play media capabilitiy negotiate
     // TODO: Use StreamDescription to negotiate and remove first negotiate_play_capability function
     srs_error_t negotiate_play_capability(SrsRtcUserConfig *ruc, std::map<uint32_t, SrsRtcTrackDescription *> &sub_relations);
-    srs_error_t generate_play_local_sdp(SrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
+    srs_error_t generate_play_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
     srs_error_t generate_play_local_sdp_for_audio(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, std::string cname);
     srs_error_t generate_play_local_sdp_for_video(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, std::string cname);
-    srs_error_t create_player(SrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
-    srs_error_t create_publisher(SrsRequest *request, SrsRtcSourceDescription *stream_desc);
+    srs_error_t create_player(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
+    srs_error_t create_publisher(ISrsRequest *request, SrsRtcSourceDescription *stream_desc);
 };
 
 #endif

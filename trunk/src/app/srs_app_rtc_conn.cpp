@@ -364,7 +364,7 @@ srs_error_t SrsRtcPLIWorker::cycle()
     return err;
 }
 
-SrsRtcAsyncCallOnStop::SrsRtcAsyncCallOnStop(SrsContextId c, SrsRequest *r)
+SrsRtcAsyncCallOnStop::SrsRtcAsyncCallOnStop(SrsContextId c, ISrsRequest *r)
 {
     cid = c;
     req = r->copy();
@@ -471,7 +471,7 @@ SrsRtcPlayStream::~SrsRtcPlayStream()
     stat->on_disconnect(cid_.c_str(), srs_success);
 }
 
-srs_error_t SrsRtcPlayStream::initialize(SrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
+srs_error_t SrsRtcPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
 {
     srs_error_t err = srs_success;
 
@@ -1022,7 +1022,7 @@ srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
     return err;
 }
 
-SrsRtcAsyncCallOnUnpublish::SrsRtcAsyncCallOnUnpublish(SrsContextId c, SrsRequest *r)
+SrsRtcAsyncCallOnUnpublish::SrsRtcAsyncCallOnUnpublish(SrsContextId c, ISrsRequest *r)
 {
     cid = c;
     req = r->copy();
@@ -1134,7 +1134,7 @@ SrsRtcPublishStream::~SrsRtcPublishStream()
     stat->on_disconnect(cid_.c_str(), srs_success);
 }
 
-srs_error_t SrsRtcPublishStream::initialize(SrsRequest *r, SrsRtcSourceDescription *stream_desc)
+srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescription *stream_desc)
 {
     srs_error_t err = srs_success;
 
@@ -1226,7 +1226,7 @@ srs_error_t SrsRtcPublishStream::initialize(SrsRequest *r, SrsRtcSourceDescripti
 #if defined(SRS_FFMPEG_FIT)
     bool rtc_to_rtmp = _srs_config->get_rtc_to_rtmp(req_->vhost);
     if (rtc_to_rtmp) {
-        if ((err = _srs_sources->fetch_or_create(r, _srs_hybrid->srs()->instance(), live_source)) != srs_success) {
+        if ((err = _srs_sources->fetch_or_create(r, live_source)) != srs_success) {
             return srs_error_wrap(err, "create source");
         }
 
@@ -1937,7 +1937,7 @@ srs_error_t SrsRtcConnection::add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *req = ruc->req_;
+    ISrsRequest *req = ruc->req_;
 
     SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
 
@@ -1978,7 +1978,7 @@ srs_error_t SrsRtcConnection::add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sd
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *req = ruc->req_;
+    ISrsRequest *req = ruc->req_;
 
     std::map<uint32_t, SrsRtcTrackDescription *> play_sub_relations;
     if ((err = negotiate_play_capability(ruc, play_sub_relations)) != srs_success) {
@@ -2016,7 +2016,7 @@ srs_error_t SrsRtcConnection::add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sd
     return err;
 }
 
-srs_error_t SrsRtcConnection::initialize(SrsRequest *r, bool dtls, bool srtp, string username)
+srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, string username)
 {
     srs_error_t err = srs_success;
 
@@ -2654,7 +2654,7 @@ srs_error_t SrsRtcConnection::negotiate_publish_capability(SrsRtcUserConfig *ruc
         return srs_error_new(ERROR_RTC_SDP_EXCHANGE, "stream description is NULL");
     }
 
-    SrsRequest *req = ruc->req_;
+    ISrsRequest *req = ruc->req_;
     const SrsSdp &remote_sdp = ruc->remote_sdp_;
 
     bool nack_enabled = _srs_config->get_rtc_nack_enabled(req->vhost);
@@ -2947,7 +2947,7 @@ srs_error_t SrsRtcConnection::negotiate_publish_capability(SrsRtcUserConfig *ruc
     return err;
 }
 
-srs_error_t SrsRtcConnection::generate_publish_local_sdp(SrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video)
+srs_error_t SrsRtcConnection::generate_publish_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video)
 {
     srs_error_t err = srs_success;
 
@@ -3086,7 +3086,7 @@ srs_error_t SrsRtcConnection::negotiate_play_capability(SrsRtcUserConfig *ruc, s
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *req = ruc->req_;
+    ISrsRequest *req = ruc->req_;
     const SrsSdp &remote_sdp = ruc->remote_sdp_;
 
     bool nack_enabled = _srs_config->get_rtc_nack_enabled(req->vhost);
@@ -3325,7 +3325,7 @@ void video_track_generate_play_offer(SrsRtcTrackDescription *track, string mid, 
     }
 }
 
-srs_error_t SrsRtcConnection::generate_play_local_sdp(SrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video)
+srs_error_t SrsRtcConnection::generate_play_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video)
 {
     srs_error_t err = srs_success;
 
@@ -3479,7 +3479,7 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp_for_video(SrsSdp &local_sd
     return err;
 }
 
-srs_error_t SrsRtcConnection::create_player(SrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
+srs_error_t SrsRtcConnection::create_player(ISrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
 {
     srs_error_t err = srs_success;
 
@@ -3545,7 +3545,7 @@ srs_error_t SrsRtcConnection::create_player(SrsRequest *req, std::map<uint32_t, 
     return err;
 }
 
-srs_error_t SrsRtcConnection::create_publisher(SrsRequest *req, SrsRtcSourceDescription *stream_desc)
+srs_error_t SrsRtcConnection::create_publisher(ISrsRequest *req, SrsRtcSourceDescription *stream_desc)
 {
     srs_error_t err = srs_success;
 

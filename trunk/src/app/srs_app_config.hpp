@@ -19,14 +19,13 @@
 #include <srs_app_reload.hpp>
 #include <srs_app_st.hpp>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsFileWriter;
 class SrsJsonObject;
 class SrsJsonArray;
 class SrsJsonAny;
 
 class SrsConfig;
-class SrsRequest;
 class SrsJsonArray;
 class SrsConfDirective;
 
@@ -106,7 +105,7 @@ extern bool srs_stream_caster_is_udp(std::string caster);
 extern bool srs_stream_caster_is_flv(std::string caster);
 extern bool srs_stream_caster_is_gb28181(std::string caster);
 // Whether the dvr_apply active the stream specified by req.
-extern bool srs_config_apply_filter(SrsConfDirective *dvr_apply, SrsRequest *req);
+extern bool srs_config_apply_filter(SrsConfDirective *dvr_apply, ISrsRequest *req);
 
 // Convert bool in str to on/off
 extern std::string srs_config_bool2switch(std::string sbool);

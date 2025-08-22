@@ -18,7 +18,7 @@ class SrsHlsVirtualConn : public ISrsExpire
 {
 public:
     srs_utime_t request_time;
-    SrsRequest *req;
+    ISrsRequest *req;
     std::string ctx;
     bool interrupt;
 
@@ -42,16 +42,16 @@ public:
     virtual ~SrsHlsStream();
 
 public:
-    virtual srs_error_t serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, std::string fullpath, SrsRequest *req, bool *served);
+    virtual srs_error_t serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, std::string fullpath, ISrsRequest *req, bool *served);
     virtual void on_serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
 private:
-    srs_error_t serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRequest *req, std::string &ctx);
+    srs_error_t serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsRequest *req, std::string &ctx);
     srs_error_t serve_exists_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, std::string fullpath);
     bool ctx_is_exist(std::string ctx);
-    void alive(std::string ctx, SrsRequest *req);
-    srs_error_t http_hooks_on_play(SrsRequest *req);
-    void http_hooks_on_stop(SrsRequest *req);
+    void alive(std::string ctx, ISrsRequest *req);
+    srs_error_t http_hooks_on_play(ISrsRequest *req);
+    void http_hooks_on_stop(ISrsRequest *req);
     bool is_interrupt(std::string id);
     // interface ISrsFastTimer
 private:

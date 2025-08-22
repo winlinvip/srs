@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsRtpPacket;
 class SrsRtspSource;
 class SrsRtspConsumer;
@@ -89,11 +89,11 @@ public:
     //  create source when fetch from cache failed.
     // @param r the client request.
     // @param pps the matched source, if success never be NULL.
-    virtual srs_error_t fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsRtspSource> &pps);
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtspSource> &pps);
 
 public:
     // Get the exists source, NULL when not exists.
-    virtual SrsSharedPtr<SrsRtspSource> fetch(SrsRequest *r);
+    virtual SrsSharedPtr<SrsRtspSource> fetch(ISrsRequest *r);
 };
 
 // The global RTSP source manager.
@@ -112,7 +112,7 @@ private:
     SrsContextId _source_id;
     // previous source id.
     SrsContextId _pre_source_id;
-    SrsRequest *req;
+    ISrsRequest *req;
     // Steam description for this steam.
     SrsRtcTrackDescription *audio_desc_;
     SrsRtcTrackDescription *video_desc_;
@@ -134,7 +134,7 @@ public:
     virtual ~SrsRtspSource();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
 
 public:
     // Whether stream is dead, which is no publisher or player.
@@ -142,7 +142,7 @@ public:
 
 public:
     // Update the authentication information in request.
-    virtual void update_auth(SrsRequest *r);
+    virtual void update_auth(ISrsRequest *r);
 
 private:
     // The stream source changed.
@@ -188,7 +188,7 @@ public:
 class SrsRtspRtpBuilder
 {
 private:
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsFrameToRtspBridge *bridge_;
     // The format, codec information.
     SrsRtmpFormat *format;
@@ -219,7 +219,7 @@ private:
     srs_error_t initialize_video_track(SrsVideoCodecId codec);
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame);

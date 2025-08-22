@@ -62,11 +62,11 @@ SrsEdgeRtmpUpstream::~SrsEdgeRtmpUpstream()
     close();
 }
 
-srs_error_t SrsEdgeRtmpUpstream::connect(SrsRequest *r, SrsLbRoundRobin *lb)
+srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *req = r;
+    ISrsRequest *req = r;
 
     std::string url;
     if (true) {
@@ -178,10 +178,10 @@ SrsEdgeFlvUpstream::~SrsEdgeFlvUpstream()
     close();
 }
 
-srs_error_t SrsEdgeFlvUpstream::connect(SrsRequest *r, SrsLbRoundRobin *lb)
+srs_error_t SrsEdgeFlvUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
 {
     // Because we might modify the r, which cause retry fail, so we must copy it.
-    SrsRequest *cp = r->copy();
+    ISrsRequest *cp = r->copy();
 
     // Free the request when close upstream.
     srs_freep(req_);
@@ -190,11 +190,11 @@ srs_error_t SrsEdgeFlvUpstream::connect(SrsRequest *r, SrsLbRoundRobin *lb)
     return do_connect(cp, lb, 0);
 }
 
-srs_error_t SrsEdgeFlvUpstream::do_connect(SrsRequest *r, SrsLbRoundRobin *lb, int redirect_depth)
+srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, int redirect_depth)
 {
     srs_error_t err = srs_success;
 
-    SrsRequest *req = r;
+    ISrsRequest *req = r;
 
     if (redirect_depth == 0) {
         SrsConfDirective *conf = _srs_config->get_vhost_edge_origin(req->vhost);
@@ -417,7 +417,7 @@ SrsEdgeIngester::~SrsEdgeIngester()
     srs_freep(trd);
 }
 
-srs_error_t SrsEdgeIngester::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, SrsRequest *r)
+srs_error_t SrsEdgeIngester::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, ISrsRequest *r)
 {
     // Because source references to this object, so we should directly use the source ptr.
     source_ = s.get();
@@ -750,7 +750,7 @@ void SrsEdgeForwarder::set_queue_size(srs_utime_t queue_size)
     return queue->set_queue_size(queue_size);
 }
 
-srs_error_t SrsEdgeForwarder::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPublishEdge *e, SrsRequest *r)
+srs_error_t SrsEdgeForwarder::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPublishEdge *e, ISrsRequest *r)
 {
     // Because source references to this object, so we should directly use the source ptr.
     source_ = s.get();
@@ -965,7 +965,7 @@ SrsPlayEdge::~SrsPlayEdge()
     srs_freep(ingester);
 }
 
-srs_error_t SrsPlayEdge::initialize(SrsSharedPtr<SrsLiveSource> source, SrsRequest *req)
+srs_error_t SrsPlayEdge::initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -1058,7 +1058,7 @@ void SrsPublishEdge::set_queue_size(srs_utime_t queue_size)
     return forwarder->set_queue_size(queue_size);
 }
 
-srs_error_t SrsPublishEdge::initialize(SrsSharedPtr<SrsLiveSource> source, SrsRequest *req)
+srs_error_t SrsPublishEdge::initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 

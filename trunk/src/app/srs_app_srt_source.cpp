@@ -151,7 +151,7 @@ srs_error_t SrsSrtSourceManager::notify(int event, srs_utime_t interval, srs_uti
     return err;
 }
 
-srs_error_t SrsSrtSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps)
+srs_error_t SrsSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps)
 {
     srs_error_t err = srs_success;
 
@@ -190,6 +190,24 @@ srs_error_t SrsSrtSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<Srs
     }
 
     return err;
+}
+
+SrsSharedPtr<SrsSrtSource> SrsSrtSourceManager::fetch(ISrsRequest *r)
+{
+    // Use lock to protect coroutine switch.
+    // @bug https://github.com/ossrs/srs/issues/1230
+    SrsLocker(lock);
+
+    string stream_url = r->get_stream_url();
+    std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);
+
+    SrsSharedPtr<SrsSrtSource> source;
+    if (it == pool.end()) {
+        return source;
+    }
+
+    source = it->second;
+    return source;
 }
 
 SrsSrtSourceManager *_srs_srt_sources = NULL;
@@ -332,7 +350,7 @@ void SrsSrtFrameBuilder::on_unpublish()
 {
 }
 
-srs_error_t SrsSrtFrameBuilder::initialize(SrsRequest *req)
+srs_error_t SrsSrtFrameBuilder::initialize(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -933,7 +951,19 @@ SrsSrtSource::~SrsSrtSource()
     srs_trace("free srt source id=[%s]", cid.c_str());
 }
 
-srs_error_t SrsSrtSource::initialize(SrsRequest *r)
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches
+// before completing the basic field setup.
+//
+// If context switches occur before all fields are properly initialized, other coroutines
+// accessing this source from the pool may encounter uninitialized state, leading to crashes
+// or undefined behavior.
+//
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
+srs_error_t SrsSrtSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -996,7 +1026,7 @@ SrsContextId SrsSrtSource::pre_source_id()
     return _pre_source_id;
 }
 
-void SrsSrtSource::update_auth(SrsRequest *r)
+void SrsSrtSource::update_auth(ISrsRequest *r)
 {
     req->update_auth(r);
 }

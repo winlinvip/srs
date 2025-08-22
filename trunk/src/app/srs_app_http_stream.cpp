@@ -40,7 +40,7 @@ using namespace std;
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_utility.hpp>
 
-SrsBufferCache::SrsBufferCache(SrsServer *s, SrsRequest *r)
+SrsBufferCache::SrsBufferCache(SrsServer *s, ISrsRequest *r)
 {
     req = r->copy()->as_http();
     queue = new SrsMessageQueue(true);
@@ -59,7 +59,7 @@ SrsBufferCache::~SrsBufferCache()
     srs_freep(req);
 }
 
-srs_error_t SrsBufferCache::update_auth(SrsRequest *r)
+srs_error_t SrsBufferCache::update_auth(ISrsRequest *r)
 {
     srs_freep(req);
     req = r->copy();
@@ -133,7 +133,7 @@ srs_error_t SrsBufferCache::cycle()
     srs_error_t err = srs_success;
 
     SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = _srs_sources->fetch_or_create(req, server_, live_source)) != srs_success) {
+    if ((err = _srs_sources->fetch_or_create(req, live_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
     srs_assert(live_source.get() != NULL);
@@ -596,7 +596,7 @@ srs_error_t SrsBufferWriter::writev(const iovec *iov, int iovcnt, ssize_t *pnwri
     return writer->writev(iov, iovcnt, pnwrite);
 }
 
-SrsLiveStream::SrsLiveStream(SrsServer *s, SrsRequest *r, SrsBufferCache *c)
+SrsLiveStream::SrsLiveStream(SrsServer *s, ISrsRequest *r, SrsBufferCache *c)
 {
     cache = c;
     req = r->copy()->as_http();
@@ -613,7 +613,7 @@ SrsLiveStream::~SrsLiveStream()
     srs_assert(viewers_.empty());
 }
 
-srs_error_t SrsLiveStream::update_auth(SrsRequest *r)
+srs_error_t SrsLiveStream::update_auth(ISrsRequest *r)
 {
     srs_freep(req);
     req = r->copy()->as_http();
@@ -684,7 +684,7 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // Always try to create the source, because http handler won't create it.
     SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = _srs_sources->fetch_or_create(req, server_, live_source)) != srs_success) {
+    if ((err = _srs_sources->fetch_or_create(req, live_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
     srs_assert(live_source.get() != NULL);
@@ -887,7 +887,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
 
     // Create request to report for the specified connection.
     SrsHttpMessage *hr = dynamic_cast<SrsHttpMessage *>(r);
-    SrsUniquePtr<SrsRequest> nreq(hr->to_request(req->vhost));
+    SrsUniquePtr<ISrsRequest> nreq(hr->to_request(req->vhost));
 
     // the http hooks will cause context switch,
     // so we must copy all hooks for the on_connect may freed.
@@ -922,7 +922,7 @@ void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
 
     // Create request to report for the specified connection.
     SrsHttpMessage *hr = dynamic_cast<SrsHttpMessage *>(r);
-    SrsUniquePtr<SrsRequest> nreq(hr->to_request(req->vhost));
+    SrsUniquePtr<ISrsRequest> nreq(hr->to_request(req->vhost));
 
     // the http hooks will cause context switch,
     // so we must copy all hooks for the on_connect may freed.
@@ -1067,7 +1067,7 @@ srs_error_t SrsHttpStreamServer::initialize()
 }
 
 // TODO: FIXME: rename for HTTP FLV mount.
-srs_error_t SrsHttpStreamServer::http_mount(SrsRequest *r)
+srs_error_t SrsHttpStreamServer::http_mount(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1144,7 +1144,7 @@ srs_error_t SrsHttpStreamServer::http_mount(SrsRequest *r)
     return err;
 }
 
-void SrsHttpStreamServer::http_unmount(SrsRequest *r)
+void SrsHttpStreamServer::http_unmount(ISrsRequest *r)
 {
     std::string sid = r->get_stream_url();
 
@@ -1245,7 +1245,7 @@ srs_error_t SrsHttpStreamServer::hijack(ISrsHttpMessage *request, ISrsHttpHandle
     srs_assert(hreq);
 
     // hijack for entry.
-    SrsUniquePtr<SrsRequest> r(hreq->to_request(vhost->arg0()));
+    SrsUniquePtr<ISrsRequest> r(hreq->to_request(vhost->arg0()));
 
     std::string sid = r->get_stream_url();
     // check whether the http remux is enabled,

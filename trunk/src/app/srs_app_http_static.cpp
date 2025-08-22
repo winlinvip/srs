@@ -78,7 +78,7 @@ SrsHlsStream::~SrsHlsStream()
     srs_freep(security_);
 }
 
-srs_error_t SrsHlsStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, string fullpath, SrsRequest *req, bool *served)
+srs_error_t SrsHlsStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, string fullpath, ISrsRequest *req, bool *served)
 {
     srs_error_t err = srs_success;
 
@@ -144,7 +144,7 @@ void SrsHlsStream::on_serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r
     SrsStatistic::instance()->kbps_add_delta(ctx, delta);
 }
 
-srs_error_t SrsHlsStream::serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRequest *req, std::string &ctx)
+srs_error_t SrsHlsStream::serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsRequest *req, std::string &ctx)
 {
     srs_error_t err = srs_success;
 
@@ -279,7 +279,7 @@ bool SrsHlsStream::ctx_is_exist(std::string ctx)
     return (map_ctx_info_.find(ctx) != map_ctx_info_.end());
 }
 
-void SrsHlsStream::alive(std::string ctx, SrsRequest *req)
+void SrsHlsStream::alive(std::string ctx, ISrsRequest *req)
 {
     std::map<std::string, SrsHlsVirtualConn *>::iterator it = map_ctx_info_.find(ctx);
 
@@ -308,7 +308,7 @@ void SrsHlsStream::alive(std::string ctx, SrsRequest *req)
     }
 }
 
-srs_error_t SrsHlsStream::http_hooks_on_play(SrsRequest *req)
+srs_error_t SrsHlsStream::http_hooks_on_play(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -341,7 +341,7 @@ srs_error_t SrsHlsStream::http_hooks_on_play(SrsRequest *req)
     return err;
 }
 
-void SrsHlsStream::http_hooks_on_stop(SrsRequest *req)
+void SrsHlsStream::http_hooks_on_stop(ISrsRequest *req)
 {
     if (!_srs_config->get_vhost_http_hooks_enabled(req->vhost)) {
         return;
@@ -552,7 +552,7 @@ srs_error_t SrsVodStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMess
     SrsHttpMessage *hr = dynamic_cast<SrsHttpMessage *>(r);
     srs_assert(hr);
 
-    SrsUniquePtr<SrsRequest> req(hr->to_request(hr->host())->as_http());
+    SrsUniquePtr<ISrsRequest> req(hr->to_request(hr->host())->as_http());
 
     // discovery vhost, resolve the vhost from config
     SrsConfDirective *parsed_vhost = _srs_config->get_vhost(req->vhost);

@@ -21,7 +21,7 @@
 #include <sys/socket.h>
 #include <vector>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsRtpPacket;
 class SrsRtspSource;
 class SrsRtspAudioSendTrack;
@@ -42,7 +42,7 @@ private:
     SrsRtspConnection *session_;
 
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
     SrsSharedPtr<SrsRtspSource> source_;
     // key: publish_ssrc, value: send track to process rtp/rtcp
     std::map<uint32_t, SrsRtspAudioSendTrack *> audio_tracks_;
@@ -66,7 +66,7 @@ public:
     virtual ~SrsRtspPlayStream();
 
 public:
-    srs_error_t initialize(SrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
+    srs_error_t initialize(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
     // Interface ISrsRtcSourceChangeCallback
 public:
     void on_stream_change(SrsRtcSourceDescription *desc);
@@ -101,7 +101,7 @@ private:
     // TODO: FIXME: Rename it.
     srs_utime_t last_stun_time;
     SrsContextId cid_;
-    SrsRequest *request_;
+    ISrsRequest *request_;
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     // Each connection start a green thread,
@@ -179,7 +179,7 @@ private:
     srs_error_t do_cycle();
 
 private:
-    srs_error_t http_hooks_on_play(SrsRequest *req);
+    srs_error_t http_hooks_on_play(ISrsRequest *req);
     srs_error_t get_ssrc_by_stream_id(uint32_t stream_id, uint32_t *ssrc);
 };
 

@@ -345,7 +345,7 @@ SrsStatisticClient *SrsStatistic::find_client(string client_id)
     return NULL;
 }
 
-srs_error_t SrsStatistic::on_video_info(SrsRequest *req, SrsVideoCodecId vcodec, int profile, int level, int width, int height)
+srs_error_t SrsStatistic::on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int profile, int level, int width, int height)
 {
     srs_error_t err = srs_success;
 
@@ -372,7 +372,7 @@ srs_error_t SrsStatistic::on_video_info(SrsRequest *req, SrsVideoCodecId vcodec,
     return err;
 }
 
-srs_error_t SrsStatistic::on_audio_info(SrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object)
+srs_error_t SrsStatistic::on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object)
 {
     srs_error_t err = srs_success;
 
@@ -388,7 +388,7 @@ srs_error_t SrsStatistic::on_audio_info(SrsRequest *req, SrsAudioCodecId acodec,
     return err;
 }
 
-srs_error_t SrsStatistic::on_video_frames(SrsRequest *req, int nb_frames)
+srs_error_t SrsStatistic::on_video_frames(ISrsRequest *req, int nb_frames)
 {
     srs_error_t err = srs_success;
 
@@ -400,7 +400,7 @@ srs_error_t SrsStatistic::on_video_frames(SrsRequest *req, int nb_frames)
     return err;
 }
 
-void SrsStatistic::on_stream_publish(SrsRequest *req, std::string publisher_id)
+void SrsStatistic::on_stream_publish(ISrsRequest *req, std::string publisher_id)
 {
     SrsStatisticVhost *vhost = create_vhost(req);
     SrsStatisticStream *stream = create_stream(vhost, req);
@@ -408,14 +408,14 @@ void SrsStatistic::on_stream_publish(SrsRequest *req, std::string publisher_id)
     stream->publish(publisher_id);
 }
 
-void SrsStatistic::on_stream_close(SrsRequest *req)
+void SrsStatistic::on_stream_close(ISrsRequest *req)
 {
     SrsStatisticVhost *vhost = create_vhost(req);
     SrsStatisticStream *stream = create_stream(vhost, req);
     stream->close();
 }
 
-srs_error_t SrsStatistic::on_client(std::string id, SrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type)
+srs_error_t SrsStatistic::on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type)
 {
     srs_error_t err = srs_success;
 
@@ -734,7 +734,7 @@ void SrsStatistic::dumps_cls_streams(SrsClsSugars *sugars)
 }
 #endif
 
-SrsStatisticVhost *SrsStatistic::create_vhost(SrsRequest *req)
+SrsStatisticVhost *SrsStatistic::create_vhost(ISrsRequest *req)
 {
     SrsStatisticVhost *vhost = NULL;
 
@@ -752,7 +752,7 @@ SrsStatisticVhost *SrsStatistic::create_vhost(SrsRequest *req)
     return vhost;
 }
 
-SrsStatisticStream *SrsStatistic::create_stream(SrsStatisticVhost *vhost, SrsRequest *req)
+SrsStatisticStream *SrsStatistic::create_stream(SrsStatisticVhost *vhost, ISrsRequest *req)
 {
     // To identify a stream, use url without extension, for example, the bellow are the same stream:
     //      ossrs.io/live/livestream

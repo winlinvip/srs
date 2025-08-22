@@ -35,7 +35,7 @@ SrsEncoder::~SrsEncoder()
     srs_freep(pprint);
 }
 
-srs_error_t SrsEncoder::on_publish(SrsRequest *req)
+srs_error_t SrsEncoder::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -155,7 +155,7 @@ SrsFFMPEG *SrsEncoder::at(int index)
     return ffmpegs[index];
 }
 
-srs_error_t SrsEncoder::parse_scope_engines(SrsRequest *req)
+srs_error_t SrsEncoder::parse_scope_engines(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -188,7 +188,7 @@ srs_error_t SrsEncoder::parse_scope_engines(SrsRequest *req)
     return err;
 }
 
-srs_error_t SrsEncoder::parse_ffmpeg(SrsRequest *req, SrsConfDirective *conf)
+srs_error_t SrsEncoder::parse_ffmpeg(ISrsRequest *req, SrsConfDirective *conf)
 {
     srs_error_t err = srs_success;
 
@@ -234,7 +234,7 @@ srs_error_t SrsEncoder::parse_ffmpeg(SrsRequest *req, SrsConfDirective *conf)
     return err;
 }
 
-srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, SrsRequest *req, SrsConfDirective *engine)
+srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, SrsConfDirective *engine)
 {
     srs_error_t err = srs_success;
 

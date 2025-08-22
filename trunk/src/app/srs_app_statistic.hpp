@@ -19,7 +19,7 @@
 
 class SrsKbps;
 class SrsWallClock;
-class SrsRequest;
+class ISrsRequest;
 class ISrsExpire;
 class SrsJsonObject;
 class SrsJsonArray;
@@ -113,7 +113,7 @@ public:
 
 public:
     SrsStatisticStream *stream;
-    SrsRequest *req;
+    ISrsRequest *req;
     SrsRtmpConnType type;
     std::string id;
     srs_utime_t create;
@@ -183,19 +183,19 @@ public:
 
 public:
     // When got video info for stream.
-    virtual srs_error_t on_video_info(SrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height);
+    virtual srs_error_t on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height);
     // When got audio info for stream.
-    virtual srs_error_t on_audio_info(SrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
+    virtual srs_error_t on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
                                       SrsAudioChannels asound_type, SrsAacObjectType aac_object);
     // When got videos, update the frames.
     // We only stat the total number of video frames.
-    virtual srs_error_t on_video_frames(SrsRequest *req, int nb_frames);
+    virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames);
     // When publish stream.
     // @param req the request object of publish connection.
     // @param publisher_id The id of publish connection.
-    virtual void on_stream_publish(SrsRequest *req, std::string publisher_id);
+    virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id);
     // When close stream.
-    virtual void on_stream_close(SrsRequest *req);
+    virtual void on_stream_close(ISrsRequest *req);
 
 public:
     // When got a client to publish/play stream,
@@ -203,7 +203,7 @@ public:
     // @param req, the client request object.
     // @param conn, the physical absract connection object.
     // @param type, the type of connection.
-    virtual srs_error_t on_client(std::string id, SrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type);
+    virtual srs_error_t on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type);
     // Client disconnect
     // @remark the on_disconnect always call, while the on_client is call when
     //      only got the request object, so the client specified by id maybe not
@@ -248,8 +248,8 @@ public:
     void dumps_cls_streams(SrsClsSugars *sugars);
 #endif
 private:
-    virtual SrsStatisticVhost *create_vhost(SrsRequest *req);
-    virtual SrsStatisticStream *create_stream(SrsStatisticVhost *vhost, SrsRequest *req);
+    virtual SrsStatisticVhost *create_vhost(ISrsRequest *req);
+    virtual SrsStatisticStream *create_stream(SrsStatisticVhost *vhost, ISrsRequest *req);
 
 public:
     // Dumps exporter metrics.

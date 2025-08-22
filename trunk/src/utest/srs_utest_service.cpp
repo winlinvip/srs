@@ -636,7 +636,7 @@ VOID TEST(HTTPServerTest, MessageTurnRequest)
     if (true) {
         SrsHttpMessage m;
         HELPER_ASSERT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv", false));
-        SrsRequest *r = m.to_request("ossrs.net");
+        ISrsRequest *r = m.to_request("ossrs.net");
         EXPECT_STREQ("live", r->app.c_str());
         EXPECT_STREQ("livestream", r->stream.c_str());
         EXPECT_STREQ("rtmp://ossrs.net/live", r->tcUrl.c_str());
@@ -646,7 +646,7 @@ VOID TEST(HTTPServerTest, MessageTurnRequest)
     if (true) {
         SrsHttpMessage m;
         HELPER_ASSERT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv?token=key", false));
-        SrsRequest *r = m.to_request("ossrs.net");
+        ISrsRequest *r = m.to_request("ossrs.net");
         EXPECT_STREQ("rtmp://ossrs.net/live", r->tcUrl.c_str());
         EXPECT_STREQ("?token=key", r->param.c_str());
         srs_freep(r);
@@ -657,7 +657,7 @@ VOID TEST(HTTPServerTest, MessageTurnRequest)
         SrsHttpMessage m;
         m.set_connection(&conn);
 
-        SrsRequest *r = m.to_request("ossrs.net");
+        ISrsRequest *r = m.to_request("ossrs.net");
         EXPECT_STREQ("127.0.0.1", r->ip.c_str());
         srs_freep(r);
     }
@@ -671,7 +671,7 @@ VOID TEST(HTTPServerTest, MessageTurnRequest)
         hdr.set("X-Real-IP", "10.11.12.13");
         m.set_header(&hdr, false);
 
-        SrsRequest *r = m.to_request("ossrs.net");
+        ISrsRequest *r = m.to_request("ossrs.net");
         EXPECT_STREQ("10.11.12.13", r->ip.c_str());
         srs_freep(r);
     }

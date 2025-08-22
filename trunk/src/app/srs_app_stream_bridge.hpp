@@ -14,7 +14,7 @@
 
 #include <vector>
 
-class SrsRequest;
+class ISrsRequest;
 class SrsSharedPtrMessage;
 class SrsLiveSource;
 class SrsRtcSource;
@@ -35,7 +35,7 @@ public:
     virtual ~ISrsStreamBridge();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r) = 0;
+    virtual srs_error_t initialize(ISrsRequest *r) = 0;
     virtual srs_error_t on_publish() = 0;
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame) = 0;
     virtual void on_unpublish() = 0;
@@ -52,7 +52,7 @@ public:
     virtual ~SrsFrameToRtmpBridge();
 
 public:
-    srs_error_t initialize(SrsRequest *r);
+    srs_error_t initialize(ISrsRequest *r);
 
 public:
     virtual srs_error_t on_publish();
@@ -77,7 +77,7 @@ public:
     virtual ~SrsFrameToRtcBridge();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame);
@@ -99,7 +99,7 @@ public:
     virtual ~SrsFrameToRtspBridge();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
     virtual srs_error_t on_frame(SrsSharedPtrMessage *frame);
@@ -117,7 +117,7 @@ public:
 public:
     bool empty() { return bridges_.empty(); } // SrsCompositeBridge::empty()
 public:
-    srs_error_t initialize(SrsRequest *r);
+    srs_error_t initialize(ISrsRequest *r);
 
 public:
     virtual srs_error_t on_publish();

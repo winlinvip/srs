@@ -19,7 +19,7 @@
 #include <srs_protocol_st.hpp>
 
 class SrsSharedPtrMessage;
-class SrsRequest;
+class ISrsRequest;
 class SrsLiveSource;
 class SrsSrtSource;
 class SrsAlonePithyPrint;
@@ -73,7 +73,11 @@ public:
     //  create source when fetch from cache failed.
     // @param r the client request.
     // @param pps the matched source, if success never be NULL.
-    virtual srs_error_t fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps);
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps);
+
+public:
+    // Get the exists source, NULL when not exists.
+    virtual SrsSharedPtr<SrsSrtSource> fetch(ISrsRequest *r);
 };
 
 // Global singleton instance.
@@ -117,7 +121,7 @@ public:
     virtual ~SrsSrtFrameBuilder();
 
 public:
-    srs_error_t initialize(SrsRequest *r);
+    srs_error_t initialize(ISrsRequest *r);
 
 public:
     virtual srs_error_t on_publish();
@@ -156,7 +160,7 @@ private:
     std::string audio_sh_;
 
 private:
-    SrsRequest *req_;
+    ISrsRequest *req_;
 
 private:
     // SRT to rtmp, video stream id.
@@ -174,7 +178,7 @@ public:
     virtual ~SrsSrtSource();
 
 public:
-    virtual srs_error_t initialize(SrsRequest *r);
+    virtual srs_error_t initialize(ISrsRequest *r);
 
 public:
     // Whether stream is dead, which is no publisher or player.
@@ -187,7 +191,7 @@ public:
     virtual SrsContextId source_id();
     virtual SrsContextId pre_source_id();
     // Update the authentication information in request.
-    virtual void update_auth(SrsRequest *r);
+    virtual void update_auth(ISrsRequest *r);
 
 public:
     void set_bridge(ISrsStreamBridge *bridge);
@@ -214,7 +218,7 @@ private:
     SrsContextId _source_id;
     // previous source id.
     SrsContextId _pre_source_id;
-    SrsRequest *req;
+    ISrsRequest *req;
     // To delivery packets to clients.
     std::vector<SrsSrtConsumer *> consumers;
     bool can_publish_;

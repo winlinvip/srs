@@ -976,7 +976,7 @@ VOID TEST(ProtocolRTMPTest, RecvMessage3)
         SrsRequest req;
         req.ip = "10.11.12.13";
 
-        SrsRequest *cp = req.copy();
+        ISrsRequest *cp = req.copy();
         EXPECT_STREQ("10.11.12.13", cp->ip.c_str());
         srs_freep(cp);
     }
@@ -989,7 +989,7 @@ VOID TEST(ProtocolRTMPTest, RecvMessage3)
         obj->set("id", SrsAmf0Any::str("srs"));
         req.args = obj;
 
-        SrsRequest *cp = req.copy();
+        ISrsRequest *cp = req.copy();
         EXPECT_STREQ("10.11.12.13", cp->ip.c_str());
 
         SrsAmf0Object *cpa = dynamic_cast<SrsAmf0Object *>(cp->args);

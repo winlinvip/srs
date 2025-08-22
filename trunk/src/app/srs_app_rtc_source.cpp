@@ -294,34 +294,40 @@ srs_error_t SrsRtcSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<Srs
 {
     srs_error_t err = srs_success;
 
-    // Use lock to protect coroutine switch.
-    // @bug https://github.com/ossrs/srs/issues/1230
-    SrsLocker(lock);
+    bool created = false;
+    // Should never invoke any function during the locking.
+    if (true) {
+        // Use lock to protect coroutine switch.
+        // @bug https://github.com/ossrs/srs/issues/1230
+        SrsLocker(lock);
 
-    string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool.find(stream_url);
+        string stream_url = r->get_stream_url();
+        std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool.find(stream_url);
 
-    if (it != pool.end()) {
-        SrsSharedPtr<SrsRtcSource> source = it->second;
-
-        // we always update the request of resource,
-        // for origin auth is on, the token in request maybe invalid,
-        // and we only need to update the token of request, it's simple.
-        source->update_auth(r);
-        pps = source;
-
-        return err;
+        if (it != pool.end()) {
+            SrsSharedPtr<SrsRtcSource> source = it->second;
+            pps = source;
+        } else {
+            SrsSharedPtr<SrsRtcSource> source = SrsSharedPtr<SrsRtcSource>(new SrsRtcSource());
+            srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
+            pps = source;
+            
+            pool[stream_url] = source;
+            created = true;
+        }
     }
 
-    SrsSharedPtr<SrsRtcSource> source = SrsSharedPtr<SrsRtcSource>(new SrsRtcSource());
-    srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
-
-    if ((err = source->initialize(r)) != srs_success) {
+    // Initialize source.
+    if (created && (err = pps->initialize(r)) != srs_success) {
         return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
     }
 
-    pool[stream_url] = source;
-    pps = source;
+    // we always update the request of resource,
+    // for origin auth is on, the token in request maybe invalid,
+    // and we only need to update the token of request, it's simple.
+    if (!created) {
+        pps->update_auth(r);
+    }
 
     return err;
 }

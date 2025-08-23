@@ -9,7 +9,6 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_rtc_source.hpp>
-#include <srs_app_rtsp_source.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_srt_source.hpp>
@@ -18,6 +17,9 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <st.h>
+#ifdef SRS_RTSP
+#include <srs_app_rtsp_source.hpp>
+#endif
 
 /**
  * Unit tests for source lock refinement (PR #4449)
@@ -157,8 +159,6 @@ public:
 };
 
 // Type aliases for convenience (C++98 compatible)
-// These replace the individual MockRtcSourceAsyncCreator, MockSrtSourceAsyncCreator,
-// and MockRtspSourceAsyncCreator classes with a single template
 typedef MockOtherSourceAsyncCreator<SrsLiveSourceManager, SrsLiveSource> MockLiveSourceAsyncCreator;
 
 // Test race condition of source managers
@@ -202,8 +202,6 @@ VOID TEST(SourceLockTest, LiveSourceManager_RaceCondition)
 }
 
 // Type aliases for convenience (C++98 compatible)
-// These replace the individual MockRtcSourceAsyncCreator, MockSrtSourceAsyncCreator,
-// and MockRtspSourceAsyncCreator classes with a single template
 typedef MockOtherSourceAsyncCreator<SrsRtcSourceManager, SrsRtcSource> MockRtcSourceAsyncCreator;
 
 // Test race condition of source managers
@@ -284,48 +282,6 @@ VOID TEST(SourceLockTest, SrtSourceManager_RaceCondition)
 
     // Test fetch_or_create again - should return existing source
     SrsSharedPtr<SrsSrtSource> source2;
-    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
-    EXPECT_EQ(source.get(), source2.get());
-}
-
-typedef MockOtherSourceAsyncCreator<SrsRtspSourceManager, SrsRtspSource> MockRtspSourceAsyncCreator;
-
-// Test race condition of source managers
-VOID TEST(SourceLockTest, RtspSourceManager_RaceCondition)
-{
-    srs_error_t err;
-
-    SrsRtspSourceManager manager;
-    HELPER_EXPECT_SUCCESS(manager.initialize());
-
-    MockAsyncSrsRequest req("/live/test1", true); // Enable context switch
-    SrsSharedPtr<SrsRtspSource> source;
-
-    // Create a coroutine to create source2.
-    SrsWaitGroup wg;
-    MockRtspSourceAsyncCreator creator(&wg, &manager, &req);
-    SrsSTCoroutine trd("test", &creator);
-
-    wg.add(1);
-    HELPER_EXPECT_SUCCESS(trd.start());
-
-    // Test fetch_or_create - should create new source
-    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
-    EXPECT_TRUE(source.get() != NULL);
-
-    // Wait for coroutine to finish.
-    wg.wait();
-
-    // The created two sources should be the same instance (no duplicates created)
-    EXPECT_EQ(source.get(), creator.source_.get());
-
-    // Test fetch - should return the same source
-    SrsSharedPtr<SrsRtspSource> fetched = manager.fetch(&req);
-    EXPECT_TRUE(fetched.get() != NULL);
-    EXPECT_EQ(source.get(), fetched.get());
-
-    // Test fetch_or_create again - should return existing source
-    SrsSharedPtr<SrsRtspSource> source2;
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
     EXPECT_EQ(source.get(), source2.get());
 }
@@ -470,9 +426,6 @@ VOID TEST(SourceLockTest, LiveSourceManager_LockProtection)
     SrsRtcSourceManager rtc_manager;
     HELPER_EXPECT_SUCCESS(rtc_manager.initialize());
 
-    SrsRtspSourceManager rtsp_manager;
-    HELPER_EXPECT_SUCCESS(rtsp_manager.initialize());
-
     SrsSrtSourceManager srt_manager;
     HELPER_EXPECT_SUCCESS(srt_manager.initialize());
 
@@ -487,10 +440,6 @@ VOID TEST(SourceLockTest, LiveSourceManager_LockProtection)
         SrsSharedPtr<SrsRtcSource> rtc_source;
         HELPER_EXPECT_SUCCESS(rtc_manager.fetch_or_create(&req, rtc_source));
         EXPECT_TRUE(rtc_source.get() != NULL);
-
-        SrsSharedPtr<SrsRtspSource> rtsp_source;
-        HELPER_EXPECT_SUCCESS(rtsp_manager.fetch_or_create(&req, rtsp_source));
-        EXPECT_TRUE(rtsp_source.get() != NULL);
 
         SrsSharedPtr<SrsSrtSource> srt_source;
         HELPER_EXPECT_SUCCESS(srt_manager.fetch_or_create(&req, srt_source));
@@ -551,9 +500,6 @@ VOID TEST(SourceLockTest, LiveSourceManager_AtomicSourceCreation)
     SrsRtcSourceManager rtc_manager;
     HELPER_EXPECT_SUCCESS(rtc_manager.initialize());
 
-    SrsRtspSourceManager rtsp_manager;
-    HELPER_EXPECT_SUCCESS(rtsp_manager.initialize());
-
     SrsSrtSourceManager srt_manager;
     HELPER_EXPECT_SUCCESS(srt_manager.initialize());
 
@@ -568,18 +514,6 @@ VOID TEST(SourceLockTest, LiveSourceManager_AtomicSourceCreation)
         EXPECT_TRUE(source.get() != NULL);
         if (i > 0) {
             EXPECT_EQ(rtc_sources[0].get(), source.get());
-        }
-    }
-
-    // Test RTSP source manager
-    vector<SrsSharedPtr<SrsRtspSource> > rtsp_sources;
-    for (int i = 0; i < 10; i++) {
-        SrsSharedPtr<SrsRtspSource> source;
-        HELPER_EXPECT_SUCCESS(rtsp_manager.fetch_or_create(&req, source));
-        rtsp_sources.push_back(source);
-        EXPECT_TRUE(source.get() != NULL);
-        if (i > 0) {
-            EXPECT_EQ(rtsp_sources[0].get(), source.get());
         }
     }
 
@@ -707,31 +641,6 @@ VOID TEST(SourceLockTest, RtcSourceManager_BasicFunctionality)
     EXPECT_EQ(source.get(), source2.get());
 }
 
-VOID TEST(SourceLockTest, RtspSourceManager_BasicFunctionality)
-{
-    srs_error_t err;
-
-    SrsRtspSourceManager manager;
-    HELPER_EXPECT_SUCCESS(manager.initialize());
-
-    MockAsyncSrsRequest req("/live/test3");
-    SrsSharedPtr<SrsRtspSource> source;
-
-    // Test fetch_or_create - should create new source
-    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
-    EXPECT_TRUE(source.get() != NULL);
-
-    // Test fetch - should return the same source
-    SrsSharedPtr<SrsRtspSource> fetched = manager.fetch(&req);
-    EXPECT_TRUE(fetched.get() != NULL);
-    EXPECT_EQ(source.get(), fetched.get());
-
-    // Test fetch_or_create again - should return existing source
-    SrsSharedPtr<SrsRtspSource> source2;
-    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
-    EXPECT_EQ(source.get(), source2.get());
-}
-
 VOID TEST(SourceLockTest, SrtSourceManager_BasicFunctionality)
 {
     srs_error_t err;
@@ -792,3 +701,117 @@ VOID TEST(SourceLockTest, RtcSourceManager_FetchNonExistent)
     SrsSharedPtr<SrsRtcSource> source = manager.fetch(&req);
     EXPECT_TRUE(source.get() == NULL);
 }
+
+#ifdef SRS_RTSP
+typedef MockOtherSourceAsyncCreator<SrsRtspSourceManager, SrsRtspSource> MockRtspSourceAsyncCreator;
+
+// Test race condition of source managers
+VOID TEST(SourceLockTest, RtspSourceManager_RaceCondition)
+{
+    srs_error_t err;
+
+    SrsRtspSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    MockAsyncSrsRequest req("/live/test1", true); // Enable context switch
+    SrsSharedPtr<SrsRtspSource> source;
+
+    // Create a coroutine to create source2.
+    SrsWaitGroup wg;
+    MockRtspSourceAsyncCreator creator(&wg, &manager, &req);
+    SrsSTCoroutine trd("test", &creator);
+
+    wg.add(1);
+    HELPER_EXPECT_SUCCESS(trd.start());
+
+    // Test fetch_or_create - should create new source
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
+    EXPECT_TRUE(source.get() != NULL);
+
+    // Wait for coroutine to finish.
+    wg.wait();
+
+    // The created two sources should be the same instance (no duplicates created)
+    EXPECT_EQ(source.get(), creator.source_.get());
+
+    // Test fetch - should return the same source
+    SrsSharedPtr<SrsRtspSource> fetched = manager.fetch(&req);
+    EXPECT_TRUE(fetched.get() != NULL);
+    EXPECT_EQ(source.get(), fetched.get());
+
+    // Test fetch_or_create again - should return existing source
+    SrsSharedPtr<SrsRtspSource> source2;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
+    EXPECT_EQ(source.get(), source2.get());
+}
+
+// Test lock protection during source creation
+VOID TEST(SourceLockTest, LiveSourceManager_LockProtection2)
+{
+    srs_error_t err;
+
+    // Test that the lock scope is properly limited
+    // This test verifies that no functions are called during locking
+
+    SrsRtspSourceManager rtsp_manager;
+    HELPER_EXPECT_SUCCESS(rtsp_manager.initialize());
+
+    // Test that managers can handle rapid successive calls
+    MockAsyncSrsRequest req("/live/lock_test");
+
+    for (int i = 0; i < 5; i++) {
+        SrsSharedPtr<SrsRtspSource> rtsp_source;
+        HELPER_EXPECT_SUCCESS(rtsp_manager.fetch_or_create(&req, rtsp_source));
+        EXPECT_TRUE(rtsp_source.get() != NULL);
+    }
+}
+
+// Test the atomic nature of source creation and pool insertion
+VOID TEST(SourceLockTest, LiveSourceManager_AtomicSourceCreation2)
+{
+    srs_error_t err;
+
+    // Test all source manager types
+    SrsRtspSourceManager rtsp_manager;
+    HELPER_EXPECT_SUCCESS(rtsp_manager.initialize());
+
+    MockAsyncSrsRequest req("/live/atomic_test", true); // Enable context switch
+
+    // Test RTSP source manager
+    vector<SrsSharedPtr<SrsRtspSource> > rtsp_sources;
+    for (int i = 0; i < 10; i++) {
+        SrsSharedPtr<SrsRtspSource> source;
+        HELPER_EXPECT_SUCCESS(rtsp_manager.fetch_or_create(&req, source));
+        rtsp_sources.push_back(source);
+        EXPECT_TRUE(source.get() != NULL);
+        if (i > 0) {
+            EXPECT_EQ(rtsp_sources[0].get(), source.get());
+        }
+    }
+}
+
+VOID TEST(SourceLockTest, RtspSourceManager_BasicFunctionality)
+{
+    srs_error_t err;
+
+    SrsRtspSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    MockAsyncSrsRequest req("/live/test3");
+    SrsSharedPtr<SrsRtspSource> source;
+
+    // Test fetch_or_create - should create new source
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
+    EXPECT_TRUE(source.get() != NULL);
+
+    // Test fetch - should return the same source
+    SrsSharedPtr<SrsRtspSource> fetched = manager.fetch(&req);
+    EXPECT_TRUE(fetched.get() != NULL);
+    EXPECT_EQ(source.get(), fetched.get());
+
+    // Test fetch_or_create again - should return existing source
+    SrsSharedPtr<SrsRtspSource> source2;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
+    EXPECT_EQ(source.get(), source2.get());
+}
+#endif

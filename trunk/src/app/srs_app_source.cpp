@@ -19,8 +19,10 @@ using namespace std;
 #include <srs_app_hds.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_http_hooks.hpp>
+#include <srs_app_hybrid.hpp>
 #include <srs_app_ng_exec.hpp>
 #include <srs_app_rtc_source.hpp>
+#include <srs_app_server.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
@@ -33,8 +35,6 @@ using namespace std;
 #include <srs_protocol_rtmp_msg_array.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_hybrid.hpp>
-#include <srs_app_server.hpp>
 
 #define CONST_MAX_JITTER_MS 250
 #define CONST_MAX_JITTER_MS_NEG -250
@@ -2661,7 +2661,7 @@ void SrsLiveSource::on_unpublish()
     // notify the handler.
     ISrsLiveSourceHandler *handler = _srs_hybrid->srs()->instance();
     srs_assert(handler);
-    
+
     SrsStatistic *stat = SrsStatistic::instance();
     stat->on_stream_close(req);
 

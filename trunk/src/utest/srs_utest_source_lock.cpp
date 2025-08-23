@@ -116,7 +116,7 @@ public:
 // Since SRS uses C++98, we use a simple template approach
 // Note: MockLiveSourceAsyncCreator is kept separate because it requires an additional
 // ISrsLiveSourceHandler parameter that the other source managers don't need
-template<typename ManagerType, typename SourceType>
+template <typename ManagerType, typename SourceType>
 class MockOtherSourceAsyncCreator : public ISrsCoroutineHandler
 {
 public:
@@ -148,7 +148,7 @@ public:
         srs_error_t err = srs_success;
 
         // Test fetch_or_create - should create new source
-        if((err = manager_->fetch_or_create(req_, source_)) != srs_success) {
+        if ((err = manager_->fetch_or_create(req_, source_)) != srs_success) {
             return srs_error_wrap(err, "fetch or create");
         }
 

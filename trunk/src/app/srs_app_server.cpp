@@ -33,6 +33,7 @@ using namespace std;
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_consts.hpp>
 #include <srs_kernel_error.hpp>
@@ -856,6 +857,10 @@ srs_error_t SrsServer::start(SrsWaitGroup *wg)
 
     if ((err = _srs_sources->initialize()) != srs_success) {
         return srs_error_wrap(err, "live sources");
+    }
+
+    if ((err = _srs_stream_publish_tokens->initialize()) != srs_success) {
+        return srs_error_wrap(err, "stream publish tokens");
     }
 
 #ifdef SRS_SRT

@@ -859,6 +859,12 @@ SrsOriginHub::~SrsOriginHub()
 #endif
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsOriginHub::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
 {
     srs_error_t err = srs_success;

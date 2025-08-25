@@ -28,6 +28,7 @@ using namespace std;
 #include <srs_app_srt_source.hpp>
 #include <srs_app_st.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_app_tencentcloud.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
@@ -654,6 +655,17 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
     // client is identified, set the timeout to service timeout.
     rtmp->set_recv_timeout(SRS_CONSTS_RTMP_TIMEOUT);
     rtmp->set_send_timeout(SRS_CONSTS_RTMP_TIMEOUT);
+
+    // Acquire stream publish token to prevent race conditions across all protocols.
+    SrsStreamPublishToken *publish_token_raw = NULL;
+    if (info->type != SrsRtmpConnPlay && (err = _srs_stream_publish_tokens->acquire_token(req, publish_token_raw)) != srs_success) {
+        return srs_error_wrap(err, "acquire stream publish token");
+    }
+    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
+    if (publish_token.get()) {
+        srs_trace("stream publish token acquired, type=%s, url=%s",
+                  srs_client_type_string(info->type).c_str(), req->get_stream_url().c_str());
+    }
 
     // find a source to serve.
     SrsSharedPtr<SrsLiveSource> live_source;

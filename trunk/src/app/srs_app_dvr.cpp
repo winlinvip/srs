@@ -51,6 +51,12 @@ SrsDvrSegmenter::~SrsDvrSegmenter()
     srs_freep(fs);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsDvrSegmenter::initialize(SrsDvrPlan *p, ISrsRequest *r)
 {
     req = r;
@@ -581,6 +587,12 @@ SrsDvrPlan::~SrsDvrPlan()
     srs_freep(req);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsDvrPlan::initialize(SrsOriginHub *h, SrsDvrSegmenter *s, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
@@ -666,6 +678,12 @@ srs_error_t SrsDvrPlan::on_reap_segment()
     return err;
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsDvrPlan::create_plan(string vhost, SrsDvrPlan **pplan)
 {
     std::string plan = _srs_config->get_dvr_plan(vhost);
@@ -932,6 +950,12 @@ SrsDvr::~SrsDvr()
     srs_freep(req);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsDvr::initialize(SrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;

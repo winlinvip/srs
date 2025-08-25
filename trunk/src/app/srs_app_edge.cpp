@@ -417,6 +417,12 @@ SrsEdgeIngester::~SrsEdgeIngester()
     srs_freep(trd);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsEdgeIngester::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, ISrsRequest *r)
 {
     // Because source references to this object, so we should directly use the source ptr.
@@ -750,6 +756,12 @@ void SrsEdgeForwarder::set_queue_size(srs_utime_t queue_size)
     return queue->set_queue_size(queue_size);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsEdgeForwarder::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPublishEdge *e, ISrsRequest *r)
 {
     // Because source references to this object, so we should directly use the source ptr.
@@ -965,6 +977,12 @@ SrsPlayEdge::~SrsPlayEdge()
     srs_freep(ingester);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsPlayEdge::initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
@@ -1058,6 +1076,12 @@ void SrsPublishEdge::set_queue_size(srs_utime_t queue_size)
     return forwarder->set_queue_size(queue_size);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsPublishEdge::initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req)
 {
     srs_error_t err = srs_success;

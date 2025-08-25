@@ -185,6 +185,12 @@ void SrsMpdWriter::dispose()
     }
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsMpdWriter::initialize(ISrsRequest *r)
 {
     req = r;
@@ -394,6 +400,12 @@ void SrsDashController::dispose()
     srs_trace("gracefully dispose dash %s", req ? req->get_stream_url().c_str() : "");
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsDashController::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
@@ -737,6 +749,12 @@ srs_utime_t SrsDash::cleanup_delay()
     return _srs_config->get_dash_dispose(req->vhost) * 1.1;
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsDash::initialize(SrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;

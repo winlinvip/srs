@@ -20,6 +20,7 @@
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_source.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_app_tencentcloud.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_error.hpp>
@@ -693,6 +694,9 @@ srs_error_t srs_global_initialize()
 
     _srs_rtc_sources = new SrsRtcSourceManager();
     _srs_blackhole = new SrsRtcBlackhole();
+
+    // Initialize stream publish token manager
+    _srs_stream_publish_tokens = new SrsStreamPublishTokenManager();
 
     _srs_rtc_manager = new SrsResourceManager("RTC", true);
     _srs_rtc_dtls_certificate = new SrsDtlsCertificate();

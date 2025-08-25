@@ -465,6 +465,12 @@ void SrsHlsFmp4Muxer::set_latest_vcodec(SrsVideoCodecId v)
     latest_vcodec_ = v;
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsHlsFmp4Muxer::initialize(int v_tid, int a_tid)
 {
     video_track_id_ = v_tid;
@@ -1172,6 +1178,12 @@ void SrsHlsMuxer::set_latest_vcodec(SrsVideoCodecId v)
     latest_vcodec_ = v;
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsHlsMuxer::initialize()
 {
     return srs_success;
@@ -1901,6 +1913,12 @@ SrsHlsController::~SrsHlsController()
     srs_freep(tsmc);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsHlsController::initialize()
 {
     srs_error_t err = muxer->initialize();
@@ -2224,6 +2242,12 @@ SrsHlsMp4Controller::~SrsHlsMp4Controller()
     srs_freep(muxer_);
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsHlsMp4Controller::initialize()
 {
     srs_error_t err = srs_success;
@@ -2514,6 +2538,12 @@ srs_utime_t SrsHls::cleanup_delay()
     return _srs_config->get_hls_dispose(req->vhost) * 1.1;
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 srs_error_t SrsHls::initialize(SrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;

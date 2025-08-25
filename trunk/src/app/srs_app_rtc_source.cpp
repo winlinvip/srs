@@ -451,6 +451,12 @@ bool SrsRtcSource::stream_is_dead()
     return true;
 }
 
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
 void SrsRtcSource::init_for_play_before_publishing()
 {
     // If the stream description has already been setup by RTC publisher,

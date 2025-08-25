@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-08-25, Merge [#4452](https://github.com/ossrs/srs/pull/4452): AI: Implement stream publish token system to prevent race conditions across all protocols. v7.0.62 (#4452)
 * v7.0, 2025-08-22, Merge [#4449](https://github.com/ossrs/srs/pull/4449): Refine source lock. v7.0.61 (#4449)
 * v7.0, 2025-08-21, Merge [#4447](https://github.com/ossrs/srs/pull/4447): AI: Always enable WebRTC and enforce C++98 compatibility. v7.0.60 (#4447)
 * v7.0, 2025-08-20, Merge [#4445](https://github.com/ossrs/srs/pull/4445): AI: Remove multi-threading support and change to single-thread architecture. v7.0.59 (#4445)

@@ -15,6 +15,7 @@ using namespace std;
 #include <srs_app_srt_server.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_flv.hpp>
@@ -22,7 +23,6 @@ using namespace std;
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_srt.hpp>
-#include <srs_app_stream_token.hpp>
 
 SrsSrtConnection::SrsSrtConnection(srs_srt_t srt_fd)
 {

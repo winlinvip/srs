@@ -33,6 +33,7 @@ using namespace std;
 #include <srs_app_source.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
@@ -48,7 +49,6 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_stream_token.hpp>
 
 SrsPps *_srs_pps_sstuns = NULL;
 SrsPps *_srs_pps_srtcps = NULL;

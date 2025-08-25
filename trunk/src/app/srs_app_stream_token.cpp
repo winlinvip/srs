@@ -58,34 +58,23 @@ void SrsStreamPublishToken::set_publisher_cid(const SrsContextId &cid)
 
 SrsStreamPublishTokenManager::SrsStreamPublishTokenManager()
 {
-    mutex_ = NULL;
+    mutex_ = srs_mutex_new();
 }
 
 SrsStreamPublishTokenManager::~SrsStreamPublishTokenManager()
 {
-    // Clean up all tokens
-    std::map<std::string, SrsStreamPublishToken *>::iterator it;
-    for (it = tokens_.begin(); it != tokens_.end(); ++it) {
-        SrsStreamPublishToken *token = it->second;
+    // Clean up all remaining tokens. Each token's destructor automatically calls
+    // release_token() which removes it from tokens_ map, so we use while loop
+    // to avoid iterator invalidation issues.
+    while (!tokens_.empty()) {
+        SrsStreamPublishToken *token = tokens_.begin()->second;
+
+        // Token destructor will call release_token() and remove this entry from map
         srs_freep(token);
     }
-    tokens_.clear();
 
     srs_mutex_destroy(mutex_);
     srs_trace("stream publish token manager destroyed");
-}
-
-srs_error_t SrsStreamPublishTokenManager::initialize()
-{
-    srs_error_t err = srs_success;
-
-    mutex_ = srs_mutex_new();
-    if (!mutex_) {
-        return srs_error_new(ERROR_STREAM_TOKEN_MANAGER, "initialize stream token manager");
-    }
-
-    srs_trace("stream publish token manager initialized");
-    return err;
 }
 
 srs_error_t SrsStreamPublishTokenManager::acquire_token(ISrsRequest *req, SrsStreamPublishToken *&token)

@@ -859,10 +859,6 @@ srs_error_t SrsServer::start(SrsWaitGroup *wg)
         return srs_error_wrap(err, "live sources");
     }
 
-    if ((err = _srs_stream_publish_tokens->initialize()) != srs_success) {
-        return srs_error_wrap(err, "stream publish tokens");
-    }
-
 #ifdef SRS_SRT
     if ((err = _srs_srt_sources->initialize()) != srs_success) {
         return srs_error_wrap(err, "srt sources");

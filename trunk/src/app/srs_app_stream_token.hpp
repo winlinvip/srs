@@ -69,13 +69,6 @@ public:
     virtual ~SrsStreamPublishTokenManager();
 
 public:
-    // Initialize the token manager
-    srs_error_t initialize();
-
-    // Destroy the token manager and cleanup all tokens
-    void destroy();
-
-public:
     // Acquire a publish token for the given stream URL.
     // Returns success if token was acquired, error if stream is already being published.
     // @param req The request containing stream information

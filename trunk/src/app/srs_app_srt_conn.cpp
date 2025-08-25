@@ -22,6 +22,7 @@ using namespace std;
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_srt.hpp>
+#include <srs_app_stream_token.hpp>
 
 SrsSrtConnection::SrsSrtConnection(srs_srt_t srt_fd)
 {
@@ -282,6 +283,16 @@ srs_error_t SrsMpegtsSrtConn::do_cycle()
 
     srs_trace("@srt, streamid=%s, stream_url=%s, vhost=%s, app=%s, stream=%s, param=%s",
               streamid.c_str(), req_->get_stream_url().c_str(), req_->vhost.c_str(), req_->app.c_str(), req_->stream.c_str(), req_->param.c_str());
+
+    // Acquire stream publish token to prevent race conditions across all protocols.
+    SrsStreamPublishToken *publish_token_raw = NULL;
+    if ((err = _srs_stream_publish_tokens->acquire_token(req_, publish_token_raw)) != srs_success) {
+        return srs_error_wrap(err, "acquire stream publish token");
+    }
+    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
+    if (publish_token.get()) {
+        srs_trace("stream publish token acquired, type=srt, url=%s", req_->get_stream_url().c_str());
+    }
 
     if ((err = _srs_srt_sources->fetch_or_create(req_, srt_source_)) != srs_success) {
         return srs_error_wrap(err, "fetch srt source");

@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-08-27, Merge [#4454](https://github.com/ossrs/srs/pull/4454): AI: Config: Move RTMP configs to rtmp{} section. v7.0.64 (#4454)
 * v7.0, 2025-08-26, Merge [#4451](https://github.com/ossrs/srs/pull/4451): RTC: Fix null pointer crash in RTC2RTMP when start packet is missing. v7.0.63 (#4451)
 * v7.0, 2025-08-25, Merge [#4452](https://github.com/ossrs/srs/pull/4452): AI: Implement stream publish token system to prevent race conditions across all protocols. v7.0.62 (#4452)
 * v7.0, 2025-08-22, Merge [#4449](https://github.com/ossrs/srs/pull/4449): Refine source lock. v7.0.61 (#4449)

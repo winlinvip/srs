@@ -372,6 +372,27 @@ srs_error_t srs_config_transform_vhost(SrsConfDirective *root)
 {
     srs_error_t err = srs_success;
 
+    // SRS7.0, move global RTMP configs to rtmp section for better organization.
+    //  SRS6:
+    //      listen 1935; chunk_size 60000;
+    //  SRS7+:
+    //      rtmp { listen 1935; chunk_size 60000; }
+    for (int i = (int)root->directives.size() - 1; i >= 0; i--) {
+        SrsConfDirective *dir = root->directives.at(i);
+
+        SrsConfDirective *rtmp = root->get_or_create("rtmp");
+        if (dir->name == "listen") {
+            rtmp->get_or_create("listen")->args = dir->args;
+        } else if (dir->name == "chunk_size") {
+            rtmp->get_or_create("chunk_size")->args = dir->args;
+        } else {
+            continue;
+        }
+
+        root->directives.erase(root->directives.begin() + i);
+        srs_freep(dir);
+    }
+
     for (int i = 0; i < (int)root->directives.size(); i++) {
         SrsConfDirective *dir = root->directives.at(i);
 
@@ -1665,26 +1686,10 @@ srs_error_t SrsConfig::reload_conf(SrsConfig *conf)
     root = conf->root;
     conf->root = NULL;
 
-    // never support reload:
-    //      daemon
-    //
-    // always support reload without additional code:
-    //      chunk_size, ff_log_dir,
-    //      http_hooks, heartbeat,
-    //      security
-
-    // merge config: listen
-    if (!srs_directive_equals(root->get("listen"), old_root->get("listen"))) {
-        if ((err = do_reload_listen()) != srs_success) {
-            return srs_error_wrap(err, "listen");
-        }
-    }
-
     // merge config: max_connections
     if (!srs_directive_equals(root->get("max_connections"), old_root->get("max_connections"))) {
         if ((err = do_reload_max_connections()) != srs_success) {
             return srs_error_wrap(err, "max connections");
-            ;
         }
     }
 
@@ -1692,7 +1697,6 @@ srs_error_t SrsConfig::reload_conf(SrsConfig *conf)
     if (!srs_directive_equals(root->get("pithy_print_ms"), old_root->get("pithy_print_ms"))) {
         if ((err = do_reload_pithy_print_ms()) != srs_success) {
             return srs_error_wrap(err, "pithy print ms");
-            ;
         }
     }
 
@@ -2117,22 +2121,6 @@ srs_error_t SrsConfig::raw_to_json(SrsJsonObject *obj)
     return err;
 }
 
-srs_error_t SrsConfig::do_reload_listen()
-{
-    srs_error_t err = srs_success;
-
-    vector<ISrsReloadHandler *>::iterator it;
-    for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-        ISrsReloadHandler *subscribe = *it;
-        if ((err = subscribe->on_reload_listen()) != srs_success) {
-            return srs_error_wrap(err, "notify subscribes reload listen failed");
-        }
-    }
-    srs_trace("reload listen success.");
-
-    return err;
-}
-
 srs_error_t SrsConfig::do_reload_max_connections()
 {
     srs_error_t err = srs_success;
@@ -2366,7 +2354,7 @@ srs_error_t SrsConfig::check_normal_config()
     for (int i = 0; i < (int)root->directives.size(); i++) {
         SrsConfDirective *conf = root->at(i);
         std::string n = conf->name;
-        if (n != "listen" && n != "pid" && n != "chunk_size" && n != "ff_log_dir" && n != "srs_log_tank" && n != "srs_log_level" && n != "srs_log_level_v2" && n != "srs_log_file" && n != "max_connections" && n != "daemon" && n != "heartbeat" && n != "tencentcloud_apm" && n != "http_api" && n != "stats" && n != "vhost" && n != "pithy_print_ms" && n != "http_server" && n != "stream_caster" && n != "rtc_server" && n != "srt_server" && n != "utc_time" && n != "work_dir" && n != "asprocess" && n != "server_id" && n != "ff_log_level" && n != "grace_final_wait" && n != "force_grace_quit" && n != "grace_start_wait" && n != "empty_ip_ok" && n != "disable_daemon_for_docker" && n != "inotify_auto_reload" && n != "auto_reload_for_docker" && n != "tcmalloc_release_rate" && n != "query_latest_version" && n != "first_wait_for_qlv" && n != "threads" && n != "circuit_breaker" && n != "is_full" && n != "in_docker" && n != "tencentcloud_cls" && n != "exporter" && n != "rtsp_server" && n != "rtmps") {
+        if (n != "pid" && n != "ff_log_dir" && n != "srs_log_tank" && n != "srs_log_level" && n != "srs_log_level_v2" && n != "srs_log_file" && n != "max_connections" && n != "daemon" && n != "heartbeat" && n != "tencentcloud_apm" && n != "http_api" && n != "stats" && n != "vhost" && n != "pithy_print_ms" && n != "http_server" && n != "stream_caster" && n != "rtc_server" && n != "srt_server" && n != "utc_time" && n != "work_dir" && n != "asprocess" && n != "server_id" && n != "ff_log_level" && n != "grace_final_wait" && n != "force_grace_quit" && n != "grace_start_wait" && n != "empty_ip_ok" && n != "disable_daemon_for_docker" && n != "inotify_auto_reload" && n != "auto_reload_for_docker" && n != "tcmalloc_release_rate" && n != "query_latest_version" && n != "first_wait_for_qlv" && n != "circuit_breaker" && n != "is_full" && n != "in_docker" && n != "tencentcloud_cls" && n != "exporter" && n != "rtsp_server" && n != "rtmp" && n != "rtmps") {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal directive %s", n.c_str());
         }
     }
@@ -2449,6 +2437,15 @@ srs_error_t SrsConfig::check_normal_config()
             string n = conf->at(i)->name;
             if (n != "enabled" && n != "listen") {
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal rtsp_server.%s", n.c_str());
+            }
+        }
+    }
+    if (true) {
+        SrsConfDirective *conf = root->get("rtmp");
+        for (int i = 0; conf && i < (int)conf->directives.size(); i++) {
+            string n = conf->at(i)->name;
+            if (n != "listen" && n != "chunk_size") {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal rtmp.%s", n.c_str());
             }
         }
     }
@@ -3070,7 +3067,12 @@ vector<string> SrsConfig::get_listens()
         return srs_string_split(srs_getenv("srs.listen"), " ");
     }
 
-    SrsConfDirective *conf = root->get("listen");
+    SrsConfDirective *rtmp_conf = root->get("rtmp");
+    if (!rtmp_conf) {
+        return ports;
+    }
+
+    SrsConfDirective *conf = rtmp_conf->get("listen");
     if (!conf) {
         return ports;
     }
@@ -3300,30 +3302,6 @@ double SrsConfig::tcmalloc_release_rate()
     trr = srs_min(10, trr);
     trr = srs_max(0, trr);
     return trr;
-}
-
-srs_utime_t SrsConfig::get_threads_interval()
-{
-    SRS_OVERWRITE_BY_ENV_SECONDS("srs.threads.interval"); // SRS_THREADS_INTERVAL
-
-    static srs_utime_t DEFAULT = 5 * SRS_UTIME_SECONDS;
-
-    SrsConfDirective *conf = root->get("threads");
-    if (!conf) {
-        return DEFAULT;
-    }
-
-    conf = conf->get("interval");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
-    }
-
-    int v = ::atoi(conf->arg0().c_str());
-    if (v <= 0) {
-        return DEFAULT;
-    }
-
-    return v * SRS_UTIME_SECONDS;
 }
 
 bool SrsConfig::get_circuit_breaker()
@@ -5653,7 +5631,12 @@ int SrsConfig::get_global_chunk_size()
 {
     SRS_OVERWRITE_BY_ENV_INT("srs.vhost.chunk_size"); // SRS_VHOST_CHUNK_SIZE
 
-    SrsConfDirective *conf = root->get("chunk_size");
+    SrsConfDirective *rtmp_conf = root->get("rtmp");
+    if (!rtmp_conf) {
+        return SRS_CONSTS_RTMP_SRS_CHUNK_SIZE;
+    }
+
+    SrsConfDirective *conf = rtmp_conf->get("chunk_size");
     if (!conf || conf->arg0().empty()) {
         return SRS_CONSTS_RTMP_SRS_CHUNK_SIZE;
     }

@@ -1058,42 +1058,42 @@ VOID TEST(ConfigMainTest, CheckConf_chunk_size)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size 60000;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 60000;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "chunk_sizes 60000;"));
+        HELPER_ASSERT_FAILED(conf.parse("rtmp{listen 1935; chunk_sizes 60000;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size 0;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size 1;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 1;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size 127;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 127;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size -1;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size -1;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size -4096;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size -4096;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "chunk_size 65537;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 65537;}"));
     }
 }
 
@@ -2042,6 +2042,98 @@ VOID TEST(ConfigMainTest, CheckConf_chunk_size2)
     }
 }
 
+VOID TEST(ConfigMainTest, TransformRtmpConfig)
+{
+    srs_error_t err;
+
+    // Test backward compatibility: global listen should be transformed to rtmp.listen
+    if (true) {
+        MockSrsConfig conf;
+        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935;"));
+
+        // After parsing and transformation, should be able to get listen from rtmp section
+        vector<string> listens = conf.get_listens();
+        EXPECT_EQ(1, (int)listens.size());
+        EXPECT_STREQ("1935", listens.at(0).c_str());
+
+        // Verify the rtmp section was created
+        SrsConfDirective *rtmp_section = conf.get_root()->get("rtmp");
+        EXPECT_TRUE(rtmp_section != NULL);
+        if (rtmp_section) {
+            SrsConfDirective *listen_dir = rtmp_section->get("listen");
+            EXPECT_TRUE(listen_dir != NULL);
+            if (listen_dir) {
+                EXPECT_STREQ("1935", listen_dir->arg0().c_str());
+            }
+        }
+    }
+
+    // Test backward compatibility: global chunk_size should be transformed to rtmp.chunk_size
+    if (true) {
+        MockSrsConfig conf;
+        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935; chunk_size 60000;"));
+
+        // After parsing and transformation, should be able to get chunk_size from rtmp section
+        EXPECT_EQ(60000, conf.get_global_chunk_size());
+
+        // Verify the rtmp section contains chunk_size
+        SrsConfDirective *rtmp_section = conf.get_root()->get("rtmp");
+        EXPECT_TRUE(rtmp_section != NULL);
+        if (rtmp_section) {
+            SrsConfDirective *chunk_size_dir = rtmp_section->get("chunk_size");
+            EXPECT_TRUE(chunk_size_dir != NULL);
+            if (chunk_size_dir) {
+                EXPECT_STREQ("60000", chunk_size_dir->arg0().c_str());
+            }
+        }
+    }
+
+    // Test backward compatibility: multiple global RTMP configs
+    if (true) {
+        MockSrsConfig conf;
+        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935 1936; chunk_size 128;"));
+
+        // Verify listen ports
+        vector<string> listens = conf.get_listens();
+        EXPECT_EQ(2, (int)listens.size());
+        EXPECT_STREQ("1935", listens.at(0).c_str());
+        EXPECT_STREQ("1936", listens.at(1).c_str());
+
+        // Verify chunk size
+        EXPECT_EQ(128, conf.get_global_chunk_size());
+    }
+
+    // Test that new rtmp section format still works
+    if (true) {
+        MockSrsConfig conf;
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1937; chunk_size 256;}"));
+
+        vector<string> listens = conf.get_listens();
+        EXPECT_EQ(1, (int)listens.size());
+        EXPECT_STREQ("1937", listens.at(0).c_str());
+        EXPECT_EQ(256, conf.get_global_chunk_size());
+    }
+
+    // Test mixed format: existing rtmp section + global configs (global should be merged)
+    if (true) {
+        MockSrsConfig conf;
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1938;} chunk_size 512;"));
+
+        vector<string> listens = conf.get_listens();
+        EXPECT_EQ(1, (int)listens.size());
+        EXPECT_STREQ("1938", listens.at(0).c_str());
+        EXPECT_EQ(512, conf.get_global_chunk_size());
+
+        // Verify both directives are in the rtmp section
+        SrsConfDirective *rtmp_section = conf.get_root()->get("rtmp");
+        EXPECT_TRUE(rtmp_section != NULL);
+        if (rtmp_section) {
+            EXPECT_TRUE(rtmp_section->get("listen") != NULL);
+            EXPECT_TRUE(rtmp_section->get("chunk_size") != NULL);
+        }
+    }
+}
+
 VOID TEST(ConfigMainTest, CheckConf_jitter)
 {
     srs_error_t err;
@@ -2868,13 +2960,13 @@ VOID TEST(ConfigMainTest, CheckGlobalConfig)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935;}"));
         EXPECT_EQ(1, (int)conf.get_listens().size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935 1936;"));
+        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935 1936;}"));
         EXPECT_EQ(2, (int)conf.get_listens().size());
     }
 
@@ -3862,7 +3954,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
     if (true) {
         MockSrsConfig conf;
 
-        conf.mock_include("./conf/include_test/include.conf", "listen 1935;include ./conf/include_test/include_1.conf;");
+        conf.mock_include("./conf/include_test/include.conf", "rtmp{listen 1935;}include ./conf/include_test/include_1.conf;");
         conf.mock_include("./conf/include_test/include_1.conf", "max_connections 1000;daemon off;srs_log_tank console;http_server {enabled on;listen xxx;dir xxx2;}vhost ossrs.net {hls {enabled on;hls_path xxx;hls_m3u8_file xxx1;hls_ts_file xxx2;hls_fragment 10;hls_window 60;}}");
 
         HELPER_ASSERT_SUCCESS(conf.parse("include ./conf/include_test/include.conf;"));
@@ -4207,16 +4299,6 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesGlobal)
 
         SrsSetEnvConfig(conf, first_wait_for_qlv, "SRS_FIRST_WAIT_FOR_QLV", "200");
         EXPECT_EQ(200 * SRS_UTIME_SECONDS, conf.first_wait_for_qlv());
-    }
-}
-
-VOID TEST(ConfigEnvTest, CheckEnvValuesthreads)
-{
-    if (true) {
-        MockSrsConfig conf;
-
-        SrsSetEnvConfig(conf, threads_interval, "SRS_THREADS_INTERVAL", "10");
-        EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_threads_interval());
     }
 }
 

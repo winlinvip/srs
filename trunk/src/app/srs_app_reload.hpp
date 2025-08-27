@@ -24,7 +24,6 @@ public:
 
 public:
     virtual srs_error_t on_reload_max_conns();
-    virtual srs_error_t on_reload_listen();
     virtual srs_error_t on_reload_pithy_print();
     virtual srs_error_t on_reload_http_api_raw_api();
     virtual srs_error_t on_reload_rtc_server();

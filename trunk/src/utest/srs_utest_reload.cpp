@@ -21,7 +21,6 @@ MockReloadHandler::~MockReloadHandler()
 
 void MockReloadHandler::reset()
 {
-    listen_reloaded = false;
     pithy_print_reloaded = false;
     vhost_added_reloaded = false;
     vhost_removed_reloaded = false;
@@ -44,8 +43,6 @@ int MockReloadHandler::count_true()
 {
     int count_true = 0;
 
-    if (listen_reloaded)
-        count_true++;
     if (pithy_print_reloaded)
         count_true++;
     if (vhost_added_reloaded)
@@ -76,8 +73,6 @@ int MockReloadHandler::count_false()
 {
     int count_false = 0;
 
-    if (!listen_reloaded)
-        count_false++;
     if (!pithy_print_reloaded)
         count_false++;
     if (!vhost_added_reloaded)
@@ -112,12 +107,6 @@ bool MockReloadHandler::all_false()
 bool MockReloadHandler::all_true()
 {
     return count_true() == count_total();
-}
-
-srs_error_t MockReloadHandler::on_reload_listen()
-{
-    listen_reloaded = true;
-    return srs_success;
 }
 
 srs_error_t MockReloadHandler::on_reload_pithy_print()
@@ -227,49 +216,6 @@ VOID TEST(ConfigReloadTest, ReloadEmpty)
     HELPER_EXPECT_FAILED(conf.parse(""));
     HELPER_EXPECT_FAILED(conf.do_reload(""));
     EXPECT_TRUE(handler.all_false());
-}
-
-VOID TEST(ConfigReloadTest, ReloadListen)
-{
-    srs_error_t err = srs_success;
-
-    MockReloadHandler handler;
-    MockSrsReloadConfig conf;
-
-    conf.subscribe(&handler);
-    HELPER_EXPECT_SUCCESS(conf.parse("listen 1935;"));
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1935;"));
-    EXPECT_TRUE(handler.all_false());
-    handler.reset();
-
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1936;"));
-    EXPECT_TRUE(handler.listen_reloaded);
-    EXPECT_EQ(1, handler.count_true());
-    handler.reset();
-
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1936;"));
-    EXPECT_TRUE(handler.all_false());
-    handler.reset();
-
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1936 1935;"));
-    EXPECT_TRUE(handler.listen_reloaded);
-    EXPECT_EQ(1, handler.count_true());
-    handler.reset();
-
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1935;"));
-    EXPECT_TRUE(handler.listen_reloaded);
-    EXPECT_EQ(1, handler.count_true());
-    handler.reset();
-
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1935 1935;"));
-    EXPECT_TRUE(handler.listen_reloaded);
-    EXPECT_EQ(1, handler.count_true());
-    handler.reset();
-
-    HELPER_EXPECT_SUCCESS(conf.do_reload("listen 1935;"));
-    EXPECT_TRUE(handler.listen_reloaded);
-    EXPECT_EQ(1, handler.count_true());
-    handler.reset();
 }
 
 VOID TEST(ConfigReloadTest, ReloadPithyPrint)

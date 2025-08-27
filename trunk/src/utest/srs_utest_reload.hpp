@@ -18,7 +18,6 @@
 class MockReloadHandler : public ISrsReloadHandler
 {
 public:
-    bool listen_reloaded;
     bool pithy_print_reloaded;
     bool vhost_added_reloaded;
     bool vhost_removed_reloaded;
@@ -44,7 +43,6 @@ public:
     virtual int count_false();
 
 public:
-    virtual srs_error_t on_reload_listen();
     virtual srs_error_t on_reload_pithy_print();
     virtual srs_error_t on_reload_vhost_added(std::string vhost);
     virtual srs_error_t on_reload_vhost_removed(std::string vhost);

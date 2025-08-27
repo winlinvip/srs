@@ -16,7 +16,7 @@
 
 #include <srs_app_config.hpp>
 
-#define _MIN_OK_CONF "listen 1935; "
+#define _MIN_OK_CONF "rtmp{listen 1935;} "
 
 class MockSrsConfigBuffer : public srs_internal::SrsConfigBuffer
 {

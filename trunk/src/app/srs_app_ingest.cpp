@@ -586,9 +586,3 @@ srs_error_t SrsIngester::on_reload_ingest_updated(string vhost, string ingest_id
 
     return err;
 }
-
-srs_error_t SrsIngester::on_reload_listen()
-{
-    expired = true;
-    return srs_success;
-}

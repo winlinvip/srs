@@ -367,7 +367,6 @@ public:
     virtual srs_error_t raw_to_json(SrsJsonObject *obj);
 
 private:
-    virtual srs_error_t do_reload_listen();
     virtual srs_error_t do_reload_max_connections();
     virtual srs_error_t do_reload_pithy_print_ms();
     virtual srs_error_t do_reload_vhost_added(std::string vhost);
@@ -480,7 +479,6 @@ public:
     virtual double tcmalloc_release_rate();
     // Thread pool section.
 public:
-    virtual srs_utime_t get_threads_interval();
     virtual bool get_circuit_breaker();
     virtual int get_high_threshold();
     virtual int get_high_pulse();

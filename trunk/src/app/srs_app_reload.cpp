@@ -18,11 +18,6 @@ ISrsReloadHandler::~ISrsReloadHandler()
 {
 }
 
-srs_error_t ISrsReloadHandler::on_reload_listen()
-{
-    return srs_success;
-}
-
 srs_error_t ISrsReloadHandler::on_reload_max_conns()
 {
     return srs_success;

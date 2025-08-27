@@ -287,11 +287,20 @@ ffplay rtmps://localhost:1443/live/livestream
 The RTMPS configuration requires SSL certificate setup similar to other HTTPS services in SRS:
 
 ```bash
-# the rtmp listen ports, split by space, each listen entry is <[ip:]port>
-# for example, 192.168.1.100:1935 10.10.10.100:1935
-# where the ip is optional, default to 0.0.0.0, that is 1935 equals to 0.0.0.0:1935
-# Overwrite by env SRS_LISTEN
-listen 1935;
+rtmp {
+    # the rtmp listen ports, split by space, each listen entry is <[ip:]port>
+    # for example, 192.168.1.100:1935 10.10.10.100:1935
+    # where the ip is optional, default to 0.0.0.0, that is 1935 equals to 0.0.0.0:1935
+    # Overwrite by env SRS_LISTEN
+    listen 1935;
+    # the default chunk size is 128, max is 65536,
+    # some client does not support chunk size change,
+    # however, most clients support it and it can improve
+    # performance about 10%.
+    # Overwrite by env SRS_CHUNK_SIZE
+    # default: 60000
+    chunk_size 60000;
+}
 
 # SSL configuration for RTMPS
 rtmps {

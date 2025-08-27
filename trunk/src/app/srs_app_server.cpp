@@ -1386,17 +1386,6 @@ void SrsServer::remove(ISrsResource *c)
     conn_manager->remove(c);
 }
 
-srs_error_t SrsServer::on_reload_listen()
-{
-    srs_error_t err = srs_success;
-
-    if ((err = listen()) != srs_success) {
-        return srs_error_wrap(err, "reload listen");
-    }
-
-    return err;
-}
-
 srs_error_t SrsServer::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;

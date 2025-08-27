@@ -253,7 +253,6 @@ public:
     virtual void remove(ISrsResource *c);
     // Interface ISrsReloadHandler.
 public:
-    virtual srs_error_t on_reload_listen();
     // Interface ISrsLiveSourceHandler
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);

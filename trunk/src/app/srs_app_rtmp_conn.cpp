@@ -29,7 +29,7 @@ using namespace std;
 #include <srs_app_st.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_stream_token.hpp>
-#include <srs_app_tencentcloud.hpp>
+
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_core_performance.hpp>
@@ -188,11 +188,7 @@ SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip
     ip = cip;
     port = cport;
     create_time = srsu2ms(srs_time_now_cached());
-#ifdef SRS_APM
-    span_main_ = _srs_apm->dummy();
-    span_connect_ = _srs_apm->dummy();
-    span_client_ = _srs_apm->dummy();
-#endif
+
     trd = new SrsSTCoroutine("rtmp", this, _srs_context->get_id());
 
     kbps = new SrsNetworkKbps();
@@ -261,14 +257,6 @@ srs_error_t SrsRtmpConn::do_cycle()
     srs_error_t err = srs_success;
 
 #ifdef SRS_APM
-    // We should keep the root span to alive util connection closed.
-    // Note that we use producer and consumer span because RTMP connection is long polling connection.
-    // Note that we also store this span in coroutine context, so that edge could load it.
-    srs_freep(span_main_);
-    span_main_ = _srs_apm->span("rtmp")->set_kind(SrsApmKindServer)->attr("cip", ip)->attr("cid", _srs_context->get_id().c_str());
-#endif
-
-#ifdef SRS_APM
     srs_trace("RTMP client transport=%s, ip=%s:%d, fd=%d, trace=%s, span=%s", transport_->transport_type(), ip.c_str(), port, srs_netfd_fileno(transport_->fd()),
               span_main_->format_trace_id(), span_main_->format_span_id());
 #else
@@ -291,15 +279,6 @@ srs_error_t SrsRtmpConn::do_cycle()
     if (rip > 0) {
         srs_trace("RTMP proxy real client ip=%s", rips.c_str());
     }
-
-#ifdef SRS_APM
-    // Update the real IP of client, also set the HTTP fields.
-    span_main_->attr("rip", rip ? rips : ip)->attr("http.client_ip", rip ? rips : ip);
-
-    // The span for RTMP connecting to application.
-    srs_freep(span_connect_);
-    span_connect_ = _srs_apm->span("connect")->as_child(span_main_);
-#endif
 
     ISrsRequest *req = info->req;
     if ((err = rtmp->connect_app(req)) != srs_success) {
@@ -339,12 +318,6 @@ srs_error_t SrsRtmpConn::do_cycle()
             srs_trace("edge-srs ip=%s, version=%s, pid=%d, id=%d",
                       srs_server_ip.c_str(), srs_version.c_str(), srs_pid, srs_id);
         }
-
-#ifdef SRS_APM
-        // Load the span from the AMF0 object propagator.
-        // Note that we will update the trace id, so please make sure no spans are ended before this.
-        _srs_apm->extract(span_main_, req->args);
-#endif
     }
 
     if ((err = service_cycle()) != srs_success) {
@@ -598,22 +571,11 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
     srs_trace("client identified, type=%s, vhost=%s, app=%s, stream=%s, param=%s, duration=%dms",
               srs_client_type_string(info->type).c_str(), req->vhost.c_str(), req->app.c_str(), req->stream.c_str(), req->param.c_str(), srsu2msi(req->duration));
 
-#ifdef SRS_APM
-    // Start APM only when client is identified, because it might republish.
-    srs_freep(span_client_);
-    span_client_ = _srs_apm->span("client")->as_child(span_connect_)->attr("type", srs_client_type_string(info->type))->attr("url", req->get_stream_url())->attr("http.url", req->get_stream_url());
-    // We store the span to coroutine context, for edge to load it.
-    _srs_apm->store(span_client_);
-#endif
-
     // discovery vhost, resolve the vhost from config
     SrsConfDirective *parsed_vhost = _srs_config->get_vhost(req->vhost);
     if (parsed_vhost) {
         req->vhost = parsed_vhost->arg0();
     }
-#ifdef SRS_APM
-    span_client_->attr("vhost", req->vhost)->attr("http.host", req->host)->attr("http.server_name", req->vhost)->attr("http.target", srs_fmt_sprintf("/%s/%s", req->app.c_str(), req->stream.c_str()));
-#endif
 
     if (req->schema.empty() || req->vhost.empty() || req->port == 0 || req->app.empty()) {
         return srs_error_new(ERROR_RTMP_REQ_TCURL, "discovery tcUrl failed, tcUrl=%s, schema=%s, vhost=%s, port=%d, app=%s",
@@ -911,10 +873,6 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
 
     srs_trace("start play smi=%dms, mw_sleep=%d, mw_msgs=%d, realtime=%d, tcp_nodelay=%d",
               srsu2msi(send_min_interval), srsu2msi(mw_sleep), mw_msgs, realtime, tcp_nodelay);
-
-#ifdef SRS_APM
-    SrsUniquePtr<ISrsApmSpan> span(_srs_apm->span("play-cycle")->set_kind(SrsApmKindProducer)->as_child(span_client_)->attr("realtime", srs_fmt_sprintf("%d", realtime))->end());
-#endif
 
     while (true) {
         // when source is set to expired, disconnect it.
@@ -1710,15 +1668,6 @@ srs_error_t SrsRtmpConn::cycle()
 
     // Serve the client.
     err = do_cycle();
-
-#ifdef SRS_APM
-    // Final APM span, parent is the last span, not the root span. Note that only client or server kind will be filtered
-    // for error or exception report.
-    SrsUniquePtr<ISrsApmSpan> span_final(_srs_apm->span("final")->set_kind(SrsApmKindServer)->as_child(span_client_));
-    if (srs_error_code(err) != 0) {
-        span_final->record_error(err)->set_status(SrsApmStatusError, srs_fmt_sprintf("fail code=%d", srs_error_code(err)));
-    }
-#endif
 
     // Update statistic when done.
     SrsStatistic *stat = SrsStatistic::instance();

@@ -21,7 +21,7 @@
 #include <srs_app_server.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_stream_token.hpp>
-#include <srs_app_tencentcloud.hpp>
+
 #include <srs_app_utility.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>
@@ -347,16 +347,6 @@ srs_error_t SrsHybridServer::initialize()
         return srs_error_wrap(err, "dvr async");
     }
 
-#ifdef SRS_APM
-    // Initialize TencentCloud CLS object.
-    if ((err = _srs_cls->initialize()) != srs_success) {
-        return srs_error_wrap(err, "cls client");
-    }
-    if ((err = _srs_apm->initialize()) != srs_success) {
-        return srs_error_wrap(err, "apm client");
-    }
-#endif
-
     // Register some timers.
     timer20ms_->subscribe(clock_monitor_);
     timer5s_->subscribe(this);
@@ -585,20 +575,6 @@ srs_error_t SrsHybridServer::on_timer(srs_utime_t interval)
               epoll_desc.c_str(), sched_desc.c_str(), clock_desc.c_str(),
               thread_desc.c_str(), free_desc.c_str(), objs_desc.c_str());
 
-#ifdef SRS_APM
-    // Report logs to CLS if enabled.
-    if ((err = _srs_cls->report()) != srs_success) {
-        srs_warn("ignore cls err %s", srs_error_desc(err).c_str());
-        srs_freep(err);
-    }
-
-    // Report logs to APM if enabled.
-    if ((err = _srs_apm->report()) != srs_success) {
-        srs_warn("ignore apm err %s", srs_error_desc(err).c_str());
-        srs_freep(err);
-    }
-#endif
-
     return err;
 }
 
@@ -810,12 +786,6 @@ srs_error_t srs_global_initialize()
 
     // Create global async worker for DVR.
     _srs_dvr_async = new SrsAsyncCallWorker();
-
-#ifdef SRS_APM
-    // Initialize global TencentCloud CLS object.
-    _srs_cls = new SrsClsClient();
-    _srs_apm = new SrsApmClient();
-#endif
 
     _srs_reload_err = srs_success;
     _srs_reload_state = SrsReloadStateInit;

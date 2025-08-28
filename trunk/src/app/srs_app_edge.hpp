@@ -33,7 +33,6 @@ class SrsHttpClient;
 class ISrsHttpMessage;
 class SrsHttpFileReader;
 class SrsFlvDecoder;
-class ISrsApmSpan;
 
 // The state of edge, auto machine
 enum SrsEdgeState {
@@ -158,9 +157,7 @@ private:
     SrsCoroutine *trd;
     SrsLbRoundRobin *lb;
     SrsEdgeUpstream *upstream;
-#ifdef SRS_APM
-    ISrsApmSpan *span_main_;
-#endif
+
 public:
     SrsEdgeIngester();
     virtual ~SrsEdgeIngester();
@@ -170,10 +167,7 @@ public:
     virtual srs_error_t start();
     virtual void stop();
     virtual std::string get_curr_origin();
-#ifdef SRS_APM
-    // Get the current main span. Note that it might be NULL.
-    ISrsApmSpan *span();
-#endif
+
     // Interface ISrsReusableThread2Handler
 public:
     virtual srs_error_t cycle();

@@ -20,7 +20,7 @@ using namespace std;
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_st.hpp>
-#include <srs_app_tencentcloud.hpp>
+
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_balance.hpp>
@@ -108,11 +108,6 @@ srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
     srs_utime_t cto = SRS_EDGE_INGESTER_TIMEOUT;
     srs_utime_t sto = SRS_CONSTS_RTMP_PULSE;
     sdk = new SrsSimpleRtmpClient(url, cto, sto);
-
-#ifdef SRS_APM
-    // Create a client span and store it to an AMF0 propagator.
-    SrsUniquePtr<ISrsApmSpan> span_client(_srs_apm->inject(_srs_apm->span("edge-pull")->set_kind(SrsApmKindClient)->as_child(_srs_apm->load()), sdk->extra_args()));
-#endif
 
     if ((err = sdk->connect()) != srs_success) {
         return srs_error_wrap(err, "edge pull %s failed, cto=%dms, sto=%dms.", url.c_str(), srsu2msi(cto), srsu2msi(sto));
@@ -431,13 +426,6 @@ srs_error_t SrsEdgeIngester::initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEd
     edge = e;
     req = r;
 
-#ifdef SRS_APM
-    // We create a dedicate span for edge ingester, and all players will link to this one.
-    // Note that we use a producer span and end it immediately.
-    srs_assert(!span_main_);
-    span_main_ = _srs_apm->span("edge")->set_kind(SrsApmKindProducer)->end();
-#endif
-
     return srs_success;
 }
 
@@ -489,13 +477,6 @@ ISrsApmSpan *SrsEdgeIngester::span()
 srs_error_t SrsEdgeIngester::cycle()
 {
     srs_error_t err = srs_success;
-
-#ifdef SRS_APM
-    // Save span from parent coroutine to current coroutine context, so that we can load if in this coroutine, for
-    // example to use it in SrsEdgeRtmpUpstream which use RTMP or FLV client to connect to upstream server.
-    _srs_apm->store(span_main_);
-    srs_assert(span_main_);
-#endif
 
     while (true) {
         // We always check status first.
@@ -807,12 +788,6 @@ srs_error_t SrsEdgeForwarder::start()
     srs_utime_t sto = SRS_CONSTS_RTMP_TIMEOUT;
     sdk = new SrsSimpleRtmpClient(url, cto, sto);
 
-#ifdef SRS_APM
-    // Create a client span and store it to an AMF0 propagator.
-    // Note that we are able to load the span from coroutine context because in the same coroutine.
-    SrsUniquePtr<ISrsApmSpan> span_client(_srs_apm->inject(_srs_apm->span("edge-push")->set_kind(SrsApmKindClient)->as_child(_srs_apm->load()), sdk->extra_args()));
-#endif
-
     if ((err = sdk->connect()) != srs_success) {
         return srs_error_wrap(err, "sdk connect %s failed, cto=%dms, sto=%dms.", url.c_str(), srsu2msi(cto), srsu2msi(sto));
     }
@@ -1005,17 +980,6 @@ srs_error_t SrsPlayEdge::on_client_play()
     } else if (state == SrsEdgeStateIngestStopping) {
         return srs_error_new(ERROR_RTMP_EDGE_PLAY_STATE, "state is stopping");
     }
-
-#ifdef SRS_APM
-    // APM bind client span to edge span, which fetch stream from upstream server.
-    // We create a new span to link the two span, because these two spans might be ended.
-    if (ingester->span() && _srs_apm->load()) {
-        ISrsApmSpan *from = _srs_apm->span("play-link")->as_child(_srs_apm->load());
-        ISrsApmSpan *to = _srs_apm->span("edge-link")->as_child(ingester->span())->link(from);
-        srs_freep(from);
-        srs_freep(to);
-    }
-#endif
 
     return err;
 }

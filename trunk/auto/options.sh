@@ -64,6 +64,7 @@ SRS_SHARED_SRTP=RESERVED
 SRS_GCOV=NO
 # Whether enable cloud logging and APM(Application Performance Monitor).
 SRS_APM=NO
+
 # whether enable the log verbose/info/trace level.
 # always enable the warn/error level.
 SRS_LOG_VERBOSE=NO
@@ -185,7 +186,6 @@ Features:
   --gb28181=on|off          Whether build the GB28181. Default: $(value2switch $SRS_GB28181)
   --ffmpeg-fit=on|off       Whether enable the FFmpeg fit(source code). Default: $(value2switch $SRS_FFMPEG_FIT)
   --ffmpeg-opus=on|off      Whether enable the FFmpeg native opus codec. Default: $(value2switch $SRS_FFMPEG_OPUS)
-  --apm=on|off              Whether enable cloud logging and APM(Application Performance Monitor). Default: $(value2switch $SRS_APM)
 
   --prefix=<path>           The absolute installation path. Default: $SRS_PREFIX
   --jobs[=N]                Allow N jobs at once; infinite jobs with no arg. Default: $SRS_JOBS
@@ -265,6 +265,7 @@ Removed:
   --cygwin64                No support cygwin64 anymore.
   --cxx11=off               Always disable C++11, force C++98 compatibility. Default: $(value2switch $SRS_CXX11)
   --cxx14=off               Always disable C++14, force C++98 compatibility. Default: $(value2switch $SRS_CXX14)
+  --apm=off                 No support APM(Application Performance Monitor) anymore.
 
 For example:
     ./configure
@@ -504,7 +505,6 @@ fi
 # Apply auto options
 #####################################################################################
 function apply_auto_options() {
-
     if [[ $SRS_CROSS_BUILD == YES ]]; then
         if [[ $SRS_CROSS_BUILD_PREFIX != "" && $SRS_CROSS_BUILD_HOST == "" ]]; then
             SRS_CROSS_BUILD_HOST=$(echo $SRS_CROSS_BUILD_PREFIX| sed 's/-$//g')
@@ -580,8 +580,6 @@ function apply_auto_options() {
         SRS_SRTP_ASM=NO
     fi
 
-
-
     # Force single thread mode always - multi-threading support has been removed
     if [[ $SRS_SINGLE_THREAD != YES ]]; then
         echo "Warning: Multi-threading support has been removed. Forcing single thread mode."
@@ -610,6 +608,11 @@ function apply_auto_options() {
         echo "Warning: --h265 option is deprecated. H.265/HEVC support is always enabled."
         SRS_H265=ON
     fi
+
+    if [[ $SRS_APM == YES ]; then
+        echo "Warning: APM(Application Performance Monitor) is no longer supported."
+        SRS_APM=NO
+    fi]
 }
 apply_auto_options
 
@@ -693,7 +696,7 @@ function regenerate_options() {
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --log-trace=$(value2switch $SRS_LOG_TRACE)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --log-level_v2=$(value2switch $SRS_LOG_LEVEL_V2)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --gcov=$(value2switch $SRS_GCOV)"
-    SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --apm=$(value2switch $SRS_APM)"
+
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --debug=$(value2switch $SRS_DEBUG)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --debug-stats=$(value2switch $SRS_DEBUG_STATS)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --debug-nack-drop=$(value2switch $SRS_DEBUG_NACK_DROP)"

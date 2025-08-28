@@ -453,7 +453,6 @@ srs_error_t run_directly_or_daemon()
     return err;
 }
 
-#include <srs_app_tencentcloud.hpp>
 srs_error_t run_hybrid_server()
 {
     srs_error_t err = srs_success;
@@ -476,12 +475,6 @@ srs_error_t run_hybrid_server()
     if ((err = _srs_circuit_breaker->initialize()) != srs_success) {
         return srs_error_wrap(err, "init circuit breaker");
     }
-
-#ifdef SRS_APM
-    // When startup, create a span for server information.
-    ISrsApmSpan *span = _srs_apm->span("main")->set_kind(SrsApmKindServer);
-    srs_freep(span);
-#endif
 
     // Should run util hybrid servers all done.
     if ((err = _srs_hybrid->run()) != srs_success) {

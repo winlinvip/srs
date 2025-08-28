@@ -39,7 +39,7 @@ class ISrsWakable;
 class SrsCommonMessage;
 class SrsPacket;
 class SrsNetworkDelta;
-class ISrsApmSpan;
+
 class SrsSslConnection;
 
 // The simple rtmp client for SRS.
@@ -169,10 +169,6 @@ private:
     // The create time in milliseconds.
     // for current connection to log self create time and calculate the living time.
     int64_t create_time;
-    // The span for tracing connection establishment.
-    ISrsApmSpan *span_main_;
-    ISrsApmSpan *span_connect_;
-    ISrsApmSpan *span_client_;
 
 public:
     SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, std::string cip, int port);

@@ -21,6 +21,10 @@ using namespace std;
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_utility.hpp>
+#include <srs_app_rtc_server.hpp>
+#include <srs_protocol_rtc_stun.hpp>
+#include <srs_protocol_http_stack.hpp>
+#include <srs_protocol_raw_avc.hpp>
 
 #define MAX_MOCK_DATA_SIZE 1024 * 1024
 
@@ -5590,7 +5594,6 @@ VOID TEST(KernelUtilityTest, CoverTimeSpecial)
 
 extern int64_t _srs_system_time_startup_time;
 extern int64_t _srs_system_time_us_cache;
-extern int av_toupper(int c);
 
 VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
 {
@@ -5771,10 +5774,6 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
         EXPECT_STREQ("1.00", srs_float2str(1).c_str());
         EXPECT_STREQ("on", srs_bool2switch(true).c_str());
         EXPECT_STREQ("off", srs_bool2switch(false).c_str());
-    }
-
-    if (true) {
-        EXPECT_EQ('H', av_toupper('h'));
     }
 
     if (true) {

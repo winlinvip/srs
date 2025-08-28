@@ -11,17 +11,15 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 class SrsBuffer;
 class SrsBitBuffer;
+class ISrsReader;
 
 // Basic compare function.
 #define srs_min(a, b) (((a) < (b)) ? (a) : (b))
 #define srs_max(a, b) (((a) < (b)) ? (b) : (a))
-
-// To read H.264 NALU uev.
-extern srs_error_t srs_avc_nalu_read_uev(SrsBitBuffer *stream, int32_t &v);
-extern srs_error_t srs_avc_nalu_read_bit(SrsBitBuffer *stream, int8_t &v);
 
 // Get current system time in srs_utime_t, use cache to avoid performance problem
 extern srs_utime_t srs_get_system_time();
@@ -29,16 +27,13 @@ extern srs_utime_t srs_get_system_startup_time();
 // A daemon st-thread updates it.
 extern srs_utime_t srs_update_system_time();
 
-// The "ANY" address to listen, it's "0.0.0.0" for ipv4, and "::" for ipv6.
-// @remark We prefer ipv4, only use ipv6 if ipv4 is disabled.
-extern std::string srs_any_address_for_listener();
-
-// The dns resolve utility, return the resolved ip address.
-extern std::string srs_dns_resolve(std::string host, int &family);
-
 // Split the host:port to host and port.
 // @remark the hostport format in <host[:port]>, where port is optional.
 extern void srs_parse_hostport(std::string hostport, std::string &host, int &port);
+
+// The "ANY" address to listen, it's "0.0.0.0" for ipv4, and "::" for ipv6.
+// @remark We prefer ipv4, only use ipv6 if ipv4 is disabled.
+extern std::string srs_any_address_for_listener();
 
 // Parse the endpoint to ip and port.
 // @remark The hostport format in <[ip:]port>, where ip is default to "0.0.0.0".
@@ -116,24 +111,6 @@ extern std::string srs_path_filext(std::string path);
 // @param pnb_start_code output the size of start code, must >=3. NULL to ignore.
 extern bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code = NULL);
 
-// Whether stream starts with the aac ADTS from ISO_IEC_14496-3-AAC-2001.pdf, page 75, 1.A.2.2 ADTS.
-// The start code must be '1111 1111 1111'B, that is 0xFFF
-extern bool srs_aac_startswith_adts(SrsBuffer *stream);
-
-// Cacl the crc32 of bytes in buf, for ffmpeg.
-extern uint32_t srs_crc32_mpegts(const void *buf, int size);
-
-// Calc the crc32 of bytes in buf by IEEE, for zip.
-extern uint32_t srs_crc32_ieee(const void *buf, int size, uint32_t previous = 0);
-
-// Decode a base64-encoded string.
-extern srs_error_t srs_av_base64_decode(std::string cipher, std::string &plaintext);
-// Encode a plaintext to  base64-encoded string.
-extern srs_error_t srs_av_base64_encode(std::string plaintext, std::string &cipher);
-
-// Calculate the output size needed to base64-encode x bytes to a null-terminated string.
-#define SRS_AV_BASE64_SIZE(x) (((x) + 2) / 3 * 4 + 1)
-
 // Covert hex string to uint8 data, for example:
 //      srs_hex_to_data(data, string("139056E5A0"))
 //      which outputs the data in hex {0x13, 0x90, 0x56, 0xe5, 0xa0}.
@@ -146,18 +123,6 @@ extern char *srs_data_to_hex(char *des, const uint8_t *src, int len);
 // Output in lowercase, such as string("f33f").
 extern char *srs_data_to_hex_lowercase(char *des, const uint8_t *src, int len);
 
-// Generate the c0 chunk header for msg.
-// @param cache, the cache to write header.
-// @param nb_cache, the size of cache.
-// @return The size of header. 0 if cache not enough.
-extern int srs_chunk_header_c0(int prefer_cid, uint32_t timestamp, int32_t payload_length, int8_t message_type, int32_t stream_id, char *cache, int nb_cache);
-
-// Generate the c3 chunk header for msg.
-// @param cache, the cache to write header.
-// @param nb_cache, the size of cache.
-// @return the size of header. 0 if cache not enough.
-extern int srs_chunk_header_c3(int prefer_cid, uint32_t timestamp, char *cache, int nb_cache);
-
 // For utest to mock it.
 #include <sys/time.h>
 #ifdef SRS_OSX
@@ -165,5 +130,74 @@ extern int srs_chunk_header_c3(int prefer_cid, uint32_t timestamp, char *cache, 
 #else
 typedef int (*srs_gettimeofday_t)(struct timeval *tv, struct timezone *tz);
 #endif
+
+// Dump string(str in length) to hex, it will process min(limit, length) chars.
+// Append seperator between each elem, and newline when exceed line_limit, '\0' to ignore.
+extern std::string srs_string_dumps_hex(const std::string &str);
+extern std::string srs_string_dumps_hex(const char *str, int length);
+extern std::string srs_string_dumps_hex(const char *str, int length, int limit);
+extern std::string srs_string_dumps_hex(const char *str, int length, int limit, char seperator, int line_limit, char newline);
+
+// Generate ramdom data for handshake.
+extern void srs_random_generate(char *bytes, int size);
+
+// Generate random string [0-9a-z] in size of len bytes.
+extern std::string srs_random_str(int len);
+
+// Generate random value, use srandom(now_us) to init seed if not initialized.
+extern long srs_random();
+
+// join string in vector with indicated separator
+template <typename T>
+std::string srs_join_vector_string(std::vector<T> &vs, std::string separator)
+{
+    std::stringstream ss;
+
+    for (int i = 0; i < (int)vs.size(); i++) {
+        ss << vs.at(i);
+        if (i != (int)vs.size() - 1) {
+            ss << separator;
+        }
+    }
+
+    return ss.str();
+}
+
+// Whether string is digit number
+//      is_digit("0")  is true
+//      is_digit("0000000000")  is true
+//      is_digit("1234567890")  is true
+//      is_digit("0123456789")  is true
+//      is_digit("1234567890a") is false
+//      is_digit("a1234567890") is false
+//      is_digit("10e3") is false
+//      is_digit("!1234567890") is false
+//      is_digit("") is false
+extern bool srs_is_digit_number(std::string str);
+
+// Read all content util EOF.
+extern srs_error_t srs_ioutil_read_all(ISrsReader *in, std::string &content);
+
+// For ead all of http body, read each time.
+#define SRS_HTTP_READ_CACHE_BYTES 4096
+
+// Whether domain is an IPv4 address.
+extern bool srs_is_ipv4(std::string domain);
+
+// Convert an IPv4 from string to uint32_t.
+extern uint32_t srs_ipv4_to_num(std::string ip);
+
+// Whether the IPv4 is in an IP mask.
+extern bool srs_ipv4_within_mask(std::string ip, std::string network, std::string mask);
+
+// Get the CIDR (Classless Inter-Domain Routing) mask for a network address.
+extern std::string srs_get_cidr_mask(std::string network_address);
+
+// Get the CIDR (Classless Inter-Domain Routing) IPv4 for a network address.
+extern std::string srs_get_cidr_ipv4(std::string network_address);
+
+// Whether the url is starts with http:// or https://
+extern bool srs_string_is_http(std::string url);
+extern bool srs_string_is_rtmp(std::string url);
 
 #endif

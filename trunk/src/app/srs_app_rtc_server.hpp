@@ -142,4 +142,7 @@ public:
 // Manager for RTC connections.
 extern SrsResourceManager *_srs_rtc_manager;
 
+// The dns resolve utility, return the resolved ip address.
+extern std::string srs_dns_resolve(std::string host, int &family);
+
 #endif

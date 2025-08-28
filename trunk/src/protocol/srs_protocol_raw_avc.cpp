@@ -16,6 +16,28 @@ using namespace std;
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 
+bool srs_aac_startswith_adts(SrsBuffer *stream)
+{
+    if (!stream) {
+        return false;
+    }
+
+    char *bytes = stream->data() + stream->pos();
+    char *p = bytes;
+
+    if (!stream->require((int)(p - bytes) + 2)) {
+        return false;
+    }
+
+    // matched 12bits 0xFFF,
+    // @remark, we must cast the 0xff to char to compare.
+    if (p[0] != (char)0xff || (char)(p[1] & 0xf0) != (char)0xf0) {
+        return false;
+    }
+
+    return true;
+}
+
 SrsRawH264Stream::SrsRawH264Stream()
 {
 }

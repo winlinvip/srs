@@ -152,4 +152,8 @@ public:
     virtual srs_error_t mux_aac2flv(char *frame, int nb_frame, SrsRawAacStreamCodec *codec, uint32_t dts, char **flv, int *nb_flv);
 };
 
+// Whether stream starts with the aac ADTS from ISO_IEC_14496-3-AAC-2001.pdf, page 75, 1.A.2.2 ADTS.
+// The start code must be '1111 1111 1111'B, that is 0xFFF
+extern bool srs_aac_startswith_adts(SrsBuffer *stream);
+
 #endif

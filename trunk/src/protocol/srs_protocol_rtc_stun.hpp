@@ -105,4 +105,7 @@ private:
     std::string encode_fingerprint(uint32_t crc32);
 };
 
+// Calc the crc32 of bytes in buf by IEEE, for zip.
+extern uint32_t srs_crc32_ieee(const void *buf, int size, uint32_t previous = 0);
+
 #endif

@@ -1425,4 +1425,8 @@ public:
     virtual srs_error_t audio_aac_sequence_header_demux(char *data, int size);
 };
 
+// To read H.264 NALU uev.
+extern srs_error_t srs_avc_nalu_read_uev(SrsBitBuffer *stream, int32_t &v);
+extern srs_error_t srs_avc_nalu_read_bit(SrsBitBuffer *stream, int8_t &v);
+
 #endif

@@ -1417,4 +1417,7 @@ private:
     virtual srs_error_t flush_video();
 };
 
+// Cacl the crc32 of bytes in buf, for ffmpeg.
+extern uint32_t srs_crc32_mpegts(const void *buf, int size);
+
 #endif

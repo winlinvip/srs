@@ -44,9 +44,6 @@ class ISrsFileReaderFactory;
 #define SRS_HTTP_CRLF "\r\n"         // 0x0D0A
 #define SRS_HTTP_CRLFCRLF "\r\n\r\n" // 0x0D0A0D0A
 
-// For ead all of http body, read each time.
-#define SRS_HTTP_READ_CACHE_BYTES 4096
-
 // For http parser macros
 #define SRS_CONSTS_HTTP_OPTIONS HTTP_OPTIONS
 #define SRS_CONSTS_HTTP_GET HTTP_GET
@@ -679,6 +676,11 @@ public:
     static srs_error_t query_unescape(std::string s, std::string &value);
     static srs_error_t path_unescape(std::string s, std::string &value);
 };
+
+// Decode a base64-encoded string.
+extern srs_error_t srs_av_base64_decode(std::string cipher, std::string &plaintext);
+// Encode a plaintext to  base64-encoded string.
+extern srs_error_t srs_av_base64_encode(std::string plaintext, std::string &cipher);
 
 // For #ifndef SRS_PROTOCOL_HTTP_HPP
 #endif

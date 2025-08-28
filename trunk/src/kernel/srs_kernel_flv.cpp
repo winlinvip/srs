@@ -28,6 +28,129 @@ using namespace std;
 
 SrsPps *_srs_pps_objs_msgs = NULL;
 
+int srs_chunk_header_c0(int prefer_cid, uint32_t timestamp, int32_t payload_length, int8_t message_type, int32_t stream_id, char *cache, int nb_cache)
+{
+    // to directly set the field.
+    char *pp = NULL;
+
+    // generate the header.
+    char *p = cache;
+
+    // no header.
+    if (nb_cache < SRS_CONSTS_RTMP_MAX_FMT0_HEADER_SIZE) {
+        return 0;
+    }
+
+    // write new chunk stream header, fmt is 0
+    *p++ = 0x00 | (prefer_cid & 0x3F);
+
+    // chunk message header, 11 bytes
+    // timestamp, 3bytes, big-endian
+    if (timestamp < RTMP_EXTENDED_TIMESTAMP) {
+        pp = (char *)&timestamp;
+        *p++ = pp[2];
+        *p++ = pp[1];
+        *p++ = pp[0];
+    } else {
+        *p++ = (char)0xFF;
+        *p++ = (char)0xFF;
+        *p++ = (char)0xFF;
+    }
+
+    // message_length, 3bytes, big-endian
+    pp = (char *)&payload_length;
+    *p++ = pp[2];
+    *p++ = pp[1];
+    *p++ = pp[0];
+
+    // message_type, 1bytes
+    *p++ = message_type;
+
+    // stream_id, 4bytes, little-endian
+    pp = (char *)&stream_id;
+    *p++ = pp[0];
+    *p++ = pp[1];
+    *p++ = pp[2];
+    *p++ = pp[3];
+
+    // for c0
+    // chunk extended timestamp header, 0 or 4 bytes, big-endian
+    //
+    // for c3:
+    // chunk extended timestamp header, 0 or 4 bytes, big-endian
+    // 6.1.3. Extended Timestamp
+    // This field is transmitted only when the normal time stamp in the
+    // chunk message header is set to 0x00ffffff. If normal time stamp is
+    // set to any value less than 0x00ffffff, this field MUST NOT be
+    // present. This field MUST NOT be present if the timestamp field is not
+    // present. Type 3 chunks MUST NOT have this field.
+    // adobe changed for Type3 chunk:
+    //        FMLE always sendout the extended-timestamp,
+    //        must send the extended-timestamp to FMS,
+    //        must send the extended-timestamp to flash-player.
+    // @see: ngx_rtmp_prepare_message
+    // @see: http://blog.csdn.net/win_lin/article/details/13363699
+    // TODO: FIXME: extract to outer.
+    if (timestamp >= RTMP_EXTENDED_TIMESTAMP) {
+        pp = (char *)&timestamp;
+        *p++ = pp[3];
+        *p++ = pp[2];
+        *p++ = pp[1];
+        *p++ = pp[0];
+    }
+
+    // always has header
+    return (int)(p - cache);
+}
+
+int srs_chunk_header_c3(int prefer_cid, uint32_t timestamp, char *cache, int nb_cache)
+{
+    // to directly set the field.
+    char *pp = NULL;
+
+    // generate the header.
+    char *p = cache;
+
+    // no header.
+    if (nb_cache < SRS_CONSTS_RTMP_MAX_FMT3_HEADER_SIZE) {
+        return 0;
+    }
+
+    // write no message header chunk stream, fmt is 3
+    // @remark, if prefer_cid > 0x3F, that is, use 2B/3B chunk header,
+    // SRS will rollback to 1B chunk header.
+    *p++ = 0xC0 | (prefer_cid & 0x3F);
+
+    // for c0
+    // chunk extended timestamp header, 0 or 4 bytes, big-endian
+    //
+    // for c3:
+    // chunk extended timestamp header, 0 or 4 bytes, big-endian
+    // 6.1.3. Extended Timestamp
+    // This field is transmitted only when the normal time stamp in the
+    // chunk message header is set to 0x00ffffff. If normal time stamp is
+    // set to any value less than 0x00ffffff, this field MUST NOT be
+    // present. This field MUST NOT be present if the timestamp field is not
+    // present. Type 3 chunks MUST NOT have this field.
+    // adobe changed for Type3 chunk:
+    //        FMLE always sendout the extended-timestamp,
+    //        must send the extended-timestamp to FMS,
+    //        must send the extended-timestamp to flash-player.
+    // @see: ngx_rtmp_prepare_message
+    // @see: http://blog.csdn.net/win_lin/article/details/13363699
+    // TODO: FIXME: extract to outer.
+    if (timestamp >= RTMP_EXTENDED_TIMESTAMP) {
+        pp = (char *)&timestamp;
+        *p++ = pp[3];
+        *p++ = pp[2];
+        *p++ = pp[1];
+        *p++ = pp[0];
+    }
+
+    // always has header
+    return (int)(p - cache);
+}
+
 SrsMessageHeader::SrsMessageHeader()
 {
     message_type = 0;

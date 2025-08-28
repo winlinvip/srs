@@ -6,6 +6,8 @@
 
 #include <srs_app_rtc_server.hpp>
 
+#include <netdb.h>
+
 #include <set>
 using namespace std;
 
@@ -58,6 +60,29 @@ extern SrsPps *_srs_pps_rnack;
 extern SrsPps *_srs_pps_rnack2;
 extern SrsPps *_srs_pps_rhnack;
 extern SrsPps *_srs_pps_rmnack;
+
+// TODO: FIXME: Replace by ST dns resolve.
+string srs_dns_resolve(string host, int &family)
+{
+    addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = family;
+
+    addrinfo *r_raw = NULL;
+    if (getaddrinfo(host.c_str(), NULL, &hints, &r_raw)) {
+        return "";
+    }
+    SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
+
+    char shost[64];
+    memset(shost, 0, sizeof(shost));
+    if (getnameinfo(r->ai_addr, r->ai_addrlen, shost, sizeof(shost), NULL, 0, NI_NUMERICHOST)) {
+        return "";
+    }
+
+    family = r->ai_family;
+    return string(shost);
+}
 
 SrsRtcBlackhole::SrsRtcBlackhole()
 {

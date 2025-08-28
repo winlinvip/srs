@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-08-28, Merge [#4456](https://github.com/ossrs/srs/pull/4456): AI: Remove cloud CLS and APM. v7.0.66 (#4456)
 * v7.0, 2025-08-27, Merge [#4455](https://github.com/ossrs/srs/pull/4455): Gather utility functions to kernel or protocol. v7.0.65 (#4455)
 * v7.0, 2025-08-27, Merge [#4454](https://github.com/ossrs/srs/pull/4454): AI: Config: Move RTMP configs to rtmp{} section. v7.0.64 (#4454)
 * v7.0, 2025-08-26, Merge [#4451](https://github.com/ossrs/srs/pull/4451): RTC: Fix null pointer crash in RTC2RTMP when start packet is missing. v7.0.63 (#4451)

@@ -30,6 +30,9 @@ using namespace std;
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_io.hpp>
 
+#include <climits>
+#include <cmath>
+
 // this value must:
 // equals to (SRS_SYS_CYCLE_INTERVAL*SRS_SYS_TIME_RESOLUTION_MS_TIMES)*1000
 // @see SRS_SYS_TIME_RESOLUTION_MS_TIMES

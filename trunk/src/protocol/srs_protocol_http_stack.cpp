@@ -389,7 +389,7 @@ int64_t SrsHttpHeader::content_length()
 
 void SrsHttpHeader::set_content_length(int64_t size)
 {
-    set("Content-Length", srs_int2str(size));
+    set("Content-Length", srs_strconv_format_int(size));
 }
 
 string SrsHttpHeader::content_type()
@@ -502,7 +502,7 @@ srs_error_t SrsHttpNotFoundHandler::serve_http(ISrsHttpResponseWriter *w, ISrsHt
 string srs_http_fs_fullpath(string dir, string pattern, string upath)
 {
     // add default pages.
-    if (srs_string_ends_with(upath, "/")) {
+    if (srs_strings_ends_with(upath, "/")) {
         upath += SRS_HTTP_DEFAULT_PAGE;
     }
 
@@ -519,8 +519,8 @@ string srs_http_fs_fullpath(string dir, string pattern, string upath)
         filename = upath.substr(pattern.length() - pos);
     }
 
-    string fullpath = srs_string_trim_end(dir, "/");
-    if (!srs_string_starts_with(filename, "/")) {
+    string fullpath = srs_strings_trim_end(dir, "/");
+    if (!srs_strings_starts_with(filename, "/")) {
         fullpath += "/";
     }
     fullpath += filename;
@@ -561,7 +561,7 @@ srs_error_t SrsHttpFileServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMes
 
     string upath = r->path();
     string fullpath = srs_http_fs_fullpath(dir, entry->pattern, upath);
-    string basename = srs_path_basename(upath);
+    string basename = srs_path_filepath_base(upath);
 
     // stat current dir, if exists, return error.
     if (!_srs_path_exists(fullpath)) {
@@ -574,13 +574,13 @@ srs_error_t SrsHttpFileServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMes
 
     // handle file according to its extension.
     // use vod stream for .flv/.fhv
-    if (srs_string_ends_with(upath, ".flv", ".fhv")) {
+    if (srs_strings_ends_with(upath, ".flv", ".fhv")) {
         return serve_flv_file(w, r, fullpath);
-    } else if (srs_string_ends_with(upath, ".m3u8")) {
+    } else if (srs_strings_ends_with(upath, ".m3u8")) {
         return serve_m3u8_ctx(w, r, fullpath);
-    } else if (srs_string_ends_with(upath, ".ts", ".m4s") || basename == "init.mp4") {
+    } else if (srs_strings_ends_with(upath, ".ts", ".m4s") || basename == "init.mp4") {
         return serve_ts_ctx(w, r, fullpath);
-    } else if (srs_string_ends_with(upath, ".mp4")) {
+    } else if (srs_strings_ends_with(upath, ".mp4")) {
         return serve_mp4_file(w, r, fullpath);
     }
 
@@ -640,7 +640,7 @@ srs_error_t SrsHttpFileServer::serve_file(ISrsHttpResponseWriter *w, ISrsHttpMes
     }
 
     if (true) {
-        std::string ext = srs_path_filext(fullpath);
+        std::string ext = srs_path_filepath_ext(fullpath);
 
         if (_mime.find(ext) == _mime.end()) {
             w->header()->set_content_type("application/octet-stream");
@@ -1165,7 +1165,7 @@ srs_error_t SrsHttpAuthMux::do_auth(ISrsHttpResponseWriter *w, ISrsHttpMessage *
         return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "empty Authorization");
     }
 
-    if (!srs_string_contains(auth, SRS_HTTP_AUTH_PREFIX_BASIC)) {
+    if (!srs_strings_contains(auth, SRS_HTTP_AUTH_PREFIX_BASIC)) {
         return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid auth %s, should start with %s", auth.c_str(), SRS_HTTP_AUTH_PREFIX_BASIC);
     }
 
@@ -1180,7 +1180,7 @@ srs_error_t SrsHttpAuthMux::do_auth(ISrsHttpResponseWriter *w, ISrsHttpMessage *
     }
 
     // The token format must be username:password
-    std::vector<std::string> user_pwd = srs_string_split(plaintext, ":");
+    std::vector<std::string> user_pwd = srs_strings_split(plaintext, ":");
     if (user_pwd.size() != 2) {
         return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid token %s", plaintext.c_str());
     }
@@ -1219,7 +1219,7 @@ srs_error_t SrsHttpUri::initialize(string url)
     string parsing_url = url;
     size_t pos_default_vhost = url.find("://__defaultVhost__");
     if (pos_default_vhost != string::npos) {
-        parsing_url = srs_string_replace(parsing_url, "://__defaultVhost__", "://safe.vhost.default.ossrs.io");
+        parsing_url = srs_strings_replace(parsing_url, "://__defaultVhost__", "://safe.vhost.default.ossrs.io");
     }
 
     http_parser_url hp_u;
@@ -1367,7 +1367,7 @@ srs_error_t SrsHttpUri::parse_query()
     }
     string query_str = query.substr(begin);
     query_values_.clear();
-    srs_parse_query_string(query_str, query_values_);
+    srs_net_url_parse_query(query_str, query_values_);
 
     return err;
 }

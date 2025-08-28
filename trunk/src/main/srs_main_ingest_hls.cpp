@@ -228,7 +228,7 @@ int SrsIngestHlsInput::connect()
 {
     int ret = ERROR_SUCCESS;
 
-    srs_utime_t now = srs_update_system_time();
+    srs_utime_t now = srs_time_now_realtime();
     if (now < next_connect_time) {
         srs_trace("input hls wait for %dms", srsu2msi(next_connect_time - now));
         srs_usleep(next_connect_time - now);
@@ -277,11 +277,11 @@ int SrsIngestHlsInput::parse(ISrsTsHandler *ts, ISrsAacHandler *aac)
 
         srs_trace("proxy the ts to rtmp, ts=%s, duration=%.2f", tp->url.c_str(), tp->duration);
 
-        if (srs_string_ends_with(tp->url, ".ts")) {
+        if (srs_strings_ends_with(tp->url, ".ts")) {
             if ((ret = parseTs(ts, (char *)tp->body.data(), (int)tp->body.length())) != ERROR_SUCCESS) {
                 return ret;
             }
-        } else if (srs_string_ends_with(tp->url, ".aac")) {
+        } else if (srs_strings_ends_with(tp->url, ".aac")) {
             if ((ret = parseAac(aac, (char *)tp->body.data(), (int)tp->body.length(), tp->duration)) != ERROR_SUCCESS) {
                 return ret;
             }
@@ -429,13 +429,13 @@ int SrsIngestHlsInput::parseM3u8(SrsHttpUri *url, double &td, double &duration)
             body = "";
         }
 
-        line = srs_string_replace(line, "\r", "");
-        line = srs_string_replace(line, " ", "");
+        line = srs_strings_replace(line, "\r", "");
+        line = srs_strings_replace(line, " ", "");
 
         // #EXT-X-VERSION:3
         // the version must be 3.0
-        if (srs_string_starts_with(line, "#EXT-X-VERSION:")) {
-            if (!srs_string_ends_with(line, ":3")) {
+        if (srs_strings_starts_with(line, "#EXT-X-VERSION:")) {
+            if (!srs_strings_ends_with(line, ":3")) {
                 srs_warn("m3u8 3.0 required, actual is %s", line.c_str());
             }
             continue;
@@ -443,14 +443,14 @@ int SrsIngestHlsInput::parseM3u8(SrsHttpUri *url, double &td, double &duration)
 
         // #EXT-X-PLAYLIST-TYPE:VOD
         // the playlist type, vod or nothing.
-        if (srs_string_starts_with(line, "#EXT-X-PLAYLIST-TYPE:")) {
+        if (srs_strings_starts_with(line, "#EXT-X-PLAYLIST-TYPE:")) {
             ptl = line;
             continue;
         }
 
         // #EXT-X-TARGETDURATION:12
         // the target duration is required.
-        if (srs_string_starts_with(line, "#EXT-X-TARGETDURATION:")) {
+        if (srs_strings_starts_with(line, "#EXT-X-TARGETDURATION:")) {
             td = ::atof(line.substr(string("#EXT-X-TARGETDURATION:").length()).c_str());
         }
 
@@ -461,7 +461,7 @@ int SrsIngestHlsInput::parseM3u8(SrsHttpUri *url, double &td, double &duration)
         }
 
         // #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=73207,CODECS="mp4a.40.2"
-        if (srs_string_starts_with(line, "#EXT-X-STREAM-INF:")) {
+        if (srs_strings_starts_with(line, "#EXT-X-STREAM-INF:")) {
             if ((pos = body.find("\n")) == string::npos) {
                 srs_warn("m3u8 entry unexpected eof, inf=%s", line.c_str());
                 break;
@@ -470,8 +470,8 @@ int SrsIngestHlsInput::parseM3u8(SrsHttpUri *url, double &td, double &duration)
             std::string m3u8_url = body.substr(0, pos);
             body = body.substr(pos + 1);
 
-            if (!srs_string_is_http(m3u8_url)) {
-                m3u8_url = srs_path_dirname(url->get_url()) + "/" + m3u8_url;
+            if (!srs_net_url_is_http(m3u8_url)) {
+                m3u8_url = srs_path_filepath_dir(url->get_url()) + "/" + m3u8_url;
             }
             srs_trace("parse sub m3u8, url=%s", m3u8_url.c_str());
 
@@ -488,7 +488,7 @@ int SrsIngestHlsInput::parseM3u8(SrsHttpUri *url, double &td, double &duration)
         // #EXTINF:11.401,
         // livestream-5.ts
         // parse each ts entry, expect current line is inf.
-        if (!srs_string_starts_with(line, "#EXTINF:")) {
+        if (!srs_strings_starts_with(line, "#EXTINF:")) {
             continue;
         }
 
@@ -572,7 +572,7 @@ int SrsIngestHlsInput::fetch_all_ts(bool fresh_m3u8)
 
         // only wait for a duration of last piece.
         if (i == (int)pieces.size() - 1) {
-            next_connect_time = srs_update_system_time() + tp->duration * SRS_UTIME_SECONDS;
+            next_connect_time = srs_time_now_realtime() + tp->duration * SRS_UTIME_SECONDS;
         }
     }
 
@@ -607,8 +607,8 @@ int SrsIngestHlsInput::SrsTsPiece::fetch(string m3u8)
     SrsHttpClient client;
 
     std::string ts_url = url;
-    if (!srs_string_is_http(ts_url)) {
-        ts_url = srs_path_dirname(m3u8) + "/" + url;
+    if (!srs_net_url_is_http(ts_url)) {
+        ts_url = srs_path_filepath_dir(m3u8) + "/" + url;
     }
 
     SrsHttpUri uri;
@@ -717,7 +717,7 @@ SrsIngestHlsOutput::SrsIngestHlsOutput(SrsHttpUri *rtmp)
 {
     out_rtmp = rtmp;
     disconnected = false;
-    raw_aac_dts = srsu2ms(srs_update_system_time());
+    raw_aac_dts = srsu2ms(srs_time_now_realtime());
 
     req = NULL;
     sdk = NULL;

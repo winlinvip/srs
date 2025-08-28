@@ -1567,7 +1567,7 @@ VOID TEST(ProtocolRTMPTest, ServerRedirect)
         string host = "target.net";
         int port = 8888;
         bool accepted = false;
-        string rurl = srs_generate_rtmp_url(host, port, req.host, req.vhost, req.app, req.stream, req.param);
+        string rurl = srs_net_url_encode_rtmp_url(host, port, req.host, req.vhost, req.app, req.stream, req.param);
         HELPER_EXPECT_SUCCESS(r.redirect(&req, rurl, accepted));
 
         if (true) {
@@ -1633,7 +1633,7 @@ VOID TEST(ProtocolRTMPTest, ServerRedirect)
         string host = "target.net";
         int port = 8888;
         bool accepted = false;
-        string rurl = srs_generate_rtmp_url(host, port, req.host, req.vhost, req.app, req.stream, req.param);
+        string rurl = srs_net_url_encode_rtmp_url(host, port, req.host, req.vhost, req.app, req.stream, req.param);
         HELPER_EXPECT_SUCCESS(r.redirect(&req, rurl, accepted));
         EXPECT_TRUE(accepted);
 
@@ -2984,66 +2984,66 @@ VOID TEST(ProtocolRTMPTest, OthersAll)
         vector<string> vs;
         vs.push_back("Hello");
         vs.push_back("world!");
-        string v = srs_join_vector_string(vs, ", ");
+        string v = srs_strings_join(vs, ", ");
         EXPECT_STREQ("Hello, world!", v.c_str());
     }
 
     if (true) {
-        EXPECT_TRUE(srs_is_ipv4("1.2.3.4"));
-        EXPECT_TRUE(srs_is_ipv4("255.2.3.4"));
-        EXPECT_TRUE(srs_is_ipv4("1255.2.3.4"));
+        EXPECT_TRUE(srs_net_is_ipv4("1.2.3.4"));
+        EXPECT_TRUE(srs_net_is_ipv4("255.2.3.4"));
+        EXPECT_TRUE(srs_net_is_ipv4("1255.2.3.4"));
     }
 
     if (true) {
-        EXPECT_FALSE(srs_is_ipv4("ossrs.2.3.4"));
-        EXPECT_FALSE(srs_is_ipv4("2.3.4.ossrs"));
+        EXPECT_FALSE(srs_net_is_ipv4("ossrs.2.3.4"));
+        EXPECT_FALSE(srs_net_is_ipv4("2.3.4.ossrs"));
     }
 
     if (true) {
-        EXPECT_EQ((uint32_t)0, srs_ipv4_to_num("not.a.valid.ip"));
+        EXPECT_EQ((uint32_t)0, srs_net_ipv4_to_integer("not.a.valid.ip"));
     }
 
     if (true) {
-        EXPECT_EQ((uint32_t)2130706433, srs_ipv4_to_num("127.0.0.1"));
-        EXPECT_NE((uint32_t)16777343, srs_ipv4_to_num("127.0.0.1")); // Big-Endian
+        EXPECT_EQ((uint32_t)2130706433, srs_net_ipv4_to_integer("127.0.0.1"));
+        EXPECT_NE((uint32_t)16777343, srs_net_ipv4_to_integer("127.0.0.1")); // Big-Endian
     }
 
     if (true) {
-        EXPECT_TRUE(srs_ipv4_within_mask("192.168.1.1", "192.168.1.0", "255.255.255.0"));
-        EXPECT_TRUE(srs_ipv4_within_mask("220.1.1.22", "220.1.1.22", "255.255.255.255"));
-        EXPECT_TRUE(srs_ipv4_within_mask("0.0.0.1", "0.0.0.0", "0.0.0.0"));
-        EXPECT_TRUE(srs_ipv4_within_mask("10.2.13.243", "10.0.0.0", "255.0.0.0"));
+        EXPECT_TRUE(srs_net_ipv4_within_mask("192.168.1.1", "192.168.1.0", "255.255.255.0"));
+        EXPECT_TRUE(srs_net_ipv4_within_mask("220.1.1.22", "220.1.1.22", "255.255.255.255"));
+        EXPECT_TRUE(srs_net_ipv4_within_mask("0.0.0.1", "0.0.0.0", "0.0.0.0"));
+        EXPECT_TRUE(srs_net_ipv4_within_mask("10.2.13.243", "10.0.0.0", "255.0.0.0"));
     }
 
     if (true) {
-        EXPECT_FALSE(srs_ipv4_within_mask("192.168.1.1", "192.168.1.2", "255.255.255.255"));
-        EXPECT_FALSE(srs_ipv4_within_mask("192.168.1.3", "192.168.1.2", "255.255.255.255"));
-        EXPECT_FALSE(srs_ipv4_within_mask("220.1.1.22", "192.168.1.0", "255.255.255.0"));
-        EXPECT_FALSE(srs_ipv4_within_mask("220.1.1.22", "220.1.1.23", "255.255.255.255"));
-        EXPECT_FALSE(srs_ipv4_within_mask("220.1.1.22", "220.1.1.21", "255.255.255.255"));
-        EXPECT_FALSE(srs_ipv4_within_mask("192.168.1.2", "10.0.0.1", "255.255.255.255"));
+        EXPECT_FALSE(srs_net_ipv4_within_mask("192.168.1.1", "192.168.1.2", "255.255.255.255"));
+        EXPECT_FALSE(srs_net_ipv4_within_mask("192.168.1.3", "192.168.1.2", "255.255.255.255"));
+        EXPECT_FALSE(srs_net_ipv4_within_mask("220.1.1.22", "192.168.1.0", "255.255.255.0"));
+        EXPECT_FALSE(srs_net_ipv4_within_mask("220.1.1.22", "220.1.1.23", "255.255.255.255"));
+        EXPECT_FALSE(srs_net_ipv4_within_mask("220.1.1.22", "220.1.1.21", "255.255.255.255"));
+        EXPECT_FALSE(srs_net_ipv4_within_mask("192.168.1.2", "10.0.0.1", "255.255.255.255"));
     }
 
     if (true) {
-        EXPECT_STREQ("255.255.255.255", srs_get_cidr_mask("127.0.0.1").c_str());
-        EXPECT_STREQ("255.240.0.0", srs_get_cidr_mask("127.0.0.1/12").c_str());
+        EXPECT_STREQ("255.255.255.255", srs_net_get_cidr_mask("127.0.0.1").c_str());
+        EXPECT_STREQ("255.240.0.0", srs_net_get_cidr_mask("127.0.0.1/12").c_str());
     }
 
     if (true) {
-        EXPECT_STREQ("", srs_get_cidr_mask("my.custom.domain").c_str());
-        EXPECT_STREQ("", srs_get_cidr_mask("my.custom.domain/12").c_str());
-        EXPECT_STREQ("", srs_get_cidr_mask("127.0.0.1/invalid/netmask").c_str());
+        EXPECT_STREQ("", srs_net_get_cidr_mask("my.custom.domain").c_str());
+        EXPECT_STREQ("", srs_net_get_cidr_mask("my.custom.domain/12").c_str());
+        EXPECT_STREQ("", srs_net_get_cidr_mask("127.0.0.1/invalid/netmask").c_str());
     }
 
     if (true) {
-        EXPECT_STREQ("127.0.0.1", srs_get_cidr_ipv4("127.0.0.1").c_str());
-        EXPECT_STREQ("127.0.0.1", srs_get_cidr_ipv4("127.0.0.1/12").c_str());
+        EXPECT_STREQ("127.0.0.1", srs_net_get_cidr_ipv4("127.0.0.1").c_str());
+        EXPECT_STREQ("127.0.0.1", srs_net_get_cidr_ipv4("127.0.0.1/12").c_str());
     }
 
     if (true) {
-        EXPECT_STREQ("", srs_get_cidr_ipv4("my.custom.domain").c_str());
-        EXPECT_STREQ("", srs_get_cidr_ipv4("my.custom.domain/12").c_str());
-        EXPECT_STREQ("", srs_get_cidr_ipv4("127.0.0.1/invalid/netmask").c_str());
+        EXPECT_STREQ("", srs_net_get_cidr_ipv4("my.custom.domain").c_str());
+        EXPECT_STREQ("", srs_net_get_cidr_ipv4("my.custom.domain/12").c_str());
+        EXPECT_STREQ("", srs_net_get_cidr_ipv4("127.0.0.1/invalid/netmask").c_str());
     }
 
     if (true) {
@@ -3071,21 +3071,21 @@ VOID TEST(ProtocolRTMPTest, ParseRTMPURL)
 {
     if (true) {
         string url("rtmp://ossrs.net/live/show/livestream?token=abc"), tcUrl, stream;
-        srs_parse_rtmp_url(url, tcUrl, stream);
+        srs_net_url_parse_rtmp_url(url, tcUrl, stream);
         EXPECT_STREQ("rtmp://ossrs.net/live/show", tcUrl.c_str());
         EXPECT_STREQ("livestream?token=abc", stream.c_str());
     }
 
     if (true) {
         string url("rtmp://ossrs.net/live/show/livestream"), tcUrl, stream;
-        srs_parse_rtmp_url(url, tcUrl, stream);
+        srs_net_url_parse_rtmp_url(url, tcUrl, stream);
         EXPECT_STREQ("rtmp://ossrs.net/live/show", tcUrl.c_str());
         EXPECT_STREQ("livestream", stream.c_str());
     }
 
     if (true) {
         string url("rtmp://ossrs.net/live/livestream"), tcUrl, stream;
-        srs_parse_rtmp_url(url, tcUrl, stream);
+        srs_net_url_parse_rtmp_url(url, tcUrl, stream);
         EXPECT_STREQ("rtmp://ossrs.net/live", tcUrl.c_str());
         EXPECT_STREQ("livestream", stream.c_str());
     }
@@ -3095,31 +3095,31 @@ VOID TEST(ProtocolRTMPTest, GenerateURL)
 {
     if (true) {
         string host("184.23.22.14"), vhost("ossrs.net"), stream("stream"), param("token=abc");
-        string url = srs_generate_stream_with_query(host, vhost, stream, param);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param);
         EXPECT_STREQ("stream?token=abc&vhost=ossrs.net", url.c_str());
     }
 
     if (true) {
         string host("184.23.22.14"), vhost("__defaultVhost__"), stream("stream"), param("vhost=ossrs.net");
-        string url = srs_generate_stream_with_query(host, vhost, stream, param);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param);
         EXPECT_STREQ("stream?vhost=ossrs.net", url.c_str());
     }
 
     if (true) {
         string host("184.23.22.14"), vhost("__defaultVhost__"), stream("stream"), param;
-        string url = srs_generate_stream_with_query(host, vhost, stream, param);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param);
         EXPECT_STREQ("stream", url.c_str());
     }
 
     if (true) {
         string host("184.23.22.14"), vhost("ossrs.net"), stream("stream"), param;
-        string url = srs_generate_stream_with_query(host, vhost, stream, param);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param);
         EXPECT_STREQ("stream?vhost=ossrs.net", url.c_str());
     }
 
     if (true) {
         string host("ossrs.net"), vhost("__defaultVhost__"), stream("stream"), param;
-        string url = srs_generate_stream_with_query(host, vhost, stream, param);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param);
         EXPECT_STREQ("stream?vhost=ossrs.net", url.c_str());
     }
 }
@@ -3129,25 +3129,25 @@ VOID TEST(ProtocolRTMPTest, GenerateURLForFFmpeg)
     // For https://github.com/ossrs/srs/issues/3405
     if (true) {
         string host("192.168.1.100"), vhost("localhost"), stream("stream"), param("?vhost=localhost");
-        string url = srs_generate_stream_with_query(host, vhost, stream, param, false);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param, false);
         EXPECT_STREQ("stream", url.c_str());
     }
 
     if (true) {
         string host("192.168.1.100"), vhost("localhost"), stream("stream"), param("?k=v&vhost=localhost");
-        string url = srs_generate_stream_with_query(host, vhost, stream, param, false);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param, false);
         EXPECT_STREQ("stream?k=v", url.c_str());
     }
 
     if (true) {
         string host("192.168.1.100"), vhost("localhost"), stream("stream"), param("?vhost=localhost&k=v");
-        string url = srs_generate_stream_with_query(host, vhost, stream, param, false);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param, false);
         EXPECT_STREQ("stream?k=v", url.c_str());
     }
 
     if (true) {
         string host("192.168.1.100"), vhost("localhost"), stream("stream"), param("?k=v");
-        string url = srs_generate_stream_with_query(host, vhost, stream, param, false);
+        string url = srs_net_url_encode_stream(host, vhost, stream, param, false);
         EXPECT_STREQ("stream?k=v", url.c_str());
     }
 }
@@ -3160,7 +3160,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrlLegacy)
 
         tcUrl = "rtmp://127.0.0.1:19351/live...vhost...demo";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("demo", vhost.c_str());
@@ -3175,7 +3175,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrlLegacy)
 
         tcUrl = "rtmp://127.0.0.1:19351/live...vhost...demo&token=abc";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("demo", vhost.c_str());
@@ -3197,7 +3197,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:19351/live?vhost=demo&token=abc";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("demo", vhost.c_str());
@@ -3213,7 +3213,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:19351/live";
         stream = "show?vhost=demo&token=abc";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("demo", vhost.c_str());
@@ -3230,7 +3230,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
         tcUrl = "rtmp://winlin.cn/live";
         stream = "show";
         param = "?vhost=__defaultVhost__";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3246,7 +3246,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3262,7 +3262,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3277,7 +3277,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn:19351/live";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3292,7 +3292,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live";
         stream = "show?key=abc";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3308,7 +3308,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live";
         stream = "show?key=abc&&vhost=demo.com";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("demo.com", vhost.c_str());
@@ -3324,7 +3324,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live";
         stream = "show?key=abc&&domain=demo.com";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("demo.com", vhost.c_str());
@@ -3341,7 +3341,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live?key=abc";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3357,7 +3357,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live?key=abc&&vhost=demo.com";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("demo.com", vhost.c_str());
@@ -3374,7 +3374,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live";
         stream = "";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3389,7 +3389,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:1935/live";
         stream = "";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("127.0.0.1", vhost.c_str());
@@ -3404,7 +3404,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:19351/live";
         stream = "";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("127.0.0.1", vhost.c_str());
@@ -3419,7 +3419,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:19351/live?vhost=demo";
         stream = "";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("demo", vhost.c_str());
@@ -3435,7 +3435,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:19351/live";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("127.0.0.1", vhost.c_str());
@@ -3451,7 +3451,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://127.0.0.1:19351/live";
         stream = "show?vhost=demo";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("127.0.0.1", ip.c_str());
         EXPECT_STREQ("demo", vhost.c_str());
@@ -3467,7 +3467,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryTcUrl)
 
         tcUrl = "rtmp://winlin.cn/live/_definst_";
         stream = "show";
-        srs_discovery_tc_url(tcUrl, schema, ip, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, ip, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("winlin.cn", ip.c_str());
         EXPECT_STREQ("winlin.cn", vhost.c_str());
@@ -3482,7 +3482,7 @@ VOID TEST(ProtocolRTMPTest, GuessingStream)
     // Stream in app without params.
     if (true) {
         string app = "live/livestream", param = "", stream = "";
-        srs_guess_stream_by_app(app, param, stream);
+        srs_net_url_guess_stream(app, param, stream);
         EXPECT_STREQ("live", app.c_str());
         EXPECT_STREQ("livestream", stream.c_str());
     }
@@ -3490,7 +3490,7 @@ VOID TEST(ProtocolRTMPTest, GuessingStream)
     // Stream in app with params.
     if (true) {
         string app = "live/livestream", param = "?secret=xxx", stream = "";
-        srs_guess_stream_by_app(app, param, stream);
+        srs_net_url_guess_stream(app, param, stream);
         EXPECT_STREQ("live", app.c_str());
         EXPECT_STREQ("livestream", stream.c_str());
         EXPECT_STREQ("?secret=xxx", param.c_str());
@@ -3499,7 +3499,7 @@ VOID TEST(ProtocolRTMPTest, GuessingStream)
     // Stream in app with params.
     if (true) {
         string app = "live/livestream?secret=xxx", param = "", stream = "";
-        srs_guess_stream_by_app(app, param, stream);
+        srs_net_url_guess_stream(app, param, stream);
         EXPECT_STREQ("live", app.c_str());
         EXPECT_STREQ("livestream", stream.c_str());
         EXPECT_STREQ("?secret=xxx", param.c_str());
@@ -3508,7 +3508,7 @@ VOID TEST(ProtocolRTMPTest, GuessingStream)
     // Stream in param.
     if (true) {
         string app = "live", param = "?secret=xxx/livestream", stream = "";
-        srs_guess_stream_by_app(app, param, stream);
+        srs_net_url_guess_stream(app, param, stream);
         EXPECT_STREQ("live", app.c_str());
         EXPECT_STREQ("livestream", stream.c_str());
         EXPECT_STREQ("?secret=xxx", param.c_str());
@@ -3517,7 +3517,7 @@ VOID TEST(ProtocolRTMPTest, GuessingStream)
     // No stream.
     if (true) {
         string app = "live", param = "?secret=xxx", stream = "";
-        srs_guess_stream_by_app(app, param, stream);
+        srs_net_url_guess_stream(app, param, stream);
         EXPECT_STREQ("live", app.c_str());
         EXPECT_STREQ("", stream.c_str());
         EXPECT_STREQ("?secret=xxx", param.c_str());
@@ -3530,7 +3530,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "invalid://ip:8888/app", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("invalid", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(8888, port);
@@ -3544,7 +3544,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "invalid://ip/app", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("invalid", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(80, port);
@@ -3558,7 +3558,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3572,7 +3572,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "https://ip/app", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("https", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(443, port);
@@ -3586,7 +3586,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "http://ip/app", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("http", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(80, port);
@@ -3600,7 +3600,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app", stream = "stream?domain=__defaultVhost__";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3614,7 +3614,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app/_definst_", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3628,7 +3628,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3642,7 +3642,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ossrs.io/app/app2", stream = "stream?k=v&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ossrs.io", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3656,7 +3656,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app/app2", stream = "stream?k=v&domain=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3670,7 +3670,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app/app2", stream = "stream?k=v&vhost=ossrs.io&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3684,7 +3684,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app/app2", stream = "stream?k=v&k2=v2";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3698,7 +3698,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app/app2?k=v", stream = "stream";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);
@@ -3712,7 +3712,7 @@ VOID TEST(ProtocolRTMPTest, DiscoveryUrl)
         string tcUrl = "rtmp://ip/app?k=v", stream = "stream";
         string schema, host, vhost, app, param;
         int port;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("ip", host.c_str());
         EXPECT_EQ(1935, port);

@@ -1533,8 +1533,8 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
 
         // create temp Request by url
         SrsUniquePtr<ISrsRequest> req(new SrsRequest());
-        srs_parse_rtmp_url(url, req->tcUrl, req->stream);
-        srs_discovery_tc_url(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
+        srs_net_url_parse_rtmp_url(url, req->tcUrl, req->stream);
+        srs_net_url_parse_tcurl(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
 
         // create forwarder
         SrsForwarder *forwarder = new SrsForwarder(this);
@@ -1977,7 +1977,7 @@ bool SrsLiveSource::stream_is_dead()
     }
 
     // Delay cleanup source.
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
     if (now < stream_die_at_ + SRS_SOURCE_CLEANUP) {
         return false;
     }
@@ -1996,7 +1996,7 @@ bool SrsLiveSource::publisher_is_idle_for(srs_utime_t timeout)
         return false;
     }
 
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
     if (now > publisher_idle_at_ + timeout) {
         return true;
     }
@@ -2324,7 +2324,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage *msg)
     bool drop_for_reduce = false;
     if (is_sequence_header && meta->previous_ash() && _srs_config->get_reduce_sequence_header(req->vhost)) {
         if (meta->previous_ash()->size == msg->size) {
-            drop_for_reduce = srs_bytes_equals(meta->previous_ash()->payload, msg->payload, msg->size);
+            drop_for_reduce = srs_bytes_equal(meta->previous_ash()->payload, msg->payload, msg->size);
             srs_warn("drop for reduce sh audio, size=%d", msg->size);
         }
     }
@@ -2441,7 +2441,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsSharedPtrMessage *msg)
     bool drop_for_reduce = false;
     if (is_sequence_header && meta->previous_vsh() && _srs_config->get_reduce_sequence_header(req->vhost)) {
         if (meta->previous_vsh()->size == msg->size) {
-            drop_for_reduce = srs_bytes_equals(meta->previous_vsh()->payload, msg->payload, msg->size);
+            drop_for_reduce = srs_bytes_equal(meta->previous_vsh()->payload, msg->payload, msg->size);
             srs_warn("drop for reduce sh video, size=%d", msg->size);
         }
     }
@@ -2631,7 +2631,7 @@ srs_error_t SrsLiveSource::on_publish()
 
     // When no players, the publisher is idle now.
     if (consumers.empty()) {
-        publisher_idle_at_ = srs_get_system_time();
+        publisher_idle_at_ = srs_time_now_cached();
     }
 
     return err;
@@ -2680,7 +2680,7 @@ void SrsLiveSource::on_unpublish()
 
     // no consumer, stream is die.
     if (consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 
     // Note that we should never set to unpublish before any other handler is done, especially the handler
@@ -2767,17 +2767,17 @@ void SrsLiveSource::on_consumer_destroy(SrsLiveConsumer *consumer)
 
         // If no publishers, the stream is die.
         if (can_publish_) {
-            stream_die_at_ = srs_get_system_time();
+            stream_die_at_ = srs_time_now_cached();
         }
 
         // For edge server, the stream die when the last player quit, because the edge stream is created by player
         // activities, so it should die when all players quit.
         if (_srs_config->get_vhost_is_edge(req->vhost)) {
-            stream_die_at_ = srs_get_system_time();
+            stream_die_at_ = srs_time_now_cached();
         }
 
         // When no players, the publisher is idle now.
-        publisher_idle_at_ = srs_get_system_time();
+        publisher_idle_at_ = srs_time_now_cached();
     }
 }
 

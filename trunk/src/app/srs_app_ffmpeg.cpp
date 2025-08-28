@@ -175,7 +175,7 @@ srs_error_t SrsFFMPEG::initialize_transcode(SrsConfDirective *engine)
 
     // for not rtmp input, donot append the iformat,
     // for example, "-f flv" before "-i udp://192.168.1.252:2222"
-    if (!srs_string_starts_with(input, "rtmp://")) {
+    if (!srs_strings_starts_with(input, "rtmp://")) {
         iformat = "";
     }
 
@@ -264,28 +264,28 @@ srs_error_t SrsFFMPEG::start()
     if (vcodec != SRS_RTMP_ENCODER_COPY && vcodec != SRS_RTMP_ENCODER_NO_VIDEO) {
         if (vbitrate > 0) {
             params.push_back("-b:v");
-            params.push_back(srs_int2str(vbitrate * 1000));
+            params.push_back(srs_strconv_format_int(vbitrate * 1000));
         }
 
         if (vfps > 0) {
             params.push_back("-r");
-            params.push_back(srs_float2str(vfps));
+            params.push_back(srs_strconv_format_float(vfps));
         }
 
         if (vwidth > 0 && vheight > 0) {
             params.push_back("-s");
-            params.push_back(srs_int2str(vwidth) + "x" + srs_int2str(vheight));
+            params.push_back(srs_strconv_format_int(vwidth) + "x" + srs_strconv_format_int(vheight));
         }
 
         // TODO: add aspect if needed.
         if (vwidth > 0 && vheight > 0) {
             params.push_back("-aspect");
-            params.push_back(srs_int2str(vwidth) + ":" + srs_int2str(vheight));
+            params.push_back(srs_strconv_format_int(vwidth) + ":" + srs_strconv_format_int(vheight));
         }
 
         if (vthreads > 0) {
             params.push_back("-threads");
-            params.push_back(srs_int2str(vthreads));
+            params.push_back(srs_strconv_format_int(vthreads));
         }
 
         if (!vprofile.empty()) {
@@ -323,17 +323,17 @@ srs_error_t SrsFFMPEG::start()
         if (acodec != SRS_RTMP_ENCODER_COPY) {
             if (abitrate > 0) {
                 params.push_back("-b:a");
-                params.push_back(srs_int2str(abitrate * 1000));
+                params.push_back(srs_strconv_format_int(abitrate * 1000));
             }
 
             if (asample_rate > 0) {
                 params.push_back("-ar");
-                params.push_back(srs_int2str(asample_rate));
+                params.push_back(srs_strconv_format_int(asample_rate));
             }
 
             if (achannels > 0) {
                 params.push_back("-ac");
-                params.push_back(srs_int2str(achannels));
+                params.push_back(srs_strconv_format_int(achannels));
             }
 
             // aparams

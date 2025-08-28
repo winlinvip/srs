@@ -244,7 +244,7 @@ srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, S
     input = "rtmp://";
     input += SRS_CONSTS_LOCALHOST;
     input += ":";
-    input += srs_int2str(req->port);
+    input += srs_strconv_format_int(req->port);
     input += "/";
     input += req->app;
     input += "/";
@@ -262,12 +262,12 @@ srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, S
     std::string output = _srs_config->get_engine_output(engine);
     // output stream, to other/self server
     // ie. rtmp://localhost:1935/live/livestream_sd
-    output = srs_string_replace(output, "[vhost]", req->vhost);
-    output = srs_string_replace(output, "[port]", srs_int2str(req->port));
-    output = srs_string_replace(output, "[app]", req->app);
-    output = srs_string_replace(output, "[stream]", req->stream);
-    output = srs_string_replace(output, "[param]", req->param);
-    output = srs_string_replace(output, "[engine]", engine->arg0());
+    output = srs_strings_replace(output, "[vhost]", req->vhost);
+    output = srs_strings_replace(output, "[port]", srs_strconv_format_int(req->port));
+    output = srs_strings_replace(output, "[app]", req->app);
+    output = srs_strings_replace(output, "[stream]", req->stream);
+    output = srs_strings_replace(output, "[param]", req->param);
+    output = srs_strings_replace(output, "[engine]", engine->arg0());
     output = srs_path_build_timestamp(output);
 
     std::string log_file = SRS_CONSTS_NULL_FILE; // disabled

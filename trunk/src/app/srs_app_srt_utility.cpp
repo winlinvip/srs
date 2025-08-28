@@ -40,10 +40,10 @@ bool srs_srt_streamid_info(const std::string &streamid, SrtMode &mode, std::stri
 
     // Compatible with previous auth querystring, like this one:
     //      srt://127.0.0.1:10080?streamid=#!::h=live/livestream?secret=xxx,m=publish
-    real_streamid = srs_string_replace(real_streamid, "?", ",");
+    real_streamid = srs_strings_replace(real_streamid, "?", ",");
 
     std::map<std::string, std::string> query;
-    srs_parse_query_string(real_streamid, query);
+    srs_net_url_parse_query(real_streamid, query);
     for (std::map<std::string, std::string>::iterator it = query.begin(); it != query.end(); ++it) {
         if (it->first == "h") {
             std::string host = it->second;
@@ -141,7 +141,7 @@ bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, ISr
     request->host = srs_get_public_internet_address();
     if (request->vhost.empty())
         request->vhost = request->host;
-    request->tcUrl = srs_generate_tc_url("srt", request->host, request->vhost, request->app, request->port);
+    request->tcUrl = srs_net_url_encode_tcurl("srt", request->host, request->vhost, request->app, request->port);
 
     return ret;
 }

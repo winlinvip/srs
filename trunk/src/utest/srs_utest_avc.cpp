@@ -831,22 +831,22 @@ VOID TEST(SrsAVCTest, HevcMultiPPS)
     HELPER_ASSERT_SUCCESS(hs.annexb_demux(&stream, &frame, &frame_size));
     EXPECT_TRUE(hs.is_vps(frame, frame_size));
     EXPECT_EQ(frame_size, vps.size());
-    EXPECT_TRUE(srs_bytes_equals(frame, vps.data(), frame_size));
+    EXPECT_TRUE(srs_bytes_equal(frame, vps.data(), frame_size));
 
     HELPER_ASSERT_SUCCESS(hs.annexb_demux(&stream, &frame, &frame_size));
     EXPECT_TRUE(hs.is_sps(frame, frame_size));
     EXPECT_EQ(frame_size, sps.size());
-    EXPECT_TRUE(srs_bytes_equals(frame, sps.data(), frame_size));
+    EXPECT_TRUE(srs_bytes_equal(frame, sps.data(), frame_size));
 
     HELPER_ASSERT_SUCCESS(hs.annexb_demux(&stream, &frame, &frame_size));
     EXPECT_TRUE(hs.is_pps(frame, frame_size));
     EXPECT_EQ(frame_size, pps_1.size());
-    EXPECT_TRUE(srs_bytes_equals(frame, pps_1.data(), frame_size));
+    EXPECT_TRUE(srs_bytes_equal(frame, pps_1.data(), frame_size));
 
     HELPER_ASSERT_SUCCESS(hs.annexb_demux(&stream, &frame, &frame_size));
     EXPECT_TRUE(hs.is_pps(frame, frame_size));
     EXPECT_EQ(frame_size, pps_2.size());
-    EXPECT_TRUE(srs_bytes_equals(frame, pps_2.data(), frame_size));
+    EXPECT_TRUE(srs_bytes_equal(frame, pps_2.data(), frame_size));
 
     EXPECT_TRUE(stream.empty());
 }

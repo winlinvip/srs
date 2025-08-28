@@ -258,7 +258,7 @@ srs_error_t SrsInotifyWorker::start()
     // #define IN_ONESHOT              0x80000000      /* only send event once */
 
     // Watch the config directory events.
-    string config_dir = srs_path_dirname(_srs_config->config());
+    string config_dir = srs_path_filepath_dir(_srs_config->config());
     uint32_t mask = IN_MODIFY | IN_CREATE | IN_MOVED_TO;
     int watch_conf = 0;
     if ((watch_conf = ::inotify_add_watch(fd, config_dir.c_str(), mask)) < 0) {
@@ -281,7 +281,7 @@ srs_error_t SrsInotifyWorker::cycle()
 
 #if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
     string config_path = _srs_config->config();
-    string config_file = srs_path_basename(config_path);
+    string config_file = srs_path_filepath_base(config_path);
     string k8s_file = "..data";
 
     while (true) {
@@ -515,7 +515,7 @@ srs_error_t SrsServer::initialize()
 
     bool rtc = _srs_config->get_rtc_server_enabled();
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
-    string rtc_listen = srs_int2str(_srs_config->get_rtc_server_tcp_listen());
+    string rtc_listen = srs_strconv_format_int(_srs_config->get_rtc_server_tcp_listen());
     // If enabled and listen is the same value, resue port for WebRTC over TCP.
     if (stream && rtc && rtc_tcp && http_listen == rtc_listen) {
         srs_trace("WebRTC tcp=%s reuses http=%s server", rtc_listen.c_str(), http_listen.c_str());
@@ -647,7 +647,7 @@ srs_error_t SrsServer::listen()
 
     // Start WebRTC over TCP listener.
     if (!reuse_rtc_over_server_ && _srs_config->get_rtc_server_tcp_enabled()) {
-        webrtc_listener_->set_endpoint(srs_int2str(_srs_config->get_rtc_server_tcp_listen()))->set_label("WebRTC");
+        webrtc_listener_->set_endpoint(srs_strconv_format_int(_srs_config->get_rtc_server_tcp_listen()))->set_label("WebRTC");
         if ((err = webrtc_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "webrtc tcp listen");
         }
@@ -656,7 +656,7 @@ srs_error_t SrsServer::listen()
 #ifdef SRS_RTSP
     // Start RTSP listener. RTC is a critical dependency.
     if (_srs_config->get_rtsp_server_enabled()) {
-        rtsp_listener_->set_endpoint(srs_int2str(_srs_config->get_rtsp_server_listen()))->set_label("RTSP");
+        rtsp_listener_->set_endpoint(srs_strconv_format_int(_srs_config->get_rtsp_server_listen()))->set_label("RTSP");
         if ((err = rtsp_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "rtsp listen");
         }
@@ -1066,7 +1066,7 @@ srs_error_t SrsServer::do_cycle()
             SrsReloadState state = SrsReloadStateInit;
             _srs_reload_state = SrsReloadStateInit;
             srs_freep(_srs_reload_err);
-            _srs_reload_id = srs_random_str(7);
+            _srs_reload_id = srs_rand_gen_str(7);
             err = _srs_config->reload(&state);
             _srs_reload_state = state;
             _srs_reload_err = srs_error_copy(err);

@@ -193,7 +193,7 @@ SrsNackOption::SrsNackOption()
 
 SrsRtpNackInfo::SrsRtpNackInfo()
 {
-    generate_time_ = srs_update_system_time();
+    generate_time_ = srs_time_now_realtime();
     pre_req_nack_time_ = 0;
     req_nack_count_ = 0;
 }
@@ -259,7 +259,7 @@ void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack &seqs, uint32_t &timeout_n
         return;
     }
 
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
 
     srs_utime_t interval = now - pre_check_time_;
     if (interval < opts_.nack_check_interval) {

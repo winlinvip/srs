@@ -89,7 +89,7 @@ srs_error_t SrsSslClient::handshake(const std::string &host)
     SSL_set_connect_state(ssl);
     SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
     // If the server address is not in IP address format, set the host in the Server Name Indication (SNI) field.
-    if (!srs_check_ip_addr_valid(host)) {
+    if (!srs_net_is_valid_ip(host)) {
         SSL_set_tlsext_host_name(ssl, host.c_str());
     }
 
@@ -306,7 +306,7 @@ srs_error_t SrsHttpClient::initialize(string schema, string h, int p, srs_utime_
     // ep used for host in header.
     string ep = host;
     if (port > 0 && port != SRS_CONSTS_HTTP_DEFAULT_PORT) {
-        ep += ":" + srs_int2str(port);
+        ep += ":" + srs_strconv_format_int(port);
     }
 
     // Set default value for headers.
@@ -332,7 +332,7 @@ srs_error_t SrsHttpClient::post(string path, string req, ISrsHttpMessage **ppmsg
     srs_error_t err = srs_success;
 
     // always set the content length.
-    headers["Content-Length"] = srs_int2str(req.length());
+    headers["Content-Length"] = srs_strconv_format_int(req.length());
 
     if ((err = connect()) != srs_success) {
         return srs_error_wrap(err, "http: connect server");
@@ -383,7 +383,7 @@ srs_error_t SrsHttpClient::get(string path, string req, ISrsHttpMessage **ppmsg)
     srs_error_t err = srs_success;
 
     // always set the content length.
-    headers["Content-Length"] = srs_int2str(req.length());
+    headers["Content-Length"] = srs_strconv_format_int(req.length());
 
     if ((err = connect()) != srs_success) {
         return srs_error_wrap(err, "http: connect server");
@@ -480,7 +480,7 @@ srs_error_t SrsHttpClient::connect()
     srs_assert(!ssl_transport);
     ssl_transport = new SrsSslClient(transport);
 
-    srs_utime_t starttime = srs_update_system_time();
+    srs_utime_t starttime = srs_time_now_realtime();
 
     if ((err = ssl_transport->handshake(host)) != srs_success) {
         disconnect();
@@ -488,7 +488,7 @@ srs_error_t SrsHttpClient::connect()
                               schema_.c_str(), host.c_str(), port, srsu2msi(timeout), srsu2msi(recv_timeout));
     }
 
-    int cost = srsu2msi(srs_update_system_time() - starttime);
+    int cost = srsu2msi(srs_time_now_realtime() - starttime);
     srs_trace("https: connected to %s://%s:%d, cost=%dms", schema_.c_str(), host.c_str(), port, cost);
 
     return err;

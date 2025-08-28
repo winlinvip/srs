@@ -549,7 +549,7 @@ srs_error_t SrsRtspConnection::do_cycle()
         } else if (req->is_describe()) {
             // create session.
             if (session_id_.empty()) {
-                session_id_ = srs_random_str(8);
+                session_id_ = srs_rand_gen_str(8);
             }
 
             SrsUniquePtr<SrsRtspDescribeResponse> res(new SrsRtspDescribeResponse((int)req->seq));
@@ -573,7 +573,7 @@ srs_error_t SrsRtspConnection::do_cycle()
             }
 
             // Filter the \r\n to \\r\\n for JSON.
-            std::string local_sdp_escaped = srs_string_replace(sdp.c_str(), "\r\n", "\\r\\n");
+            std::string local_sdp_escaped = srs_strings_replace(sdp.c_str(), "\r\n", "\\r\\n");
             srs_trace("RTSP: DESCRIBE cseq=%ld, session=%s, sdp: %s", req->seq, session_id_.c_str(), local_sdp_escaped.c_str());
         } else if (req->is_setup()) {
             srs_assert(req->transport);
@@ -595,7 +595,7 @@ srs_error_t SrsRtspConnection::do_cycle()
 
             res->transport->copy(req->transport);
             res->session = session_id_;
-            res->ssrc = srs_int2str(ssrc);
+            res->ssrc = srs_strconv_format_int(ssrc);
             res->client_port_min = req->transport->client_port_min;
             res->client_port_max = req->transport->client_port_max;
             // TODO: FIXME: listen local port
@@ -672,20 +672,20 @@ const SrsContextId &SrsRtspConnection::context_id()
 
 bool SrsRtspConnection::is_alive()
 {
-    return last_stun_time + session_timeout > srs_get_system_time();
+    return last_stun_time + session_timeout > srs_time_now_cached();
 }
 
 void SrsRtspConnection::alive()
 {
-    last_stun_time = srs_get_system_time();
+    last_stun_time = srs_time_now_cached();
 }
 
 srs_error_t SrsRtspConnection::do_describe(SrsRtspRequest *req, std::string &sdp)
 {
     srs_error_t err = srs_success;
-    srs_parse_rtmp_url(req->uri, request_->tcUrl, request_->stream);
+    srs_net_url_parse_rtmp_url(req->uri, request_->tcUrl, request_->stream);
 
-    srs_discovery_tc_url(request_->tcUrl, request_->schema, request_->host, request_->vhost,
+    srs_net_url_parse_tcurl(request_->tcUrl, request_->schema, request_->host, request_->vhost,
                          request_->app, request_->stream, request_->port, request_->param);
 
     // discovery vhost, resolve the vhost from config
@@ -722,13 +722,13 @@ srs_error_t SrsRtspConnection::do_describe(SrsRtspRequest *req, std::string &sdp
     SrsRtcTrackDescription *audio_desc = source_->audio_desc();
     if (audio_desc) {
         SrsRtcTrackDescription *audio_track_desc = audio_desc->copy();
-        audio_track_desc->id_ = srs_int2str(track_id);
+        audio_track_desc->id_ = srs_strconv_format_int(track_id);
         tracks_.insert(std::make_pair(audio_track_desc->ssrc_, audio_track_desc));
 
         SrsMediaDesc media_audio("audio");
         media_audio.port_ = 0;           // Port 0 indicates no UDP transport available
         media_audio.protos_ = "RTP/AVP"; // MUST be RTP/AVP
-        media_audio.control_ = req->uri + "/trackID=" + srs_int2str(track_id);
+        media_audio.control_ = req->uri + "/trackID=" + srs_strconv_format_int(track_id);
         media_audio.recvonly_ = true;
         media_audio.rtcp_mux_ = true;
 
@@ -740,7 +740,7 @@ srs_error_t SrsRtspConnection::do_describe(SrsRtspRequest *req, std::string &sdp
         // if the payload is opus, and the encoding_param_ is channel
         SrsAudioPayload *ap = dynamic_cast<SrsAudioPayload *>(audio_track_desc->media_);
         if (ap) {
-            ps_audio.encoding_param_ = srs_int2str(ap->channel_);
+            ps_audio.encoding_param_ = srs_strconv_format_int(ap->channel_);
 
             // Append the AAC config hex to the fmtp line.
             if (ap->name_ == "MPEG4-GENERIC" && !ap->aac_config_hex_.empty()) {
@@ -763,13 +763,13 @@ srs_error_t SrsRtspConnection::do_describe(SrsRtspRequest *req, std::string &sdp
     SrsRtcTrackDescription *video_desc = source_->video_desc();
     if (video_desc) {
         SrsRtcTrackDescription *video_track_desc = video_desc->copy();
-        video_track_desc->id_ = srs_int2str(track_id);
+        video_track_desc->id_ = srs_strconv_format_int(track_id);
         tracks_.insert(std::make_pair(video_track_desc->ssrc_, video_track_desc));
 
         SrsMediaDesc media_video("video");
         media_video.port_ = 0;           // Port 0 indicates no UDP transport available
         media_video.protos_ = "RTP/AVP"; // MUST be RTP/AVP
-        media_video.control_ = req->uri + "/trackID=" + srs_int2str(track_id);
+        media_video.control_ = req->uri + "/trackID=" + srs_strconv_format_int(track_id);
         media_video.recvonly_ = true;
         media_video.rtcp_mux_ = true;
 
@@ -886,7 +886,7 @@ srs_error_t SrsRtspConnection::http_hooks_on_play(ISrsRequest *req)
 srs_error_t SrsRtspConnection::get_ssrc_by_stream_id(uint32_t stream_id, uint32_t *ssrc)
 {
     for (std::map<uint32_t, SrsRtcTrackDescription *>::iterator it = tracks_.begin(); it != tracks_.end(); ++it) {
-        if (it->second->id_ == srs_int2str(stream_id)) {
+        if (it->second->id_ == srs_strconv_format_int(stream_id)) {
             *ssrc = it->second->ssrc_;
             return srs_success;
         }

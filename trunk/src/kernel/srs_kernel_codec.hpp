@@ -1429,4 +1429,9 @@ public:
 extern srs_error_t srs_avc_nalu_read_uev(SrsBitBuffer *stream, int32_t &v);
 extern srs_error_t srs_avc_nalu_read_bit(SrsBitBuffer *stream, int8_t &v);
 
+// Whether stream starts with the avc NALU in "AnnexB" from ISO_IEC_14496-10-AVC-2003.pdf, page 211.
+// The start code must be "N[00] 00 00 01" where N>=0
+// @param pnb_start_code output the size of start code, must >=3. NULL to ignore.
+extern bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code = NULL);
+
 #endif

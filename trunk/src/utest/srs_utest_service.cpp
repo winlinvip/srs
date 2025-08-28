@@ -1186,18 +1186,18 @@ VOID TEST(TCPServerTest, TCPClientServer)
 
 VOID TEST(TCPServerTest, CoverUtility)
 {
-    EXPECT_TRUE(srs_string_is_http("http://"));
-    EXPECT_TRUE(srs_string_is_http("https://"));
-    EXPECT_TRUE(srs_string_is_http("http://localhost"));
-    EXPECT_TRUE(srs_string_is_http("https://localhost"));
-    EXPECT_FALSE(srs_string_is_http("ftp://"));
-    EXPECT_FALSE(srs_string_is_http("ftps://"));
-    EXPECT_FALSE(srs_string_is_http("http:"));
-    EXPECT_FALSE(srs_string_is_http("https:"));
-    EXPECT_TRUE(srs_string_is_rtmp("rtmp://"));
-    EXPECT_TRUE(srs_string_is_rtmp("rtmp://localhost"));
-    EXPECT_FALSE(srs_string_is_rtmp("http://"));
-    EXPECT_FALSE(srs_string_is_rtmp("rtmp:"));
+    EXPECT_TRUE(srs_net_url_is_http("http://"));
+    EXPECT_TRUE(srs_net_url_is_http("https://"));
+    EXPECT_TRUE(srs_net_url_is_http("http://localhost"));
+    EXPECT_TRUE(srs_net_url_is_http("https://localhost"));
+    EXPECT_FALSE(srs_net_url_is_http("ftp://"));
+    EXPECT_FALSE(srs_net_url_is_http("ftps://"));
+    EXPECT_FALSE(srs_net_url_is_http("http:"));
+    EXPECT_FALSE(srs_net_url_is_http("https:"));
+    EXPECT_TRUE(srs_net_url_is_rtmp("rtmp://"));
+    EXPECT_TRUE(srs_net_url_is_rtmp("rtmp://localhost"));
+    EXPECT_FALSE(srs_net_url_is_rtmp("http://"));
+    EXPECT_FALSE(srs_net_url_is_rtmp("rtmp:"));
 
     // ipv4 loopback
     if (true) {

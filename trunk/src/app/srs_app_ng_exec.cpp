@@ -146,8 +146,8 @@ srs_error_t SrsNgExec::parse_exec_publish(ISrsRequest *req)
         for (int i = 0; i < (int)ep->args.size(); i++) {
             std::string epa = ep->args.at(i);
 
-            if (srs_string_contains(epa, ">")) {
-                vector<string> epas = srs_string_split(epa, ">");
+            if (srs_strings_contains(epa, ">")) {
+                vector<string> epas = srs_strings_split(epa, ">");
                 for (int j = 0; j < (int)epas.size(); j++) {
                     argv.push_back(parse(req, epas.at(j)));
                     if (j == 0) {
@@ -197,20 +197,20 @@ string SrsNgExec::parse(ISrsRequest *req, string tmpl)
 {
     string output = tmpl;
 
-    output = srs_string_replace(output, "[vhost]", req->vhost);
-    output = srs_string_replace(output, "[port]", srs_int2str(req->port));
-    output = srs_string_replace(output, "[app]", req->app);
-    output = srs_string_replace(output, "[stream]", req->stream);
+    output = srs_strings_replace(output, "[vhost]", req->vhost);
+    output = srs_strings_replace(output, "[port]", srs_strconv_format_int(req->port));
+    output = srs_strings_replace(output, "[app]", req->app);
+    output = srs_strings_replace(output, "[stream]", req->stream);
 
-    output = srs_string_replace(output, "[tcUrl]", req->tcUrl);
-    output = srs_string_replace(output, "[swfUrl]", req->swfUrl);
-    output = srs_string_replace(output, "[pageUrl]", req->pageUrl);
+    output = srs_strings_replace(output, "[tcUrl]", req->tcUrl);
+    output = srs_strings_replace(output, "[swfUrl]", req->swfUrl);
+    output = srs_strings_replace(output, "[pageUrl]", req->pageUrl);
 
     output = srs_path_build_timestamp(output);
 
     if (output.find("[url]") != string::npos) {
-        string url = srs_generate_rtmp_url(req->host, req->port, req->host, req->vhost, req->app, req->stream, req->param);
-        output = srs_string_replace(output, "[url]", url);
+        string url = srs_net_url_encode_rtmp_url(req->host, req->port, req->host, req->vhost, req->app, req->stream, req->param);
+        output = srs_strings_replace(output, "[url]", url);
     }
 
     return output;

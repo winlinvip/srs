@@ -349,8 +349,8 @@ srs_error_t SrsHttpHooks::on_hls(SrsContextId c, string url, ISrsRequest *req, s
     std::string cwd = _srs_config->cwd();
 
     // the ts_url is under the same dir of m3u8_url.
-    string prefix = srs_path_dirname(m3u8_url);
-    if (!prefix.empty() && !srs_string_is_http(ts_url)) {
+    string prefix = srs_path_filepath_dir(m3u8_url);
+    if (!prefix.empty() && !srs_net_url_is_http(ts_url)) {
         ts_url = prefix + "/" + ts_url;
     }
 
@@ -403,20 +403,20 @@ srs_error_t SrsHttpHooks::on_hls_notify(SrsContextId c, std::string url, ISrsReq
     SrsContextId cid = c;
     std::string cwd = _srs_config->cwd();
 
-    if (srs_string_is_http(ts_url)) {
+    if (srs_net_url_is_http(ts_url)) {
         url = ts_url;
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
 
-    url = srs_string_replace(url, "[server_id]", stat->server_id().c_str());
-    url = srs_string_replace(url, "[service_id]", stat->service_id().c_str());
-    url = srs_string_replace(url, "[app]", req->app);
-    url = srs_string_replace(url, "[stream]", req->stream);
-    url = srs_string_replace(url, "[ts_url]", ts_url);
-    url = srs_string_replace(url, "[param]", req->param);
+    url = srs_strings_replace(url, "[server_id]", stat->server_id().c_str());
+    url = srs_strings_replace(url, "[service_id]", stat->service_id().c_str());
+    url = srs_strings_replace(url, "[app]", req->app);
+    url = srs_strings_replace(url, "[stream]", req->stream);
+    url = srs_strings_replace(url, "[ts_url]", ts_url);
+    url = srs_strings_replace(url, "[param]", req->param);
 
-    int64_t starttime = srsu2ms(srs_update_system_time());
+    int64_t starttime = srsu2ms(srs_time_now_realtime());
 
     SrsHttpUri uri;
     if ((err = uri.initialize(url)) != srs_success) {
@@ -457,7 +457,7 @@ srs_error_t SrsHttpHooks::on_hls_notify(SrsContextId c, std::string url, ISrsReq
         nb_read += (int)nb_bytes;
     }
 
-    int spenttime = (int)(srsu2ms(srs_update_system_time()) - starttime);
+    int spenttime = (int)(srsu2ms(srs_time_now_realtime()) - starttime);
     srs_trace("http hook on_hls_notify success. client_id=%s, url=%s, code=%d, spent=%dms, read=%dB, err=%s",
               cid.c_str(), url.c_str(), msg->status_code(), spenttime, nb_read, srs_error_desc(err).c_str());
 

@@ -90,7 +90,7 @@ const char *_srs_version = "XCORE-" RTMP_SIG_SRS_SERVER;
     {                                                                         \
         SrsConfDirective *dir = env_cache_->get(key);                         \
         if (!dir && !srs_getenv(key).empty()) {                               \
-            std::vector<string> vec = srs_string_split(srs_getenv(key), " "); \
+            std::vector<string> vec = srs_strings_split(srs_getenv(key), " "); \
             dir = new SrsConfDirective();                                     \
             dir->name = key;                                                  \
             for (size_t i = 0; i < vec.size(); ++i) {                         \
@@ -145,7 +145,7 @@ srs_error_t srs_detect_docker()
     }
 
     string s(buf, nn);
-    if (srs_string_contains(s, "/docker")) {
+    if (srs_strings_contains(s, "/docker")) {
         _srs_in_docker = true;
     }
 
@@ -2479,10 +2479,10 @@ srs_error_t SrsConfig::check_normal_config()
         for (int i = 0; i < (int)listens.size(); i++) {
             int port;
             string ip;
-            srs_parse_endpoint(listens[i], ip, port);
+            srs_net_split_for_listener(listens[i], ip, port);
 
             // check ip
-            if (!srs_check_ip_addr_valid(ip)) {
+            if (!srs_net_is_valid_ip(ip)) {
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen.ip=%s is invalid", ip.c_str());
             }
 
@@ -2786,7 +2786,7 @@ srs_error_t SrsConfig::check_normal_config()
                     }
 
                     // check mount suffix '.ts'
-                    if (http_remux_enabled && m == "mount" && srs_string_ends_with(conf->at(j)->arg0(), ".ts")) {
+                    if (http_remux_enabled && m == "mount" && srs_strings_ends_with(conf->at(j)->arg0(), ".ts")) {
                         http_remux_ts = true;
                     }
                 }
@@ -2963,8 +2963,8 @@ SrsConfDirective *SrsConfig::get_root()
 
 string srs_server_id_path(string pid_file)
 {
-    string path = srs_string_replace(pid_file, ".pid", ".id");
-    if (!srs_string_ends_with(path, ".id")) {
+    string path = srs_strings_replace(pid_file, ".pid", ".id");
+    if (!srs_strings_ends_with(path, ".id")) {
         path += ".id";
     }
     return path;
@@ -3064,7 +3064,7 @@ vector<string> SrsConfig::get_listens()
     std::vector<string> ports;
 
     if (!srs_getenv("srs.listen").empty()) { // SRS_LISTEN
-        return srs_string_split(srs_getenv("srs.listen"), " ");
+        return srs_strings_split(srs_getenv("srs.listen"), " ");
     }
 
     SrsConfDirective *rtmp_conf = root->get("rtmp");
@@ -4046,7 +4046,7 @@ std::string SrsConfig::get_stream_caster_sip_candidate(SrsConfDirective *conf)
     }
 
     // If configed as ENV, but no ENV set, use default value.
-    if (srs_string_starts_with(conf->arg0(), "$")) {
+    if (srs_strings_starts_with(conf->arg0(), "$")) {
         return DEFAULT;
     }
 
@@ -4191,7 +4191,7 @@ std::string SrsConfig::get_rtc_server_candidates()
     // Note that the value content might be an environment variable.
     std::string eval = srs_getenv("srs.rtc_server.candidate"); // SRS_RTC_SERVER_CANDIDATE
     if (!eval.empty()) {
-        if (!srs_string_starts_with(eval, "$"))
+        if (!srs_strings_starts_with(eval, "$"))
             return eval;
         SRS_OVERWRITE_BY_ENV_STRING(eval);
     }
@@ -4214,7 +4214,7 @@ std::string SrsConfig::get_rtc_server_candidates()
     }
 
     // If configed as ENV, but no ENV set, use default value.
-    if (srs_string_starts_with(conf->arg0(), "$")) {
+    if (srs_strings_starts_with(conf->arg0(), "$")) {
         return DEFAULT;
     }
 
@@ -6168,7 +6168,7 @@ bool SrsConfig::get_engine_enabled(SrsConfDirective *conf)
 
 string srs_prefix_underscores_ifno(string name)
 {
-    if (srs_string_starts_with(name, "-")) {
+    if (srs_strings_starts_with(name, "-")) {
         return name;
     } else {
         return "-" + name;
@@ -9043,7 +9043,7 @@ bool SrsConfig::get_rtmps_enabled()
 vector<string> SrsConfig::get_rtmps_listen()
 {
     if (!srs_getenv("srs.rtmps.listen").empty()) { // SRS_RTMPS_LISTEN
-        return srs_string_split(srs_getenv("srs.rtmps.listen"), " ");
+        return srs_strings_split(srs_getenv("srs.rtmps.listen"), " ");
     }
 
     std::vector<string> ports;

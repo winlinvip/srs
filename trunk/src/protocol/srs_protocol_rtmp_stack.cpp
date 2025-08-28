@@ -591,7 +591,7 @@ srs_error_t SrsProtocol::do_decode_message(SrsMessageHeader &header, SrsBuffer *
     if (header.is_amf0_command() || header.is_amf3_command() || header.is_amf0_data() || header.is_amf3_data()) {
         // Ignore FFmpeg timecode, see https://github.com/ossrs/srs/issues/3803
         if (stream->left() == 4 && (uint8_t)*stream->head() == 0x00) {
-            srs_warn("Ignore FFmpeg timecode, data=[%s]", srs_string_dumps_hex(stream->head(), 4).c_str());
+            srs_warn("Ignore FFmpeg timecode, data=[%s]", srs_strings_dumps_hex(stream->head(), 4).c_str());
             return err;
         }
 
@@ -1543,30 +1543,30 @@ void SrsRequest::update_auth(ISrsRequest *req)
 
 string SrsRequest::get_stream_url()
 {
-    return srs_generate_stream_url(vhost, app, stream);
+    return srs_net_url_encode_sid(vhost, app, stream);
 }
 
 void SrsRequest::strip()
 {
     // remove the unsupported chars in names.
-    host = srs_string_remove(host, "/ \n\r\t");
-    vhost = srs_string_remove(vhost, "/ \n\r\t");
-    app = srs_string_remove(app, " \n\r\t");
-    stream = srs_string_remove(stream, " \n\r\t");
+    host = srs_strings_remove(host, "/ \n\r\t");
+    vhost = srs_strings_remove(vhost, "/ \n\r\t");
+    app = srs_strings_remove(app, " \n\r\t");
+    stream = srs_strings_remove(stream, " \n\r\t");
 
     // remove end slash of app/stream
-    app = srs_string_trim_end(app, "/");
-    stream = srs_string_trim_end(stream, "/");
+    app = srs_strings_trim_end(app, "/");
+    stream = srs_strings_trim_end(stream, "/");
 
     // remove start slash of app/stream
-    app = srs_string_trim_start(app, "/");
-    stream = srs_string_trim_start(stream, "/");
+    app = srs_strings_trim_start(app, "/");
+    stream = srs_strings_trim_start(stream, "/");
 }
 
 ISrsRequest *SrsRequest::as_http()
 {
     schema = "http";
-    tcUrl = srs_generate_tc_url(schema, host, vhost, app, port);
+    tcUrl = srs_net_url_encode_tcurl(schema, host, vhost, app, port);
     return this;
 }
 
@@ -1713,7 +1713,7 @@ srs_error_t SrsHandshakeBytes::create_c0c1()
     }
 
     c0c1 = new char[1537];
-    srs_random_generate(c0c1, 1537);
+    srs_rand_gen_bytes(c0c1, 1537);
 
     // plain text required.
     SrsBuffer stream(c0c1, 9);
@@ -1734,7 +1734,7 @@ srs_error_t SrsHandshakeBytes::create_s0s1s2(const char *c1)
     }
 
     s0s1s2 = new char[3073];
-    srs_random_generate(s0s1s2, 3073);
+    srs_rand_gen_bytes(s0s1s2, 3073);
 
     // plain text required.
     SrsBuffer stream(s0s1s2, 9);
@@ -1764,7 +1764,7 @@ srs_error_t SrsHandshakeBytes::create_c2()
     }
 
     c2 = new char[1536];
-    srs_random_generate(c2, 1536);
+    srs_rand_gen_bytes(c2, 1536);
 
     // time
     SrsBuffer stream(c2, 8);
@@ -1977,7 +1977,7 @@ srs_error_t SrsRtmpClient::connect_app(string app, string tcUrl, ISrsRequest *r,
             si->pid = (int)prop->to_number();
         }
         if ((prop = arr->ensure_property_string("srs_version")) != NULL) {
-            vector<string> versions = srs_string_split(prop->to_str(), ".");
+            vector<string> versions = srs_strings_split(prop->to_str(), ".");
             if (versions.size() > 0) {
                 si->major = ::atoi(versions.at(0).c_str());
                 if (versions.size() > 1) {
@@ -2305,7 +2305,7 @@ srs_error_t SrsRtmpServer::connect_app(ISrsRequest *req)
         req->args = pkt->args->copy()->to_object();
     }
 
-    srs_discovery_tc_url(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
+    srs_net_url_parse_tcurl(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
     req->strip();
 
     return err;
@@ -2394,7 +2394,7 @@ srs_error_t SrsRtmpServer::redirect(ISrsRequest *r, string url, bool &accepted)
 
         // The redirect is tcUrl while redirect2 is RTMP URL.
         // https://github.com/ossrs/srs/issues/1575#issuecomment-574999798
-        string tcUrl = srs_path_dirname(url);
+        string tcUrl = srs_path_filepath_dir(url);
         ex->set("redirect", SrsAmf0Any::str(tcUrl.c_str()));
         ex->set("redirect2", SrsAmf0Any::str(url.c_str()));
 

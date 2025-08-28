@@ -354,7 +354,7 @@ srs_error_t SrsHttpMessage::set_url(string url, bool allow_jsonp)
     // parse uri from schema/server:port/path?query
     std::string uri = _url;
 
-    if (!srs_string_contains(uri, "://")) {
+    if (!srs_strings_contains(uri, "://")) {
         // use server public ip when host not specified.
         // to make telnet happy.
         std::string host = _header.get("Host");
@@ -365,7 +365,7 @@ srs_error_t SrsHttpMessage::set_url(string url, bool allow_jsonp)
         }
 
         // The url must starts with slash if no schema. For example, SIP request line starts with "sip".
-        if (!host.empty() && !srs_string_starts_with(_url, "/")) {
+        if (!host.empty() && !srs_strings_starts_with(_url, "/")) {
             host += "/";
         }
 
@@ -379,10 +379,10 @@ srs_error_t SrsHttpMessage::set_url(string url, bool allow_jsonp)
     }
 
     // parse ext.
-    _ext = srs_path_filext(_uri->get_path());
+    _ext = srs_path_filepath_ext(_uri->get_path());
 
     // parse query string.
-    srs_parse_query_string(_uri->get_query(), _query);
+    srs_net_url_parse_query(_uri->get_query(), _query);
 
     // parse jsonp request message.
     if (allow_jsonp) {
@@ -564,7 +564,7 @@ std::string SrsHttpMessage::parse_rest_id(string pattern)
 
 srs_error_t SrsHttpMessage::body_read_all(string &body)
 {
-    return srs_ioutil_read_all(_body, body);
+    return srs_io_readall(_body, body);
 }
 
 ISrsHttpResponseReader *SrsHttpMessage::body_reader()
@@ -600,13 +600,13 @@ ISrsRequest *SrsHttpMessage::to_request(string vhost)
     // http path, for instance, /live/livestream.flv, parse to
     //      app: /live
     //      stream: livestream.flv
-    srs_parse_rtmp_url(_uri->get_path(), req->app, req->stream);
+    srs_net_url_parse_rtmp_url(_uri->get_path(), req->app, req->stream);
 
     // trim the start slash, for instance, /live to live
-    req->app = srs_string_trim_start(req->app, "/");
+    req->app = srs_strings_trim_start(req->app, "/");
 
     // remove the extension, for instance, livestream.flv to livestream
-    req->stream = srs_path_filename(req->stream);
+    req->stream = srs_path_filepath_filename(req->stream);
 
     // generate others.
     req->tcUrl = "rtmp://" + vhost + "/" + req->app;
@@ -618,7 +618,7 @@ ISrsRequest *SrsHttpMessage::to_request(string vhost)
         req->param = "?" + query;
     }
 
-    srs_discovery_tc_url(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
+    srs_net_url_parse_tcurl(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
     req->strip();
 
     // reset the host to http request host.

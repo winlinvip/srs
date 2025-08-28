@@ -81,13 +81,13 @@ srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
         // select the origin.
         std::string server = lb->select(conf->args);
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
-        srs_parse_hostport(server, server, port);
+        srs_net_split_hostport(server, server, port);
 
         // override the origin info by redirect.
         if (!redirect.empty()) {
             int _port;
             string _schema, _vhost, _app, _stream, _param, _host;
-            srs_discovery_tc_url(redirect, _schema, _host, _vhost, _app, _stream, _port, _param);
+            srs_net_url_parse_tcurl(redirect, _schema, _host, _vhost, _app, _stream, _port, _param);
 
             server = _host;
             port = _port;
@@ -99,9 +99,9 @@ srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
 
         // support vhost tranform for edge,
         std::string vhost = _srs_config->get_vhost_edge_transform_vhost(req->vhost);
-        vhost = srs_string_replace(vhost, "[vhost]", req->vhost);
+        vhost = srs_strings_replace(vhost, "[vhost]", req->vhost);
 
-        url = srs_generate_rtmp_url(server, port, req->host, vhost, req->app, req->stream, req->param);
+        url = srs_net_url_encode_rtmp_url(server, port, req->host, vhost, req->app, req->stream, req->param);
     }
 
     srs_freep(sdk);
@@ -211,7 +211,7 @@ srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, 
         if (schema_ == "https") {
             port = SRS_DEFAULT_HTTPS_PORT;
         }
-        srs_parse_hostport(server, server, port);
+        srs_net_split_hostport(server, server, port);
 
         // Remember the current selected server.
         selected_ip = server;
@@ -227,14 +227,14 @@ srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, 
     sdk_ = new SrsHttpClient();
 
     string path = "/" + req->app + "/" + req->stream;
-    if (!srs_string_ends_with(req->stream, ".flv")) {
+    if (!srs_strings_ends_with(req->stream, ".flv")) {
         path += ".flv";
     }
     if (!req->param.empty()) {
         path += req->param;
     }
 
-    string url = schema_ + "://" + selected_ip + ":" + srs_int2str(selected_port);
+    string url = schema_ + "://" + selected_ip + ":" + srs_strconv_format_int(selected_port);
     url += path;
 
     srs_utime_t cto = SRS_EDGE_INGESTER_TIMEOUT;
@@ -266,11 +266,11 @@ srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, 
         string stream_name;
         if (true) {
             string tcUrl;
-            srs_parse_rtmp_url(location, tcUrl, stream_name);
+            srs_net_url_parse_rtmp_url(location, tcUrl, stream_name);
 
             int port;
             string schema, host, vhost, param;
-            srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream_name, port, param);
+            srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream_name, port, param);
 
             r->schema = schema;
             r->host = host;
@@ -788,13 +788,13 @@ srs_error_t SrsEdgeForwarder::start()
         // select the origin.
         std::string server = lb->select(conf->args);
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
-        srs_parse_hostport(server, server, port);
+        srs_net_split_hostport(server, server, port);
 
         // support vhost tranform for edge,
         std::string vhost = _srs_config->get_vhost_edge_transform_vhost(req->vhost);
-        vhost = srs_string_replace(vhost, "[vhost]", req->vhost);
+        vhost = srs_strings_replace(vhost, "[vhost]", req->vhost);
 
-        url = srs_generate_rtmp_url(server, port, req->host, vhost, req->app, req->stream, req->param);
+        url = srs_net_url_encode_rtmp_url(server, port, req->host, vhost, req->app, req->stream, req->param);
     }
 
     // We must stop the coroutine before disposing the sdk.

@@ -101,7 +101,7 @@ srs_error_t MockSrsConfig::build_buffer(std::string src, srs_internal::SrsConfig
 int ISrsSetEnvConfig::srs_setenv(const std::string &key, const std::string &value, bool overwrite)
 {
     string ekey = key;
-    if (srs_string_starts_with(key, "$")) {
+    if (srs_strings_starts_with(key, "$")) {
         ekey = key.substr(1);
     }
 
@@ -124,7 +124,7 @@ int ISrsSetEnvConfig::srs_setenv(const std::string &key, const std::string &valu
 int ISrsSetEnvConfig::srs_unsetenv(const std::string &key)
 {
     string ekey = key;
-    if (srs_string_starts_with(key, "$")) {
+    if (srs_strings_starts_with(key, "$")) {
         ekey = key.substr(1);
     }
 
@@ -2311,16 +2311,16 @@ VOID TEST(ConfigUnitTest, CheckDefaultValuesGlobal)
         // Schedule thread once, to update last_clock in state-thread.
         srs_usleep(1);
 
-        srs_utime_t t0 = srs_update_system_time();
+        srs_utime_t t0 = srs_time_now_realtime();
         srs_usleep(10 * SRS_UTIME_MILLISECONDS);
-        srs_utime_t t1 = srs_update_system_time();
+        srs_utime_t t1 = srs_time_now_realtime();
 
         EXPECT_TRUE(t1 - t0 >= 10 * SRS_UTIME_MILLISECONDS);
     }
 
     if (true) {
-        srs_utime_t t0 = srs_get_system_time();
-        srs_utime_t t1 = srs_update_system_time();
+        srs_utime_t t0 = srs_time_now_cached();
+        srs_utime_t t1 = srs_time_now_realtime();
 
         EXPECT_TRUE(t0 > 0);
         EXPECT_TRUE(t1 >= t0);

@@ -69,7 +69,7 @@ srs_error_t SrsHlsSegment::rename()
     if (true) {
         std::stringstream ss;
         ss << srsu2msi(duration());
-        uri = srs_string_replace(uri, "[duration]", ss.str());
+        uri = srs_strings_replace(uri, "[duration]", ss.str());
     }
 
     return SrsFragment::rename();
@@ -506,8 +506,8 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
     std::string path = hls_path + "/" + init_file;
 
     // Create directory for the init file
-    std::string init_dir = srs_path_dirname(path);
-    if ((err = srs_create_dir_recursively(init_dir)) != srs_success) {
+    std::string init_dir = srs_path_filepath_dir(path);
+    if ((err = srs_os_mkdir_all(init_dir)) != srs_success) {
         return srs_error_wrap(err, "Create init mp4 dir failed, dir=%s", init_dir.c_str());
     }
 
@@ -542,19 +542,19 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
     // the ts url, relative or absolute url.
     // TODO: FIXME: Use url and path manager.
     std::string mp4_path = init_mp4->fullpath();
-    if (srs_string_starts_with(mp4_path, m3u8_dir_)) {
+    if (srs_strings_starts_with(mp4_path, m3u8_dir_)) {
         mp4_path = mp4_path.substr(m3u8_dir_.length());
     }
-    while (srs_string_starts_with(mp4_path, "/")) {
+    while (srs_strings_starts_with(mp4_path, "/")) {
         mp4_path = mp4_path.substr(1);
     }
 
     string init_mp4_uri = hls_entry_prefix_;
-    if (!hls_entry_prefix_.empty() && !srs_string_ends_with(hls_entry_prefix_, "/")) {
+    if (!hls_entry_prefix_.empty() && !srs_strings_ends_with(hls_entry_prefix_, "/")) {
         init_mp4_uri += "/";
 
         // add the http dir to uri.
-        string http_dir = srs_path_dirname(m3u8_url_);
+        string http_dir = srs_path_filepath_dir(m3u8_url_);
         if (!http_dir.empty()) {
             init_mp4_uri += http_dir + "/";
         }
@@ -563,7 +563,7 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
 
     // Convert to relative URI for m3u8 playlist.
     // TODO: Need to resolve the relative URI from m3u8 and init file.
-    init_mp4_uri_ = srs_path_basename(init_file);
+    init_mp4_uri_ = srs_path_filepath_base(init_file);
 
     // use async to call the http hooks, for it will cause thread switch.
     if ((err = async_->execute(new SrsDvrAsyncCallOnHls(_srs_context->get_id(), req_, init_mp4->fullpath(),
@@ -684,16 +684,16 @@ srs_error_t SrsHlsFmp4Muxer::update_config(ISrsRequest *r)
     max_td_ = hls_fragment_ * hls_td_ratio;
 
     // create m3u8 dir once.
-    m3u8_dir_ = srs_path_dirname(m3u8_);
-    if ((err = srs_create_dir_recursively(m3u8_dir_)) != srs_success) {
+    m3u8_dir_ = srs_path_filepath_dir(m3u8_);
+    if ((err = srs_os_mkdir_all(m3u8_dir_)) != srs_success) {
         return srs_error_wrap(err, "create dir");
     }
 
     if (hls_keys_ && (hls_path_ != hls_key_file_path_)) {
         string key_file = srs_path_build_stream(hls_key_file_, vhost, app, stream);
         string key_url = hls_key_file_path_ + "/" + key_file;
-        string key_dir = srs_path_dirname(key_url);
-        if ((err = srs_create_dir_recursively(key_dir)) != srs_success) {
+        string key_dir = srs_path_filepath_dir(key_url);
+        if ((err = srs_os_mkdir_all(key_dir)) != srs_success) {
             return srs_error_wrap(err, "create dir");
         }
     }
@@ -725,7 +725,7 @@ srs_error_t SrsHlsFmp4Muxer::segment_open(srs_utime_t basetime)
     m4s_file = srs_path_build_stream(m4s_file, req_->vhost, req_->app, req_->stream);
     if (hls_ts_floor_) {
         // accept the floor ts for the first piece.
-        int64_t current_floor_ts = srs_update_system_time() / hls_fragment_;
+        int64_t current_floor_ts = srs_time_now_realtime() / hls_fragment_;
         if (!accept_floor_ts_) {
             accept_floor_ts_ = current_floor_ts - 1;
         } else {
@@ -751,7 +751,7 @@ srs_error_t SrsHlsFmp4Muxer::segment_open(srs_utime_t basetime)
         // we always ensure the piece is increase one by one.
         std::stringstream ts_floor;
         ts_floor << accept_floor_ts_;
-        m4s_file = srs_string_replace(m4s_file, "[timestamp]", ts_floor.str());
+        m4s_file = srs_strings_replace(m4s_file, "[timestamp]", ts_floor.str());
 
         // TODO: FIMXE: we must use the accept ts floor time to generate the hour variable.
         m4s_file = srs_path_build_timestamp(m4s_file);
@@ -761,7 +761,7 @@ srs_error_t SrsHlsFmp4Muxer::segment_open(srs_utime_t basetime)
     if (true) {
         std::stringstream ss;
         ss << current_->sequence_no;
-        m4s_file = srs_string_replace(m4s_file, "[seq]", ss.str());
+        m4s_file = srs_strings_replace(m4s_file, "[seq]", ss.str());
     }
 
     std::string m4s_path = hls_path_ + "/" + m4s_file;
@@ -770,19 +770,19 @@ srs_error_t SrsHlsFmp4Muxer::segment_open(srs_utime_t basetime)
     // the ts url, relative or absolute url.
     // TODO: FIXME: Use url and path manager.
     std::string m4s_url = current_->fullpath();
-    if (srs_string_starts_with(m4s_url, m3u8_dir_)) {
+    if (srs_strings_starts_with(m4s_url, m3u8_dir_)) {
         m4s_url = m4s_url.substr(m3u8_dir_.length());
     }
-    while (srs_string_starts_with(m4s_url, "/")) {
+    while (srs_strings_starts_with(m4s_url, "/")) {
         m4s_url = m4s_url.substr(1);
     }
 
     current_->uri += hls_entry_prefix_;
-    if (!hls_entry_prefix_.empty() && !srs_string_ends_with(hls_entry_prefix_, "/")) {
+    if (!hls_entry_prefix_.empty() && !srs_strings_ends_with(hls_entry_prefix_, "/")) {
         current_->uri += "/";
 
         // add the http dir to uri.
-        string http_dir = srs_path_dirname(m3u8_url_);
+        string http_dir = srs_path_filepath_dir(m3u8_url_);
         if (!http_dir.empty()) {
             current_->uri += http_dir + "/";
         }
@@ -904,7 +904,7 @@ srs_error_t SrsHlsFmp4Muxer::write_hls_key()
         }
 
         string key_file = srs_path_build_stream(hls_key_file_, req_->vhost, req_->app, req_->stream);
-        key_file = srs_string_replace(key_file, "[seq]", srs_int2str(current_->sequence_no));
+        key_file = srs_strings_replace(key_file, "[seq]", srs_strconv_format_int(current_->sequence_no));
         string key_url = hls_key_file_path_ + "/" + key_file;
 
         SrsFileWriter fw;
@@ -1013,11 +1013,11 @@ srs_error_t SrsHlsFmp4Muxer::_refresh_m3u8(std::string m3u8_file)
 #if 1
         if (hls_keys_ && ((segment->sequence_no % hls_fragments_per_key_) == 0)) {
             char hexiv[33];
-            srs_data_to_hex(hexiv, segment->iv, 16);
+            srs_hex_encode_to_string(hexiv, segment->iv, 16);
             hexiv[32] = '\0';
 
             string key_file = srs_path_build_stream(hls_key_file_, req_->vhost, req_->app, req_->stream);
-            key_file = srs_string_replace(key_file, "[seq]", srs_int2str(segment->sequence_no));
+            key_file = srs_strings_replace(key_file, "[seq]", srs_strconv_format_int(segment->sequence_no));
 
             string key_path = key_file;
             // if key_url is not set,only use the file name
@@ -1040,10 +1040,10 @@ srs_error_t SrsHlsFmp4Muxer::_refresh_m3u8(std::string m3u8_file)
         if (true) {
             std::stringstream stemp;
             stemp << srsu2msi(segment->duration());
-            seg_uri = srs_string_replace(seg_uri, "[duration]", stemp.str());
+            seg_uri = srs_strings_replace(seg_uri, "[duration]", stemp.str());
         }
         // ss << segment->uri << SRS_CONSTS_LF;
-        ss << srs_path_basename(seg_uri) << SRS_CONSTS_LF;
+        ss << srs_path_filepath_base(seg_uri) << SRS_CONSTS_LF;
     }
 
     // write m3u8 to writer.
@@ -1243,16 +1243,16 @@ srs_error_t SrsHlsMuxer::update_config(ISrsRequest *r, string entry_prefix,
     max_td = fragment * _srs_config->get_hls_td_ratio(r->vhost);
 
     // create m3u8 dir once.
-    m3u8_dir = srs_path_dirname(m3u8);
-    if ((err = srs_create_dir_recursively(m3u8_dir)) != srs_success) {
+    m3u8_dir = srs_path_filepath_dir(m3u8);
+    if ((err = srs_os_mkdir_all(m3u8_dir)) != srs_success) {
         return srs_error_wrap(err, "create dir");
     }
 
     if (hls_keys && (hls_path != hls_key_file_path)) {
         string key_file = srs_path_build_stream(hls_key_file, req->vhost, req->app, req->stream);
         string key_url = hls_key_file_path + "/" + key_file;
-        string key_dir = srs_path_dirname(key_url);
-        if ((err = srs_create_dir_recursively(key_dir)) != srs_success) {
+        string key_dir = srs_path_filepath_dir(key_url);
+        if ((err = srs_os_mkdir_all(key_dir)) != srs_success) {
             return srs_error_wrap(err, "create dir");
         }
     }
@@ -1285,7 +1285,7 @@ srs_error_t SrsHlsMuxer::recover_hls()
     }
 
     std::string body;
-    if ((err = srs_ioutil_read_all(&fr, body)) != srs_success) {
+    if ((err = srs_io_readall(&fr, body)) != srs_success) {
         return srs_error_wrap(err, "read data");
     }
     if (body.empty()) {
@@ -1307,13 +1307,13 @@ srs_error_t SrsHlsMuxer::recover_hls()
             body = "";
         }
 
-        line = srs_string_replace(line, "\r", "");
-        line = srs_string_replace(line, " ", "");
+        line = srs_strings_replace(line, "\r", "");
+        line = srs_strings_replace(line, " ", "");
 
         // #EXT-X-VERSION:3
         // the version must be 3.0
-        if (srs_string_starts_with(line, "#EXT-X-VERSION:")) {
-            if (!srs_string_ends_with(line, ":3")) {
+        if (srs_strings_starts_with(line, "#EXT-X-VERSION:")) {
+            if (!srs_strings_ends_with(line, ":3")) {
                 srs_warn("m3u8 3.0 required, actual is %s", line.c_str());
             }
             continue;
@@ -1321,27 +1321,27 @@ srs_error_t SrsHlsMuxer::recover_hls()
 
         // #EXT-X-PLAYLIST-TYPE:VOD
         // the playlist type, vod or nothing.
-        if (srs_string_starts_with(line, "#EXT-X-PLAYLIST-TYPE:")) {
+        if (srs_strings_starts_with(line, "#EXT-X-PLAYLIST-TYPE:")) {
             ptl = line;
             continue;
         }
 
         // #EXT-X-MEDIA-SEQUENCE:4294967295
         // the media sequence no.
-        if (srs_string_starts_with(line, "#EXT-X-MEDIA-SEQUENCE:")) {
+        if (srs_strings_starts_with(line, "#EXT-X-MEDIA-SEQUENCE:")) {
             _sequence_no = ::atof(line.substr(string("#EXT-X-MEDIA-SEQUENCE:").length()).c_str());
         }
 
         // #EXT-X-DISCONTINUITY
         // the discontinuity tag.
-        if (srs_string_starts_with(line, "#EXT-X-DISCONTINUITY")) {
+        if (srs_strings_starts_with(line, "#EXT-X-DISCONTINUITY")) {
             discon = true;
         }
 
         // #EXTINF:11.401,
         // livestream-5.ts
         // parse each ts entry, expect current line is inf.
-        if (!srs_string_starts_with(line, "#EXTINF:")) {
+        if (!srs_strings_starts_with(line, "#EXTINF:")) {
             continue;
         }
 
@@ -1451,7 +1451,7 @@ srs_error_t SrsHlsMuxer::segment_open()
     ts_file = srs_path_build_stream(ts_file, req->vhost, req->app, req->stream);
     if (hls_ts_floor) {
         // accept the floor ts for the first piece.
-        int64_t current_floor_ts = srs_update_system_time() / hls_fragment;
+        int64_t current_floor_ts = srs_time_now_realtime() / hls_fragment;
         if (!accept_floor_ts) {
             accept_floor_ts = current_floor_ts - 1;
         } else {
@@ -1477,7 +1477,7 @@ srs_error_t SrsHlsMuxer::segment_open()
         // we always ensure the piece is increase one by one.
         std::stringstream ts_floor;
         ts_floor << accept_floor_ts;
-        ts_file = srs_string_replace(ts_file, "[timestamp]", ts_floor.str());
+        ts_file = srs_strings_replace(ts_file, "[timestamp]", ts_floor.str());
 
         // TODO: FIMXE: we must use the accept ts floor time to generate the hour variable.
         ts_file = srs_path_build_timestamp(ts_file);
@@ -1487,25 +1487,25 @@ srs_error_t SrsHlsMuxer::segment_open()
     if (true) {
         std::stringstream ss;
         ss << current->sequence_no;
-        ts_file = srs_string_replace(ts_file, "[seq]", ss.str());
+        ts_file = srs_strings_replace(ts_file, "[seq]", ss.str());
     }
     current->set_path(hls_path + "/" + ts_file);
 
     // the ts url, relative or absolute url.
     // TODO: FIXME: Use url and path manager.
     std::string ts_url = current->fullpath();
-    if (srs_string_starts_with(ts_url, m3u8_dir)) {
+    if (srs_strings_starts_with(ts_url, m3u8_dir)) {
         ts_url = ts_url.substr(m3u8_dir.length());
     }
-    while (srs_string_starts_with(ts_url, "/")) {
+    while (srs_strings_starts_with(ts_url, "/")) {
         ts_url = ts_url.substr(1);
     }
     current->uri += hls_entry_prefix;
-    if (!hls_entry_prefix.empty() && !srs_string_ends_with(hls_entry_prefix, "/")) {
+    if (!hls_entry_prefix.empty() && !srs_strings_ends_with(hls_entry_prefix, "/")) {
         current->uri += "/";
 
         // add the http dir to uri.
-        string http_dir = srs_path_dirname(m3u8_url);
+        string http_dir = srs_path_filepath_dir(m3u8_url);
         if (!http_dir.empty()) {
             current->uri += http_dir + "/";
         }
@@ -1742,7 +1742,7 @@ srs_error_t SrsHlsMuxer::write_hls_key()
         }
 
         string key_file = srs_path_build_stream(hls_key_file, req->vhost, req->app, req->stream);
-        key_file = srs_string_replace(key_file, "[seq]", srs_int2str(current->sequence_no));
+        key_file = srs_strings_replace(key_file, "[seq]", srs_strconv_format_int(current->sequence_no));
         string key_url = hls_key_file_path + "/" + key_file;
 
         SrsFileWriter fw;
@@ -1849,11 +1849,11 @@ srs_error_t SrsHlsMuxer::_refresh_m3u8(string m3u8_file)
 
         if (hls_keys && ((segment->sequence_no % hls_fragments_per_key) == 0)) {
             char hexiv[33];
-            srs_data_to_hex(hexiv, segment->iv, 16);
+            srs_hex_encode_to_string(hexiv, segment->iv, 16);
             hexiv[32] = '\0';
 
             string key_file = srs_path_build_stream(hls_key_file, req->vhost, req->app, req->stream);
-            key_file = srs_string_replace(key_file, "[seq]", srs_int2str(segment->sequence_no));
+            key_file = srs_strings_replace(key_file, "[seq]", srs_strconv_format_int(segment->sequence_no));
 
             string key_path = key_file;
             // if key_url is not set,only use the file name
@@ -1874,7 +1874,7 @@ srs_error_t SrsHlsMuxer::_refresh_m3u8(string m3u8_file)
         if (true) {
             std::stringstream stemp;
             stemp << srsu2msi(segment->duration());
-            seg_uri = srs_string_replace(seg_uri, "[duration]", stemp.str());
+            seg_uri = srs_strings_replace(seg_uri, "[duration]", stemp.str());
         }
         // ss << segment->uri << SRS_CONSTS_LF;
         ss << seg_uri << SRS_CONSTS_LF;
@@ -2496,7 +2496,7 @@ srs_error_t SrsHls::cycle()
     srs_error_t err = srs_success;
 
     if (last_update_time <= 0) {
-        last_update_time = srs_get_system_time();
+        last_update_time = srs_time_now_cached();
     }
 
     if (!req) {
@@ -2516,10 +2516,10 @@ srs_error_t SrsHls::cycle()
     if (hls_dispose <= 0) {
         return err;
     }
-    if (srs_get_system_time() - last_update_time <= hls_dispose) {
+    if (srs_time_now_cached() - last_update_time <= hls_dispose) {
         return err;
     }
-    last_update_time = srs_get_system_time();
+    last_update_time = srs_time_now_cached();
 
     if (!disposable) {
         return err;
@@ -2573,7 +2573,7 @@ srs_error_t SrsHls::on_publish()
     srs_error_t err = srs_success;
 
     // update the hls time, for hls_dispose.
-    last_update_time = srs_get_system_time();
+    last_update_time = srs_time_now_cached();
 
     // support multiple publish.
     if (enabled) {
@@ -2640,7 +2640,7 @@ srs_error_t SrsHls::on_audio(SrsSharedPtrMessage *shared_audio, SrsFormat *forma
     }
 
     // update the hls time, for hls_dispose.
-    last_update_time = srs_get_system_time();
+    last_update_time = srs_time_now_cached();
 
     SrsUniquePtr<SrsSharedPtrMessage> audio(shared_audio->copy());
 
@@ -2686,7 +2686,7 @@ srs_error_t SrsHls::on_video(SrsSharedPtrMessage *shared_video, SrsFormat *forma
     }
 
     // update the hls time, for hls_dispose.
-    last_update_time = srs_get_system_time();
+    last_update_time = srs_time_now_cached();
 
     SrsUniquePtr<SrsSharedPtrMessage> video(shared_video->copy());
 

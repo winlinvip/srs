@@ -206,10 +206,10 @@ srs_error_t SrsForwarder::do_cycle()
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
 
         // parse host:port from hostport.
-        srs_parse_hostport(ep_forward, server, port);
+        srs_net_split_hostport(ep_forward, server, port);
 
         // generate url
-        url = srs_generate_rtmp_url(server, port, req->host, req->vhost, req->app, req->stream, req->param);
+        url = srs_net_url_encode_rtmp_url(server, port, req->host, req->vhost, req->app, req->stream, req->param);
     }
 
     srs_freep(sdk);

@@ -985,7 +985,7 @@ bool SrsSrtSource::stream_is_dead()
     }
 
     // Delay cleanup source.
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
     if (now < stream_die_at_ + SRS_SRT_SOURCE_CLEANUP) {
         return false;
     }
@@ -1072,7 +1072,7 @@ void SrsSrtSource::on_consumer_destroy(SrsSrtConsumer *consumer)
 
     // Destroy and cleanup source when no publishers and consumers.
     if (can_publish_ && consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 }
 
@@ -1133,7 +1133,7 @@ void SrsSrtSource::on_unpublish()
 
     // Destroy and cleanup source when no publishers and consumers.
     if (consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 }
 

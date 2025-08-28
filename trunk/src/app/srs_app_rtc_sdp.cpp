@@ -57,9 +57,9 @@ srs_error_t srs_parse_h264_fmtp(const std::string &fmtp, H264SpecificParam &h264
 {
     srs_error_t err = srs_success;
 
-    std::vector<std::string> vec = srs_string_split(fmtp, ";");
+    std::vector<std::string> vec = srs_strings_split(fmtp, ";");
     for (size_t i = 0; i < vec.size(); ++i) {
-        std::vector<std::string> kv = srs_string_split(vec[i], "=");
+        std::vector<std::string> kv = srs_strings_split(vec[i], "=");
         if (kv.size() != 2)
             continue;
 
@@ -97,9 +97,9 @@ srs_error_t srs_parse_h265_fmtp(const std::string &fmtp, H265SpecificParam &h265
 {
     srs_error_t err = srs_success;
 
-    std::vector<std::string> vec = srs_string_split(fmtp, ";");
+    std::vector<std::string> vec = srs_strings_split(fmtp, ";");
     for (size_t i = 0; i < vec.size(); ++i) {
-        std::vector<std::string> kv = srs_string_split(vec[i], "=");
+        std::vector<std::string> kv = srs_strings_split(vec[i], "=");
         if (kv.size() != 2)
             continue;
 
@@ -245,7 +245,7 @@ srs_error_t SrsSSRCInfo::encode(std::ostringstream &os)
     // As GB28181 format:
     //      y=0100008888
     if (label_ == "gb28181") {
-        os << "y=" << (cname_.empty() ? srs_fmt("%u", ssrc_) : cname_) << kCRLF;
+        os << "y=" << (cname_.empty() ? srs_fmt_sprintf("%u", ssrc_) : cname_) << kCRLF;
         return err;
     }
 
@@ -836,7 +836,7 @@ srs_error_t SrsSdp::parse(const std::string &sdp_str)
         }
 
         // Strip the space of line, for pion WebRTC client.
-        line = srs_string_trim_end(line, " ");
+        line = srs_strings_trim_end(line, " ");
 
         if ((err = parse_line(line)) != srs_success) {
             return srs_error_wrap(err, "parse sdp line failed");
@@ -1175,12 +1175,12 @@ srs_error_t SrsSdp::parse_gb28181_ssrc(const std::string &content)
     // to standard format:
     //      a=ssrc:0100008888 cname:0100008888
     //      a=ssrc:0100008888 label:gb28181
-    string cname = srs_fmt("a=ssrc:%s cname:%s", content.c_str(), content.c_str());
+    string cname = srs_fmt_sprintf("a=ssrc:%s cname:%s", content.c_str(), content.c_str());
     if ((err = media_descs_.back().parse_line(cname)) != srs_success) {
         return srs_error_wrap(err, "parse gb %s cname", content.c_str());
     }
 
-    string label = srs_fmt("a=ssrc:%s label:gb28181", content.c_str());
+    string label = srs_fmt_sprintf("a=ssrc:%s label:gb28181", content.c_str());
     if ((err = media_descs_.back().parse_line(label)) != srs_success) {
         return srs_error_wrap(err, "parse gb %s label", content.c_str());
     }
@@ -1195,7 +1195,7 @@ srs_error_t SrsSdp::parse_attr_group(const std::string &value)
 
     // Overlook the OBS WHIP group LS, as it is utilized for synchronizing the playback of
     // the relevant media streams, see https://datatracker.ietf.org/doc/html/rfc5888#section-7
-    if (srs_string_starts_with(value, "LS")) {
+    if (srs_strings_starts_with(value, "LS")) {
         return err;
     }
 

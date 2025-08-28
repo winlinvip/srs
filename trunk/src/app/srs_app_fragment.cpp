@@ -92,9 +92,9 @@ srs_error_t SrsFragment::create_dir()
 {
     srs_error_t err = srs_success;
 
-    std::string segment_dir = srs_path_dirname(filepath);
+    std::string segment_dir = srs_path_filepath_dir(filepath);
 
-    if ((err = srs_create_dir_recursively(segment_dir)) != srs_success) {
+    if ((err = srs_os_mkdir_all(segment_dir)) != srs_success) {
         return srs_error_wrap(err, "create %s", segment_dir.c_str());
     }
 
@@ -130,7 +130,7 @@ srs_error_t SrsFragment::rename()
     if (true) {
         std::stringstream ss;
         ss << tempdur;
-        full_path = srs_string_replace(full_path, "[duration]", ss.str());
+        full_path = srs_strings_replace(full_path, "[duration]", ss.str());
     }
 
     int r0 = ::rename(tmp_file.c_str(), full_path.c_str());

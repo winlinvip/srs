@@ -187,7 +187,7 @@ SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip
     manager = svr;
     ip = cip;
     port = cport;
-    create_time = srsu2ms(srs_get_system_time());
+    create_time = srsu2ms(srs_time_now_cached());
 #ifdef SRS_APM
     span_main_ = _srs_apm->dummy();
     span_connect_ = _srs_apm->dummy();
@@ -252,7 +252,7 @@ std::string SrsRtmpConn::desc()
 
 std::string srs_ipv4_string(uint32_t rip)
 {
-    return srs_fmt("%d.%d.%d.%d", uint8_t(rip >> 24), uint8_t(rip >> 16), uint8_t(rip >> 8), uint8_t(rip));
+    return srs_fmt_sprintf("%d.%d.%d.%d", uint8_t(rip >> 24), uint8_t(rip >> 16), uint8_t(rip >> 8), uint8_t(rip));
 }
 
 // TODO: return detail message when error for client.
@@ -585,12 +585,12 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
         return srs_error_wrap(err, "rtmp: identify client");
     }
 
-    srs_discovery_tc_url(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
+    srs_net_url_parse_tcurl(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
 
     // guess stream name
     if (req->stream.empty()) {
         string app = req->app, param = req->param;
-        srs_guess_stream_by_app(req->app, req->param, req->stream);
+        srs_net_url_guess_stream(req->app, req->param, req->stream);
         srs_trace("Guessing by app=%s, param=%s to app=%s, param=%s, stream=%s", app.c_str(), param.c_str(), req->app.c_str(), req->param.c_str(), req->stream.c_str());
     }
 
@@ -612,7 +612,7 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
         req->vhost = parsed_vhost->arg0();
     }
 #ifdef SRS_APM
-    span_client_->attr("vhost", req->vhost)->attr("http.host", req->host)->attr("http.server_name", req->vhost)->attr("http.target", srs_fmt("/%s/%s", req->app.c_str(), req->stream.c_str()));
+    span_client_->attr("vhost", req->vhost)->attr("http.host", req->host)->attr("http.server_name", req->vhost)->attr("http.target", srs_fmt_sprintf("/%s/%s", req->app.c_str(), req->stream.c_str()));
 #endif
 
     if (req->schema.empty() || req->vhost.empty() || req->port == 0 || req->app.empty()) {
@@ -828,7 +828,7 @@ srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
                 return srs_error_wrap(err, "discover coworkers, url=%s", url.c_str());
             }
 
-            string rurl = srs_generate_rtmp_url(host, port, req->host, req->vhost, req->app, req->stream, req->param);
+            string rurl = srs_net_url_encode_rtmp_url(host, port, req->host, req->vhost, req->app, req->stream, req->param);
             srs_trace("rtmp: redirect in cluster, from=%s:%d, target=%s:%d, url=%s, rurl=%s",
                       req->host.c_str(), req->port, host.c_str(), port, url.c_str(), rurl.c_str());
 
@@ -913,7 +913,7 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
               srsu2msi(send_min_interval), srsu2msi(mw_sleep), mw_msgs, realtime, tcp_nodelay);
 
 #ifdef SRS_APM
-    SrsUniquePtr<ISrsApmSpan> span(_srs_apm->span("play-cycle")->set_kind(SrsApmKindProducer)->as_child(span_client_)->attr("realtime", srs_fmt("%d", realtime))->end());
+    SrsUniquePtr<ISrsApmSpan> span(_srs_apm->span("play-cycle")->set_kind(SrsApmKindProducer)->as_child(span_client_)->attr("realtime", srs_fmt_sprintf("%d", realtime))->end());
 #endif
 
     while (true) {
@@ -961,7 +961,7 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
 
 #ifdef SRS_APM
             // TODO: Do not use pithy print for frame span.
-            ISrsApmSpan *sample = _srs_apm->span("play-frame")->set_kind(SrsApmKindConsumer)->as_child(span.get())->attr("msgs", srs_fmt("%d", count))->attr("kbps", srs_fmt("%d", kbps->get_send_kbps_30s()));
+            ISrsApmSpan *sample = _srs_apm->span("play-frame")->set_kind(SrsApmKindConsumer)->as_child(span.get())->attr("msgs", srs_fmt_sprintf("%d", count))->attr("kbps", srs_fmt_sprintf("%d", kbps->get_send_kbps_30s()));
             srs_freep(sample);
 #endif
         }
@@ -1088,7 +1088,7 @@ srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPu
     }
 
 #ifdef SRS_APM
-    SrsUniquePtr<ISrsApmSpan> span(_srs_apm->span("publish-cycle")->set_kind(SrsApmKindProducer)->as_child(span_client_)->attr("timeout", srs_fmt("%d", srsu2msi(publish_normal_timeout)))->end());
+    SrsUniquePtr<ISrsApmSpan> span(_srs_apm->span("publish-cycle")->set_kind(SrsApmKindProducer)->as_child(span_client_)->attr("timeout", srs_fmt_sprintf("%d", srsu2msi(publish_normal_timeout)))->end());
 #endif
 
     // Response the start publishing message, let client start to publish messages.
@@ -1150,7 +1150,7 @@ srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPu
 
 #ifdef SRS_APM
             // TODO: Do not use pithy print for frame span.
-            ISrsApmSpan *sample = _srs_apm->span("publish-frame")->set_kind(SrsApmKindConsumer)->as_child(span.get())->attr("msgs", srs_fmt("%" PRId64, nb_frames))->attr("kbps", srs_fmt("%d", kbps->get_recv_kbps_30s()));
+            ISrsApmSpan *sample = _srs_apm->span("publish-frame")->set_kind(SrsApmKindConsumer)->as_child(span.get())->attr("msgs", srs_fmt_sprintf("%" PRId64, nb_frames))->attr("kbps", srs_fmt_sprintf("%d", kbps->get_recv_kbps_30s()));
             srs_freep(sample);
 #endif
         }
@@ -1448,7 +1448,7 @@ srs_error_t SrsRtmpConn::check_edge_token_traverse_auth()
         // select the origin.
         string server;
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
-        srs_parse_hostport(hostport, server, port);
+        srs_net_split_hostport(hostport, server, port);
 
         SrsUniquePtr<SrsTcpClient> transport(new SrsTcpClient(server, port, SRS_EDGE_TOKEN_TRAVERSE_TIMEOUT));
         if ((err = transport->connect()) != srs_success) {
@@ -1716,7 +1716,7 @@ srs_error_t SrsRtmpConn::cycle()
     // for error or exception report.
     SrsUniquePtr<ISrsApmSpan> span_final(_srs_apm->span("final")->set_kind(SrsApmKindServer)->as_child(span_client_));
     if (srs_error_code(err) != 0) {
-        span_final->record_error(err)->set_status(SrsApmStatusError, srs_fmt("fail code=%d", srs_error_code(err)));
+        span_final->record_error(err)->set_status(SrsApmStatusError, srs_fmt_sprintf("fail code=%d", srs_error_code(err)));
     }
 #endif
 

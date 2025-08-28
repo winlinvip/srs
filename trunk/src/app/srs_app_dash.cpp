@@ -208,7 +208,7 @@ srs_error_t SrsMpdWriter::on_publish()
     mpd_file = _srs_config->get_dash_mpd_file(r->vhost);
 
     string mpd_path = srs_path_build_stream(mpd_file, req->vhost, req->app, req->stream);
-    fragment_home = srs_path_dirname(mpd_path) + "/" + req->stream;
+    fragment_home = srs_path_filepath_dir(mpd_path) + "/" + req->stream;
     window_size_ = _srs_config->get_dash_window_size(r->vhost);
 
     srs_trace("DASH: Config fragment=%dms, period=%dms, window=%d, timeshit=%dms, home=%s, mpd=%s",
@@ -232,11 +232,11 @@ srs_error_t SrsMpdWriter::write(SrsFormat *format, SrsFragmentWindow *afragments
 
     string mpd_path = srs_path_build_stream(mpd_file, req->vhost, req->app, req->stream);
     string full_path = home + "/" + mpd_path;
-    string full_home = srs_path_dirname(full_path);
+    string full_home = srs_path_filepath_dir(full_path);
 
-    fragment_home = srs_path_dirname(mpd_path) + "/" + req->stream;
+    fragment_home = srs_path_filepath_dir(mpd_path) + "/" + req->stream;
 
-    if ((err = srs_create_dir_recursively(full_home)) != srs_success) {
+    if ((err = srs_os_mkdir_all(full_home)) != srs_success) {
         return srs_error_wrap(err, "Create MPD home failed, home=%s", full_home.c_str());
     }
 
@@ -248,11 +248,11 @@ srs_error_t SrsMpdWriter::write(SrsFormat *format, SrsFragmentWindow *afragments
        << "    ns1:schemaLocation=\"urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd\" " << endl
        << "    xmlns=\"urn:mpeg:dash:schema:mpd:2011\" xmlns:ns1=\"http://www.w3.org/2001/XMLSchema-instance\" " << endl
        << "    type=\"dynamic\" " << endl
-       << "    minimumUpdatePeriod=\"PT" << srs_fmt("%.3f", srsu2s(update_period)) << "S\" " << endl
-       << "    timeShiftBufferDepth=\"PT" << srs_fmt("%.3f", last_duration * window_size_) << "S\" " << endl
+       << "    minimumUpdatePeriod=\"PT" << srs_fmt_sprintf("%.3f", srsu2s(update_period)) << "S\" " << endl
+       << "    timeShiftBufferDepth=\"PT" << srs_fmt_sprintf("%.3f", last_duration * window_size_) << "S\" " << endl
        << "    availabilityStartTime=\"" << srs_time_to_utc_format_str(availability_start_time_) << "\" " << endl
-       << "    publishTime=\"" << srs_time_to_utc_format_str(srs_get_system_time()) << "\" " << endl
-       << "    minBufferTime=\"PT" << srs_fmt("%.3f", 2 * last_duration) << "S\" >" << endl;
+       << "    publishTime=\"" << srs_time_to_utc_format_str(srs_time_now_cached()) << "\" " << endl
+       << "    minBufferTime=\"PT" << srs_fmt_sprintf("%.3f", 2 * last_duration) << "S\" >" << endl;
 
     ss << "    <BaseURL>" << req->stream << "/" << "</BaseURL>" << endl;
 
@@ -333,10 +333,10 @@ srs_error_t SrsMpdWriter::get_fragment(bool video, std::string &home, std::strin
 
     if (video) {
         sn = video_number_++;
-        file_name = "video-" + srs_int2str(sn) + ".m4s";
+        file_name = "video-" + srs_strconv_format_int(sn) + ".m4s";
     } else {
         sn = audio_number_++;
-        file_name = "audio-" + srs_int2str(sn) + ".m4s";
+        file_name = "audio-" + srs_strconv_format_int(sn) + ".m4s";
     }
 
     return err;
@@ -502,7 +502,7 @@ srs_error_t SrsDashController::on_audio(SrsSharedPtrMessage *shared_audio, SrsFo
 
     if (first_dts_ == -1) {
         first_dts_ = audio_dts;
-        mpd->set_availability_start_time(srs_get_system_time() - first_dts_ * SRS_UTIME_MILLISECONDS);
+        mpd->set_availability_start_time(srs_time_now_cached() - first_dts_ * SRS_UTIME_MILLISECONDS);
     }
 
     // TODO: FIXME: Support pure audio streaming.
@@ -574,7 +574,7 @@ srs_error_t SrsDashController::on_video(SrsSharedPtrMessage *shared_video, SrsFo
 
     if (first_dts_ == -1) {
         first_dts_ = video_dts;
-        mpd->set_availability_start_time(srs_get_system_time() - first_dts_ * SRS_UTIME_MILLISECONDS);
+        mpd->set_availability_start_time(srs_time_now_cached() - first_dts_ * SRS_UTIME_MILLISECONDS);
     }
 
     bool reopen = format->video->frame_type == SrsVideoAvcFrameTypeKeyFrame && vcurrent->duration() >= fragment;
@@ -651,7 +651,7 @@ srs_error_t SrsDashController::refresh_init_mp4(SrsSharedPtrMessage *msg, SrsFor
     }
 
     string full_home = home + "/" + req->app + "/" + req->stream;
-    if ((err = srs_create_dir_recursively(full_home)) != srs_success) {
+    if ((err = srs_os_mkdir_all(full_home)) != srs_success) {
         return srs_error_wrap(err, "Create media home failed, home=%s", full_home.c_str());
     }
 
@@ -716,7 +716,7 @@ srs_error_t SrsDash::cycle()
     srs_error_t err = srs_success;
 
     if (last_update_time_ <= 0) {
-        last_update_time_ = srs_get_system_time();
+        last_update_time_ = srs_time_now_cached();
     }
 
     if (!req) {
@@ -727,10 +727,10 @@ srs_error_t SrsDash::cycle()
     if (dash_dispose <= 0) {
         return err;
     }
-    if (srs_get_system_time() - last_update_time_ <= dash_dispose) {
+    if (srs_time_now_cached() - last_update_time_ <= dash_dispose) {
         return err;
     }
-    last_update_time_ = srs_get_system_time();
+    last_update_time_ = srs_time_now_cached();
 
     if (!disposable_) {
         return err;
@@ -784,7 +784,7 @@ srs_error_t SrsDash::on_publish()
     enabled = true;
 
     // update the dash time, for dash_dispose.
-    last_update_time_ = srs_get_system_time();
+    last_update_time_ = srs_time_now_cached();
 
     if ((err = controller->on_publish()) != srs_success) {
         return srs_error_wrap(err, "controller");
@@ -809,7 +809,7 @@ srs_error_t SrsDash::on_audio(SrsSharedPtrMessage *shared_audio, SrsFormat *form
     }
 
     // update the dash time, for dash_dispose.
-    last_update_time_ = srs_get_system_time();
+    last_update_time_ = srs_time_now_cached();
 
     if ((err = controller->on_audio(shared_audio, format)) != srs_success) {
         return srs_error_wrap(err, "Consume audio failed");
@@ -831,7 +831,7 @@ srs_error_t SrsDash::on_video(SrsSharedPtrMessage *shared_video, SrsFormat *form
     }
 
     // update the dash time, for dash_dispose.
-    last_update_time_ = srs_get_system_time();
+    last_update_time_ = srs_time_now_cached();
 
     if ((err = controller->on_video(shared_video, format)) != srs_success) {
         return srs_error_wrap(err, "Consume video failed");

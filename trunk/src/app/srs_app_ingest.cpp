@@ -36,7 +36,7 @@ srs_error_t SrsIngesterFFMPEG::initialize(SrsFFMPEG *ff, string v, string i)
     ffmpeg = ff;
     vhost = v;
     id = i;
-    starttime = srs_get_system_time();
+    starttime = srs_time_now_cached();
 
     return err;
 }
@@ -48,7 +48,7 @@ string SrsIngesterFFMPEG::uri()
 
 srs_utime_t SrsIngesterFFMPEG::alive()
 {
-    return srs_get_system_time() - starttime;
+    return srs_time_now_cached() - starttime;
 }
 
 bool SrsIngesterFFMPEG::equals(string v)
@@ -361,20 +361,20 @@ srs_error_t SrsIngester::initialize_ffmpeg(SrsFFMPEG *ffmpeg, SrsConfDirective *
 
         std::string ip;
         std::string ep = ip_ports[0];
-        srs_parse_endpoint(ep, ip, port);
+        srs_net_split_for_listener(ep, ip, port);
     }
 
     std::string output = _srs_config->get_engine_output(engine);
     // output stream, to other/self server
     // ie. rtmp://localhost:1935/live/livestream_sd
-    output = srs_string_replace(output, "[vhost]", vhost->arg0());
-    output = srs_string_replace(output, "[port]", srs_int2str(port));
+    output = srs_strings_replace(output, "[vhost]", vhost->arg0());
+    output = srs_strings_replace(output, "[port]", srs_strconv_format_int(port));
     output = srs_path_build_timestamp(output);
     // Remove the only param with default vhost.
-    output = srs_string_replace(output, "vhost=" SRS_CONSTS_RTMP_DEFAULT_VHOST, "");
-    output = srs_string_replace(output, "?&", "?");
-    output = srs_string_replace(output, "?/", "/"); // For params over app.
-    output = srs_string_trim_end(output, "?");
+    output = srs_strings_replace(output, "vhost=" SRS_CONSTS_RTMP_DEFAULT_VHOST, "");
+    output = srs_strings_replace(output, "?&", "?");
+    output = srs_strings_replace(output, "?/", "/"); // For params over app.
+    output = srs_strings_trim_end(output, "?");
     if (output.empty()) {
         return srs_error_new(ERROR_ENCODER_NO_OUTPUT, "empty output url, ingest=%s", ingest->arg0().c_str());
     }
@@ -384,8 +384,8 @@ srs_error_t SrsIngester::initialize_ffmpeg(SrsFFMPEG *ffmpeg, SrsConfDirective *
     if (true) {
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
         std::string tcUrl, schema, host, vhost2, param;
-        srs_parse_rtmp_url(output, tcUrl, stream);
-        srs_discovery_tc_url(tcUrl, schema, host, vhost2, app, stream, port, param);
+        srs_net_url_parse_rtmp_url(output, tcUrl, stream);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost2, app, stream, port, param);
     }
 
     std::string log_file = SRS_CONSTS_NULL_FILE; // disabled
@@ -474,7 +474,7 @@ void SrsIngester::show_ingest_log_message()
     }
 
     // random choose one ingester to report.
-    int index = srs_random() % (int)ingesters.size();
+    int index = srs_rand_integer() % (int)ingesters.size();
     SrsIngesterFFMPEG *ingester = ingesters.at(index);
 
     // reportable

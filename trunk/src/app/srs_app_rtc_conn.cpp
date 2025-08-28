@@ -847,7 +847,7 @@ srs_error_t SrsRtcPlayStream::on_rtcp_nack(SrsRtcpNack *rtcp)
     // If NACK disabled, print a log.
     if (!nack_enabled_) {
         vector<uint16_t> sns = rtcp->get_lost_sns();
-        srs_trace("RTC: NACK ssrc=%u, seq=%s, ignored", ssrc, srs_join_vector_string(sns, ",").c_str());
+        srs_trace("RTC: NACK ssrc=%u, seq=%s, ignored", ssrc, srs_strings_join(sns, ",").c_str());
         return err;
     }
 
@@ -1361,7 +1361,7 @@ srs_error_t SrsRtcPublishStream::on_twcc(uint16_t sn)
 {
     srs_error_t err = srs_success;
 
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
     err = rtcp_twcc_.recv_packet(sn, now);
 
     return err;
@@ -1538,13 +1538,13 @@ srs_error_t SrsRtcPublishStream::send_periodic_twcc()
 
     if (last_time_send_twcc_) {
         uint32_t nn = 0;
-        srs_utime_t duration = srs_duration(last_time_send_twcc_, srs_get_system_time());
+        srs_utime_t duration = srs_time_since(last_time_send_twcc_, srs_time_now_cached());
         if (duration > 130 * SRS_UTIME_MILLISECONDS && twcc_epp_->can_print(0, &nn)) {
             srs_warn2(TAG_LARGE_TIMER, "twcc delay %dms > 100ms, count=%u/%u",
                       srsu2msi(duration), nn, twcc_epp_->nn_count);
         }
     }
-    last_time_send_twcc_ = srs_get_system_time();
+    last_time_send_twcc_ = srs_time_now_cached();
 
     if (!rtcp_twcc_.need_feedback()) {
         return err;
@@ -1648,7 +1648,7 @@ srs_error_t SrsRtcPublishStream::on_rtcp_xr(SrsRtcpXr *rtcp)
                 uint32_t lrr = stream.read_4bytes();
                 uint32_t dlrr = stream.read_4bytes();
 
-                SrsNtp cur_ntp = SrsNtp::from_time_ms(srs_update_system_time() / 1000);
+                SrsNtp cur_ntp = SrsNtp::from_time_ms(srs_time_now_realtime() / 1000);
                 uint32_t compact_ntp = (cur_ntp.ntp_second_ << 16) | (cur_ntp.ntp_fractions_ >> 16);
 
                 int rtt_ntp = compact_ntp - lrr - dlrr;
@@ -1954,7 +1954,7 @@ srs_error_t SrsRtcConnection::add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local
 
     // TODO: FIXME: Change to api of stream desc.
     if ((err = negotiate_publish_capability(ruc, stream_desc.get())) != srs_success) {
-        return srs_error_wrap(err, "publish negotiate, offer=%s", srs_string_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
+        return srs_error_wrap(err, "publish negotiate, offer=%s", srs_strings_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
     }
 
     if ((err = generate_publish_local_sdp(req, local_sdp, stream_desc.get(), ruc->remote_sdp_.is_unified(), ruc->audio_before_video_)) != srs_success) {
@@ -1993,7 +1993,7 @@ srs_error_t SrsRtcConnection::add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sd
 
     std::map<uint32_t, SrsRtcTrackDescription *> play_sub_relations;
     if ((err = negotiate_play_capability(ruc, play_sub_relations)) != srs_success) {
-        return srs_error_wrap(err, "play negotiate, offer=%s", srs_string_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
+        return srs_error_wrap(err, "play negotiate, offer=%s", srs_strings_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
     }
 
     if (!play_sub_relations.size()) {
@@ -2032,7 +2032,7 @@ srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, s
     srs_error_t err = srs_success;
 
     username_ = username;
-    token_ = srs_random_str(9);
+    token_ = srs_rand_gen_str(9);
     req_ = r->copy();
 
     SrsSessionConfig *cfg = &local_sdp.session_negotiate_;
@@ -2042,7 +2042,7 @@ srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, s
 
     // TODO: FIXME: Support reload.
     session_timeout = _srs_config->get_rtc_stun_timeout(req_->vhost);
-    last_stun_time = srs_get_system_time();
+    last_stun_time = srs_time_now_cached();
 
     nack_enabled_ = _srs_config->get_rtc_nack_enabled(req_->vhost);
 
@@ -2062,8 +2062,8 @@ srs_error_t SrsRtcConnection::on_rtcp(char *unprotected_buf, int nb_unprotected_
     SrsRtcpCompound rtcp_compound;
     if (srs_success != (err = rtcp_compound.decode(buffer.get()))) {
         return srs_error_wrap(err, "decode rtcp plaintext=%u, bytes=[%s], at=%s", nb_unprotected_buf,
-                              srs_string_dumps_hex(unprotected_buf, nb_unprotected_buf, 8).c_str(),
-                              srs_string_dumps_hex(buffer->head(), buffer->left(), 8).c_str());
+                              srs_strings_dumps_hex(unprotected_buf, nb_unprotected_buf, 8).c_str(),
+                              srs_strings_dumps_hex(buffer->head(), buffer->left(), 8).c_str());
     }
 
     SrsRtcpCommon *rtcp_raw = NULL;
@@ -2073,7 +2073,7 @@ srs_error_t SrsRtcConnection::on_rtcp(char *unprotected_buf, int nb_unprotected_
 
         if (srs_success != err) {
             return srs_error_wrap(err, "plaintext=%u, bytes=[%s], rtcp=(%u,%u,%u,%u)", nb_unprotected_buf,
-                                  srs_string_dumps_hex(rtcp->data(), rtcp->size(), rtcp->size()).c_str(),
+                                  srs_strings_dumps_hex(rtcp->data(), rtcp->size(), rtcp->size()).c_str(),
                                   rtcp->get_rc(), rtcp->type(), rtcp->get_ssrc(), rtcp->size());
         }
     }
@@ -2282,12 +2282,12 @@ srs_error_t SrsRtcConnection::on_dtls_alert(std::string type, std::string desc)
 
 bool SrsRtcConnection::is_alive()
 {
-    return last_stun_time + session_timeout > srs_get_system_time();
+    return last_stun_time + session_timeout > srs_time_now_cached();
 }
 
 void SrsRtcConnection::alive()
 {
-    last_stun_time = srs_get_system_time();
+    last_stun_time = srs_time_now_cached();
 }
 
 SrsRtcUdpNetwork *SrsRtcConnection::udp()
@@ -2366,7 +2366,7 @@ srs_error_t SrsRtcConnection::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_
 
     if (last_send_systime > 0) {
         rr_lsr = (last_send_ntp.ntp_second_ << 16) | (last_send_ntp.ntp_fractions_ >> 16);
-        uint32_t dlsr = (srs_update_system_time() - last_send_systime) / 1000;
+        uint32_t dlsr = (srs_time_now_realtime() - last_send_systime) / 1000;
         rr_dlsr = ((dlsr / 1000) << 16) | ((dlsr % 1000) * 65536 / 1000);
     }
 
@@ -2413,7 +2413,7 @@ srs_error_t SrsRtcConnection::send_rtcp_xr_rrtr(uint32_t ssrc)
         |             NTP timestamp, least significant word             |
         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     */
-    srs_utime_t now = srs_update_system_time();
+    srs_utime_t now = srs_time_now_realtime();
     SrsNtp cur_ntp = SrsNtp::from_time_ms(now / 1000);
 
     char buf[kRtpPacketSize];
@@ -2969,7 +2969,7 @@ srs_error_t SrsRtcConnection::generate_publish_local_sdp(ISrsRequest *req, SrsSd
     local_sdp.version_ = "0";
 
     local_sdp.username_ = RTMP_SIG_SRS_SERVER;
-    local_sdp.session_id_ = srs_int2str((int64_t)this);
+    local_sdp.session_id_ = srs_strconv_format_int((int64_t)this);
     local_sdp.session_version_ = "2";
     local_sdp.nettype_ = "IN";
     local_sdp.addrtype_ = "IP4";
@@ -3347,7 +3347,7 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp(ISrsRequest *req, SrsSdp &
     local_sdp.version_ = "0";
 
     local_sdp.username_ = RTMP_SIG_SRS_SERVER;
-    local_sdp.session_id_ = srs_int2str((int64_t)this);
+    local_sdp.session_id_ = srs_strconv_format_int((int64_t)this);
     local_sdp.session_version_ = "2";
     local_sdp.nettype_ = "IN";
     local_sdp.addrtype_ = "IP4";
@@ -3361,7 +3361,7 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp(ISrsRequest *req, SrsSdp &
 
     local_sdp.group_policy_ = "BUNDLE";
 
-    std::string cname = srs_random_str(16);
+    std::string cname = srs_rand_gen_str(16);
 
     if (audio_before_video) {
         if ((err = generate_play_local_sdp_for_audio(local_sdp, stream_desc, cname)) != srs_success) {
@@ -3458,11 +3458,11 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp_for_video(SrsSdp &local_sd
         if (!unified_plan) {
             // for plan b, we only add one m= for video track.
             if (i == 0) {
-                video_track_generate_play_offer(track, "video-" + srs_int2str(i), local_sdp);
+                video_track_generate_play_offer(track, "video-" + srs_strconv_format_int(i), local_sdp);
             }
         } else {
             // unified plan SDP, generate a m= for each video track.
-            video_track_generate_play_offer(track, "video-" + srs_int2str(i), local_sdp);
+            video_track_generate_play_offer(track, "video-" + srs_strconv_format_int(i), local_sdp);
         }
 
         SrsMediaDesc &local_media_desc = local_sdp.media_descs_.back();

@@ -115,7 +115,7 @@ srs_error_t SrsRtcBlackhole::initialize()
 
     string host;
     int port;
-    srs_parse_hostport(blackhole_ep, host, port);
+    srs_net_split_hostport(blackhole_ep, host, port);
 
     srs_freep(blackhole_addr);
     blackhole_addr = new sockaddr_in();
@@ -192,12 +192,12 @@ srs_error_t api_server_as_candidates(string api, set<string> &candidate_ips)
     }
 
     // Whether add domain name.
-    if (!srs_is_ipv4(hostname) && _srs_config->get_keep_api_domain()) {
+    if (!srs_net_is_ipv4(hostname) && _srs_config->get_keep_api_domain()) {
         candidate_ips.insert(hostname);
     }
 
     // Try to parse the domain name if not IP.
-    if (!srs_is_ipv4(hostname) && _srs_config->get_resolve_api_domain()) {
+    if (!srs_net_is_ipv4(hostname) && _srs_config->get_resolve_api_domain()) {
         int family = 0;
         string ip = srs_dns_resolve(hostname, family);
         if (ip.empty() || ip == SRS_CONSTS_LOCALHOST || ip == SRS_CONSTS_LOOPBACK || ip == SRS_CONSTS_LOOPBACK6) {
@@ -209,7 +209,7 @@ srs_error_t api_server_as_candidates(string api, set<string> &candidate_ips)
     }
 
     // If hostname is IP, use it.
-    if (srs_is_ipv4(hostname)) {
+    if (srs_net_is_ipv4(hostname)) {
         candidate_ips.insert(hostname);
     }
 
@@ -371,7 +371,7 @@ srs_error_t SrsRtcServer::listen_udp()
         return srs_error_new(ERROR_RTC_PORT, "invalid port=%d", port);
     }
 
-    string ip = srs_any_address_for_listener();
+    string ip = srs_net_address_any();
     srs_assert(listeners.empty());
 
     int nn_listeners = _srs_config->get_rtc_server_reuseport();
@@ -568,8 +568,8 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
     // All tracks default as inactive, so we must enable them.
     session->set_all_tracks_status(req->get_stream_url(), ruc->publish_, true);
 
-    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? srs_random_str(32) : ruc->req_->ice_pwd_;
-    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? srs_random_str(8) : ruc->req_->ice_ufrag_;
+    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? srs_rand_gen_str(32) : ruc->req_->ice_pwd_;
+    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? srs_rand_gen_str(8) : ruc->req_->ice_ufrag_;
     // TODO: FIXME: Rename for a better name, it's not an username.
     std::string username = "";
     while (true) {
@@ -579,7 +579,7 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         }
 
         // Username conflict, regenerate a new one.
-        local_ufrag = srs_random_str(8);
+        local_ufrag = srs_rand_gen_str(8);
     }
 
     local_sdp.set_ice_ufrag(local_ufrag);
@@ -597,9 +597,9 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
             string hostname;
             int uport = udp_port;
-            srs_parse_hostport(*it, hostname, uport);
+            srs_net_split_hostport(*it, hostname, uport);
             int tport = tcp_port;
-            srs_parse_hostport(*it, hostname, tport);
+            srs_net_split_hostport(*it, hostname, tport);
 
             if (protocol == "udp") {
                 local_sdp.add_candidate("udp", hostname, uport, "host");
@@ -612,7 +612,7 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         }
 
         vector<string> v = vector<string>(candidates.begin(), candidates.end());
-        srs_trace("RTC: Use candidates %s, protocol=%s", srs_join_vector_string(v, ", ").c_str(), protocol.c_str());
+        srs_trace("RTC: Use candidates %s, protocol=%s", srs_strings_join(v, ", ").c_str(), protocol.c_str());
     }
 
     // Setup the negotiate DTLS by config.

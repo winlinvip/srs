@@ -23,7 +23,7 @@ typedef int64_t srs_utime_t;
 #define srsu2si(us) int((us) / SRS_UTIME_SECONDS)
 
 // Them time duration = end - start. return 0, if start or end is 0.
-srs_utime_t srs_duration(srs_utime_t start, srs_utime_t end);
+srs_utime_t srs_time_since(srs_utime_t start, srs_utime_t end);
 
 // The time unit in seconds, for example 120 * SRS_UTIME_SECONDS means 120s.
 #define SRS_UTIME_SECONDS 1000000LL
@@ -38,9 +38,9 @@ srs_utime_t srs_duration(srs_utime_t start, srs_utime_t end);
 #define SRS_UTIME_NO_TIMEOUT ((srs_utime_t) - 1LL)
 
 // Get current system time in srs_utime_t, use cache to avoid performance problem
-extern srs_utime_t srs_get_system_time();
-extern srs_utime_t srs_get_system_startup_time();
+extern srs_utime_t srs_time_now_cached();
+extern srs_utime_t srs_time_since_startup();
 // A daemon st-thread updates it.
-extern srs_utime_t srs_update_system_time();
+extern srs_utime_t srs_time_now_realtime();
 
 #endif

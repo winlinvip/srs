@@ -3142,3 +3142,36 @@ srs_error_t SrsFormat::audio_aac_sequence_header_demux(char *data, int size)
 
     return err;
 }
+
+bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code)
+{
+    if (!stream) {
+        return false;
+    }
+
+    char *bytes = stream->data() + stream->pos();
+    char *p = bytes;
+
+    for (;;) {
+        if (!stream->require((int)(p - bytes + 3))) {
+            return false;
+        }
+
+        // not match
+        if (p[0] != (char)0x00 || p[1] != (char)0x00) {
+            return false;
+        }
+
+        // match N[00] 00 00 01, where N>=0
+        if (p[2] == (char)0x01) {
+            if (pnb_start_code) {
+                *pnb_start_code = (int)(p - bytes) + 3;
+            }
+            return true;
+        }
+
+        p++;
+    }
+
+    return false;
+}

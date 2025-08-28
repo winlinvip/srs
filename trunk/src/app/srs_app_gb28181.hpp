@@ -780,7 +780,7 @@ extern bool srs_skip_util_pack(SrsBuffer *stream);
 // Parsed as:
 //      user: bob
 //      host: ossrs.io:5060
-// Note that the host can be parsed by srs_parse_hostport as host(ossrs.io) and port(5060).
+// Note that the host can be parsed by srs_net_split_hostport as host(ossrs.io) and port(5060).
 extern void srs_sip_parse_address(const std::string &address, std::string &user, std::string &host);
 
 // Manager for GB connections.

@@ -255,7 +255,7 @@ SrsTcpListener *SrsTcpListener::set_endpoint(const std::string &endpoint)
 {
     std::string ip;
     int port_;
-    srs_parse_endpoint(endpoint, ip, port_);
+    srs_net_split_for_listener(endpoint, ip, port_);
     return set_endpoint(ip, port_);
 }
 
@@ -349,7 +349,7 @@ SrsMultipleTcpListeners *SrsMultipleTcpListeners::add(const std::vector<std::str
     for (int i = 0; i < (int)endpoints.size(); i++) {
         string ip;
         int port;
-        srs_parse_endpoint(endpoints[i], ip, port);
+        srs_net_split_for_listener(endpoints[i], ip, port);
 
         SrsTcpListener *l = new SrsTcpListener(this);
         listeners_.push_back(l->set_endpoint(ip, port));
@@ -694,7 +694,7 @@ srs_error_t SrsUdpMuxListener::cycle()
     uint64_t nn_msgs_stage = 0;
     uint64_t nn_msgs_last = 0;
     uint64_t nn_loop = 0;
-    srs_utime_t time_last = srs_get_system_time();
+    srs_utime_t time_last = srs_time_now_cached();
 
     SrsUniquePtr<SrsErrorPithyPrint> pp_pkt_handler_err(new SrsErrorPithyPrint());
 
@@ -738,7 +738,7 @@ srs_error_t SrsUdpMuxListener::cycle()
                 _srs_context->set_id(cid);
 
                 // Append more information.
-                err = srs_error_wrap(err, "size=%u, data=[%s]", skt.size(), srs_string_dumps_hex(skt.data(), skt.size(), 8).c_str());
+                err = srs_error_wrap(err, "size=%u, data=[%s]", skt.size(), srs_strings_dumps_hex(skt.data(), skt.size(), 8).c_str());
                 srs_warn("handle udp pkt, count=%u/%u, err: %s", pp_pkt_handler_err->nn_count, nn, srs_error_desc(err).c_str());
             }
             srs_freep(err);
@@ -752,11 +752,11 @@ srs_error_t SrsUdpMuxListener::cycle()
             int pps_average = 0;
             int pps_last = 0;
             if (true) {
-                if (srs_get_system_time() > srs_get_system_startup_time()) {
-                    pps_average = (int)(nn_msgs * SRS_UTIME_SECONDS / (srs_get_system_time() - srs_get_system_startup_time()));
+                if (srs_time_now_cached() > srs_time_since_startup()) {
+                    pps_average = (int)(nn_msgs * SRS_UTIME_SECONDS / (srs_time_now_cached() - srs_time_since_startup()));
                 }
-                if (srs_get_system_time() > time_last) {
-                    pps_last = (int)((nn_msgs - nn_msgs_last) * SRS_UTIME_SECONDS / (srs_get_system_time() - time_last));
+                if (srs_time_now_cached() > time_last) {
+                    pps_last = (int)((nn_msgs - nn_msgs_last) * SRS_UTIME_SECONDS / (srs_time_now_cached() - time_last));
                 }
             }
 
@@ -774,7 +774,7 @@ srs_error_t SrsUdpMuxListener::cycle()
             srs_trace("<- RTC RECV #%d, udp %" PRId64 ", pps %d/%d%s, schedule %" PRId64,
                       srs_netfd_fileno(lfd), nn_msgs_stage, pps_average, pps_last, pps_unit.c_str(), nn_loop);
             nn_msgs_last = nn_msgs;
-            time_last = srs_get_system_time();
+            time_last = srs_time_now_cached();
             nn_loop = 0;
             nn_msgs_stage = 0;
         }

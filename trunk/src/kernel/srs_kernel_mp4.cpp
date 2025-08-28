@@ -6895,7 +6895,7 @@ srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat *format, bool vsh, uin
     if (vsh) {
         // AVC
         if (format->vcodec->id == SrsVideoCodecIdAVC && !pavcc.empty()) {
-            if (nb_sample == (uint32_t)pavcc.size() && srs_bytes_equals(sample, &pavcc[0], (int)pavcc.size())) {
+            if (nb_sample == (uint32_t)pavcc.size() && srs_bytes_equal(sample, &pavcc[0], (int)pavcc.size())) {
                 return err;
             }
 
@@ -6903,7 +6903,7 @@ srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat *format, bool vsh, uin
         }
         // HEVC
         if (format->vcodec->id == SrsVideoCodecIdHEVC && !phvcc.empty()) {
-            if (nb_sample == (uint32_t)phvcc.size() && srs_bytes_equals(sample, &phvcc[0], (int)phvcc.size())) {
+            if (nb_sample == (uint32_t)phvcc.size() && srs_bytes_equal(sample, &phvcc[0], (int)phvcc.size())) {
                 return err;
             }
 
@@ -6912,7 +6912,7 @@ srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat *format, bool vsh, uin
     }
 
     if (!vsh && !pasc.empty()) {
-        if (nb_sample == (uint32_t)pasc.size() && srs_bytes_equals(sample, &pasc[0], (int)pasc.size())) {
+        if (nb_sample == (uint32_t)pasc.size() && srs_bytes_equal(sample, &pasc[0], (int)pasc.size())) {
             return err;
         }
 

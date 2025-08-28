@@ -1524,7 +1524,7 @@ string SrsJsonAny::dumps()
         return to_boolean() ? "true" : "false";
     }
     case SRS_JSON_Integer: {
-        return srs_int2str(to_integer());
+        return srs_strconv_format_int(to_integer());
     }
     case SRS_JSON_Number: {
         // len(max int64_t) is 20, plus one "+-."

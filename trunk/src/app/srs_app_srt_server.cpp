@@ -201,7 +201,7 @@ srs_error_t SrsSrtServer::listen_srt_mpegts()
 
     int port;
     string ip;
-    srs_parse_endpoint(srs_int2str(_srs_config->get_srt_listen_port()), ip, port);
+    srs_net_split_for_listener(srs_strconv_format_int(_srs_config->get_srt_listen_port()), ip, port);
 
     if ((err = acceptor->listen(ip, port)) != srs_success) {
         return srs_error_wrap(err, "srt listen %s:%d", ip.c_str(), port);

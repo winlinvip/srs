@@ -107,7 +107,7 @@ SrsWallClock::~SrsWallClock()
 
 srs_utime_t SrsWallClock::now()
 {
-    return srs_get_system_time();
+    return srs_time_now_cached();
 }
 
 SrsWallClock *_srs_clock = NULL;

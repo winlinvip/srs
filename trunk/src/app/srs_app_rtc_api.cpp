@@ -128,9 +128,9 @@ srs_error_t SrsGoApiRtcPlay::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
     ruc.req_->ip = clientip;
     ruc.api_ = api;
 
-    srs_parse_rtmp_url(streamurl, ruc.req_->tcUrl, ruc.req_->stream);
+    srs_net_url_parse_rtmp_url(streamurl, ruc.req_->tcUrl, ruc.req_->stream);
 
-    srs_discovery_tc_url(ruc.req_->tcUrl, ruc.req_->schema, ruc.req_->host, ruc.req_->vhost,
+    srs_net_url_parse_tcurl(ruc.req_->tcUrl, ruc.req_->schema, ruc.req_->host, ruc.req_->vhost,
                          ruc.req_->app, ruc.req_->stream, ruc.req_->port, ruc.req_->param);
 
     // discovery vhost, resolve the vhost from config
@@ -249,7 +249,7 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
     string local_sdp_str = os.str();
     // Filter the \r\n to \\r\\n for JSON.
-    string local_sdp_escaped = srs_string_replace(local_sdp_str.c_str(), "\r\n", "\\r\\n");
+    string local_sdp_escaped = srs_strings_replace(local_sdp_str.c_str(), "\r\n", "\\r\\n");
 
     ruc->local_sdp_str_ = local_sdp_str;
     ruc->session_id_ = session->username();
@@ -257,7 +257,7 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
     srs_trace("RTC username=%s, dtls=%u, srtp=%u, offer=%dB, answer=%dB", session->username().c_str(),
               ruc->dtls_, ruc->srtp_, ruc->remote_sdp_str_.length(), local_sdp_escaped.length());
-    srs_trace("RTC remote offer: %s", srs_string_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
+    srs_trace("RTC remote offer: %s", srs_strings_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
     srs_trace("RTC local answer: %s", local_sdp_escaped.c_str());
 
     return err;
@@ -424,12 +424,12 @@ srs_error_t SrsGoApiRtcPublish::do_serve_http(ISrsHttpResponseWriter *w, ISrsHtt
     ruc.req_->ip = clientip;
     ruc.api_ = api;
 
-    srs_parse_rtmp_url(streamurl, ruc.req_->tcUrl, ruc.req_->stream);
-    srs_discovery_tc_url(ruc.req_->tcUrl, ruc.req_->schema, ruc.req_->host, ruc.req_->vhost,
+    srs_net_url_parse_rtmp_url(streamurl, ruc.req_->tcUrl, ruc.req_->stream);
+    srs_net_url_parse_tcurl(ruc.req_->tcUrl, ruc.req_->schema, ruc.req_->host, ruc.req_->vhost,
                          ruc.req_->app, ruc.req_->stream, ruc.req_->port, ruc.req_->param);
 
     // Identify WebRTC publisher by param upstream=rtc
-    ruc.req_->param = srs_string_trim_start(ruc.req_->param + "&upstream=rtc", "&");
+    ruc.req_->param = srs_strings_trim_start(ruc.req_->param + "&upstream=rtc", "&");
 
     // discovery vhost, resolve the vhost from config
     SrsConfDirective *parsed_vhost = _srs_config->get_vhost(ruc.req_->vhost);
@@ -524,7 +524,7 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     string local_sdp_str = os.str();
     // Filter the \r\n to \\r\\n for JSON.
-    string local_sdp_escaped = srs_string_replace(local_sdp_str.c_str(), "\r\n", "\\r\\n");
+    string local_sdp_escaped = srs_strings_replace(local_sdp_str.c_str(), "\r\n", "\\r\\n");
 
     ruc->local_sdp_str_ = local_sdp_str;
     ruc->session_id_ = session->username();
@@ -532,7 +532,7 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     srs_trace("RTC username=%s, offer=%dB, answer=%dB", session->username().c_str(),
               ruc->remote_sdp_str_.length(), local_sdp_escaped.length());
-    srs_trace("RTC remote offer: %s", srs_string_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
+    srs_trace("RTC remote offer: %s", srs_strings_replace(ruc->remote_sdp_str_.c_str(), "\r\n", "\\r\\n").c_str());
     srs_trace("RTC local answer: %s", local_sdp_escaped.c_str());
 
     return err;
@@ -655,7 +655,7 @@ srs_error_t SrsGoApiRtcWhip::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     // Setup the content type to SDP.
     w->header()->set("Content-Type", "application/sdp");
     // The location for DELETE resource, not required by SRS, but required by WHIP.
-    w->header()->set("Location", srs_fmt("/rtc/v1/whip/?action=delete&token=%s&app=%s&stream=%s&session=%s",
+    w->header()->set("Location", srs_fmt_sprintf("/rtc/v1/whip/?action=delete&token=%s&app=%s&stream=%s&session=%s",
                                          ruc.token_.c_str(), ruc.req_->app.c_str(), ruc.req_->stream.c_str(), ruc.session_id_.c_str()));
     w->header()->set_content_length((int64_t)sdp.length());
     // Must be 201, see https://datatracker.ietf.org/doc/draft-ietf-wish-whip/
@@ -697,7 +697,7 @@ srs_error_t SrsGoApiRtcWhip::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
         action = "publish";
     }
     // For whip-play or whep, parsed to https://datatracker.ietf.org/doc/draft-murillo-whep/
-    if (srs_string_ends_with(r->path(), "/whip-play/") || srs_string_ends_with(r->path(), "/whep/")) {
+    if (srs_strings_ends_with(r->path(), "/whip-play/") || srs_strings_ends_with(r->path(), "/whep/")) {
         action = "play";
     }
 

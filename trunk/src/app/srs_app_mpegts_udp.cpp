@@ -52,7 +52,7 @@ srs_error_t SrsUdpCasterListener::initialize(SrsConfDirective *conf)
         return srs_error_new(ERROR_STREAM_CASTER_PORT, "invalid port=%d", port);
     }
 
-    listener_->set_endpoint(srs_any_address_for_listener(), port)->set_label("MPEGTS");
+    listener_->set_endpoint(srs_net_address_any(), port)->set_label("MPEGTS");
 
     if ((err = caster_->initialize(conf)) != srs_success) {
         return srs_error_wrap(err, "init caster port=%d", port);

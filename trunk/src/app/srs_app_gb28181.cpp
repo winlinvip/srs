@@ -55,7 +55,7 @@ std::string srs_gb_session_state(SrsGbSessionState state)
 
 std::string srs_gb_state(SrsGbSessionState ostate, SrsGbSessionState state)
 {
-    return srs_fmt("%s->%s", srs_gb_session_state(ostate).c_str(), srs_gb_session_state(state).c_str());
+    return srs_fmt_sprintf("%s->%s", srs_gb_session_state(ostate).c_str(), srs_gb_session_state(state).c_str());
 }
 
 std::string srs_gb_sip_state(SrsGbSipState state)
@@ -82,7 +82,7 @@ std::string srs_gb_sip_state(SrsGbSipState state)
 
 std::string srs_sip_state(SrsGbSipState ostate, SrsGbSipState state)
 {
-    return srs_fmt("%s->%s", srs_gb_sip_state(ostate).c_str(), srs_gb_sip_state(state).c_str());
+    return srs_fmt_sprintf("%s->%s", srs_gb_sip_state(ostate).c_str(), srs_gb_sip_state(state).c_str());
 }
 
 SrsGbSession::SrsGbSession() : sip_(new SrsGbSipTcpConn()), media_(new SrsGbMediaTcpConn())
@@ -101,7 +101,7 @@ SrsGbSession::SrsGbSession() : sip_(new SrsGbSipTcpConn()), media_(new SrsGbMedi
     reinvite_wait_ = 0;
 
     ppp_ = new SrsAlonePithyPrint();
-    startime_ = srs_update_system_time();
+    startime_ = srs_time_now_realtime();
     total_packs_ = 0;
     total_msgs_ = 0;
     total_recovered_ = 0;
@@ -307,8 +307,8 @@ srs_error_t SrsGbSession::do_cycle()
 
         ppp_->elapse();
         if (ppp_->can_print()) {
-            int alive = srsu2msi(srs_update_system_time() - startime_) / 1000;
-            int pack_alive = srsu2msi(srs_update_system_time() - media_starttime_) / 1000;
+            int alive = srsu2msi(srs_time_now_realtime() - startime_) / 1000;
+            int pack_alive = srsu2msi(srs_time_now_realtime() - media_starttime_) / 1000;
             srs_trace("Session: Alive=%ds, packs=%" PRId64 ", recover=%" PRId64 ", reserved=%" PRId64 ", msgs=%" PRId64 ", drop=%" PRId64 ", media(id=%u, alive=%ds, packs=%" PRId64 " recover=%" PRId64 ", reserved=%" PRId64 ", msgs=%" PRId64 ", drop=%" PRId64 ")",
                       alive, (total_packs_ + media_packs_), (total_recovered_ + media_recovered_), (total_reserved_ + media_reserved_),
                       (total_msgs_ + media_msgs_), (total_msgs_dropped_ + media_msgs_dropped_), media_id_, pack_alive, media_packs_,
@@ -335,7 +335,7 @@ srs_error_t SrsGbSession::drive_state()
         // is connected, so we don't need to handle it here.
         if (sip_->is_registered()) {
             SRS_GB_CHANGE_STATE_TO(SrsGbSessionStateConnecting);
-            connecting_starttime_ = srs_update_system_time();
+            connecting_starttime_ = srs_time_now_realtime();
         }
 
         // Invite if media is not connected.
@@ -351,7 +351,7 @@ srs_error_t SrsGbSession::drive_state()
     }
 
     if (state_ == SrsGbSessionStateConnecting) {
-        if (srs_update_system_time() - connecting_starttime_ >= connecting_timeout_) {
+        if (srs_time_now_realtime() - connecting_starttime_ >= connecting_timeout_) {
             if ((nn_timeout_++) > SRS_GB_MAX_TIMEOUT) {
                 return srs_error_new(ERROR_GB_TIMEOUT, "timeout");
             }
@@ -376,9 +376,9 @@ srs_error_t SrsGbSession::drive_state()
         // When media disconnected, we wait for a while then reinvite.
         if (!media_->is_connected()) {
             if (!reinviting_starttime_) {
-                reinviting_starttime_ = srs_update_system_time();
+                reinviting_starttime_ = srs_time_now_realtime();
             }
-            if (srs_get_system_time() - reinviting_starttime_ > reinvite_wait_) {
+            if (srs_time_now_cached() - reinviting_starttime_ > reinvite_wait_) {
                 reinviting_starttime_ = 0;
                 srs_trace("Session: Re-invite for disconnect, state=%s, sip=%s, media=%d", srs_gb_session_state(state_).c_str(),
                           srs_gb_sip_state(sip_->state()).c_str(), media_->is_connected());
@@ -429,7 +429,7 @@ srs_error_t SrsGbListener::initialize(SrsConfDirective *conf)
     srs_freep(conf_);
     conf_ = conf->copy();
 
-    string ip = srs_any_address_for_listener();
+    string ip = srs_net_address_any();
     if (true) {
         int port = _srs_config->get_stream_caster_listen(conf);
         media_listener_->set_endpoint(ip, port)->set_label("GB-TCP");
@@ -772,17 +772,17 @@ void SrsGbSipTcpConn::invite_ack(SrsSipMessage *msg)
     string pip = session_->pip(); // Parse from CANDIDATE
     int sip_port;
     query_ports(&sip_port, NULL);
-    string gb_device_id = srs_fmt("sip:%s@%s", msg->to_address_user_.c_str(), msg->to_address_host_.c_str());
-    string branch = srs_random_str(6);
+    string gb_device_id = srs_fmt_sprintf("sip:%s@%s", msg->to_address_user_.c_str(), msg->to_address_host_.c_str());
+    string branch = srs_rand_gen_str(6);
 
     SrsSipMessage *req = new SrsSipMessage();
     req->type_ = HTTP_REQUEST;
     req->method_ = HTTP_ACK;
     req->request_uri_ = gb_device_id;
-    req->via_ = srs_fmt("SIP/2.0/TCP %s:%d;rport;branch=%s%s", pip.c_str(), sip_port, SRS_GB_BRANCH_MAGIC, branch.c_str());
+    req->via_ = srs_fmt_sprintf("SIP/2.0/TCP %s:%d;rport;branch=%s%s", pip.c_str(), sip_port, SRS_GB_BRANCH_MAGIC, branch.c_str());
     req->from_ = msg->from_;
     req->to_ = msg->to_;
-    req->cseq_ = srs_fmt("%d ACK", msg->cseq_number_);
+    req->cseq_ = srs_fmt_sprintf("%d ACK", msg->cseq_number_);
     req->call_id_ = msg->call_id_;
     req->max_forwards_ = 70;
 
@@ -815,7 +815,7 @@ srs_error_t SrsGbSipTcpConn::invite_request(uint32_t *pssrc)
         string ssrc = ssrc_str_;
         for (int i = 0; ssrc.empty() && i < 16; i++) {
             int flag = 0; // 0 is realtime.
-            string ssrc_str = srs_fmt("%d%s%04d", flag, register_->ssrc_domain_id().c_str(), srs_random() % 10000);
+            string ssrc_str = srs_fmt_sprintf("%d%s%04d", flag, register_->ssrc_domain_id().c_str(), srs_rand_integer() % 10000);
             uint32_t ssrc_v = (uint32_t)::atol(ssrc_str.c_str());
             if (!_srs_gb_manager->find_by_fast_id(ssrc_v)) {
                 ssrc = ssrc_str;
@@ -836,13 +836,13 @@ srs_error_t SrsGbSipTcpConn::invite_request(uint32_t *pssrc)
     string pip = session_->pip(); // Parse from CANDIDATE
     int sip_port, media_port;
     query_ports(&sip_port, &media_port);
-    string srs_device_id = srs_fmt("sip:%s@%s", register_->request_uri_user_.c_str(), register_->request_uri_host_.c_str());
-    string gb_device_id = srs_fmt("sip:%s@%s", register_->from_address_user_.c_str(), register_->from_address_host_.c_str());
-    string subject = srs_fmt("%s:%s,%s:0", register_->from_address_user_.c_str(), ssrc_str_.c_str(), register_->request_uri_user_.c_str());
-    string branch = srs_random_str(6);
-    string tag = srs_random_str(8);
-    string call_id = srs_random_str(16);
-    int cseq = (int)(srs_random() % 1000); // TODO: FIXME: Increase.
+    string srs_device_id = srs_fmt_sprintf("sip:%s@%s", register_->request_uri_user_.c_str(), register_->request_uri_host_.c_str());
+    string gb_device_id = srs_fmt_sprintf("sip:%s@%s", register_->from_address_user_.c_str(), register_->from_address_host_.c_str());
+    string subject = srs_fmt_sprintf("%s:%s,%s:0", register_->from_address_user_.c_str(), ssrc_str_.c_str(), register_->request_uri_user_.c_str());
+    string branch = srs_rand_gen_str(6);
+    string tag = srs_rand_gen_str(8);
+    string call_id = srs_rand_gen_str(16);
+    int cseq = (int)(srs_rand_integer() % 1000); // TODO: FIXME: Increase.
 
     SrsSdp local_sdp;
     local_sdp.version_ = "0";
@@ -856,7 +856,7 @@ srs_error_t SrsGbSipTcpConn::invite_request(uint32_t *pssrc)
     local_sdp.start_time_ = 0;
     local_sdp.end_time_ = 0;
     local_sdp.ice_lite_ = "";                                    // Disable this line.
-    local_sdp.connection_ = srs_fmt("c=IN IP4 %s", pip.c_str()); // Session level connection.
+    local_sdp.connection_ = srs_fmt_sprintf("c=IN IP4 %s", pip.c_str()); // Session level connection.
 
     local_sdp.media_descs_.push_back(SrsMediaDesc("video"));
     SrsMediaDesc &media = local_sdp.media_descs_.at(0);
@@ -885,13 +885,13 @@ srs_error_t SrsGbSipTcpConn::invite_request(uint32_t *pssrc)
     req->type_ = HTTP_REQUEST;
     req->method_ = HTTP_INVITE;
     req->request_uri_ = gb_device_id;
-    req->via_ = srs_fmt("SIP/2.0/TCP %s:%d;rport;branch=%s%s", pip.c_str(), sip_port, SRS_GB_BRANCH_MAGIC, branch.c_str());
-    req->from_ = srs_fmt("<%s>;tag=SRS%s", srs_device_id.c_str(), tag.c_str());
-    req->to_ = srs_fmt("<%s>", gb_device_id.c_str());
-    req->cseq_ = srs_fmt("%d INVITE", cseq);
+    req->via_ = srs_fmt_sprintf("SIP/2.0/TCP %s:%d;rport;branch=%s%s", pip.c_str(), sip_port, SRS_GB_BRANCH_MAGIC, branch.c_str());
+    req->from_ = srs_fmt_sprintf("<%s>;tag=SRS%s", srs_device_id.c_str(), tag.c_str());
+    req->to_ = srs_fmt_sprintf("<%s>", gb_device_id.c_str());
+    req->cseq_ = srs_fmt_sprintf("%d INVITE", cseq);
     req->call_id_ = call_id;
     req->content_type_ = "Application/SDP";
-    req->contact_ = srs_fmt("<%s>", srs_device_id.c_str());
+    req->contact_ = srs_fmt_sprintf("<%s>", srs_device_id.c_str());
     req->max_forwards_ = 70;
     req->subject_ = subject;
     req->set_body(ss.str());
@@ -1236,7 +1236,7 @@ srs_error_t SrsGbSipTcpSender::do_cycle()
             if (!msg->contact_.empty())
                 res.header()->set("Contact", msg->contact_);
             if (msg->expires_ != UINT32_MAX)
-                res.header()->set("Expires", srs_int2str(msg->expires_));
+                res.header()->set("Expires", srs_strconv_format_int(msg->expires_));
 
             res.header()->set_content_length(msg->body_.length());
             res.write_header(msg->status_);
@@ -1258,7 +1258,7 @@ srs_error_t SrsGbSipTcpSender::do_cycle()
             if (!msg->subject_.empty())
                 req.header()->set("Subject", msg->subject_);
             if (msg->max_forwards_)
-                req.header()->set("Max-Forwards", srs_int2str(msg->max_forwards_));
+                req.header()->set("Max-Forwards", srs_strconv_format_int(msg->max_forwards_));
 
             if (!msg->content_type_.empty())
                 req.header()->set_content_type(msg->content_type_);
@@ -1466,7 +1466,7 @@ srs_error_t SrsGbMediaTcpConn::do_cycle()
 
         // Show tips about the buffer to parse.
         if (reserved) {
-            string bytes = srs_string_dumps_hex((const char *)(buffer_ + reserved), length, 16);
+            string bytes = srs_strings_dumps_hex((const char *)(buffer_ + reserved), length, 16);
             srs_trace("PS: Consume reserved=%dB, length=%d, bytes=[%s]", reserved, length, bytes.c_str());
         }
 
@@ -1483,7 +1483,7 @@ srs_error_t SrsGbMediaTcpConn::do_cycle()
             reserved = 0; // Avoid reserving too much data.
         }
         if (reserved) {
-            string bytes = srs_string_dumps_hex(b.head(), reserved, 16);
+            string bytes = srs_strings_dumps_hex(b.head(), reserved, 16);
             srs_trace("PS: Reserved bytes for next loop, pos=%d, left=%d, total=%d, bytes=[%s]",
                       b.pos(), b.left(), b.size(), bytes.c_str());
             // Copy the bytes left to the start of buffer. Note that the left(reserved) bytes might be overlapped with
@@ -1723,7 +1723,7 @@ srs_error_t SrsGbMuxer::mux_h264(SrsTsMessage *msg, SrsBuffer *avs)
         if (
             nt != SrsAvcNaluTypeSPS && nt != SrsAvcNaluTypePPS && nt != SrsAvcNaluTypeIDR &&
             nt != SrsAvcNaluTypeNonIDR && nt != SrsAvcNaluTypeSEI && nt != SrsAvcNaluTypeAccessUnitDelimiter) {
-            string bytes = srs_string_dumps_hex(frame, frame_size, 4);
+            string bytes = srs_strings_dumps_hex(frame, frame_size, 4);
             srs_warn("GB: Ignore NALU nt=%d, frame=[%s]", nt, bytes.c_str());
             return err;
         }
@@ -2156,7 +2156,7 @@ srs_error_t SrsGbMuxer::connect()
     // Cleanup the data before connect again.
     close();
 
-    string url = srs_string_replace(output_, "[stream]", session_->sip_transport()->device_id());
+    string url = srs_strings_replace(output_, "[stream]", session_->sip_transport()->device_id());
     srs_trace("Muxer: Convert GB to RTMP %s", url.c_str());
 
     srs_utime_t cto = SRS_CONSTS_RTMP_TIMEOUT;
@@ -2258,8 +2258,8 @@ SrsSipMessage *SrsSipMessage::set_body(std::string v)
 {
     body_ = v;
     body_escaped_ = v;
-    body_escaped_ = srs_string_replace(body_escaped_, "\r", "\\r");
-    body_escaped_ = srs_string_replace(body_escaped_, "\n", "\\n");
+    body_escaped_ = srs_strings_replace(body_escaped_, "\r", "\\r");
+    body_escaped_ = srs_strings_replace(body_escaped_, "\n", "\\n");
     return this;
 }
 
@@ -2271,7 +2271,7 @@ srs_error_t SrsSipMessage::parse(ISrsHttpMessage *m)
     // the next message when skip current invalid message.
     string v;
     ISrsHttpResponseReader *br = m->body_reader();
-    if (!br->eof() && (err = srs_ioutil_read_all(br, v)) != srs_success) {
+    if (!br->eof() && (err = srs_io_readall(br, v)) != srs_success) {
         return srs_error_wrap(err, "read body");
     }
 
@@ -2282,7 +2282,7 @@ srs_error_t SrsSipMessage::parse(ISrsHttpMessage *m)
     if (type_ == HTTP_REQUEST) {
         // Parse request line.
         method_ = (http_method)m->method();
-        request_uri_ = srs_string_trim_start(m->path(), "/");
+        request_uri_ = srs_strings_trim_start(m->path(), "/");
         srs_sip_parse_address(request_uri_, request_uri_user_, request_uri_host_);
     } else if (type_ == HTTP_RESPONSE) {
         // Parse status line for response.
@@ -2372,34 +2372,34 @@ srs_error_t SrsSipMessage::parse_via(const std::string &via)
 {
     srs_error_t err = srs_success;
 
-    if (!srs_string_starts_with(via, "SIP/2.0/")) {
+    if (!srs_strings_starts_with(via, "SIP/2.0/")) {
         return srs_error_new(ERROR_GB_SIP_HEADER, "Via protocol invalid");
     }
 
-    if (srs_string_starts_with(via, "SIP/2.0/TCP")) {
+    if (srs_strings_starts_with(via, "SIP/2.0/TCP")) {
         via_transport_ = "TCP";
-    } else if (srs_string_starts_with(via, "SIP/2.0/UDP")) {
+    } else if (srs_strings_starts_with(via, "SIP/2.0/UDP")) {
         via_transport_ = "UDP";
     } else {
         return srs_error_new(ERROR_GB_SIP_HEADER, "Via transport invalid");
     }
 
-    vector<string> vs = srs_string_split(via, " ");
+    vector<string> vs = srs_strings_split(via, " ");
     if (vs.size() <= 1)
         return srs_error_new(ERROR_GB_SIP_HEADER, "Via no send-by");
 
-    vector<string> params = srs_string_split(vs[1], ";");
+    vector<string> params = srs_strings_split(vs[1], ";");
     if (params.size() <= 1)
         return srs_error_new(ERROR_GB_SIP_HEADER, "Via no params");
 
     via_send_by_ = params[0];
-    srs_parse_hostport(via_send_by_, via_send_by_address_, via_send_by_port_);
+    srs_net_split_hostport(via_send_by_, via_send_by_address_, via_send_by_port_);
 
     for (int i = 1; i < (int)params.size(); i++) {
         string param = params[i];
-        if (srs_string_starts_with(param, "rport")) {
+        if (srs_strings_starts_with(param, "rport")) {
             via_rport_ = param;
-        } else if (srs_string_starts_with(param, "branch")) {
+        } else if (srs_strings_starts_with(param, "branch")) {
             via_branch_ = param;
         }
     }
@@ -2414,7 +2414,7 @@ srs_error_t SrsSipMessage::parse_via(const std::string &via)
         return srs_error_new(ERROR_GB_SIP_HEADER, "Via no branch");
     // The branch ID inserted by an element compliant with this specification MUST always begin with the characters
     // "z9hG4bK". See https://www.ietf.org/rfc/rfc3261.html#section-8.1.1.7
-    if (!srs_string_starts_with(via_branch_, string("branch=") + SRS_GB_BRANCH_MAGIC)) {
+    if (!srs_strings_starts_with(via_branch_, string("branch=") + SRS_GB_BRANCH_MAGIC)) {
         return srs_error_new(ERROR_GB_SIP_HEADER, "Invalid branch=%s", via_branch_.c_str());
     }
 
@@ -2425,14 +2425,14 @@ srs_error_t SrsSipMessage::parse_from(const std::string &from)
 {
     srs_error_t err = srs_success;
 
-    vector<string> params = srs_string_split(from, ";");
+    vector<string> params = srs_strings_split(from, ";");
     if (params.size() < 2)
         return srs_error_new(ERROR_GB_SIP_HEADER, "From no params");
 
     from_address_ = params[0];
     for (int i = 1; i < (int)params.size(); i++) {
         string param = params[i];
-        if (srs_string_starts_with(param, "tag")) {
+        if (srs_strings_starts_with(param, "tag")) {
             from_tag_ = param;
         }
     }
@@ -2449,14 +2449,14 @@ srs_error_t SrsSipMessage::parse_to(const std::string &to)
 {
     srs_error_t err = srs_success;
 
-    vector<string> params = srs_string_split(to, ";");
+    vector<string> params = srs_strings_split(to, ";");
     if (params.size() < 1)
         return srs_error_new(ERROR_GB_SIP_HEADER, "To is empty");
 
     to_address_ = params[0];
     for (int i = 1; i < (int)params.size(); i++) {
         string param = params[i];
-        if (srs_string_starts_with(param, "tag")) {
+        if (srs_strings_starts_with(param, "tag")) {
             to_tag_ = param;
         }
     }
@@ -2468,7 +2468,7 @@ srs_error_t SrsSipMessage::parse_cseq(const std::string &cseq)
 {
     srs_error_t err = srs_success;
 
-    vector<string> params = srs_string_split(cseq, " ");
+    vector<string> params = srs_strings_split(cseq, " ");
     if (params.size() < 2)
         return srs_error_new(ERROR_GB_SIP_HEADER, "CSeq is empty");
 
@@ -2496,7 +2496,7 @@ srs_error_t SrsSipMessage::parse_contact(const std::string &contact)
     srs_error_t err = srs_success;
 
     srs_sip_parse_address(contact, contact_user_, contact_host_);
-    srs_parse_hostport(contact_host_, contact_host_address_, contact_host_port_);
+    srs_net_split_hostport(contact_host_, contact_host_address_, contact_host_port_);
 
     return err;
 }
@@ -2506,7 +2506,7 @@ SrsPackContext::SrsPackContext(ISrsPsPackHandler *handler)
     static uint32_t gid = 0;
     media_id_ = ++gid;
 
-    media_startime_ = srs_update_system_time();
+    media_startime_ = srs_time_now_realtime();
     media_nn_recovered_ = 0;
     media_nn_msgs_dropped_ = 0;
     media_reserved_ = 0;
@@ -2541,8 +2541,8 @@ srs_error_t SrsPackContext::on_ts_message(SrsTsMessage *msg)
     // We got new pack header and an optional system header.
     // if (ps_->id_ != h->ps_->id_) {
     //    stringstream ss;
-    //    if (h->ps_->has_pack_header_) ss << srs_fmt(", clock=%" PRId64 ", rate=%d", h->ps_->system_clock_reference_base_, h->ps_->program_mux_rate_);
-    //    if (h->ps_->has_system_header_) ss << srs_fmt(", rate_bound=%d, video_bound=%d, audio_bound=%d", h->ps_->rate_bound_, h->ps_->video_bound_, h->ps_->audio_bound_);
+    //    if (h->ps_->has_pack_header_) ss << srs_fmt_sprintf(", clock=%" PRId64 ", rate=%d", h->ps_->system_clock_reference_base_, h->ps_->program_mux_rate_);
+    //    if (h->ps_->has_system_header_) ss << srs_fmt_sprintf(", rate_bound=%d, video_bound=%d, audio_bound=%d", h->ps_->rate_bound_, h->ps_->video_bound_, h->ps_->audio_bound_);
     //    srs_trace("PS: New pack header=%d, system=%d%s", h->ps_->has_pack_header_, h->ps_->has_system_header_, ss.str().c_str());
     //}
 
@@ -2681,7 +2681,7 @@ srs_error_t SrsRecoverablePsContext::enter_recover_mode(SrsBuffer *stream, ISrsP
     // Print the error information for debugging.
     int npos = stream->pos();
     stream->skip(pos - stream->pos());
-    string bytes = srs_string_dumps_hex(stream->head(), stream->left(), 8);
+    string bytes = srs_strings_dumps_hex(stream->head(), stream->left(), 8);
 
     SrsPsDecodeHelper &h = ctx_.helper_;
     uint16_t pack_seq = h.pack_first_seq_;
@@ -2719,7 +2719,7 @@ srs_error_t SrsRecoverablePsContext::enter_recover_mode(SrsBuffer *stream, ISrsP
 
 void SrsRecoverablePsContext::quit_recover_mode(SrsBuffer *stream, ISrsPsMessageHandler *handler)
 {
-    string bytes = srs_string_dumps_hex(stream->head(), stream->left(), 8);
+    string bytes = srs_strings_dumps_hex(stream->head(), stream->left(), 8);
     srs_warn("PS: Quit recover=%d, seq=%u, bytes=[%s], pos=%d, left=%d", recover_, ctx_.helper_.rtp_seq_,
              bytes.c_str(), stream->pos(), stream->left());
     recover_ = 0;

@@ -831,7 +831,7 @@ VOID TEST(KernelRTCTest, StringDumpHexTest)
         data[0] = (char)0x3c;
         data[sizeof(data) - 2] = (char)0x67;
         data[sizeof(data) - 1] = (char)0xc3;
-        string r = srs_string_dumps_hex(data, sizeof(data), INT_MAX, 0, 0, 0);
+        string r = srs_strings_dumps_hex(data, sizeof(data), INT_MAX, 0, 0, 0);
         EXPECT_EQ(16, (int)r.length());
         EXPECT_EQ('3', r.at(0));
         EXPECT_EQ('c', r.at(1));
@@ -847,7 +847,7 @@ VOID TEST(KernelRTCTest, StringDumpHexTest)
         data[0] = (char)0x3c;
         data[sizeof(data) - 2] = (char)0x67;
         data[sizeof(data) - 1] = (char)0xc3;
-        string r = srs_string_dumps_hex(data, sizeof(data), INT_MAX, 0, 0, 0);
+        string r = srs_strings_dumps_hex(data, sizeof(data), INT_MAX, 0, 0, 0);
         EXPECT_EQ(16 * 1024, (int)r.length());
         EXPECT_EQ('3', r.at(0));
         EXPECT_EQ('c', r.at(1));
@@ -863,7 +863,7 @@ VOID TEST(KernelRTCTest, StringDumpHexTest)
         data[0] = (char)0x3c;
         data[sizeof(data) - 2] = (char)0x67;
         data[sizeof(data) - 1] = (char)0xc3;
-        string r = srs_string_dumps_hex(data, sizeof(data), INT_MAX, 0, 0, 0);
+        string r = srs_strings_dumps_hex(data, sizeof(data), INT_MAX, 0, 0, 0);
         EXPECT_EQ(16 * 1024, (int)r.length());
         EXPECT_EQ('3', r.at(0));
         EXPECT_EQ('c', r.at(1));
@@ -877,7 +877,7 @@ VOID TEST(KernelRTCTest, StringDumpHexTest)
         data[0] = (char)0x3c;
         data[sizeof(data) - 2] = (char)0x67;
         data[sizeof(data) - 1] = (char)0xc3;
-        string r = srs_string_dumps_hex(data, sizeof(data), INT_MAX, ',', 0, 0);
+        string r = srs_strings_dumps_hex(data, sizeof(data), INT_MAX, ',', 0, 0);
         EXPECT_EQ(16383 - 1, (int)r.length());
         EXPECT_EQ('3', r.at(0));
         EXPECT_EQ('c', r.at(1));
@@ -893,7 +893,7 @@ VOID TEST(KernelRTCTest, StringDumpHexTest)
         data[0] = (char)0x3c;
         data[sizeof(data) - 2] = (char)0x67;
         data[sizeof(data) - 1] = (char)0xc3;
-        string r = srs_string_dumps_hex(data, sizeof(data), INT_MAX, ',', 0, 0);
+        string r = srs_strings_dumps_hex(data, sizeof(data), INT_MAX, ',', 0, 0);
         EXPECT_EQ(16383 - 1, (int)r.length());
         EXPECT_EQ('3', r.at(0));
         EXPECT_EQ('c', r.at(1));
@@ -907,7 +907,7 @@ VOID TEST(KernelRTCTest, StringDumpHexTest)
         data[0] = (char)0x3c;
         data[sizeof(data) - 2] = (char)0x67;
         data[sizeof(data) - 1] = (char)0xc3;
-        string r = srs_string_dumps_hex(data, sizeof(data), INT_MAX, ',', 5461, '\n');
+        string r = srs_strings_dumps_hex(data, sizeof(data), INT_MAX, ',', 5461, '\n');
         EXPECT_EQ(16383 - 1, (int)r.length());
         EXPECT_EQ('3', r.at(0));
         EXPECT_EQ('c', r.at(1));
@@ -1294,35 +1294,35 @@ VOID TEST(KernelRTCTest, DecodeHeaderWithPadding)
 VOID TEST(KernelRTCTest, DumpsHexToString)
 {
     if (true) {
-        EXPECT_STREQ("", srs_string_dumps_hex(NULL, 0).c_str());
+        EXPECT_STREQ("", srs_strings_dumps_hex(NULL, 0).c_str());
     }
 
     if (true) {
         uint8_t data[] = {0, 0, 0, 0};
-        EXPECT_STREQ("00 00 00 00", srs_string_dumps_hex((const char *)data, sizeof(data)).c_str());
+        EXPECT_STREQ("00 00 00 00", srs_strings_dumps_hex((const char *)data, sizeof(data)).c_str());
     }
 
     if (true) {
         uint8_t data[] = {0, 1, 2, 3};
-        EXPECT_STREQ("00 01 02 03", srs_string_dumps_hex((const char *)data, sizeof(data)).c_str());
+        EXPECT_STREQ("00 01 02 03", srs_strings_dumps_hex((const char *)data, sizeof(data)).c_str());
     }
 
     if (true) {
         uint8_t data[] = {0xa, 3, 0xf, 3};
-        EXPECT_STREQ("0a 03 0f 03", srs_string_dumps_hex((const char *)data, sizeof(data)).c_str());
+        EXPECT_STREQ("0a 03 0f 03", srs_strings_dumps_hex((const char *)data, sizeof(data)).c_str());
     }
 
     if (true) {
         uint8_t data[] = {0xa, 3, 0xf, 3};
-        EXPECT_STREQ("0a,03,0f,03", srs_string_dumps_hex((const char *)data, sizeof(data), INT_MAX, ',', 0, 0).c_str());
-        EXPECT_STREQ("0a030f03", srs_string_dumps_hex((const char *)data, sizeof(data), INT_MAX, '\0', 0, 0).c_str());
-        EXPECT_STREQ("0a,03,\n0f,03", srs_string_dumps_hex((const char *)data, sizeof(data), INT_MAX, ',', 2, '\n').c_str());
-        EXPECT_STREQ("0a,03,0f,03", srs_string_dumps_hex((const char *)data, sizeof(data), INT_MAX, ',', 2, '\0').c_str());
+        EXPECT_STREQ("0a,03,0f,03", srs_strings_dumps_hex((const char *)data, sizeof(data), INT_MAX, ',', 0, 0).c_str());
+        EXPECT_STREQ("0a030f03", srs_strings_dumps_hex((const char *)data, sizeof(data), INT_MAX, '\0', 0, 0).c_str());
+        EXPECT_STREQ("0a,03,\n0f,03", srs_strings_dumps_hex((const char *)data, sizeof(data), INT_MAX, ',', 2, '\n').c_str());
+        EXPECT_STREQ("0a,03,0f,03", srs_strings_dumps_hex((const char *)data, sizeof(data), INT_MAX, ',', 2, '\0').c_str());
     }
 
     if (true) {
         uint8_t data[] = {0xa, 3, 0xf};
-        EXPECT_STREQ("0a 03", srs_string_dumps_hex((const char *)data, sizeof(data), 2).c_str());
+        EXPECT_STREQ("0a 03", srs_strings_dumps_hex((const char *)data, sizeof(data), 2).c_str());
     }
 }
 
@@ -1634,7 +1634,7 @@ VOID TEST(KernelRTCTest, Ntp)
 
     if (true) {
         // Test current systime to ntp.
-        srs_utime_t now_ms = srs_get_system_time() / 1000;
+        srs_utime_t now_ms = srs_time_now_cached() / 1000;
         SrsNtp ntp = SrsNtp::from_time_ms(now_ms);
 
         ASSERT_EQ((srs_utime_t)ntp.system_ms_, now_ms);
@@ -1667,7 +1667,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportNormal)
         SrsRtpPacket *video_rtp_pkt = new SrsRtpPacket();
         SrsUniquePtr<SrsRtpPacket> video_rtp_pkt_uptr(video_rtp_pkt);
 
-        uint32_t video_absolute_ts = srs_get_system_time();
+        uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
         video_rtp_pkt->header.set_timestamp(video_rtp_ts);
@@ -1733,7 +1733,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportOutOfOrder)
         SrsRtpPacket *video_rtp_pkt = new SrsRtpPacket();
         SrsUniquePtr<SrsRtpPacket> video_rtp_pkt_uptr(video_rtp_pkt);
 
-        uint32_t video_absolute_ts = srs_get_system_time();
+        uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
         video_rtp_pkt->header.set_timestamp(video_rtp_ts);
@@ -1804,7 +1804,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportConsecutive)
         SrsRtpPacket *video_rtp_pkt = new SrsRtpPacket();
         SrsUniquePtr<SrsRtpPacket> video_rtp_pkt_uptr(video_rtp_pkt);
 
-        uint32_t video_absolute_ts = srs_get_system_time();
+        uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
         video_rtp_pkt->header.set_timestamp(video_rtp_ts);
@@ -1908,7 +1908,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportDuplicated)
         SrsRtpPacket *video_rtp_pkt = new SrsRtpPacket();
         SrsUniquePtr<SrsRtpPacket> video_rtp_pkt_uptr(video_rtp_pkt);
 
-        uint32_t video_absolute_ts = srs_get_system_time();
+        uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
         video_rtp_pkt->header.set_timestamp(video_rtp_ts);

@@ -878,7 +878,7 @@ srs_error_t SrsRtcTcpConn::handshake()
     bool is_rtp_or_rtcp = srs_is_rtp_or_rtcp((uint8_t *)pkt_, npkt);
     if (!is_stun) {
         return srs_error_new(ERROR_RTC_TCP_PACKET, "invalid packet stun=%d, rtp/rtcp=%d, pkt=%s",
-                             is_stun, is_rtp_or_rtcp, srs_string_dumps_hex(pkt_, npkt, 8).c_str());
+                             is_stun, is_rtp_or_rtcp, srs_strings_dumps_hex(pkt_, npkt, 8).c_str());
     }
 
     // Find session by ping(BindingRequest).

@@ -156,12 +156,12 @@ void asan_report_callback(const char *str)
     // No error code for assert failed.
     errno = 0;
 
-    std::vector<std::string> asan_logs = srs_string_split(string(str), "\n");
+    std::vector<std::string> asan_logs = srs_strings_split(string(str), "\n");
     size_t log_count = asan_logs.size();
     for (size_t i = 0; i < log_count; i++) {
         std::string log = asan_logs[i];
 
-        if (!srs_string_starts_with(srs_string_trim_start(log, " "), "#")) {
+        if (!srs_strings_starts_with(srs_strings_trim_start(log, " "), "#")) {
             srs_error("%s", log.c_str());
             continue;
         }

@@ -1468,7 +1468,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
-        HELPER_ASSERT_SUCCESS(r.set_url("/index.flv?start=" + srs_int2str(nn_flv_prefix + 2), false));
+        HELPER_ASSERT_SUCCESS(r.set_url("/index.flv?start=" + srs_strconv_format_int(nn_flv_prefix + 2), false));
 
         HELPER_ASSERT_SUCCESS(h.serve_http(&w, &r));
 

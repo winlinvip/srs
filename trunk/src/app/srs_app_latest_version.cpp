@@ -223,7 +223,7 @@ srs_error_t SrsLatestVersion::cycle()
         }
 
         string url;
-        srs_utime_t starttime = srs_update_system_time();
+        srs_utime_t starttime = srs_time_now_realtime();
         if ((err = query_latest_version(url)) != srs_success) {
             srs_trace("query release err %s", srs_error_summary(err).c_str());
             srs_freep(err); // Ignore any error.
@@ -231,7 +231,7 @@ srs_error_t SrsLatestVersion::cycle()
 
         srs_trace("Finish query id=%s, session=%s, eip=%s, match=%s, stable=%s, cost=%dms, url=%s",
                   server_id_.c_str(), session_id_.c_str(), srs_get_public_internet_address().c_str(), match_version_.c_str(),
-                  stable_version_.c_str(), srsu2msi(srs_update_system_time() - starttime), url.c_str());
+                  stable_version_.c_str(), srsu2msi(srs_time_now_realtime() - starttime), url.c_str());
 
         srs_usleep(3600 * SRS_UTIME_SECONDS); // Every an hour.
     }
@@ -249,8 +249,8 @@ srs_error_t SrsLatestVersion::query_latest_version(string &url)
        << "version=v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_REVISION
        << "&id=" << server_id_ << "&session=" << session_id_ << "&role=srs"
        << "&eip=" << srs_get_public_internet_address()
-       << "&ts=" << srs_get_system_time()
-       << "&alive=" << srsu2ms(srs_get_system_time() - srs_get_system_startup_time()) / 1000;
+       << "&ts=" << srs_time_now_cached()
+       << "&alive=" << srsu2ms(srs_time_now_cached() - srs_time_since_startup()) / 1000;
     srs_build_features(ss);
     SrsStatistic::instance()->dumps_hints_kv(ss);
     url = ss.str();

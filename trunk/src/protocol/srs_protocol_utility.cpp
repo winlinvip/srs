@@ -41,13 +41,13 @@ using namespace std;
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_st.hpp>
 
-void srs_discovery_tc_url(string tcUrl, string &schema, string &host, string &vhost, string &app, string &stream, int &port, string &param)
+void srs_net_url_parse_tcurl(string tcUrl, string &schema, string &host, string &vhost, string &app, string &stream, int &port, string &param)
 {
     // For compatibility, transform
     //      rtmp://ip/app...vhost...VHOST/stream
     // to typical format:
     //      rtmp://ip/app?vhost=VHOST/stream
-    string fullUrl = srs_string_replace(tcUrl, "...vhost...", "?vhost=");
+    string fullUrl = srs_strings_replace(tcUrl, "...vhost...", "?vhost=");
 
     // Standard URL is:
     //      rtmp://ip/app/app2/stream?k=v
@@ -68,7 +68,7 @@ void srs_discovery_tc_url(string tcUrl, string &schema, string &host, string &vh
 
     // Remove the _definst_ of FMLE URL.
     if (fullUrl.find("/_definst_") != string::npos) {
-        fullUrl = srs_string_replace(fullUrl, "/_definst_", "");
+        fullUrl = srs_strings_replace(fullUrl, "/_definst_", "");
     }
 
     // Parse the standard URL.
@@ -83,12 +83,12 @@ void srs_discovery_tc_url(string tcUrl, string &schema, string &host, string &vh
     schema = uri.get_schema();
     host = uri.get_host();
     port = uri.get_port();
-    stream = srs_path_basename(uri.get_path());
+    stream = srs_path_filepath_base(uri.get_path());
     param = uri.get_query().empty() ? "" : "?" + uri.get_query();
     param += uri.get_fragment().empty() ? "" : "#" + uri.get_fragment();
 
     // Parse app without the prefix slash.
-    app = srs_path_dirname(uri.get_path());
+    app = srs_path_filepath_dir(uri.get_path());
     if (!app.empty() && app.at(0) == '/')
         app = app.substr(1);
     if (app.empty())
@@ -109,7 +109,7 @@ void srs_discovery_tc_url(string tcUrl, string &schema, string &host, string &vh
     }
 }
 
-void srs_guess_stream_by_app(string &app, string &param, string &stream)
+void srs_net_url_guess_stream(string &app, string &param, string &stream)
 {
     size_t pos = std::string::npos;
 
@@ -132,7 +132,7 @@ void srs_guess_stream_by_app(string &app, string &param, string &stream)
     }
 }
 
-void srs_parse_query_string(string q, map<string, string> &query)
+void srs_net_url_parse_query(string q, map<string, string> &query)
 {
     // query string flags.
     static vector<string> flags;
@@ -144,7 +144,7 @@ void srs_parse_query_string(string q, map<string, string> &query)
         flags.push_back(";");
     }
 
-    vector<string> kvs = srs_string_split(q, flags);
+    vector<string> kvs = srs_strings_split(q, flags);
     for (int i = 0; i < (int)kvs.size(); i += 2) {
         string k = kvs.at(i);
         string v = (i < (int)kvs.size() - 1) ? kvs.at(i + 1) : "";
@@ -153,7 +153,7 @@ void srs_parse_query_string(string q, map<string, string> &query)
     }
 }
 
-string srs_generate_tc_url(string schema, string host, string vhost, string app, int port)
+string srs_net_url_encode_tcurl(string schema, string host, string vhost, string app, int port)
 {
     string tcUrl = schema + "://";
 
@@ -164,7 +164,7 @@ string srs_generate_tc_url(string schema, string host, string vhost, string app,
     }
 
     if (port && port != SRS_CONSTS_RTMP_DEFAULT_PORT) {
-        tcUrl += ":" + srs_int2str(port);
+        tcUrl += ":" + srs_strconv_format_int(port);
     }
 
     tcUrl += "/" + app;
@@ -172,7 +172,7 @@ string srs_generate_tc_url(string schema, string host, string vhost, string app,
     return tcUrl;
 }
 
-string srs_generate_stream_with_query(string host, string vhost, string stream, string param, bool with_vhost)
+string srs_net_url_encode_stream(string host, string vhost, string stream, string param, bool with_vhost)
 {
     string url = stream;
     string query = param;
@@ -182,7 +182,7 @@ string srs_generate_stream_with_query(string host, string vhost, string stream, 
     if (query.find("vhost=") == string::npos) {
         if (vhost != SRS_CONSTS_RTMP_DEFAULT_VHOST) {
             guessVhost = vhost;
-        } else if (!srs_is_ipv4(host)) {
+        } else if (!srs_net_is_ipv4(host)) {
             guessVhost = host;
         }
     }
@@ -210,10 +210,10 @@ string srs_generate_stream_with_query(string host, string vhost, string stream, 
     }
 
     // Remove the start & and ? when param is empty.
-    query = srs_string_trim_start(query, "&?");
+    query = srs_strings_trim_start(query, "&?");
 
     // Prefix query with ?.
-    if (!query.empty() && !srs_string_starts_with(query, "?")) {
+    if (!query.empty() && !srs_strings_starts_with(query, "?")) {
         url += "?";
     }
 
@@ -225,7 +225,7 @@ string srs_generate_stream_with_query(string host, string vhost, string stream, 
     return url;
 }
 
-string srs_generate_stream_url(string vhost, string app, string stream)
+string srs_net_url_encode_sid(string vhost, string app, string stream)
 {
     std::string url = "";
 
@@ -234,12 +234,12 @@ string srs_generate_stream_url(string vhost, string app, string stream)
     }
     url += "/" + app;
     // Note that we ignore any extension.
-    url += "/" + srs_path_filename(stream);
+    url += "/" + srs_path_filepath_filename(stream);
 
     return url;
 }
 
-void srs_parse_rtmp_url(string url, string &tcUrl, string &stream)
+void srs_net_url_parse_rtmp_url(string url, string &tcUrl, string &stream)
 {
     size_t pos;
 
@@ -251,10 +251,10 @@ void srs_parse_rtmp_url(string url, string &tcUrl, string &stream)
     }
 }
 
-string srs_generate_rtmp_url(string server, int port, string host, string vhost, string app, string stream, string param)
+string srs_net_url_encode_rtmp_url(string server, int port, string host, string vhost, string app, string stream, string param)
 {
-    string tcUrl = "rtmp://" + server + ":" + srs_int2str(port) + "/" + app;
-    string streamWithQuery = srs_generate_stream_with_query(host, vhost, stream, param);
+    string tcUrl = "rtmp://" + server + ":" + srs_strconv_format_int(port) + "/" + app;
+    string streamWithQuery = srs_net_url_encode_stream(host, vhost, stream, param);
     string url = tcUrl + "/" + streamWithQuery;
     return url;
 }

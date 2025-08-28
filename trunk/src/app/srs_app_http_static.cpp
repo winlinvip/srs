@@ -92,7 +92,7 @@ srs_error_t SrsHlsStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMess
 
     // Correct the app and stream by path, which is created from template.
     // @remark Be careful that the stream has extension now, might cause identify fail.
-    req->stream = srs_path_basename(r->path());
+    req->stream = srs_path_filepath_base(r->path());
 
     // Served by us.
     *served = true;
@@ -107,7 +107,7 @@ srs_error_t SrsHlsStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMess
 
         if (is_interrupt(ctx)) {
             srs_warn("Reject: HLS stream is EOF, ctx=%s", ctx.c_str());
-            return srs_go_http_error(w, SRS_CONSTS_HTTP_NotFound, srs_fmt("HLS stream %s is EOF", ctx.c_str()));
+            return srs_go_http_error(w, SRS_CONSTS_HTTP_NotFound, srs_fmt_sprintf("HLS stream %s is EOF", ctx.c_str()));
         }
 
         err = serve_exists_session(w, r, factory, fullpath);
@@ -154,7 +154,7 @@ srs_error_t SrsHlsStream::serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpM
     if (ctx.empty()) {
         // make sure unique
         do {
-            ctx = srs_random_str(8); // the same as cid
+            ctx = srs_rand_gen_str(8); // the same as cid
         } while (ctx_is_exist(ctx));
     }
 
@@ -215,7 +215,7 @@ srs_error_t SrsHlsStream::serve_exists_session(ISrsHttpResponseWriter *w, ISrsHt
     }
 
     string content;
-    if ((err = srs_ioutil_read_all(fs.get(), content)) != srs_success) {
+    if ((err = srs_io_readall(fs.get(), content)) != srs_success) {
         return srs_error_wrap(err, "read %s", fullpath.c_str());
     }
 
@@ -231,9 +231,9 @@ srs_error_t SrsHlsStream::serve_exists_session(ISrsHttpResponseWriter *w, ISrsHt
         size_t pos_query = content.find(".ts?");
         if (pos_query != string::npos) {
             query += "&";
-            content = srs_string_replace(content, ".ts?", query);
+            content = srs_strings_replace(content, ".ts?", query);
         } else {
-            content = srs_string_replace(content, ".ts", query);
+            content = srs_strings_replace(content, ".ts", query);
         }
     } else if (content.find(".m4s") != string::npos) {
         string ctx = r->query_get(SRS_CONTEXT_IN_HLS);
@@ -242,9 +242,9 @@ srs_error_t SrsHlsStream::serve_exists_session(ISrsHttpResponseWriter *w, ISrsHt
         size_t pos_query = content.find(".m4s?");
         if (pos_query != string::npos) {
             query += "&";
-            content = srs_string_replace(content, ".m4s?", query);
+            content = srs_strings_replace(content, ".m4s?", query);
         } else {
-            content = srs_string_replace(content, ".m4s", query);
+            content = srs_strings_replace(content, ".m4s", query);
         }
     } else if (content.find("init.mp4") != string::npos) {
         string ctx = r->query_get(SRS_CONTEXT_IN_HLS);
@@ -253,9 +253,9 @@ srs_error_t SrsHlsStream::serve_exists_session(ISrsHttpResponseWriter *w, ISrsHt
         size_t pos_query = content.find("init.mp4?");
         if (pos_query != string::npos) {
             query += "&";
-            content = srs_string_replace(content, "init.mp4?", query);
+            content = srs_strings_replace(content, "init.mp4?", query);
         } else {
-            content = srs_string_replace(content, "init.mp4", query);
+            content = srs_strings_replace(content, "init.mp4", query);
         }
     }
 
@@ -288,7 +288,7 @@ void SrsHlsStream::alive(std::string ctx, ISrsRequest *req)
         SrsHlsVirtualConn *conn = new SrsHlsVirtualConn();
         conn->req = req->copy();
         conn->ctx = ctx;
-        conn->request_time = srs_get_system_time();
+        conn->request_time = srs_time_now_cached();
         map_ctx_info_.insert(make_pair(ctx, conn));
 
         // Update the conn of stat client, which is used for receiving the event of kickoff.
@@ -304,7 +304,7 @@ void SrsHlsStream::alive(std::string ctx, ISrsRequest *req)
     // Update alive time of context for virtual connection.
     SrsHlsVirtualConn *conn = it->second;
     if (!conn->interrupt) {
-        conn->request_time = srs_get_system_time();
+        conn->request_time = srs_time_now_cached();
     }
 }
 
@@ -381,7 +381,7 @@ srs_error_t SrsHlsStream::on_timer(srs_utime_t interval)
         SrsHlsVirtualConn *info = it->second;
 
         srs_utime_t hls_window = _srs_config->get_hls_window(info->req->vhost);
-        if (info->request_time + (2 * hls_window) < srs_get_system_time()) {
+        if (info->request_time + (2 * hls_window) < srs_time_now_cached()) {
             SrsContextRestore(_srs_context->get_id());
             _srs_context->set_id(SrsContextId().set_value(ctx));
 
@@ -666,14 +666,14 @@ srs_error_t SrsHttpStaticServer::mount_vhost(string vhost, string &pmount)
     std::string dir = _srs_config->get_vhost_http_dir(vhost);
 
     // replace the vhost variable
-    mount = srs_string_replace(mount, "[vhost]", vhost);
-    dir = srs_string_replace(dir, "[vhost]", vhost);
+    mount = srs_strings_replace(mount, "[vhost]", vhost);
+    dir = srs_strings_replace(dir, "[vhost]", vhost);
 
     // remove the default vhost mount
-    mount = srs_string_replace(mount, SRS_CONSTS_RTMP_DEFAULT_VHOST "/", "/");
+    mount = srs_strings_replace(mount, SRS_CONSTS_RTMP_DEFAULT_VHOST "/", "/");
 
     // the dir mount must always ends with "/"
-    if (mount != "/" && !srs_string_ends_with(mount, "/")) {
+    if (mount != "/" && !srs_strings_ends_with(mount, "/")) {
         mount += "/";
     }
 

@@ -610,7 +610,7 @@ VOID TEST(ProtocolHandshakeTest, OpensslSha256)
     uint8_t expect_digest[] = {
         0x1b, 0xc7, 0xe6, 0x14, 0xd5, 0x19, 0x8d, 0x99, 0x42, 0x0a, 0x21, 0x95, 0x26, 0x9a, 0x8a, 0x56,
         0xb4, 0x82, 0x2a, 0x7f, 0xd3, 0x1d, 0xc3, 0xd8, 0x92, 0x97, 0xc4, 0x61, 0xb7, 0x4d, 0x5d, 0xd2};
-    EXPECT_TRUE(srs_bytes_equals(digest, (char *)expect_digest, 32));
+    EXPECT_TRUE(srs_bytes_equal(digest, (char *)expect_digest, 32));
 }
 
 // verify the dh key
@@ -631,7 +631,7 @@ VOID TEST(ProtocolHandshakeTest, DHKey)
     HELPER_EXPECT_SUCCESS(dh.copy_public_key(pub_key2, pkey_size));
     ASSERT_EQ(128, pkey_size);
 
-    EXPECT_TRUE(srs_bytes_equals(pub_key1, pub_key2, 128));
+    EXPECT_TRUE(srs_bytes_equal(pub_key1, pub_key2, 128));
 
     // another dh
     srs_internal::SrsDH dh0;
@@ -641,7 +641,7 @@ VOID TEST(ProtocolHandshakeTest, DHKey)
     HELPER_EXPECT_SUCCESS(dh0.copy_public_key(pub_key2, pkey_size));
     ASSERT_EQ(128, pkey_size);
 
-    EXPECT_FALSE(srs_bytes_equals(pub_key1, pub_key2, 128));
+    EXPECT_FALSE(srs_bytes_equal(pub_key1, pub_key2, 128));
 }
 
 // flash will sendout a c0c1 encrypt by ssl.
@@ -685,13 +685,13 @@ VOID TEST(ProtocolHandshakeTest, VerifyFPC0C1)
         0x01, 0xc6, 0xba, 0xe4, 0xb8, 0xd5, 0xbd, 0x7b, 0x43, 0xc9, 0x69, 0x6b, 0x40, 0xf7, 0xdc, 0x65, 0xa4, 0xf7, 0xca, 0x1f, 0xd8, 0xe5, 0xba, 0x4c, 0xdf, 0xe4, 0x64, 0x9e, 0x7d, 0xbd, 0x54, 0x13, 0x13, 0xc6, 0x0c, 0xb8, 0x1d, 0x31, 0x0a, 0x49, 0xe2, 0x43, 0xb6, 0x95, 0x5f, 0x05, 0x6e, 0x66,
         0xf4, 0x21, 0xa8, 0x65, 0xce, 0xf8, 0x8e, 0xcc, 0x16, 0x1e, 0xbb, 0xd8, 0x0e, 0xcb, 0xd2, 0x48, 0x37, 0xaf, 0x4e, 0x67, 0x45, 0xf1, 0x79, 0x69, 0xd2, 0xee, 0xa4, 0xb5, 0x01, 0xbf, 0x57, 0x0f, 0x68, 0x37, 0xbe, 0x4e, 0xff, 0xc9, 0xb9, 0x92, 0x23, 0x06, 0x75, 0xa0, 0x42, 0xe4, 0x0a, 0x30,
         0xf0, 0xaf, 0xb0, 0x54, 0x88, 0x7c, 0xc0, 0xc1, 0x0c, 0x6d, 0x01, 0x36, 0x63, 0xf3, 0x3d, 0xbc, 0x72, 0xf6, 0x96, 0xc8, 0x87, 0xab, 0x8b, 0x0c, 0x91, 0x2f, 0x42, 0x2a, 0x11, 0xf6, 0x2d, 0x5e};
-    EXPECT_TRUE(srs_bytes_equals(c1.get_key(), (char *)key, 128));
+    EXPECT_TRUE(srs_bytes_equal(c1.get_key(), (char *)key, 128));
 
     // 32bytes digest
     uint8_t digest[] = {
         0x6c, 0x96, 0x9f, 0x26, 0xeb, 0xdc, 0x61, 0xc4, 0x8f, 0xd3, 0x2b, 0x81, 0x86, 0x6c, 0x9c, 0xc2,
         0xb1, 0xb5, 0xbc, 0xa6, 0xd6, 0xd6, 0x1d, 0xce, 0x93, 0x78, 0xb3, 0xec, 0xa8, 0x64, 0x19, 0x13};
-    EXPECT_TRUE(srs_bytes_equals(c1.get_digest(), (char *)digest, 32));
+    EXPECT_TRUE(srs_bytes_equal(c1.get_digest(), (char *)digest, 32));
 }
 
 VOID TEST(ProtocolHandshakeTest, ComplexHandshake)
@@ -838,13 +838,13 @@ VOID TEST(ProtocolHandshakeTest, BytesEqual)
     uint8_t a2[] = {0x01, 0x02};
     uint8_t b2[] = {0x02, 0x03};
 
-    EXPECT_TRUE(srs_bytes_equals(NULL, NULL, 0));
-    EXPECT_FALSE(srs_bytes_equals(a1, NULL, 1));
-    EXPECT_FALSE(srs_bytes_equals(NULL, a1, 1));
-    EXPECT_FALSE(srs_bytes_equals(a1, b1, 1));
-    EXPECT_TRUE(srs_bytes_equals(a1, a1, 1));
-    EXPECT_TRUE(srs_bytes_equals(a1, a2, 1));
-    EXPECT_FALSE(srs_bytes_equals(a1, b2, 1));
+    EXPECT_TRUE(srs_bytes_equal(NULL, NULL, 0));
+    EXPECT_FALSE(srs_bytes_equal(a1, NULL, 1));
+    EXPECT_FALSE(srs_bytes_equal(NULL, a1, 1));
+    EXPECT_FALSE(srs_bytes_equal(a1, b1, 1));
+    EXPECT_TRUE(srs_bytes_equal(a1, a1, 1));
+    EXPECT_TRUE(srs_bytes_equal(a1, a2, 1));
+    EXPECT_FALSE(srs_bytes_equal(a1, b2, 1));
 }
 
 /**
@@ -863,21 +863,21 @@ VOID TEST(ProtocolUtilityTest, GenerateTcUrl)
     vhost = "__defaultVhost__";
     app = "live";
     port = 1935;
-    tcUrl = srs_generate_tc_url("rtmp", ip, vhost, app, port);
+    tcUrl = srs_net_url_encode_tcurl("rtmp", ip, vhost, app, port);
     EXPECT_STREQ("rtmp://127.0.0.1/live", tcUrl.c_str());
 
     ip = "127.0.0.1";
     vhost = "demo";
     app = "live";
     port = 1935;
-    tcUrl = srs_generate_tc_url("rtmp", ip, vhost, app, port);
+    tcUrl = srs_net_url_encode_tcurl("rtmp", ip, vhost, app, port);
     EXPECT_STREQ("rtmp://demo/live", tcUrl.c_str());
 
     ip = "127.0.0.1";
     vhost = "demo";
     app = "live";
     port = 19351;
-    tcUrl = srs_generate_tc_url("rtmp", ip, vhost, app, port);
+    tcUrl = srs_net_url_encode_tcurl("rtmp", ip, vhost, app, port);
     EXPECT_STREQ("rtmp://demo:19351/live", tcUrl.c_str());
 }
 
@@ -4453,7 +4453,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsCallPacket)
         0x31, 0x20, 0x31, 0x36, 0x3a, 0x32, 0x30, 0x3a,
         0x31, 0x30, 0x2e, 0x32, 0x39, 0x38, 0x34, 0x00,
         0x00, 0x09};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4496,7 +4496,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsCallResPacket)
         0x31, 0x20, 0x31, 0x36, 0x3a, 0x32, 0x30, 0x3a,
         0x31, 0x30, 0x2e, 0x32, 0x39, 0x38, 0x34, 0x00,
         0x00, 0x09};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4519,7 +4519,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsCreateStreamPacket)
         0x72, 0x65, 0x61, 0x74, 0x65, 0x53, 0x74, 0x72,
         0x65, 0x61, 0x6d, 0x00, 0x40, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x05};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4545,7 +4545,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsFMLEStartPacket)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x05, 0x02, 0x00, 0x0a, 0x6c, 0x69, 0x76,
         0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4575,7 +4575,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsFMLEStartResPacket)
         0x4d, 0x4c, 0x45, 0x53, 0x74, 0x61, 0x72, 0x74,
         0x00, 0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x05, 0x06};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
 }
 
 /**
@@ -4603,7 +4603,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsPublishPacket)
         0x02, 0x00, 0x0a, 0x6c, 0x69, 0x76, 0x65, 0x73,
         0x74, 0x72, 0x65, 0x61, 0x6d, 0x02, 0x00, 0x04,
         0x6c, 0x69, 0x76, 0x65};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
 }
 
 /**
@@ -4638,7 +4638,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsPlayResPacket)
         0x73, 0x74, 0x61, 0x72, 0x74, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x09};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4662,7 +4662,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsOnBWDonePacket)
         0x6e, 0x42, 0x57, 0x44, 0x6f, 0x6e, 0x65, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x05};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4697,7 +4697,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsOnStatusCallPacket)
         0x05, 0x73, 0x74, 0x61, 0x72, 0x74, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x09};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4729,7 +4729,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsOnStatusDataPacket)
         0x65, 0x61, 0x6d, 0x00, 0x05, 0x73, 0x74, 0x61,
         0x72, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x09};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4754,7 +4754,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsSampleAccessPacket)
         0x52, 0x74, 0x6d, 0x70, 0x53, 0x61, 0x6d, 0x70,
         0x6c, 0x65, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73,
         0x01, 0x01, 0x01, 0x01};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4786,7 +4786,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsOnMetaDataPacket)
         0x00, 0x00, 0x00, 0x06, 0x68, 0x65, 0x69, 0x67,
         0x68, 0x74, 0x00, 0x40, 0x82, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x09};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
 }
 
 /**
@@ -4806,7 +4806,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsSetWindowAckSizePacket)
     uint8_t buf[] = {
         0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x05,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x90, 0x00};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), (char *)buf, sizeof(buf)));
 }
 
 /**
@@ -4826,7 +4826,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsAcknowledgementPacket)
     char buf[] = {
         0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x03,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4846,7 +4846,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsSetChunkSizePacket)
     char buf[] = {
         0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4868,7 +4868,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsSetPeerBandwidthPacket)
         0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00,
         0x01};
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
 }
 
 /**
@@ -4892,7 +4892,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsUserControlPacket)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
         0x00, 0x01, 0x00, 0x00, 0x00, 0x10};
 
-    EXPECT_TRUE(srs_bytes_equals(bio.out_buffer.bytes(), buf, sizeof(buf)));
+    EXPECT_TRUE(srs_bytes_equal(bio.out_buffer.bytes(), buf, sizeof(buf)));
     EXPECT_TRUE(true);
 }
 
@@ -5168,7 +5168,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
     std::string param;
 
     req.stream = "livestream";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
@@ -5178,7 +5178,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
     EXPECT_EQ(1935, req.port);
 
     req.stream = "livestream";
-    srs_discovery_tc_url("rtmp://s td.os srs.n et/li v e",
+    srs_net_url_parse_tcurl("rtmp://s td.os srs.n et/li v e",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
@@ -5188,7 +5188,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
     EXPECT_EQ(1935, req.port);
 
     req.stream = "livestream";
-    srs_discovery_tc_url("rtmp://s\ntd.o\rssrs.ne\nt/li\nve",
+    srs_net_url_parse_tcurl("rtmp://s\ntd.o\rssrs.ne\nt/li\nve",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
@@ -5198,7 +5198,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
     EXPECT_EQ(1935, req.port);
 
     req.stream = "livestream";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live ",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live ",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
@@ -5216,28 +5216,28 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
 
     param = "";
     req.stream = "livestream";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live#b=2",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live#b=2",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("#b=2", param.c_str());
 
     param = "";
     req.stream = "livestream";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live?a=1#b=2",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1#b=2",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1#b=2", param.c_str());
 
     param = "";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live?a=1&c=3#b=2",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1&c=3#b=2",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1&c=3#b=2", param.c_str());
 
     param = "";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live?a=1&c=3#b=2#d=4",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1&c=3#b=2#d=4",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1&c=3#b=2#d=4", param.c_str());
 
     param = "";
-    srs_discovery_tc_url("rtmp://std.ossrs.net/live?a=1#e=5&c=3#b=2#d=4",
+    srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1#e=5&c=3#b=2#d=4",
                          req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1#e=5&c=3#b=2#d=4", param.c_str());
 }

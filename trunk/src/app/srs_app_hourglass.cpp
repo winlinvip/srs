@@ -209,7 +209,7 @@ srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
 
     static srs_utime_t clock = 0;
 
-    srs_utime_t now = srs_update_system_time();
+    srs_utime_t now = srs_time_now_realtime();
     if (!clock) {
         clock = now;
         return err;

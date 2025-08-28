@@ -639,7 +639,7 @@ srs_error_t SrsHybridServer::acquire_pid_file()
     }
 
     // write the pid
-    string pid = srs_int2str(getpid());
+    string pid = srs_strconv_format_int(getpid());
     if (write(fd, pid.c_str(), pid.length()) != (int)pid.length()) {
         return srs_error_new(ERROR_SYSTEM_PID_WRITE_FILE, "write pid=%s to file=%s", pid.c_str(), pid_file.c_str());
     }
@@ -819,7 +819,7 @@ srs_error_t srs_global_initialize()
 
     _srs_reload_err = srs_success;
     _srs_reload_state = SrsReloadStateInit;
-    _srs_reload_id = srs_random_str(7);
+    _srs_reload_id = srs_rand_gen_str(7);
 
     return err;
 }

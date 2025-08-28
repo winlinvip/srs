@@ -41,19 +41,19 @@ using namespace std;
 srs_utime_t _srs_system_time_us_cache = 0;
 srs_utime_t _srs_system_time_startup_time = 0;
 
-srs_utime_t srs_get_system_time()
+srs_utime_t srs_time_now_cached()
 {
     if (_srs_system_time_us_cache <= 0) {
-        srs_update_system_time();
+        srs_time_now_realtime();
     }
 
     return _srs_system_time_us_cache;
 }
 
-srs_utime_t srs_get_system_startup_time()
+srs_utime_t srs_time_since_startup()
 {
     if (_srs_system_time_startup_time <= 0) {
-        srs_update_system_time();
+        srs_time_now_realtime();
     }
 
     return _srs_system_time_startup_time;
@@ -64,7 +64,7 @@ srs_utime_t srs_get_system_startup_time()
 srs_gettimeofday_t _srs_gettimeofday = (srs_gettimeofday_t)::gettimeofday;
 #endif
 
-srs_utime_t srs_update_system_time()
+srs_utime_t srs_time_now_realtime()
 {
     timeval now;
 
@@ -101,127 +101,6 @@ srs_utime_t srs_update_system_time()
     return _srs_system_time_us_cache;
 }
 
-void srs_parse_hostport(string hostport, string &host, int &port)
-{
-    // No host or port.
-    if (hostport.empty()) {
-        return;
-    }
-
-    size_t pos = string::npos;
-
-    // Host only for ipv4.
-    if ((pos = hostport.rfind(":")) == string::npos) {
-        host = hostport;
-        return;
-    }
-
-    // For ipv4(only one colon), host:port.
-    if (hostport.find(":") == pos) {
-        host = hostport.substr(0, pos);
-        string p = hostport.substr(pos + 1);
-        if (!p.empty() && p != "0") {
-            port = ::atoi(p.c_str());
-        }
-        return;
-    }
-
-    // Host only for ipv6.
-    if (hostport.at(0) != '[' || (pos = hostport.rfind("]:")) == string::npos) {
-        host = hostport;
-        return;
-    }
-
-    // For ipv6, [host]:port.
-    host = hostport.substr(1, pos - 1);
-    string p = hostport.substr(pos + 2);
-    if (!p.empty() && p != "0") {
-        port = ::atoi(p.c_str());
-    }
-}
-
-string srs_any_address_for_listener()
-{
-    bool ipv4_active = false;
-    bool ipv6_active = false;
-
-    if (true) {
-        int fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (fd != -1) {
-            ipv4_active = true;
-            close(fd);
-        }
-    }
-    if (true) {
-        int fd = socket(AF_INET6, SOCK_DGRAM, 0);
-        if (fd != -1) {
-            ipv6_active = true;
-            close(fd);
-        }
-    }
-
-    if (ipv6_active && !ipv4_active) {
-        return SRS_CONSTS_LOOPBACK6;
-    }
-    return SRS_CONSTS_LOOPBACK;
-}
-
-void srs_parse_endpoint(string hostport, string &ip, int &port)
-{
-    const size_t pos = hostport.rfind(":"); // Look for ":" from the end, to work with IPv6.
-    if (pos != std::string::npos) {
-        if ((pos >= 1) && (hostport[0] == '[') && (hostport[pos - 1] == ']')) {
-            // Handle IPv6 in RFC 2732 format, e.g. [3ffe:dead:beef::1]:1935
-            ip = hostport.substr(1, pos - 2);
-        } else {
-            // Handle IP address
-            ip = hostport.substr(0, pos);
-        }
-
-        const string sport = hostport.substr(pos + 1);
-        port = ::atoi(sport.c_str());
-    } else {
-        ip = srs_any_address_for_listener();
-        port = ::atoi(hostport.c_str());
-    }
-}
-
-bool srs_check_ip_addr_valid(string ip)
-{
-    unsigned char buf[sizeof(struct in6_addr)];
-
-    // check ipv4
-    int ret = inet_pton(AF_INET, ip.data(), buf);
-    if (ret > 0) {
-        return true;
-    }
-
-    ret = inet_pton(AF_INET6, ip.data(), buf);
-    if (ret > 0) {
-        return true;
-    }
-
-    return false;
-}
-
-string srs_int2str(int64_t value)
-{
-    return srs_fmt("%" PRId64, value);
-}
-
-string srs_float2str(double value)
-{
-    // len(max int64_t) is 20, plus one "+-."
-    char tmp[21 + 1];
-    snprintf(tmp, sizeof(tmp), "%.2f", value);
-    return tmp;
-}
-
-string srs_bool2switch(bool v)
-{
-    return v ? "on" : "off";
-}
-
 bool srs_is_little_endian()
 {
     // convert to network(big-endian) order, if not equals,
@@ -241,7 +120,25 @@ bool srs_is_little_endian()
     return (little_endian_check == 1);
 }
 
-string srs_string_replace(string str, string old_str, string new_str)
+string srs_strconv_format_int(int64_t value)
+{
+    return srs_fmt_sprintf("%" PRId64, value);
+}
+
+string srs_strconv_format_float(double value)
+{
+    // len(max int64_t) is 20, plus one "+-."
+    char tmp[21 + 1];
+    snprintf(tmp, sizeof(tmp), "%.2f", value);
+    return tmp;
+}
+
+string srs_strconv_format_bool(bool v)
+{
+    return v ? "on" : "off";
+}
+
+string srs_strings_replace(string str, string old_str, string new_str)
 {
     std::string ret = str;
 
@@ -258,7 +155,7 @@ string srs_string_replace(string str, string old_str, string new_str)
     return ret;
 }
 
-string srs_string_trim_end(string str, string trim_chars)
+string srs_strings_trim_end(string str, string trim_chars)
 {
     std::string ret = str;
 
@@ -276,7 +173,7 @@ string srs_string_trim_end(string str, string trim_chars)
     return ret;
 }
 
-string srs_string_trim_start(string str, string trim_chars)
+string srs_strings_trim_start(string str, string trim_chars)
 {
     std::string ret = str;
 
@@ -294,7 +191,7 @@ string srs_string_trim_start(string str, string trim_chars)
     return ret;
 }
 
-string srs_string_remove(string str, string remove_chars)
+string srs_strings_remove(string str, string remove_chars)
 {
     std::string ret = str;
 
@@ -342,63 +239,63 @@ string srs_erase_last_substr(string str, string erase_string)
     return ret;
 }
 
-bool srs_string_ends_with(string str, string flag)
+bool srs_strings_ends_with(string str, string flag)
 {
     const size_t pos = str.rfind(flag);
     return (pos != string::npos) && (pos == str.length() - flag.length());
 }
 
-bool srs_string_ends_with(string str, string flag0, string flag1)
+bool srs_strings_ends_with(string str, string flag0, string flag1)
 {
-    return srs_string_ends_with(str, flag0) || srs_string_ends_with(str, flag1);
+    return srs_strings_ends_with(str, flag0) || srs_strings_ends_with(str, flag1);
 }
 
-bool srs_string_ends_with(string str, string flag0, string flag1, string flag2)
+bool srs_strings_ends_with(string str, string flag0, string flag1, string flag2)
 {
-    return srs_string_ends_with(str, flag0) || srs_string_ends_with(str, flag1) || srs_string_ends_with(str, flag2);
+    return srs_strings_ends_with(str, flag0) || srs_strings_ends_with(str, flag1) || srs_strings_ends_with(str, flag2);
 }
 
-bool srs_string_ends_with(string str, string flag0, string flag1, string flag2, string flag3)
+bool srs_strings_ends_with(string str, string flag0, string flag1, string flag2, string flag3)
 {
-    return srs_string_ends_with(str, flag0) || srs_string_ends_with(str, flag1) || srs_string_ends_with(str, flag2) || srs_string_ends_with(str, flag3);
+    return srs_strings_ends_with(str, flag0) || srs_strings_ends_with(str, flag1) || srs_strings_ends_with(str, flag2) || srs_strings_ends_with(str, flag3);
 }
 
-bool srs_string_starts_with(string str, string flag)
+bool srs_strings_starts_with(string str, string flag)
 {
     return str.find(flag) == 0;
 }
 
-bool srs_string_starts_with(string str, string flag0, string flag1)
+bool srs_strings_starts_with(string str, string flag0, string flag1)
 {
-    return srs_string_starts_with(str, flag0) || srs_string_starts_with(str, flag1);
+    return srs_strings_starts_with(str, flag0) || srs_strings_starts_with(str, flag1);
 }
 
-bool srs_string_starts_with(string str, string flag0, string flag1, string flag2)
+bool srs_strings_starts_with(string str, string flag0, string flag1, string flag2)
 {
-    return srs_string_starts_with(str, flag0, flag1) || srs_string_starts_with(str, flag2);
+    return srs_strings_starts_with(str, flag0, flag1) || srs_strings_starts_with(str, flag2);
 }
 
-bool srs_string_starts_with(string str, string flag0, string flag1, string flag2, string flag3)
+bool srs_strings_starts_with(string str, string flag0, string flag1, string flag2, string flag3)
 {
-    return srs_string_starts_with(str, flag0, flag1, flag2) || srs_string_starts_with(str, flag3);
+    return srs_strings_starts_with(str, flag0, flag1, flag2) || srs_strings_starts_with(str, flag3);
 }
 
-bool srs_string_contains(string str, string flag)
+bool srs_strings_contains(string str, string flag)
 {
     return str.find(flag) != string::npos;
 }
 
-bool srs_string_contains(string str, string flag0, string flag1)
+bool srs_strings_contains(string str, string flag0, string flag1)
 {
     return str.find(flag0) != string::npos || str.find(flag1) != string::npos;
 }
 
-bool srs_string_contains(string str, string flag0, string flag1, string flag2)
+bool srs_strings_contains(string str, string flag0, string flag1, string flag2)
 {
     return str.find(flag0) != string::npos || str.find(flag1) != string::npos || str.find(flag2) != string::npos;
 }
 
-int srs_string_count(string str, string flag)
+int srs_strings_count(string str, string flag)
 {
     int nn = 0;
     for (int i = 0; i < (int)flag.length(); i++) {
@@ -408,7 +305,7 @@ int srs_string_count(string str, string flag)
     return nn;
 }
 
-vector<string> srs_string_split(string s, string seperator)
+vector<string> srs_strings_split(string s, string seperator)
 {
     vector<string> result;
     if (seperator.empty()) {
@@ -428,7 +325,7 @@ vector<string> srs_string_split(string s, string seperator)
     return result;
 }
 
-string srs_string_min_match(string str, vector<string> seperators)
+string srs_strings_min_match(string str, vector<string> seperators)
 {
     string match;
 
@@ -454,7 +351,7 @@ string srs_string_min_match(string str, vector<string> seperators)
     return match;
 }
 
-vector<string> srs_string_split(string str, vector<string> seperators)
+vector<string> srs_strings_split(string str, vector<string> seperators)
 {
     vector<string> arr;
 
@@ -462,7 +359,7 @@ vector<string> srs_string_split(string str, vector<string> seperators)
     string s = str;
 
     while (true) {
-        string seperator = srs_string_min_match(s, seperators);
+        string seperator = srs_strings_min_match(s, seperators);
         if (seperator.empty()) {
             break;
         }
@@ -482,7 +379,7 @@ vector<string> srs_string_split(string str, vector<string> seperators)
     return arr;
 }
 
-std::string srs_fmt(const char *fmt, ...)
+std::string srs_fmt_sprintf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -538,230 +435,22 @@ int srs_do_create_dir_recursively(string dir)
     return ret;
 }
 
-bool srs_bytes_equals(void *pa, void *pb, int size)
+string srs_strings_dumps_hex(const std::string &str)
 {
-    uint8_t *a = (uint8_t *)pa;
-    uint8_t *b = (uint8_t *)pb;
-
-    if (!a && !b) {
-        return true;
-    }
-
-    if (!a || !b) {
-        return false;
-    }
-
-    for (int i = 0; i < size; i++) {
-        if (a[i] != b[i]) {
-            return false;
-        }
-    }
-
-    return true;
+    return srs_strings_dumps_hex(str.c_str(), str.size());
 }
 
-srs_error_t srs_create_dir_recursively(string dir)
+string srs_strings_dumps_hex(const char *str, int length)
 {
-    int ret = srs_do_create_dir_recursively(dir);
-
-    if (ret == ERROR_SYSTEM_DIR_EXISTS || ret == ERROR_SUCCESS) {
-        return srs_success;
-    }
-
-    return srs_error_new(ret, "create dir %s", dir.c_str());
+    return srs_strings_dumps_hex(str, length, INT_MAX);
 }
 
-bool srs_path_exists(std::string path)
+string srs_strings_dumps_hex(const char *str, int length, int limit)
 {
-    struct stat st;
-
-    // stat current dir, if exists, return error.
-    if (stat(path.c_str(), &st) == 0) {
-        return true;
-    }
-
-    return false;
+    return srs_strings_dumps_hex(str, length, limit, ' ', 128, '\n');
 }
 
-string srs_path_dirname(string path)
-{
-    std::string dirname = path;
-
-    // No slash, it must be current dir.
-    size_t pos = string::npos;
-    if ((pos = dirname.rfind("/")) == string::npos) {
-        return "./";
-    }
-
-    // Path under root.
-    if (pos == 0) {
-        return "/";
-    }
-
-    // Fetch the directory.
-    dirname = dirname.substr(0, pos);
-    return dirname;
-}
-
-string srs_path_basename(string path)
-{
-    std::string dirname = path;
-    size_t pos = string::npos;
-
-    if ((pos = dirname.rfind("/")) != string::npos) {
-        // the basename("/") is "/"
-        if (dirname.length() == 1) {
-            return dirname;
-        }
-        dirname = dirname.substr(pos + 1);
-    }
-
-    return dirname;
-}
-
-string srs_path_filename(string path)
-{
-    std::string filename = path;
-    size_t pos = string::npos;
-
-    if ((pos = filename.rfind(".")) != string::npos) {
-        return filename.substr(0, pos);
-    }
-
-    return filename;
-}
-
-string srs_path_filext(string path)
-{
-    size_t pos = string::npos;
-
-    if ((pos = path.rfind(".")) != string::npos) {
-        return path.substr(pos);
-    }
-
-    return "";
-}
-
-bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code)
-{
-    if (!stream) {
-        return false;
-    }
-
-    char *bytes = stream->data() + stream->pos();
-    char *p = bytes;
-
-    for (;;) {
-        if (!stream->require((int)(p - bytes + 3))) {
-            return false;
-        }
-
-        // not match
-        if (p[0] != (char)0x00 || p[1] != (char)0x00) {
-            return false;
-        }
-
-        // match N[00] 00 00 01, where N>=0
-        if (p[2] == (char)0x01) {
-            if (pnb_start_code) {
-                *pnb_start_code = (int)(p - bytes) + 3;
-            }
-            return true;
-        }
-
-        p++;
-    }
-
-    return false;
-}
-
-// fromHexChar converts a hex character into its value and a success flag.
-uint8_t srs_from_hex_char(uint8_t c)
-{
-    if ('0' <= c && c <= '9') {
-        return c - '0';
-    }
-    if ('a' <= c && c <= 'f') {
-        return c - 'a' + 10;
-    }
-    if ('A' <= c && c <= 'F') {
-        return c - 'A' + 10;
-    }
-
-    return -1;
-}
-
-char *srs_data_to_hex(char *des, const u_int8_t *src, int len)
-{
-    if (src == NULL || len == 0 || des == NULL) {
-        return NULL;
-    }
-
-    const char *hex_table = "0123456789ABCDEF";
-
-    for (int i = 0; i < len; i++) {
-        des[i * 2] = hex_table[src[i] >> 4];
-        des[i * 2 + 1] = hex_table[src[i] & 0x0F];
-    }
-
-    return des;
-}
-
-char *srs_data_to_hex_lowercase(char *des, const u_int8_t *src, int len)
-{
-    if (src == NULL || len == 0 || des == NULL) {
-        return NULL;
-    }
-
-    const char *hex_table = "0123456789abcdef";
-
-    for (int i = 0; i < len; i++) {
-        des[i * 2] = hex_table[src[i] >> 4];
-        des[i * 2 + 1] = hex_table[src[i] & 0x0F];
-    }
-
-    return des;
-}
-
-int srs_hex_to_data(uint8_t *data, const char *p, int size)
-{
-    if (size <= 0 || (size % 2) == 1) {
-        return -1;
-    }
-
-    for (int i = 0; i < (int)size / 2; i++) {
-        uint8_t a = srs_from_hex_char(p[i * 2]);
-        if (a == (uint8_t)-1) {
-            return -1;
-        }
-
-        uint8_t b = srs_from_hex_char(p[i * 2 + 1]);
-        if (b == (uint8_t)-1) {
-            return -1;
-        }
-
-        data[i] = (a << 4) | b;
-    }
-
-    return size / 2;
-}
-
-string srs_string_dumps_hex(const std::string &str)
-{
-    return srs_string_dumps_hex(str.c_str(), str.size());
-}
-
-string srs_string_dumps_hex(const char *str, int length)
-{
-    return srs_string_dumps_hex(str, length, INT_MAX);
-}
-
-string srs_string_dumps_hex(const char *str, int length, int limit)
-{
-    return srs_string_dumps_hex(str, length, limit, ' ', 128, '\n');
-}
-
-string srs_string_dumps_hex(const char *str, int length, int limit, char seperator, int line_limit, char newline)
+string srs_strings_dumps_hex(const char *str, int length, int limit, char seperator, int line_limit, char newline)
 {
     // 1 byte trailing '\0'.
     const int LIMIT = 1024 * 16 + 1;
@@ -805,33 +494,208 @@ string srs_string_dumps_hex(const char *str, int length, int limit, char seperat
     return string(buf, len);
 }
 
-void srs_random_generate(char *bytes, int size)
+bool srs_bytes_equal(void *pa, void *pb, int size)
+{
+    uint8_t *a = (uint8_t *)pa;
+    uint8_t *b = (uint8_t *)pb;
+
+    if (!a && !b) {
+        return true;
+    }
+
+    if (!a || !b) {
+        return false;
+    }
+
+    for (int i = 0; i < size; i++) {
+        if (a[i] != b[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+srs_error_t srs_os_mkdir_all(string dir)
+{
+    int ret = srs_do_create_dir_recursively(dir);
+
+    if (ret == ERROR_SYSTEM_DIR_EXISTS || ret == ERROR_SUCCESS) {
+        return srs_success;
+    }
+
+    return srs_error_new(ret, "create dir %s", dir.c_str());
+}
+
+bool srs_path_exists(std::string path)
+{
+    struct stat st;
+
+    // stat current dir, if exists, return error.
+    if (stat(path.c_str(), &st) == 0) {
+        return true;
+    }
+
+    return false;
+}
+
+string srs_path_filepath_dir(string path)
+{
+    std::string dirname = path;
+
+    // No slash, it must be current dir.
+    size_t pos = string::npos;
+    if ((pos = dirname.rfind("/")) == string::npos) {
+        return "./";
+    }
+
+    // Path under root.
+    if (pos == 0) {
+        return "/";
+    }
+
+    // Fetch the directory.
+    dirname = dirname.substr(0, pos);
+    return dirname;
+}
+
+string srs_path_filepath_base(string path)
+{
+    std::string dirname = path;
+    size_t pos = string::npos;
+
+    if ((pos = dirname.rfind("/")) != string::npos) {
+        // the basename("/") is "/"
+        if (dirname.length() == 1) {
+            return dirname;
+        }
+        dirname = dirname.substr(pos + 1);
+    }
+
+    return dirname;
+}
+
+string srs_path_filepath_filename(string path)
+{
+    std::string filename = path;
+    size_t pos = string::npos;
+
+    if ((pos = filename.rfind(".")) != string::npos) {
+        return filename.substr(0, pos);
+    }
+
+    return filename;
+}
+
+string srs_path_filepath_ext(string path)
+{
+    size_t pos = string::npos;
+
+    if ((pos = path.rfind(".")) != string::npos) {
+        return path.substr(pos);
+    }
+
+    return "";
+}
+
+// fromHexChar converts a hex character into its value and a success flag.
+uint8_t srs_from_hex_char(uint8_t c)
+{
+    if ('0' <= c && c <= '9') {
+        return c - '0';
+    }
+    if ('a' <= c && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if ('A' <= c && c <= 'F') {
+        return c - 'A' + 10;
+    }
+
+    return -1;
+}
+
+char *srs_hex_encode_to_string(char *des, const u_int8_t *src, int len)
+{
+    if (src == NULL || len == 0 || des == NULL) {
+        return NULL;
+    }
+
+    const char *hex_table = "0123456789ABCDEF";
+
+    for (int i = 0; i < len; i++) {
+        des[i * 2] = hex_table[src[i] >> 4];
+        des[i * 2 + 1] = hex_table[src[i] & 0x0F];
+    }
+
+    return des;
+}
+
+char *srs_hex_encode_to_string_lowercase(char *des, const u_int8_t *src, int len)
+{
+    if (src == NULL || len == 0 || des == NULL) {
+        return NULL;
+    }
+
+    const char *hex_table = "0123456789abcdef";
+
+    for (int i = 0; i < len; i++) {
+        des[i * 2] = hex_table[src[i] >> 4];
+        des[i * 2 + 1] = hex_table[src[i] & 0x0F];
+    }
+
+    return des;
+}
+
+int srs_hex_decode_string(uint8_t *data, const char *p, int size)
+{
+    if (size <= 0 || (size % 2) == 1) {
+        return -1;
+    }
+
+    for (int i = 0; i < (int)size / 2; i++) {
+        uint8_t a = srs_from_hex_char(p[i * 2]);
+        if (a == (uint8_t)-1) {
+            return -1;
+        }
+
+        uint8_t b = srs_from_hex_char(p[i * 2 + 1]);
+        if (b == (uint8_t)-1) {
+            return -1;
+        }
+
+        data[i] = (a << 4) | b;
+    }
+
+    return size / 2;
+}
+
+void srs_rand_gen_bytes(char *bytes, int size)
 {
     for (int i = 0; i < size; i++) {
         // the common value in [0x0f, 0xf0]
-        bytes[i] = 0x0f + (srs_random() % (256 - 0x0f - 0x0f));
+        bytes[i] = 0x0f + (srs_rand_integer() % (256 - 0x0f - 0x0f));
     }
 }
 
-std::string srs_random_str(int len)
+std::string srs_rand_gen_str(int len)
 {
     static string random_table = "01234567890123456789012345678901234567890123456789abcdefghijklmnopqrstuvwxyz";
 
     string ret;
     ret.reserve(len);
     for (int i = 0; i < len; ++i) {
-        ret.append(1, random_table[srs_random() % random_table.size()]);
+        ret.append(1, random_table[srs_rand_integer() % random_table.size()]);
     }
 
     return ret;
 }
 
-long srs_random()
+long srs_rand_integer()
 {
     static bool _random_initialized = false;
     if (!_random_initialized) {
         _random_initialized = true;
-        ::srandom((unsigned long)(srs_update_system_time() | (::getpid() << 13)));
+        ::srandom((unsigned long)(srs_time_now_realtime() | (::getpid() << 13)));
     }
 
     return random();
@@ -859,9 +723,11 @@ bool srs_is_digit_number(string str)
     return v / powv >= 1 && v / powv <= 9;
 }
 
-srs_error_t srs_ioutil_read_all(ISrsReader *in, std::string &content)
+srs_error_t srs_io_readall(ISrsReader *in, std::string &content)
 {
     srs_error_t err = srs_success;
+
+    const int SRS_HTTP_READ_CACHE_BYTES = 4096;
 
     // Cache to read, it might cause coroutine switch, so we use local cache here.
     SrsUniquePtr<char[]> buf(new char[SRS_HTTP_READ_CACHE_BYTES]);
@@ -886,7 +752,110 @@ srs_error_t srs_ioutil_read_all(ISrsReader *in, std::string &content)
     return err;
 }
 
-bool srs_is_ipv4(string domain)
+void srs_net_split_hostport(string hostport, string &host, int &port)
+{
+    // No host or port.
+    if (hostport.empty()) {
+        return;
+    }
+
+    size_t pos = string::npos;
+
+    // Host only for ipv4.
+    if ((pos = hostport.rfind(":")) == string::npos) {
+        host = hostport;
+        return;
+    }
+
+    // For ipv4(only one colon), host:port.
+    if (hostport.find(":") == pos) {
+        host = hostport.substr(0, pos);
+        string p = hostport.substr(pos + 1);
+        if (!p.empty() && p != "0") {
+            port = ::atoi(p.c_str());
+        }
+        return;
+    }
+
+    // Host only for ipv6.
+    if (hostport.at(0) != '[' || (pos = hostport.rfind("]:")) == string::npos) {
+        host = hostport;
+        return;
+    }
+
+    // For ipv6, [host]:port.
+    host = hostport.substr(1, pos - 1);
+    string p = hostport.substr(pos + 2);
+    if (!p.empty() && p != "0") {
+        port = ::atoi(p.c_str());
+    }
+}
+
+void srs_net_split_for_listener(string hostport, string &ip, int &port)
+{
+    const size_t pos = hostport.rfind(":"); // Look for ":" from the end, to work with IPv6.
+    if (pos != std::string::npos) {
+        if ((pos >= 1) && (hostport[0] == '[') && (hostport[pos - 1] == ']')) {
+            // Handle IPv6 in RFC 2732 format, e.g. [3ffe:dead:beef::1]:1935
+            ip = hostport.substr(1, pos - 2);
+        } else {
+            // Handle IP address
+            ip = hostport.substr(0, pos);
+        }
+
+        const string sport = hostport.substr(pos + 1);
+        port = ::atoi(sport.c_str());
+    } else {
+        ip = srs_net_address_any();
+        port = ::atoi(hostport.c_str());
+    }
+}
+
+string srs_net_address_any()
+{
+    bool ipv4_active = false;
+    bool ipv6_active = false;
+
+    if (true) {
+        int fd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (fd != -1) {
+            ipv4_active = true;
+            close(fd);
+        }
+    }
+    if (true) {
+        int fd = socket(AF_INET6, SOCK_DGRAM, 0);
+        if (fd != -1) {
+            ipv6_active = true;
+            close(fd);
+        }
+    }
+
+    if (ipv6_active && !ipv4_active) {
+        return SRS_CONSTS_LOOPBACK6;
+    }
+    return SRS_CONSTS_LOOPBACK;
+}
+
+bool srs_net_is_valid_ip(string ip)
+{
+    unsigned char buf[sizeof(struct in6_addr)];
+
+    // check ipv4
+    int ret = inet_pton(AF_INET, ip.data(), buf);
+    if (ret > 0) {
+        return true;
+    }
+
+    ret = inet_pton(AF_INET6, ip.data(), buf);
+    if (ret > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+bool srs_net_is_ipv4(string domain)
 {
     for (int i = 0; i < (int)domain.length(); i++) {
         char ch = domain.at(i);
@@ -903,7 +872,7 @@ bool srs_is_ipv4(string domain)
     return true;
 }
 
-uint32_t srs_ipv4_to_num(string ip)
+uint32_t srs_net_ipv4_to_integer(string ip)
 {
     uint32_t addr = 0;
     if (inet_pton(AF_INET, ip.c_str(), &addr) <= 0) {
@@ -913,11 +882,11 @@ uint32_t srs_ipv4_to_num(string ip)
     return ntohl(addr);
 }
 
-bool srs_ipv4_within_mask(string ip, string network, string mask)
+bool srs_net_ipv4_within_mask(string ip, string network, string mask)
 {
-    uint32_t ip_addr = srs_ipv4_to_num(ip);
-    uint32_t mask_addr = srs_ipv4_to_num(mask);
-    uint32_t network_addr = srs_ipv4_to_num(network);
+    uint32_t ip_addr = srs_net_ipv4_to_integer(ip);
+    uint32_t mask_addr = srs_net_ipv4_to_integer(mask);
+    uint32_t network_addr = srs_net_ipv4_to_integer(network);
 
     return (ip_addr & mask_addr) == (network_addr & mask_addr);
 }
@@ -960,14 +929,14 @@ static struct CIDR_VALUE {
     {32, "255.255.255.255"},
 };
 
-string srs_get_cidr_mask(string network_address)
+string srs_net_get_cidr_mask(string network_address)
 {
     string delimiter = "/";
 
     size_t delimiter_position = network_address.find(delimiter);
     if (delimiter_position == string::npos) {
         // Even if it does not have "/N", it can be a valid IP, by default "/32".
-        if (srs_is_ipv4(network_address)) {
+        if (srs_net_is_ipv4(network_address)) {
             return CIDR_VALUES[32 - 1].mask;
         }
         return "";
@@ -975,7 +944,7 @@ string srs_get_cidr_mask(string network_address)
 
     // Change here to include IPv6 support.
     string is_ipv4_address = network_address.substr(0, delimiter_position);
-    if (!srs_is_ipv4(is_ipv4_address)) {
+    if (!srs_net_is_ipv4(is_ipv4_address)) {
         return "";
     }
 
@@ -1002,14 +971,14 @@ string srs_get_cidr_mask(string network_address)
     return CIDR_VALUES[cidr_length_num - 1].mask;
 }
 
-string srs_get_cidr_ipv4(string network_address)
+string srs_net_get_cidr_ipv4(string network_address)
 {
     string delimiter = "/";
 
     size_t delimiter_position = network_address.find(delimiter);
     if (delimiter_position == string::npos) {
         // Even if it does not have "/N", it can be a valid IP, by default "/32".
-        if (srs_is_ipv4(network_address)) {
+        if (srs_net_is_ipv4(network_address)) {
             return network_address;
         }
         return "";
@@ -1017,7 +986,7 @@ string srs_get_cidr_ipv4(string network_address)
 
     // Change here to include IPv6 support.
     string ipv4_address = network_address.substr(0, delimiter_position);
-    if (!srs_is_ipv4(ipv4_address)) {
+    if (!srs_net_is_ipv4(ipv4_address)) {
         return "";
     }
 
@@ -1043,12 +1012,12 @@ string srs_get_cidr_ipv4(string network_address)
     return ipv4_address;
 }
 
-bool srs_string_is_http(string url)
+bool srs_net_url_is_http(string url)
 {
-    return srs_string_starts_with(url, "http://", "https://");
+    return srs_strings_starts_with(url, "http://", "https://");
 }
 
-bool srs_string_is_rtmp(string url)
+bool srs_net_url_is_rtmp(string url)
 {
-    return srs_string_starts_with(url, "rtmp://");
+    return srs_strings_starts_with(url, "rtmp://");
 }

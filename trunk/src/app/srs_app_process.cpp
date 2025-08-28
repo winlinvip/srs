@@ -63,25 +63,25 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
         std::string nnffp = (i < (int)argv.size() - 2) ? argv[i + 2] : "";
 
         // >file
-        if (srs_string_starts_with(ffp, ">")) {
+        if (srs_strings_starts_with(ffp, ">")) {
             stdout_file = ffp.substr(1);
             continue;
         }
 
         // 1>file
-        if (srs_string_starts_with(ffp, "1>")) {
+        if (srs_strings_starts_with(ffp, "1>")) {
             stdout_file = ffp.substr(2);
             continue;
         }
 
         // 2>file
-        if (srs_string_starts_with(ffp, "2>")) {
+        if (srs_strings_starts_with(ffp, "2>")) {
             stderr_file = ffp.substr(2);
             continue;
         }
 
         // 1 >X
-        if (ffp == "1" && srs_string_starts_with(nffp, ">")) {
+        if (ffp == "1" && srs_strings_starts_with(nffp, ">")) {
             if (nffp == ">") {
                 // 1 > file
                 if (!nnffp.empty()) {
@@ -90,7 +90,7 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
                 }
             } else {
                 // 1 >file
-                stdout_file = srs_string_trim_start(nffp, ">");
+                stdout_file = srs_strings_trim_start(nffp, ">");
             }
             // skip the >
             i++;
@@ -98,7 +98,7 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
         }
 
         // 2 >X
-        if (ffp == "2" && srs_string_starts_with(nffp, ">")) {
+        if (ffp == "2" && srs_strings_starts_with(nffp, ">")) {
             if (nffp == ">") {
                 // 2 > file
                 if (!nnffp.empty()) {
@@ -107,7 +107,7 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
                 }
             } else {
                 // 2 >file
-                stderr_file = srs_string_trim_start(nffp, ">");
+                stderr_file = srs_strings_trim_start(nffp, ">");
             }
             // skip the >
             i++;
@@ -117,8 +117,8 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
         params.push_back(ffp);
     }
 
-    actual_cli = srs_join_vector_string(params, " ");
-    cli = srs_join_vector_string(argv, " ");
+    actual_cli = srs_strings_join(params, " ");
+    cli = srs_strings_join(argv, " ");
 
     return err;
 }

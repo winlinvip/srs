@@ -56,7 +56,7 @@ SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, strin
         string list_hostport = listen_hostports.at(0);
 
         if (list_hostport.find(":") != string::npos) {
-            srs_parse_hostport(list_hostport, listen_host, listen_port);
+            srs_net_split_hostport(list_hostport, listen_host, listen_port);
         } else {
             listen_port = ::atoi(list_hostport.c_str());
         }
@@ -74,7 +74,7 @@ SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, strin
         int coworker_port;
         string coworker_host = coworker;
         if (coworker.find(":") != string::npos) {
-            srs_parse_hostport(coworker, coworker_host, coworker_port);
+            srs_net_split_hostport(coworker, coworker_host, coworker_port);
         }
 
         service_ip = coworker_host;
@@ -112,7 +112,7 @@ ISrsRequest *SrsCoWorkers::find_stream_info(string vhost, string app, string str
     }
 
     // Get stream information from local cache.
-    string url = srs_generate_stream_url(conf->arg0(), app, stream);
+    string url = srs_net_url_encode_sid(conf->arg0(), app, stream);
     map<string, ISrsRequest *>::iterator it = streams.find(url);
     if (it == streams.end()) {
         return NULL;

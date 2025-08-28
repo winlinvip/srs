@@ -74,11 +74,11 @@ string srs_path_build_stream(string template_path, string vhost, string app, str
     std::string path = template_path;
 
     // variable [vhost]
-    path = srs_string_replace(path, "[vhost]", vhost);
+    path = srs_strings_replace(path, "[vhost]", vhost);
     // variable [app]
-    path = srs_string_replace(path, "[app]", app);
+    path = srs_strings_replace(path, "[app]", app);
     // variable [stream]
-    path = srs_string_replace(path, "[stream]", stream);
+    path = srs_strings_replace(path, "[stream]", stream);
 
     return path;
 }
@@ -113,42 +113,42 @@ string srs_path_build_timestamp(string template_path)
     // [2006], replace with current year.
     if (true) {
         snprintf(buf, sizeof(buf), "%04d", 1900 + now.tm_year);
-        path = srs_string_replace(path, "[2006]", buf);
+        path = srs_strings_replace(path, "[2006]", buf);
     }
     // [01], replace this const to current month.
     if (true) {
         snprintf(buf, sizeof(buf), "%02d", 1 + now.tm_mon);
-        path = srs_string_replace(path, "[01]", buf);
+        path = srs_strings_replace(path, "[01]", buf);
     }
     // [02], replace this const to current date.
     if (true) {
         snprintf(buf, sizeof(buf), "%02d", now.tm_mday);
-        path = srs_string_replace(path, "[02]", buf);
+        path = srs_strings_replace(path, "[02]", buf);
     }
     // [15], replace this const to current hour.
     if (true) {
         snprintf(buf, sizeof(buf), "%02d", now.tm_hour);
-        path = srs_string_replace(path, "[15]", buf);
+        path = srs_strings_replace(path, "[15]", buf);
     }
     // [04], repleace this const to current minute.
     if (true) {
         snprintf(buf, sizeof(buf), "%02d", now.tm_min);
-        path = srs_string_replace(path, "[04]", buf);
+        path = srs_strings_replace(path, "[04]", buf);
     }
     // [05], repleace this const to current second.
     if (true) {
         snprintf(buf, sizeof(buf), "%02d", now.tm_sec);
-        path = srs_string_replace(path, "[05]", buf);
+        path = srs_strings_replace(path, "[05]", buf);
     }
     // [999], repleace this const to current millisecond.
     if (true) {
         snprintf(buf, sizeof(buf), "%03d", (int)(tv.tv_usec / 1000));
-        path = srs_string_replace(path, "[999]", buf);
+        path = srs_strings_replace(path, "[999]", buf);
     }
     // [timestamp],replace this const to current UNIX timestamp in ms.
     if (true) {
         int64_t now_us = ((int64_t)tv.tv_sec) * 1000 * 1000 + (int64_t)tv.tv_usec;
-        path = srs_string_replace(path, "[timestamp]", srs_int2str(now_us / 1000));
+        path = srs_strings_replace(path, "[timestamp]", srs_strconv_format_int(now_us / 1000));
     }
 
     return path;
@@ -234,7 +234,7 @@ void srs_update_system_rusage()
         return;
     }
 
-    _srs_system_rusage.sample_time = srsu2ms(srs_update_system_time());
+    _srs_system_rusage.sample_time = srsu2ms(srs_time_now_realtime());
 
     _srs_system_rusage.ok = true;
 }
@@ -420,7 +420,7 @@ void srs_update_proc_stat()
             return;
         }
 
-        r.sample_time = srsu2ms(srs_update_system_time());
+        r.sample_time = srsu2ms(srs_time_now_realtime());
 
         // calc usage in percent
         SrsProcSystemStat &o = _srs_system_cpu_system_stat;
@@ -446,7 +446,7 @@ void srs_update_proc_stat()
             return;
         }
 
-        r.sample_time = srsu2ms(srs_update_system_time());
+        r.sample_time = srsu2ms(srs_time_now_realtime());
 
         // calc usage in percent
         SrsProcSelfStat &o = _srs_system_cpu_self_stat;
@@ -498,7 +498,7 @@ bool srs_get_disk_vmstat_stat(SrsDiskStat &r)
         return false;
     }
 
-    r.sample_time = srsu2ms(srs_update_system_time());
+    r.sample_time = srsu2ms(srs_time_now_realtime());
 
     static char buf[1024];
     while (fgets(buf, sizeof(buf), f)) {
@@ -521,7 +521,7 @@ bool srs_get_disk_vmstat_stat(SrsDiskStat &r)
 bool srs_get_disk_diskstats_stat(SrsDiskStat &r)
 {
     r.ok = true;
-    r.sample_time = srsu2ms(srs_update_system_time());
+    r.sample_time = srsu2ms(srs_time_now_realtime());
 
 #if !defined(SRS_OSX)
     // if disabled, ignore all devices.
@@ -712,7 +712,7 @@ void srs_update_meminfo()
     fclose(f);
 #endif
 
-    r.sample_time = srsu2ms(srs_update_system_time());
+    r.sample_time = srsu2ms(srs_time_now_realtime());
     r.MemActive = r.MemTotal - r.MemFree;
     r.RealInUse = r.MemActive - r.Buffers - r.Cached;
     r.NotInUse = r.MemTotal - r.RealInUse;
@@ -776,7 +776,7 @@ void srs_update_platform_info()
 {
     SrsPlatformInfo &r = _srs_system_platform_info;
 
-    r.srs_startup_time = srsu2ms(srs_get_system_startup_time());
+    r.srs_startup_time = srsu2ms(srs_time_since_startup());
 
 #if !defined(SRS_OSX)
     if (true) {
@@ -1009,7 +1009,7 @@ void srs_update_network_devices()
             _nb_srs_system_network_devices = i + 1;
             srs_info("scan network device ifname=%s, total=%d", r.name, _nb_srs_system_network_devices);
 
-            r.sample_time = srsu2ms(srs_update_system_time());
+            r.sample_time = srsu2ms(srs_time_now_realtime());
             r.ok = true;
         }
 
@@ -1160,7 +1160,7 @@ void srs_update_rtmp_server(int nb_conn, SrsKbps *kbps)
         r.ok = true;
 
         r.nb_conn_srs = nb_conn;
-        r.sample_time = srsu2ms(srs_update_system_time());
+        r.sample_time = srsu2ms(srs_time_now_realtime());
 
         r.rbytes = kbps->get_recv_bytes();
         r.rkbps = kbps->get_recv_kbps();
@@ -1280,7 +1280,7 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
         self_mem_percent = (float)(r->r.ru_maxrss / (double)m->MemTotal);
     }
 
-    int64_t now = srsu2ms(srs_update_system_time());
+    int64_t now = srsu2ms(srs_time_now_realtime());
     double srs_uptime = (now - p->srs_startup_time) / 100 / 10.0;
 
     int64_t n_sample_time = 0;
@@ -1376,7 +1376,7 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
 string srs_getenv(const string &key)
 {
     string ekey = key;
-    if (srs_string_starts_with(key, "$")) {
+    if (srs_strings_starts_with(key, "$")) {
         ekey = key.substr(1);
     }
 

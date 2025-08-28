@@ -270,27 +270,27 @@ void show_macro_features()
         ss << "features";
 
         // rch(rtmp complex handshake)
-        ss << ", rch:" << srs_bool2switch(true);
+        ss << ", rch:" << srs_strconv_format_bool(true);
         ss << ", dash:" << "on";
-        ss << ", hls:" << srs_bool2switch(true);
-        ss << ", hds:" << srs_bool2switch(SRS_HDS_BOOL);
-        ss << ", srt:" << srs_bool2switch(SRS_SRT_BOOL);
+        ss << ", hls:" << srs_strconv_format_bool(true);
+        ss << ", hds:" << srs_strconv_format_bool(SRS_HDS_BOOL);
+        ss << ", srt:" << srs_strconv_format_bool(SRS_SRT_BOOL);
         // hc(http callback)
-        ss << ", hc:" << srs_bool2switch(true);
+        ss << ", hc:" << srs_strconv_format_bool(true);
         // ha(http api)
-        ss << ", ha:" << srs_bool2switch(true);
+        ss << ", ha:" << srs_strconv_format_bool(true);
         // hs(http server)
-        ss << ", hs:" << srs_bool2switch(true);
+        ss << ", hs:" << srs_strconv_format_bool(true);
         // hp(http parser)
-        ss << ", hp:" << srs_bool2switch(true);
-        ss << ", dvr:" << srs_bool2switch(true);
+        ss << ", hp:" << srs_strconv_format_bool(true);
+        ss << ", dvr:" << srs_strconv_format_bool(true);
         // trans(transcode)
-        ss << ", trans:" << srs_bool2switch(true);
+        ss << ", trans:" << srs_strconv_format_bool(true);
         // inge(ingest)
-        ss << ", inge:" << srs_bool2switch(true);
-        ss << ", stat:" << srs_bool2switch(true);
+        ss << ", inge:" << srs_strconv_format_bool(true);
+        ss << ", stat:" << srs_strconv_format_bool(true);
         // sc(stream-caster)
-        ss << ", sc:" << srs_bool2switch(true);
+        ss << ", sc:" << srs_strconv_format_bool(true);
         srs_trace("%s", ss.str().c_str());
     }
 
@@ -345,7 +345,7 @@ void show_macro_features()
         stringstream ss;
 
         // gc(gop-cache)
-        ss << "gc:" << srs_bool2switch(SRS_PERF_GOP_CACHE);
+        ss << "gc:" << srs_strconv_format_bool(SRS_PERF_GOP_CACHE);
         // pq(play-queue)
         ss << ", pq:" << srsu2msi(SRS_PERF_PLAY_QUEUE) << "ms";
         // cscc(chunk stream cache cid)

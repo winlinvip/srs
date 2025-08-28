@@ -489,7 +489,7 @@ SrsClsSugar::SrsClsSugar()
     log_ = log_group_->add_log();
 
     log_group_->set_source(srs_get_public_internet_address(true));
-    log_->set_time(srs_get_system_time() / SRS_UTIME_MILLISECONDS);
+    log_->set_time(srs_time_now_cached() / SRS_UTIME_MILLISECONDS);
     kv("agent", RTMP_SIG_SRS_SERVER);
 
     string label = _srs_cls->label();
@@ -859,7 +859,7 @@ srs_error_t SrsClsClient::dump_summaries(SrsClsSugars *sugars)
     SrsClsSugar *sugar = sugars->create();
     sugar->kv("hint", "summary");
     sugar->kv("version", RTMP_SIG_SRS_VERSION);
-    sugar->kv("pid", srs_fmt("%d", getpid()));
+    sugar->kv("pid", srs_fmt_sprintf("%d", getpid()));
 
     // Server ID to identify logs from a set of servers' logs.
     SrsStatistic::instance()->dumps_cls_summaries(sugar);
@@ -868,7 +868,7 @@ srs_error_t SrsClsClient::dump_summaries(SrsClsSugars *sugars)
     if (u->ok) {
         // The cpu usage of SRS, 1 means 1/1000
         if (u->percent > 0) {
-            sugar->kv("cpu", srs_fmt("%d", (int)(u->percent * 1000)));
+            sugar->kv("cpu", srs_fmt_sprintf("%d", (int)(u->percent * 1000)));
         }
     }
 
@@ -876,11 +876,11 @@ srs_error_t SrsClsClient::dump_summaries(SrsClsSugars *sugars)
     if (p->ok) {
         // The uptime of SRS, in seconds.
         if (p->srs_startup_time > 0) {
-            sugar->kv("uptime", srs_fmt("%d", (int)((srs_get_system_time() - p->srs_startup_time) / SRS_UTIME_SECONDS)));
+            sugar->kv("uptime", srs_fmt_sprintf("%d", (int)((srs_time_now_cached() - p->srs_startup_time) / SRS_UTIME_SECONDS)));
         }
         // The load of system, load every 1 minute, 1 means 1/1000.
         if (p->load_one_minutes > 0) {
-            sugar->kv("load", srs_fmt("%d", (int)(p->load_one_minutes * 1000)));
+            sugar->kv("load", srs_fmt_sprintf("%d", (int)(p->load_one_minutes * 1000)));
         }
     }
 
@@ -894,7 +894,7 @@ srs_error_t SrsClsClient::dump_summaries(SrsClsSugars *sugars)
 
         // The memory of SRS, 1 means 1/1000
         if (self_mem_percent > 0) {
-            sugar->kv("mem", srs_fmt("%d", (int)(self_mem_percent * 1000)));
+            sugar->kv("mem", srs_fmt_sprintf("%d", (int)(self_mem_percent * 1000)));
         }
     }
 
@@ -902,7 +902,7 @@ srs_error_t SrsClsClient::dump_summaries(SrsClsSugars *sugars)
     if (s->ok) {
         // The cpu usage of system, 1 means 1/1000
         if (s->percent > 0) {
-            sugar->kv("cpu2", srs_fmt("%d", (int)(s->percent * 1000)));
+            sugar->kv("cpu2", srs_fmt_sprintf("%d", (int)(s->percent * 1000)));
         }
     }
 
@@ -910,19 +910,19 @@ srs_error_t SrsClsClient::dump_summaries(SrsClsSugars *sugars)
     if (nrs->ok) {
         // The number of connections of SRS.
         if (nrs->nb_conn_srs > 0) {
-            sugar->kv("conn", srs_fmt("%d", nrs->nb_conn_srs));
+            sugar->kv("conn", srs_fmt_sprintf("%d", nrs->nb_conn_srs));
         }
         // The number of connections of system.
         if (nrs->nb_conn_sys > 0) {
-            sugar->kv("conn2", srs_fmt("%d", nrs->nb_conn_sys));
+            sugar->kv("conn2", srs_fmt_sprintf("%d", nrs->nb_conn_sys));
         }
         // The received kbps in 30s of SRS.
         if (nrs->rkbps_30s > 0) {
-            sugar->kv("recv", srs_fmt("%d", nrs->rkbps_30s));
+            sugar->kv("recv", srs_fmt_sprintf("%d", nrs->rkbps_30s));
         }
         // The sending out kbps in 30s of SRS.
         if (nrs->skbps_30s > 0) {
-            sugar->kv("send", srs_fmt("%d", nrs->skbps_30s));
+            sugar->kv("send", srs_fmt_sprintf("%d", nrs->skbps_30s));
         }
     }
 
@@ -1536,7 +1536,7 @@ srs_error_t SrsOtelSpan::encode(SrsBuffer *b)
 
 SrsOtelEvent::SrsOtelEvent()
 {
-    time_ = srs_update_system_time();
+    time_ = srs_time_now_realtime();
 }
 
 SrsOtelEvent::~SrsOtelEvent()
@@ -1720,10 +1720,10 @@ SrsApmContext::SrsApmContext(const std::string &name)
     name_ = name;
     kind_ = SrsApmKindUnspecified;
 
-    set_trace_id(srs_random_str(16));
-    set_span_id(srs_random_str(8));
+    set_trace_id(srs_rand_gen_str(16));
+    set_span_id(srs_rand_gen_str(8));
     // We must not use time cache, or span render might fail.
-    start_time_ = srs_update_system_time();
+    start_time_ = srs_time_now_realtime();
     ended_ = false;
     status_ = SrsApmStatusUnset;
     err_ = srs_success;
@@ -1762,13 +1762,13 @@ SrsApmContext::~SrsApmContext()
 void SrsApmContext::set_trace_id(std::string v)
 {
     trace_id_ = v;
-    str_trace_id_ = srs_string_dumps_hex(trace_id_.data(), trace_id_.length(), INT_MAX, 0, INT_MAX, 0);
+    str_trace_id_ = srs_strings_dumps_hex(trace_id_.data(), trace_id_.length(), INT_MAX, 0, INT_MAX, 0);
 }
 
 void SrsApmContext::set_span_id(std::string v)
 {
     span_id_ = v;
-    str_span_id_ = srs_string_dumps_hex(span_id_.data(), span_id_.length(), INT_MAX, 0, INT_MAX, 0);
+    str_span_id_ = srs_strings_dumps_hex(span_id_.data(), span_id_.length(), INT_MAX, 0, INT_MAX, 0);
 }
 
 const char *SrsApmContext::format_trace_id()
@@ -1887,7 +1887,7 @@ void SrsApmContext::end()
     otel->kind_ = kind_;
     otel->start_time_unix_nano_ = start_time_ * 1000;
     // We must not use time cache, or span render might fail.
-    otel->end_time_unix_nano_ = srs_update_system_time() * 1000;
+    otel->end_time_unix_nano_ = srs_time_now_realtime() * 1000;
 
     otel->status_->code_ = status_;
     otel->status_->message_ = description_;
@@ -1907,13 +1907,13 @@ void SrsApmContext::end()
     if (err_ != srs_success) {
         // Set the events for detail about the error.
         otel->events_.push_back(SrsOtelEvent::create("exception")
-                                    ->add_attr(SrsOtelAttribute::kv("exception.type", srs_fmt("code_%d_%s", srs_error_code(err_), srs_error_code_str(err_).c_str())))
+                                    ->add_attr(SrsOtelAttribute::kv("exception.type", srs_fmt_sprintf("code_%d_%s", srs_error_code(err_), srs_error_code_str(err_).c_str())))
                                     ->add_attr(SrsOtelAttribute::kv("exception.message", srs_error_summary(err_)))
                                     ->add_attr(SrsOtelAttribute::kv("exception.stacktrace", srs_error_desc(err_))));
 
         // We also use HTTP status code for APM to class the error. Note that it also works for non standard HTTP status
         // code, for example, SRS error codes.
-        otel->attributes_.push_back(SrsOtelAttribute::kv("http.status_code", srs_fmt("%d", srs_error_code(err_))));
+        otel->attributes_.push_back(SrsOtelAttribute::kv("http.status_code", srs_fmt_sprintf("%d", srs_error_code(err_))));
     }
 
     _srs_apm->snapshot(otel);
@@ -2039,7 +2039,7 @@ ISrsApmSpan *SrsApmSpan::extract(SrsAmf0Object *h)
         return this;
 
     std::string trace_parent = prop->to_str();
-    vector<string> vs = srs_string_split(trace_parent, "-");
+    vector<string> vs = srs_strings_split(trace_parent, "-");
     if (vs.size() != 4)
         return this;
 
@@ -2152,7 +2152,7 @@ srs_error_t SrsApmClient::initialize()
     }
 
     // Please note that 4317 is for GRPC/HTTP2, while SRS only support HTTP and the port shoule be 55681.
-    if (srs_string_contains(endpoint_, ":4317")) {
+    if (srs_strings_contains(endpoint_, ":4317")) {
         return srs_error_new(ERROR_APM_ENDPOINT, "Port 4317 is for GRPC over HTTP2 for APM");
     }
 

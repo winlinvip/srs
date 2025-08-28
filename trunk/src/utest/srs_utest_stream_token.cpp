@@ -219,7 +219,7 @@ VOID TEST(StreamTokenTest, MultipleStreamsConcurrent)
     vector<SrsStreamPublishToken *> tokens;
 
     for (int i = 0; i < 10; i++) {
-        string stream_url = "/live/stream" + srs_int2str(i);
+        string stream_url = "/live/stream" + srs_strconv_format_int(i);
         MockStreamTokenRequest *req = new MockStreamTokenRequest(stream_url);
         requests.push_back(req);
 
@@ -331,7 +331,7 @@ VOID TEST(StreamTokenTest, ManagerDestructorCleanup)
 
         // Acquire multiple tokens
         for (int i = 0; i < 5; i++) {
-            string stream_url = "/live/stream" + srs_int2str(i);
+            string stream_url = "/live/stream" + srs_strconv_format_int(i);
             MockStreamTokenRequest req(stream_url);
             SrsStreamPublishToken *token = NULL;
 
@@ -503,7 +503,7 @@ VOID TEST(StreamTokenTest, TokenManagerStressTest)
 
     // Acquire tokens for many streams
     for (int i = 0; i < num_streams; i++) {
-        string stream_url = "/live/stress_stream_" + srs_int2str(i);
+        string stream_url = "/live/stress_stream_" + srs_strconv_format_int(i);
         MockStreamTokenRequest *req = new MockStreamTokenRequest(stream_url);
         requests.push_back(req);
 
@@ -517,7 +517,7 @@ VOID TEST(StreamTokenTest, TokenManagerStressTest)
     // Verify all tokens are unique and properly acquired
     for (int i = 0; i < num_streams; i++) {
         EXPECT_TRUE(tokens[i]->is_acquired());
-        string expected_url = "/live/stress_stream_" + srs_int2str(i);
+        string expected_url = "/live/stress_stream_" + srs_strconv_format_int(i);
         EXPECT_STREQ(expected_url.c_str(), tokens[i]->stream_url().c_str());
 
         // Verify we can't acquire the same stream again
@@ -606,7 +606,7 @@ VOID TEST(StreamTokenTest, TokenManagerMemoryLeakPrevention)
 
         // Acquire and release multiple tokens
         for (int i = 0; i < 20; i++) {
-            string stream_url = "/live/leak_test_" + srs_int2str(i);
+            string stream_url = "/live/leak_test_" + srs_strconv_format_int(i);
             MockStreamTokenRequest req(stream_url);
             SrsStreamPublishToken *token = NULL;
 

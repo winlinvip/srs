@@ -203,7 +203,7 @@ string SrsDvrSegmenter::generate_path()
     std::string path_config = _srs_config->get_dvr_path(req->vhost);
 
     // add [stream].[timestamp].flv as filename for dir
-    if (!srs_string_ends_with(path_config, ".flv", ".mp4")) {
+    if (!srs_strings_ends_with(path_config, ".flv", ".mp4")) {
         path_config += "/[stream].[timestamp].flv";
     }
 
@@ -973,7 +973,7 @@ srs_error_t SrsDvr::initialize(SrsOriginHub *h, ISrsRequest *r)
 
     std::string path = _srs_config->get_dvr_path(r->vhost);
     SrsDvrSegmenter *segmenter = NULL;
-    if (srs_string_ends_with(path, ".mp4")) {
+    if (srs_strings_ends_with(path, ".mp4")) {
         segmenter = new SrsDvrMp4Segmenter();
     } else {
         segmenter = new SrsDvrFlvSegmenter();

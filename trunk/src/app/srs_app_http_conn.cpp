@@ -61,7 +61,7 @@ SrsHttpConn::SrsHttpConn(ISrsHttpConnOwner *handler, ISrsProtocolReadWriter *fd,
     skt = fd;
     ip = cip;
     port = cport;
-    create_time = srsu2ms(srs_get_system_time());
+    create_time = srsu2ms(srs_time_now_cached());
     delta_ = new SrsNetworkDelta();
     delta_->set_io(skt, skt);
     trd = new SrsSTCoroutine("http", this, _srs_context->get_id());
@@ -333,6 +333,8 @@ srs_error_t SrsHttpxConn::pop_message(ISrsHttpMessage **preq)
 {
     srs_error_t err = srs_success;
 
+    const int SRS_HTTP_READ_CACHE_BYTES = 4096;
+
     ISrsProtocolReadWriter *io = io_;
     if (ssl) {
         io = ssl;
@@ -375,12 +377,12 @@ srs_error_t SrsHttpxConn::on_start()
 
     // Do SSL handshake if HTTPS.
     if (ssl) {
-        srs_utime_t starttime = srs_update_system_time();
+        srs_utime_t starttime = srs_time_now_realtime();
         if ((err = ssl->handshake(ssl_key_file_, ssl_cert_file_)) != srs_success) {
             return srs_error_wrap(err, "handshake");
         }
 
-        int cost = srsu2msi(srs_update_system_time() - starttime);
+        int cost = srsu2msi(srs_time_now_realtime() - starttime);
         srs_trace("https: stream server done, use key %s and cert %s, cost=%dms",
                   ssl_key_file_.c_str(), ssl_cert_file_.c_str(), cost);
     }

@@ -4960,14 +4960,14 @@ VOID TEST(ProtocolKbpsTest, RAWStatisticSugar)
 
 VOID TEST(ProtocolKbpsTest, StreamIdentify)
 {
-    EXPECT_STREQ("/live/livestream", srs_generate_stream_url("", "live", "livestream").c_str());
-    EXPECT_STREQ("/live/livestream", srs_generate_stream_url("", "live", "livestream.flv").c_str());
-    EXPECT_STREQ("/live/livestream", srs_generate_stream_url("", "live", "livestream.m3u8").c_str());
-    EXPECT_STREQ("/live/livestream", srs_generate_stream_url("__defaultVhost__", "live", "livestream").c_str());
+    EXPECT_STREQ("/live/livestream", srs_net_url_encode_sid("", "live", "livestream").c_str());
+    EXPECT_STREQ("/live/livestream", srs_net_url_encode_sid("", "live", "livestream.flv").c_str());
+    EXPECT_STREQ("/live/livestream", srs_net_url_encode_sid("", "live", "livestream.m3u8").c_str());
+    EXPECT_STREQ("/live/livestream", srs_net_url_encode_sid("__defaultVhost__", "live", "livestream").c_str());
 
-    EXPECT_STREQ("ossrs.io/live/livestream", srs_generate_stream_url("ossrs.io", "live", "livestream").c_str());
-    EXPECT_STREQ("ossrs.io/live/livestream", srs_generate_stream_url("ossrs.io", "live", "livestream.flv").c_str());
-    EXPECT_STREQ("ossrs.io/live/livestream", srs_generate_stream_url("ossrs.io", "live", "livestream.m3u8").c_str());
+    EXPECT_STREQ("ossrs.io/live/livestream", srs_net_url_encode_sid("ossrs.io", "live", "livestream").c_str());
+    EXPECT_STREQ("ossrs.io/live/livestream", srs_net_url_encode_sid("ossrs.io", "live", "livestream.flv").c_str());
+    EXPECT_STREQ("ossrs.io/live/livestream", srs_net_url_encode_sid("ossrs.io", "live", "livestream.m3u8").c_str());
 }
 
 VOID TEST(ProtocolHTTPTest, ParseHTTPMessage)
@@ -5109,181 +5109,181 @@ VOID TEST(ProtocolProtobufTest, VarintsEncode)
         SrsBuffer b(buf, 1);
         uint8_t expect[] = {0x00};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 1);
         uint8_t expect[] = {0x70};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x70));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 1);
         uint8_t expect[] = {0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x7f));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 2);
         uint8_t expect[] = {0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x80));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 2);
         uint8_t expect[] = {0xf0, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x3ff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 2);
         uint8_t expect[] = {0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x3fff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 3);
         uint8_t expect[] = {0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x4000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 3);
         uint8_t expect[] = {0xf0, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x1ffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 3);
         uint8_t expect[] = {0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x1fffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 4);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x200000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 4);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0xffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 4);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0xfffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 5);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x10000000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 5);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x7fffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 5);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x7ffffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 6);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x800000000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 6);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x3fffffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 6);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x3ffffffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 7);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x40000000000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 7);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x1fffffffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 7);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x1ffffffffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 8);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x2000000000000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 8);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0xfffffffffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 8);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0xffffffffffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 9);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x100000000000000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 9);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x7ffffffffffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 9);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x7fffffffffffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 10);
         uint8_t expect[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0x8000000000000000));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 10);
         uint8_t expect[] = {0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0xfffffffffffffff0));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
     if (true) {
         SrsBuffer b(buf, 10);
         uint8_t expect[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01};
         HELPER_ASSERT_SUCCESS(SrsProtobufVarints::encode(&b, 0xffffffffffffffff));
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
 }
 
@@ -5299,7 +5299,7 @@ VOID TEST(ProtocolProtobufTest, String)
         HELPER_ASSERT_SUCCESS(SrsProtobufString::encode(&b, "HelloWorld"));
 
         uint8_t expect[] = {0x0a, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x57, 0x6f, 0x72, 0x6c, 0x64};
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
 
     if (true) {
@@ -5309,7 +5309,7 @@ VOID TEST(ProtocolProtobufTest, String)
         HELPER_ASSERT_SUCCESS(SrsProtobufString::encode(&b, ""));
 
         uint8_t expect[] = {0x00};
-        EXPECT_TRUE(srs_bytes_equals(buf, (char *)expect, sizeof(expect)));
+        EXPECT_TRUE(srs_bytes_equal(buf, (char *)expect, sizeof(expect)));
     }
 }
 
@@ -8161,7 +8161,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "rtmp://__defaultVhost__/live", stream = "livestream";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8172,7 +8172,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "rtmp://__defaultVhost__:1936/live", stream = "livestream";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("rtmp", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8183,7 +8183,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "http://__defaultVhost__/live", stream = "livestream.flv";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("http", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8194,7 +8194,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "http://__defaultVhost__/live", stream = "livestream.m3u8";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("http", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8205,7 +8205,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "http://__defaultVhost__:8080/live", stream = "livestream.m3u8";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("http", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8216,7 +8216,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "https://__defaultVhost__/live", stream = "livestream.flv";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("https", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8227,7 +8227,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "https://__defaultVhost__/live", stream = "livestream.m3u8";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("https", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8238,7 +8238,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "https://__defaultVhost__:8088/live", stream = "livestream.m3u8";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("https", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8249,7 +8249,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "webrtc://__defaultVhost__/live", stream = "livestream";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("webrtc", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());
@@ -8260,7 +8260,7 @@ VOID TEST(ProtocolKbpsTest, ParseUrlFailed)
         string tcUrl = "webrtc://__defaultVhost__:8080/live", stream = "livestream";
         string schema, host, vhost, app, param;
         int port = 0;
-        srs_discovery_tc_url(tcUrl, schema, host, vhost, app, stream, port, param);
+        srs_net_url_parse_tcurl(tcUrl, schema, host, vhost, app, stream, port, param);
         EXPECT_STREQ("webrtc", schema.c_str());
         EXPECT_STREQ("__defaultVhost__", host.c_str());
         EXPECT_STREQ("__defaultVhost__", vhost.c_str());

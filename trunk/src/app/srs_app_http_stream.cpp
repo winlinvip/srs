@@ -655,9 +655,9 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // Correct the app and stream by path, which is created from template.
     // @remark Be careful that the stream has extension now, might cause identify fail.
-    req->stream = srs_path_basename(r->path());
+    req->stream = srs_path_filepath_base(r->path());
     // remove the extension of stream if have. for instance, test.flv -> test
-    req->stream = srs_path_filename(req->stream);
+    req->stream = srs_path_filepath_filename(req->stream);
 
     // update client ip
     req->ip = hc->remote_ip();
@@ -745,7 +745,7 @@ srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer 
     bool has_video = _srs_config->get_vhost_http_remux_has_video(req->vhost);
     bool guess_has_av = _srs_config->get_vhost_http_remux_guess_has_av(req->vhost);
 
-    if (srs_string_ends_with(entry->pattern, ".flv")) {
+    if (srs_strings_ends_with(entry->pattern, ".flv")) {
         w->header()->set_content_type("video/x-flv");
         enc_desc = "FLV";
         enc_raw = new SrsFlvStreamEncoder();
@@ -753,15 +753,15 @@ srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer 
         ((SrsFlvStreamEncoder *)enc_raw)->set_has_audio(has_audio);
         ((SrsFlvStreamEncoder *)enc_raw)->set_has_video(has_video);
         ((SrsFlvStreamEncoder *)enc_raw)->set_guess_has_av(guess_has_av);
-    } else if (srs_string_ends_with(entry->pattern, ".aac")) {
+    } else if (srs_strings_ends_with(entry->pattern, ".aac")) {
         w->header()->set_content_type("audio/x-aac");
         enc_desc = "AAC";
         enc_raw = new SrsAacStreamEncoder();
-    } else if (srs_string_ends_with(entry->pattern, ".mp3")) {
+    } else if (srs_strings_ends_with(entry->pattern, ".mp3")) {
         w->header()->set_content_type("audio/mpeg");
         enc_desc = "MP3";
         enc_raw = new SrsMp3StreamEncoder();
-    } else if (srs_string_ends_with(entry->pattern, ".ts")) {
+    } else if (srs_strings_ends_with(entry->pattern, ".ts")) {
         w->header()->set_content_type("video/MP2T");
         enc_desc = "TS";
         enc_raw = new SrsTsStreamEncoder();
@@ -983,7 +983,7 @@ SrsLiveEntry::SrsLiveEntry(std::string m)
 
     req = NULL;
 
-    std::string ext = srs_path_filext(m);
+    std::string ext = srs_path_filepath_ext(m);
     _is_flv = (ext == ".flv");
     _is_ts = (ext == ".ts");
     _is_mp3 = (ext == ".mp3");
@@ -1086,12 +1086,12 @@ srs_error_t SrsHttpStreamServer::http_mount(ISrsRequest *r)
         std::string mount = tmpl->mount;
 
         // replace the vhost variable
-        mount = srs_string_replace(mount, "[vhost]", r->vhost);
-        mount = srs_string_replace(mount, "[app]", r->app);
-        mount = srs_string_replace(mount, "[stream]", r->stream);
+        mount = srs_strings_replace(mount, "[vhost]", r->vhost);
+        mount = srs_strings_replace(mount, "[app]", r->app);
+        mount = srs_strings_replace(mount, "[stream]", r->stream);
 
         // remove the default vhost mount
-        mount = srs_string_replace(mount, SRS_CONSTS_RTMP_DEFAULT_VHOST "/", "/");
+        mount = srs_strings_replace(mount, SRS_CONSTS_RTMP_DEFAULT_VHOST "/", "/");
 
         entry = new SrsLiveEntry(mount);
 
@@ -1236,7 +1236,7 @@ srs_error_t SrsHttpStreamServer::hijack(ISrsHttpMessage *request, ISrsHttpHandle
     //      not-matched for "/livestream.flv", which is actually "/__defaultApp__/livestream.flv", HTTP not support default app.
     //      not-matched for "/live/show/livestream.flv"
     string upath = request->path();
-    if (srs_string_count(upath, "/") != srs_string_count(entry->mount, "/")) {
+    if (srs_strings_count(upath, "/") != srs_strings_count(entry->mount, "/")) {
         return err;
     }
 

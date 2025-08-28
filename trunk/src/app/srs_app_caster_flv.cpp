@@ -47,7 +47,7 @@ srs_error_t SrsHttpFlvListener::initialize(SrsConfDirective *c)
         return srs_error_new(ERROR_STREAM_CASTER_PORT, "invalid port=%d", port);
     }
 
-    listener_->set_endpoint(srs_any_address_for_listener(), port)->set_label("PUSH-FLV");
+    listener_->set_endpoint(srs_net_address_any(), port)->set_label("PUSH-FLV");
 
     if ((err = caster_->initialize(c)) != srs_success) {
         return srs_error_wrap(err, "init caster port=%d", port);
@@ -162,20 +162,20 @@ srs_error_t SrsAppCasterFlv::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     SrsDynamicHttpConn *dconn = dynamic_cast<SrsDynamicHttpConn *>(hconn->handler());
     srs_assert(dconn);
 
-    std::string app = srs_path_dirname(r->path());
-    app = srs_string_trim_start(app, "/");
+    std::string app = srs_path_filepath_dir(r->path());
+    app = srs_strings_trim_start(app, "/");
 
-    std::string stream = srs_path_basename(r->path());
-    stream = srs_string_trim_start(stream, "/");
+    std::string stream = srs_path_filepath_base(r->path());
+    stream = srs_strings_trim_start(stream, "/");
 
     std::string o = output;
     if (!app.empty() && app != "/") {
-        o = srs_string_replace(o, "[app]", app);
+        o = srs_strings_replace(o, "[app]", app);
     }
-    o = srs_string_replace(o, "[stream]", stream);
+    o = srs_strings_replace(o, "[stream]", stream);
 
     // remove the extension.
-    if (srs_string_ends_with(o, ".flv")) {
+    if (srs_strings_ends_with(o, ".flv")) {
         o = o.substr(0, o.length() - 4);
     }
 

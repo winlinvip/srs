@@ -443,7 +443,7 @@ bool SrsRtcSource::stream_is_dead()
     }
 
     // Delay cleanup source.
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
     if (now < stream_die_at_ + SRS_RTC_SOURCE_CLEANUP) {
         return false;
     }
@@ -473,7 +473,7 @@ void SrsRtcSource::init_for_play_before_publishing()
         stream_desc->audio_track_desc_ = audio_track_desc;
 
         audio_track_desc->type_ = "audio";
-        audio_track_desc->id_ = "audio-" + srs_random_str(8);
+        audio_track_desc->id_ = "audio-" + srs_rand_gen_str(8);
 
         uint32_t audio_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
         audio_track_desc->ssrc_ = audio_ssrc;
@@ -490,7 +490,7 @@ void SrsRtcSource::init_for_play_before_publishing()
         stream_desc->video_track_descs_.push_back(h264_track_desc);
 
         h264_track_desc->type_ = "video";
-        h264_track_desc->id_ = "video-h264-" + srs_random_str(8);
+        h264_track_desc->id_ = "video-h264-" + srs_rand_gen_str(8);
 
         uint32_t h264_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
         h264_track_desc->ssrc_ = h264_ssrc;
@@ -508,7 +508,7 @@ void SrsRtcSource::init_for_play_before_publishing()
         stream_desc->video_track_descs_.push_back(h265_track_desc);
 
         h265_track_desc->type_ = "video";
-        h265_track_desc->id_ = "video-h265-" + srs_random_str(8);
+        h265_track_desc->id_ = "video-h265-" + srs_rand_gen_str(8);
 
         uint32_t h265_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
         h265_track_desc->ssrc_ = h265_ssrc;
@@ -624,7 +624,7 @@ void SrsRtcSource::on_consumer_destroy(SrsRtcConsumer *consumer)
 
     // Destroy and cleanup source when no publishers and consumers.
     if (!is_created_ && consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 }
 
@@ -739,7 +739,7 @@ void SrsRtcSource::on_unpublish()
 
     // Destroy and cleanup source when no publishers and consumers.
     if (consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 }
 
@@ -1647,7 +1647,7 @@ srs_error_t SrsRtcFrameBuilderAudioPacketCache::process_packet(SrsRtpPacket *src
     srs_error_t err = srs_success;
 
     uint16_t seq = src->header.get_sequence();
-    srs_utime_t now = srs_update_system_time();
+    srs_utime_t now = srs_time_now_realtime();
 
     if (!initialized_) {
         last_audio_seq_num_ = seq - 1;
@@ -2732,7 +2732,7 @@ SrsMediaPayloadType SrsAudioPayload::generate_media_payload_type()
     media_payload_type.encoding_name_ = name_;
     media_payload_type.clock_rate_ = sample_;
     if (channel_ != 0) {
-        media_payload_type.encoding_param_ = srs_int2str(channel_);
+        media_payload_type.encoding_param_ = srs_strconv_format_int(channel_);
     }
     media_payload_type.rtcp_fb_ = rtcp_fbs_;
 
@@ -2815,7 +2815,7 @@ SrsMediaPayloadType SrsRedPayload::generate_media_payload_type()
     media_payload_type.encoding_name_ = name_;
     media_payload_type.clock_rate_ = sample_;
     if (channel_ != 0) {
-        media_payload_type.encoding_param_ = srs_int2str(channel_);
+        media_payload_type.encoding_param_ = srs_strconv_format_int(channel_);
     }
     media_payload_type.rtcp_fb_ = rtcp_fbs_;
 
@@ -3087,7 +3087,7 @@ void SrsRtcRecvTrack::update_send_report_time(const SrsNtp &ntp, uint32_t rtp_ti
     last_sender_report_rtp_time_ = rtp_time;
 
     // TODO: FIXME: Use system wall clock.
-    last_sender_report_sys_time_ = srs_update_system_time();
+    last_sender_report_sys_time_ = srs_time_now_realtime();
 
     if (last_sender_report_rtp_time1_ > 0) {
         // WebRTC using sender report to sync audio/video timestamp, because audio video have different timebase,

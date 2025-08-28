@@ -408,7 +408,7 @@ VOID TEST(KernelFileWriterTest, RealfileTest)
 
     // "HelloWorldWorld\0\0\0\0\0HelloWorld"
     string str;
-    HELPER_ASSERT_SUCCESS(srs_ioutil_read_all(&fr, str));
+    HELPER_ASSERT_SUCCESS(srs_io_readall(&fr, str));
     EXPECT_STREQ("HelloWorldWorld", str.c_str());
     EXPECT_STREQ("HelloWorld", str.substr(20).c_str());
 }
@@ -552,7 +552,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspSimple)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     if (true) {
@@ -564,7 +564,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspSimple)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     if (true) {
@@ -576,7 +576,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspSimple)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     if (true) {
@@ -588,7 +588,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspSimple)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     if (true) {
@@ -600,7 +600,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspSimple)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     if (true) {
@@ -612,7 +612,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspSimple)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 }
 
@@ -627,7 +627,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspEdge)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     if (true) {
@@ -639,7 +639,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspEdge)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x01; v <= 0xff; v++) {
@@ -651,7 +651,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspEdge)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 }
 
@@ -666,7 +666,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x01; v <= 0xff; v++) {
@@ -678,7 +678,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x00; v <= 0xff; v++) {
@@ -690,7 +690,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x00; v <= 0xff; v++) {
@@ -702,7 +702,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x00; v <= 0xff; v++) {
@@ -714,7 +714,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x00; v <= 0xff; v++) {
@@ -726,7 +726,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 
     for (uint16_t v = 0x00; v <= 0xff; v++) {
@@ -738,7 +738,7 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 }
 

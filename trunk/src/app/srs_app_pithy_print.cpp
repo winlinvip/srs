@@ -136,14 +136,14 @@ bool SrsErrorPithyPrint::can_print(int error_code, uint32_t *pnn)
 
     srs_utime_t tick = ticks[error_code];
     if (!tick) {
-        ticks[error_code] = tick = srs_get_system_time();
+        ticks[error_code] = tick = srs_time_now_cached();
     }
 
-    srs_utime_t diff = srs_get_system_time() - tick;
+    srs_utime_t diff = srs_time_now_cached() - tick;
     diff = srs_max(0, diff);
 
     stage->elapse(diff);
-    ticks[error_code] = srs_get_system_time();
+    ticks[error_code] = srs_time_now_cached();
 
     return new_stage || stage->can_print();
 }
@@ -153,7 +153,7 @@ SrsAlonePithyPrint::SrsAlonePithyPrint() : info_(0)
     // stage work for one print
     info_.nb_clients = 1;
 
-    previous_tick_ = srs_get_system_time();
+    previous_tick_ = srs_time_now_cached();
 }
 
 SrsAlonePithyPrint::~SrsAlonePithyPrint()
@@ -162,8 +162,8 @@ SrsAlonePithyPrint::~SrsAlonePithyPrint()
 
 void SrsAlonePithyPrint::elapse()
 {
-    srs_utime_t diff = srs_get_system_time() - previous_tick_;
-    previous_tick_ = srs_get_system_time();
+    srs_utime_t diff = srs_time_now_cached() - previous_tick_;
+    previous_tick_ = srs_time_now_cached();
 
     diff = srs_max(0, diff);
 
@@ -183,7 +183,7 @@ SrsPithyPrint::SrsPithyPrint(int _stage_id)
     stage_id = _stage_id;
     cache_ = NULL;
     client_id = enter_stage();
-    previous_tick = srs_get_system_time();
+    previous_tick = srs_time_now_cached();
     _age = 0;
 }
 
@@ -344,12 +344,12 @@ void SrsPithyPrint::elapse()
     }
     srs_assert(stage != NULL);
 
-    srs_utime_t diff = srs_get_system_time() - previous_tick;
+    srs_utime_t diff = srs_time_now_cached() - previous_tick;
     diff = srs_max(0, diff);
 
     stage->elapse(diff);
     _age += diff;
-    previous_tick = srs_get_system_time();
+    previous_tick = srs_time_now_cached();
 }
 
 bool SrsPithyPrint::can_print()

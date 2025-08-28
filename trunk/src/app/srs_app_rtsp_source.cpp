@@ -295,7 +295,7 @@ bool SrsRtspSource::stream_is_dead()
     }
 
     // Delay cleanup source.
-    srs_utime_t now = srs_get_system_time();
+    srs_utime_t now = srs_time_now_cached();
     if (now < stream_die_at_ + SRS_RTSP_SOURCE_CLEANUP) {
         return false;
     }
@@ -396,7 +396,7 @@ void SrsRtspSource::on_consumer_destroy(SrsRtspConsumer *consumer)
 
     // Destroy and cleanup source when no publishers and consumers.
     if (!is_created_ && consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 }
 
@@ -458,7 +458,7 @@ void SrsRtspSource::on_unpublish()
 
     // Destroy and cleanup source when no publishers and consumers.
     if (consumers.empty()) {
-        stream_die_at_ = srs_get_system_time();
+        stream_die_at_ = srs_time_now_cached();
     }
 }
 
@@ -542,7 +542,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
     // Create audio track description from actual format data
     SrsUniquePtr<SrsRtcTrackDescription> audio_desc(new SrsRtcTrackDescription());
     audio_desc->type_ = "audio";
-    audio_desc->id_ = "audio-" + srs_random_str(8);
+    audio_desc->id_ = "audio-" + srs_rand_gen_str(8);
     audio_desc->direction_ = "recvonly";
 
     // Generate SSRC for this track
@@ -574,7 +574,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
         if (!asc.empty()) {
             int hex_len = asc.size() * 2;
             SrsUniquePtr<char> hex_buf(new char[hex_len + 1]);
-            srs_data_to_hex(hex_buf.get(), (const uint8_t *)asc.data(), asc.size());
+            srs_hex_encode_to_string(hex_buf.get(), (const uint8_t *)asc.data(), asc.size());
 
             hex_buf.get()[hex_len] = '\0'; // Null terminate
             std::string config_hex = std::string(hex_buf.get());
@@ -615,7 +615,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
     // Create video track description from actual format data
     SrsUniquePtr<SrsRtcTrackDescription> video_desc(new SrsRtcTrackDescription());
     video_desc->type_ = "video";
-    video_desc->id_ = "video-" + codec_name + "-" + srs_random_str(8);
+    video_desc->id_ = "video-" + codec_name + "-" + srs_rand_gen_str(8);
     video_desc->direction_ = "recvonly";
 
     // Generate SSRC for this track

@@ -1136,7 +1136,7 @@ VOID TEST(ProtocolGbSipTest, GbInviteRequest)
     r.in_bytes.push_back("Max-Forwards: 70\r\n");
     r.in_bytes.push_back("Subject: 34020000001320000001:0200007585,34020000002000000001:0\r\n");
     r.in_bytes.push_back("Server: SRS/5.0.65(Bee)\r\n");
-    r.in_bytes.push_back(srs_fmt("Content-Length: %d\r\n", sdp.length()));
+    r.in_bytes.push_back(srs_fmt_sprintf("Content-Length: %d\r\n", sdp.length()));
     r.in_bytes.push_back("\r\n");
     r.in_bytes.push_back(sdp);
 
@@ -1258,7 +1258,7 @@ VOID TEST(ProtocolGbSipTest, Gb200OkResponse)
     r.in_bytes.push_back("Contact: <sip:34020000001320000001@192.168.3.99:5060>\r\n");
     r.in_bytes.push_back("Content-Type: application/sdp\r\n");
     r.in_bytes.push_back("User-Agent: IP Camera\r\n");
-    r.in_bytes.push_back(srs_fmt("Content-Length: %d\r\n", sdp.length()));
+    r.in_bytes.push_back(srs_fmt_sprintf("Content-Length: %d\r\n", sdp.length()));
     r.in_bytes.push_back("\r\n");
     r.in_bytes.push_back(sdp);
 

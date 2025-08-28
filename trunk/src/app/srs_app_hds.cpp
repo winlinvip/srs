@@ -408,7 +408,7 @@ srs_error_t SrsHds::flush_mainfest()
              hds_req->stream.c_str(), hds_req->stream.c_str(), hds_req->stream.c_str());
 
     string dir = _srs_config->get_hds_path(hds_req->vhost) + "/" + hds_req->app;
-    if ((err = srs_create_dir_recursively(dir)) != srs_success) {
+    if ((err = srs_os_mkdir_all(dir)) != srs_success) {
         return srs_error_wrap(err, "hds create dir failed");
     }
     string path = dir + "/" + hds_req->stream + ".f4m";

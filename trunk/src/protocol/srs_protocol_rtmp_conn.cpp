@@ -24,8 +24,8 @@ SrsBasicRtmpClient::SrsBasicRtmpClient(string r, srs_utime_t ctm, srs_utime_t st
     stream_timeout = stm;
 
     req = new SrsRequest();
-    srs_parse_rtmp_url(url, req->tcUrl, req->stream);
-    srs_discovery_tc_url(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
+    srs_net_url_parse_rtmp_url(url, req->tcUrl, req->stream);
+    srs_net_url_parse_tcurl(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
 
     transport = NULL;
     client = NULL;
@@ -113,7 +113,7 @@ srs_error_t SrsBasicRtmpClient::do_connect_app(string local_ip, bool debug)
     // generate the tcUrl
     std::string param = "";
     std::string target_vhost = req->vhost;
-    std::string tc_url = srs_generate_tc_url("rtmp", req->host, req->vhost, req->app, req->port);
+    std::string tc_url = srs_net_url_encode_tcurl("rtmp", req->host, req->vhost, req->app, req->port);
 
     // replace the tcUrl in request,
     // which will replace the tc_url in client.connect_app().
@@ -134,7 +134,7 @@ srs_error_t SrsBasicRtmpClient::publish(int chunk_size, bool with_vhost, std::st
     srs_error_t err = srs_success;
 
     // Pass params in stream, @see https://github.com/ossrs/srs/issues/1031#issuecomment-409745733
-    string stream = srs_generate_stream_with_query(req->host, req->vhost, req->stream, req->param, with_vhost);
+    string stream = srs_net_url_encode_stream(req->host, req->vhost, req->stream, req->param, with_vhost);
 
     // Return the generated stream.
     if (pstream) {
@@ -154,7 +154,7 @@ srs_error_t SrsBasicRtmpClient::play(int chunk_size, bool with_vhost, std::strin
     srs_error_t err = srs_success;
 
     // Pass params in stream, @see https://github.com/ossrs/srs/issues/1031#issuecomment-409745733
-    string stream = srs_generate_stream_with_query(req->host, req->vhost, req->stream, req->param, with_vhost);
+    string stream = srs_net_url_encode_stream(req->host, req->vhost, req->stream, req->param, with_vhost);
 
     // Return the generated stream.
     if (pstream) {

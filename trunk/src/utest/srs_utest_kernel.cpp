@@ -761,8 +761,8 @@ VOID TEST(KernelFlvTest, FlvEncoderWriteHeader)
     HELPER_EXPECT_SUCCESS(enc.write_header());
     ASSERT_TRUE(9 + 4 == fs.tellg());
 
-    EXPECT_TRUE(srs_bytes_equals(flv_header, fs.data(), 9));
-    EXPECT_TRUE(srs_bytes_equals(pts, fs.data() + 9, 4));
+    EXPECT_TRUE(srs_bytes_equal(flv_header, fs.data(), 9));
+    EXPECT_TRUE(srs_bytes_equal(pts, fs.data() + 9, 4));
 
     // customer header
     flv_header[3] = 0xF0;
@@ -774,8 +774,8 @@ VOID TEST(KernelFlvTest, FlvEncoderWriteHeader)
     HELPER_EXPECT_SUCCESS(enc.write_header(flv_header));
     ASSERT_TRUE(9 + 4 == fs.tellg());
 
-    EXPECT_TRUE(srs_bytes_equals(flv_header, fs.data(), 9));
-    EXPECT_TRUE(srs_bytes_equals(pts, fs.data() + 9, 4));
+    EXPECT_TRUE(srs_bytes_equal(flv_header, fs.data(), 9));
+    EXPECT_TRUE(srs_bytes_equal(pts, fs.data() + 9, 4));
 }
 
 /**
@@ -807,10 +807,10 @@ VOID TEST(KernelFlvTest, FlvEncoderWriteMetadata)
     HELPER_ASSERT_SUCCESS(enc.write_metadata(18, md, 8));
     ASSERT_TRUE(11 + 8 + 4 == fs.tellg());
 
-    EXPECT_TRUE(srs_bytes_equals(tag_header, fs.data(), 11));
-    EXPECT_TRUE(srs_bytes_equals(md, fs.data() + 11, 8));
+    EXPECT_TRUE(srs_bytes_equal(tag_header, fs.data(), 11));
+    EXPECT_TRUE(srs_bytes_equal(md, fs.data() + 11, 8));
     EXPECT_TRUE(true); // donot know why, if not add it, the print is disabled.
-    EXPECT_TRUE(srs_bytes_equals(pts, fs.data() + 19, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, fs.data() + 19, 4));
 }
 
 /**
@@ -842,10 +842,10 @@ VOID TEST(KernelFlvTest, FlvEncoderWriteAudio)
     HELPER_ASSERT_SUCCESS(enc.write_audio(0x30, audio, 8));
     ASSERT_TRUE(11 + 8 + 4 == fs.tellg());
 
-    EXPECT_TRUE(srs_bytes_equals(tag_header, fs.data(), 11));
-    EXPECT_TRUE(srs_bytes_equals(audio, fs.data() + 11, 8));
+    EXPECT_TRUE(srs_bytes_equal(tag_header, fs.data(), 11));
+    EXPECT_TRUE(srs_bytes_equal(audio, fs.data() + 11, 8));
     EXPECT_TRUE(true); // donot know why, if not add it, the print is disabled.
-    EXPECT_TRUE(srs_bytes_equals(pts, fs.data() + 11 + 8, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, fs.data() + 11 + 8, 4));
 }
 
 /**
@@ -877,10 +877,10 @@ VOID TEST(KernelFlvTest, FlvEncoderWriteVideo)
     HELPER_ASSERT_SUCCESS(enc.write_video(0x30, video, 8));
     ASSERT_TRUE(11 + 8 + 4 == fs.tellg());
 
-    EXPECT_TRUE(srs_bytes_equals(tag_header, fs.data(), 11));
-    EXPECT_TRUE(srs_bytes_equals(video, fs.data() + 11, 8));
+    EXPECT_TRUE(srs_bytes_equal(tag_header, fs.data(), 11));
+    EXPECT_TRUE(srs_bytes_equal(video, fs.data() + 11, 8));
     EXPECT_TRUE(true); // donot know why, if not add it, the print is disabled.
-    EXPECT_TRUE(srs_bytes_equals(pts, fs.data() + 11 + 8, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, fs.data() + 11 + 8, 4));
 }
 
 /**
@@ -1285,10 +1285,10 @@ VOID TEST(KernelFlvTest, FlvDecoderHeader)
     fs.mock_reset_offset();
 
     HELPER_EXPECT_SUCCESS(dec.read_header(data));
-    EXPECT_TRUE(srs_bytes_equals(flv_header, data, 9));
+    EXPECT_TRUE(srs_bytes_equal(flv_header, data, 9));
 
     HELPER_EXPECT_SUCCESS(dec.read_previous_tag_size(data));
-    EXPECT_TRUE(srs_bytes_equals(pts, data, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, data, 4));
 }
 
 /**
@@ -1332,10 +1332,10 @@ VOID TEST(KernelFlvTest, FlvDecoderMetadata)
     EXPECT_TRUE(0 == time);
 
     HELPER_EXPECT_SUCCESS(dec.read_tag_data(data, size));
-    EXPECT_TRUE(srs_bytes_equals(md, data, 8));
+    EXPECT_TRUE(srs_bytes_equal(md, data, 8));
 
     HELPER_EXPECT_SUCCESS(dec.read_previous_tag_size(data));
-    EXPECT_TRUE(srs_bytes_equals(pts, data, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, data, 4));
 }
 
 /**
@@ -1379,10 +1379,10 @@ VOID TEST(KernelFlvTest, FlvDecoderAudio)
     EXPECT_TRUE(0x30 == time);
 
     HELPER_EXPECT_SUCCESS(dec.read_tag_data(data, size));
-    EXPECT_TRUE(srs_bytes_equals(audio, data, 8));
+    EXPECT_TRUE(srs_bytes_equal(audio, data, 8));
 
     HELPER_EXPECT_SUCCESS(dec.read_previous_tag_size(data));
-    EXPECT_TRUE(srs_bytes_equals(pts, data, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, data, 4));
 }
 
 /**
@@ -1426,10 +1426,10 @@ VOID TEST(KernelFlvTest, FlvDecoderVideo)
     EXPECT_TRUE(0x30 == time);
 
     HELPER_EXPECT_SUCCESS(dec.read_tag_data(data, size));
-    EXPECT_TRUE(srs_bytes_equals(video, data, 8));
+    EXPECT_TRUE(srs_bytes_equal(video, data, 8));
 
     HELPER_EXPECT_SUCCESS(dec.read_previous_tag_size(data));
-    EXPECT_TRUE(srs_bytes_equals(pts, data, 4));
+    EXPECT_TRUE(srs_bytes_equal(pts, data, 4));
 }
 
 /**
@@ -1476,7 +1476,7 @@ VOID TEST(KernelFlvTest, FlvVSDecoderHeader)
     fs.mock_reset_offset();
 
     HELPER_EXPECT_SUCCESS(dec.read_header_ext(data));
-    EXPECT_TRUE(srs_bytes_equals(flv_header, data, 9));
+    EXPECT_TRUE(srs_bytes_equal(flv_header, data, 9));
 }
 
 /**
@@ -2101,14 +2101,14 @@ VOID TEST(KernelBufferTest, CoverAll)
  */
 VOID TEST(KernelUtilityTest, UtilityTime)
 {
-    srs_utime_t time = srs_get_system_time();
+    srs_utime_t time = srs_time_now_cached();
     EXPECT_TRUE(time > 0);
 
-    srs_utime_t time1 = srs_get_system_time();
+    srs_utime_t time1 = srs_time_now_cached();
     EXPECT_EQ(time, time1);
 
     usleep(1 * SRS_UTIME_MILLISECONDS);
-    time1 = srs_update_system_time();
+    time1 = srs_time_now_realtime();
     EXPECT_TRUE(time1 > time);
 }
 
@@ -2117,15 +2117,15 @@ VOID TEST(KernelUtilityTest, UtilityTime)
  */
 VOID TEST(KernelUtilityTest, UtilityStartupTime)
 {
-    srs_utime_t time = srs_get_system_startup_time();
+    srs_utime_t time = srs_time_since_startup();
     EXPECT_TRUE(time > 0);
 
-    srs_utime_t time1 = srs_get_system_startup_time();
+    srs_utime_t time1 = srs_time_since_startup();
     EXPECT_EQ(time, time1);
 
     usleep(1 * SRS_UTIME_MILLISECONDS);
-    srs_update_system_time();
-    time1 = srs_get_system_startup_time();
+    srs_time_now_realtime();
+    time1 = srs_time_since_startup();
     EXPECT_EQ(time, time1);
 }
 
@@ -2145,49 +2145,49 @@ VOID TEST(KernelUtilityTest, UtilityString)
     string str = "Hello, World! Hello, SRS!";
     string str1;
 
-    str1 = srs_string_replace(str, "xxx", "");
+    str1 = srs_strings_replace(str, "xxx", "");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_replace(str, "He", "XX");
+    str1 = srs_strings_replace(str, "He", "XX");
     EXPECT_STREQ("XXllo, World! XXllo, SRS!", str1.c_str());
 
-    str1 = srs_string_replace(str, "o", "XX");
+    str1 = srs_strings_replace(str, "o", "XX");
     EXPECT_STREQ("HellXX, WXXrld! HellXX, SRS!", str1.c_str());
 
     // origin_str == old_str
     std::string origin_str = "xxd";
-    str1 = srs_string_replace(origin_str, "xxd", "x1d");
+    str1 = srs_strings_replace(origin_str, "xxd", "x1d");
     EXPECT_STREQ("x1d", str1.c_str());
 
     // new_str include old_str.
-    str1 = srs_string_replace(str, "Hello", "HelloN");
+    str1 = srs_strings_replace(str, "Hello", "HelloN");
     EXPECT_STREQ("HelloN, World! HelloN, SRS!", str1.c_str());
 
-    str1 = srs_string_trim_start(str, "x");
+    str1 = srs_strings_trim_start(str, "x");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_trim_start(str, "S!R");
+    str1 = srs_strings_trim_start(str, "S!R");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_trim_start(str, "lHe");
+    str1 = srs_strings_trim_start(str, "lHe");
     EXPECT_STREQ("o, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_trim_end(str, "x");
+    str1 = srs_strings_trim_end(str, "x");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_trim_end(str, "He");
+    str1 = srs_strings_trim_end(str, "He");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_trim_end(str, "S!R");
+    str1 = srs_strings_trim_end(str, "S!R");
     EXPECT_STREQ("Hello, World! Hello, ", str1.c_str());
 
-    str1 = srs_string_remove(str, "x");
+    str1 = srs_strings_remove(str, "x");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    str1 = srs_string_remove(str, "o");
+    str1 = srs_strings_remove(str, "o");
     EXPECT_STREQ("Hell, Wrld! Hell, SRS!", str1.c_str());
 
-    str1 = srs_string_remove(str, "ol");
+    str1 = srs_strings_remove(str, "ol");
     EXPECT_STREQ("He, Wrd! He, SRS!", str1.c_str());
 
     str1 = srs_erase_first_substr(str, "Hello");
@@ -2202,9 +2202,9 @@ VOID TEST(KernelUtilityTest, UtilityString)
     str1 = srs_erase_last_substr(str, "XX");
     EXPECT_STREQ("Hello, World! Hello, SRS!", str1.c_str());
 
-    EXPECT_FALSE(srs_string_ends_with("Hello", "x"));
-    EXPECT_TRUE(srs_string_ends_with("Hello", "o"));
-    EXPECT_TRUE(srs_string_ends_with("Hello", "lo"));
+    EXPECT_FALSE(srs_strings_ends_with("Hello", "x"));
+    EXPECT_TRUE(srs_strings_ends_with("Hello", "o"));
+    EXPECT_TRUE(srs_strings_ends_with("Hello", "lo"));
 }
 
 VOID TEST(KernelUtility, AvcUev)
@@ -2570,16 +2570,16 @@ VOID TEST(KernelUtility, StringToHex)
 {
     if (true) {
         uint8_t h[16];
-        EXPECT_EQ(-1, srs_hex_to_data(h, NULL, 0));
-        EXPECT_EQ(-1, srs_hex_to_data(h, "0", 1));
-        EXPECT_EQ(-1, srs_hex_to_data(h, "0g", 2));
+        EXPECT_EQ(-1, srs_hex_decode_string(h, NULL, 0));
+        EXPECT_EQ(-1, srs_hex_decode_string(h, "0", 1));
+        EXPECT_EQ(-1, srs_hex_decode_string(h, "0g", 2));
     }
 
     if (true) {
         string s = "139056E5A0";
         uint8_t h[16];
 
-        int n = srs_hex_to_data(h, s.data(), s.length());
+        int n = srs_hex_decode_string(h, s.data(), s.length());
         EXPECT_EQ(n, 5);
         EXPECT_EQ(0x13, h[0]);
         EXPECT_EQ(0x90, h[1]);
@@ -2592,41 +2592,41 @@ VOID TEST(KernelUtility, StringToHex)
 VOID TEST(KernelUtility, StringUtils)
 {
     if (true) {
-        EXPECT_TRUE("srs" == srs_string_replace("srsx", "x", ""));
-        EXPECT_TRUE("srs" == srs_string_replace("srs", "", ""));
-        EXPECT_TRUE("srs" == srs_string_replace("sxs", "x", "r"));
-        EXPECT_TRUE("srs" == srs_string_replace("xrx", "x", "s"));
-        EXPECT_TRUE("srs" == srs_string_replace("xyrxy", "xy", "s"));
-        EXPECT_TRUE("srs" == srs_string_replace("sxys", "xy", "r"));
+        EXPECT_TRUE("srs" == srs_strings_replace("srsx", "x", ""));
+        EXPECT_TRUE("srs" == srs_strings_replace("srs", "", ""));
+        EXPECT_TRUE("srs" == srs_strings_replace("sxs", "x", "r"));
+        EXPECT_TRUE("srs" == srs_strings_replace("xrx", "x", "s"));
+        EXPECT_TRUE("srs" == srs_strings_replace("xyrxy", "xy", "s"));
+        EXPECT_TRUE("srs" == srs_strings_replace("sxys", "xy", "r"));
     }
 
     if (true) {
-        EXPECT_TRUE("srs" == srs_string_trim_end("srs", ""));
-        EXPECT_TRUE("srs" == srs_string_trim_end("srsx", "x"));
-        EXPECT_TRUE("srs" == srs_string_trim_end("srsxx", "x"));
-        EXPECT_TRUE("srs" == srs_string_trim_end("srsxy", "xy"));
-        EXPECT_TRUE("srs" == srs_string_trim_end("srsx ", "x "));
-        EXPECT_TRUE("srs" == srs_string_trim_end("srsx yx", "x y"));
-        EXPECT_TRUE("srs" == srs_string_trim_end("srsx yxy", "x y"));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srs", ""));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srsx", "x"));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srsxx", "x"));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srsxy", "xy"));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srsx ", "x "));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srsx yx", "x y"));
+        EXPECT_TRUE("srs" == srs_strings_trim_end("srsx yxy", "x y"));
     }
 
     if (true) {
-        EXPECT_TRUE("srs" == srs_string_trim_start("srs", ""));
-        EXPECT_TRUE("srs" == srs_string_trim_start("xsrs", "x"));
-        EXPECT_TRUE("srs" == srs_string_trim_start("xxsrs", "x"));
-        EXPECT_TRUE("srs" == srs_string_trim_start("xysrs", "xy"));
-        EXPECT_TRUE("srs" == srs_string_trim_start("x srs", "x "));
-        EXPECT_TRUE("srs" == srs_string_trim_start("x yxsrs", "x y"));
-        EXPECT_TRUE("srs" == srs_string_trim_start("x yxysrs", "x y"));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("srs", ""));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("xsrs", "x"));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("xxsrs", "x"));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("xysrs", "xy"));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("x srs", "x "));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("x yxsrs", "x y"));
+        EXPECT_TRUE("srs" == srs_strings_trim_start("x yxysrs", "x y"));
     }
 
     if (true) {
-        EXPECT_TRUE("srs" == srs_string_remove("srs", ""));
-        EXPECT_TRUE("srs" == srs_string_remove("xsrs", "x"));
-        EXPECT_TRUE("srs" == srs_string_remove("xsrsx", "x"));
-        EXPECT_TRUE("srs" == srs_string_remove("xsxrsx", "x"));
-        EXPECT_TRUE("srs" == srs_string_remove("yxsxrsx", "xy"));
-        EXPECT_TRUE("srs" == srs_string_remove("yxsxrysx", "xy"));
+        EXPECT_TRUE("srs" == srs_strings_remove("srs", ""));
+        EXPECT_TRUE("srs" == srs_strings_remove("xsrs", "x"));
+        EXPECT_TRUE("srs" == srs_strings_remove("xsrsx", "x"));
+        EXPECT_TRUE("srs" == srs_strings_remove("xsxrsx", "x"));
+        EXPECT_TRUE("srs" == srs_strings_remove("yxsxrsx", "xy"));
+        EXPECT_TRUE("srs" == srs_strings_remove("yxsxrysx", "xy"));
     }
 
     if (true) {
@@ -2642,106 +2642,106 @@ VOID TEST(KernelUtility, StringUtils)
     }
 
     if (true) {
-        EXPECT_TRUE(srs_string_ends_with("srs", "s"));
-        EXPECT_TRUE(srs_string_ends_with("srs", "rs"));
-        EXPECT_TRUE(srs_string_ends_with("srs", "srs"));
-        EXPECT_TRUE(!srs_string_ends_with("srs", "x"));
-        EXPECT_TRUE(!srs_string_ends_with("srs", "srx"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "s"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "rs"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "srs"));
+        EXPECT_TRUE(!srs_strings_ends_with("srs", "x"));
+        EXPECT_TRUE(!srs_strings_ends_with("srs", "srx"));
 
-        EXPECT_TRUE(srs_string_ends_with("srs", "r", "s"));
-        EXPECT_TRUE(srs_string_ends_with("srs", "sr", "s"));
-        EXPECT_TRUE(srs_string_ends_with("srs", "x", "r", "s"));
-        EXPECT_TRUE(srs_string_ends_with("srs", "y", "x", "r", "s"));
-        EXPECT_TRUE(!srs_string_ends_with("srs", "x", "y", "z", "srx"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "r", "s"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "sr", "s"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "x", "r", "s"));
+        EXPECT_TRUE(srs_strings_ends_with("srs", "y", "x", "r", "s"));
+        EXPECT_TRUE(!srs_strings_ends_with("srs", "x", "y", "z", "srx"));
     }
 
     if (true) {
-        EXPECT_TRUE(srs_string_starts_with("srs", "s"));
-        EXPECT_TRUE(srs_string_starts_with("srs", "sr"));
-        EXPECT_TRUE(srs_string_starts_with("srs", "srs"));
-        EXPECT_TRUE(!srs_string_starts_with("srs", "x"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "s"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "sr"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "srs"));
+        EXPECT_TRUE(!srs_strings_starts_with("srs", "x"));
 
-        EXPECT_TRUE(srs_string_starts_with("srs", "r", "s"));
-        EXPECT_TRUE(srs_string_starts_with("srs", "sr", "s"));
-        EXPECT_TRUE(srs_string_starts_with("srs", "x", "r", "s"));
-        EXPECT_TRUE(srs_string_starts_with("srs", "y", "x", "r", "s"));
-        EXPECT_TRUE(!srs_string_starts_with("srs", "x", "y", "z", "srx"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "r", "s"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "sr", "s"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "x", "r", "s"));
+        EXPECT_TRUE(srs_strings_starts_with("srs", "y", "x", "r", "s"));
+        EXPECT_TRUE(!srs_strings_starts_with("srs", "x", "y", "z", "srx"));
     }
 
     if (true) {
-        EXPECT_TRUE(srs_string_contains("srs", "s"));
-        EXPECT_TRUE(srs_string_contains("srs", "s", "sr"));
-        EXPECT_TRUE(srs_string_contains("srs", "s", "sr", "srs"));
+        EXPECT_TRUE(srs_strings_contains("srs", "s"));
+        EXPECT_TRUE(srs_strings_contains("srs", "s", "sr"));
+        EXPECT_TRUE(srs_strings_contains("srs", "s", "sr", "srs"));
     }
 
     if (true) {
-        EXPECT_EQ(0, srs_string_count("srs", "y"));
-        EXPECT_EQ(0, srs_string_count("srs", ""));
-        EXPECT_EQ(1, srs_string_count("srs", "r"));
-        EXPECT_EQ(2, srs_string_count("srs", "s"));
-        EXPECT_EQ(3, srs_string_count("srs", "sr"));
+        EXPECT_EQ(0, srs_strings_count("srs", "y"));
+        EXPECT_EQ(0, srs_strings_count("srs", ""));
+        EXPECT_EQ(1, srs_strings_count("srs", "r"));
+        EXPECT_EQ(2, srs_strings_count("srs", "s"));
+        EXPECT_EQ(3, srs_strings_count("srs", "sr"));
     }
 
     if (true) {
         vector<string> flags;
-        EXPECT_TRUE("srs" == srs_string_min_match("srs", flags));
+        EXPECT_TRUE("srs" == srs_strings_min_match("srs", flags));
     }
 
     if (true) {
         vector<string> flags;
         flags.push_back("s");
-        EXPECT_TRUE("s" == srs_string_min_match("srs", flags));
+        EXPECT_TRUE("s" == srs_strings_min_match("srs", flags));
     }
 
     if (true) {
         vector<string> flags;
         flags.push_back("sr");
-        EXPECT_TRUE("sr" == srs_string_min_match("srs", flags));
+        EXPECT_TRUE("sr" == srs_strings_min_match("srs", flags));
     }
 
     if (true) {
         vector<string> flags;
         flags.push_back("rs");
-        EXPECT_TRUE("rs" == srs_string_min_match("srs", flags));
+        EXPECT_TRUE("rs" == srs_strings_min_match("srs", flags));
     }
 
     if (true) {
         vector<string> flags;
         flags.push_back("x");
         flags.push_back("rs");
-        EXPECT_TRUE("rs" == srs_string_min_match("srs", flags));
+        EXPECT_TRUE("rs" == srs_strings_min_match("srs", flags));
     }
 
     if (true) {
         vector<string> flags;
         flags.push_back("x");
-        EXPECT_TRUE("" == srs_string_min_match("srs", flags));
+        EXPECT_TRUE("" == srs_strings_min_match("srs", flags));
     }
 }
 
 VOID TEST(KernelUtility, StringSplitUtils)
 {
     if (true) {
-        vector<string> ss = srs_string_split("ossrs", "r");
+        vector<string> ss = srs_strings_split("ossrs", "r");
         EXPECT_EQ(2, (int)ss.size());
         EXPECT_STREQ("oss", ss.at(0).c_str());
         EXPECT_STREQ("s", ss.at(1).c_str());
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("ossrs", "");
+        vector<string> ss = srs_strings_split("ossrs", "");
         EXPECT_EQ(1, (int)ss.size());
         EXPECT_STREQ("ossrs", ss.at(0).c_str());
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("ossrs", "live");
+        vector<string> ss = srs_strings_split("ossrs", "live");
         EXPECT_EQ(1, (int)ss.size());
         EXPECT_STREQ("ossrs", ss.at(0).c_str());
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("srs,live,rtc", ",");
+        vector<string> ss = srs_strings_split("srs,live,rtc", ",");
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("srs", ss.at(0).c_str());
         EXPECT_STREQ("live", ss.at(1).c_str());
@@ -2749,7 +2749,7 @@ VOID TEST(KernelUtility, StringSplitUtils)
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("srs,,rtc", ",");
+        vector<string> ss = srs_strings_split("srs,,rtc", ",");
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("srs", ss.at(0).c_str());
         EXPECT_STREQ("", ss.at(1).c_str());
@@ -2757,7 +2757,7 @@ VOID TEST(KernelUtility, StringSplitUtils)
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("srs,,,rtc", ",");
+        vector<string> ss = srs_strings_split("srs,,,rtc", ",");
         EXPECT_EQ(4, (int)ss.size());
         EXPECT_STREQ("srs", ss.at(0).c_str());
         EXPECT_STREQ("", ss.at(1).c_str());
@@ -2766,7 +2766,7 @@ VOID TEST(KernelUtility, StringSplitUtils)
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("srs,live,", ",");
+        vector<string> ss = srs_strings_split("srs,live,", ",");
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("srs", ss.at(0).c_str());
         EXPECT_STREQ("live", ss.at(1).c_str());
@@ -2774,7 +2774,7 @@ VOID TEST(KernelUtility, StringSplitUtils)
     }
 
     if (true) {
-        vector<string> ss = srs_string_split(",live,rtc", ",");
+        vector<string> ss = srs_strings_split(",live,rtc", ",");
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("", ss.at(0).c_str());
         EXPECT_STREQ("live", ss.at(1).c_str());
@@ -2782,13 +2782,13 @@ VOID TEST(KernelUtility, StringSplitUtils)
     }
 
     if (true) {
-        EXPECT_TRUE("srs" == srs_string_split("srs", "").at(0));
-        EXPECT_TRUE("s" == srs_string_split("srs", "r").at(0));
-        EXPECT_TRUE("s" == srs_string_split("srs", "rs").at(0));
+        EXPECT_TRUE("srs" == srs_strings_split("srs", "").at(0));
+        EXPECT_TRUE("s" == srs_strings_split("srs", "r").at(0));
+        EXPECT_TRUE("s" == srs_strings_split("srs", "rs").at(0));
     }
 
     if (true) {
-        vector<string> ss = srs_string_split("/xxx/yyy", "/");
+        vector<string> ss = srs_strings_split("/xxx/yyy", "/");
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("", ss.at(0).c_str());
         EXPECT_STREQ("xxx", ss.at(1).c_str());
@@ -2802,7 +2802,7 @@ VOID TEST(KernelUtility, StringSplitUtils2)
         vector<string> flags;
         flags.push_back("e");
         flags.push_back("wo");
-        vector<string> ss = srs_string_split("hello, world", flags);
+        vector<string> ss = srs_strings_split("hello, world", flags);
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("h", ss.at(0).c_str());
         EXPECT_STREQ("llo, ", ss.at(1).c_str());
@@ -2813,7 +2813,7 @@ VOID TEST(KernelUtility, StringSplitUtils2)
         vector<string> flags;
         flags.push_back("");
         flags.push_back("");
-        vector<string> ss = srs_string_split("hello, world", flags);
+        vector<string> ss = srs_strings_split("hello, world", flags);
         EXPECT_EQ(1, (int)ss.size());
         EXPECT_STREQ("hello, world", ss.at(0).c_str());
     }
@@ -2822,7 +2822,7 @@ VOID TEST(KernelUtility, StringSplitUtils2)
         vector<string> flags;
         flags.push_back(",");
         flags.push_back(" ");
-        vector<string> ss = srs_string_split("hello, world", flags);
+        vector<string> ss = srs_strings_split("hello, world", flags);
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("hello", ss.at(0).c_str());
         EXPECT_STREQ("", ss.at(1).c_str());
@@ -2832,7 +2832,7 @@ VOID TEST(KernelUtility, StringSplitUtils2)
     if (true) {
         vector<string> flags;
         flags.push_back(",");
-        vector<string> ss = srs_string_split("hello,,world", flags);
+        vector<string> ss = srs_strings_split("hello,,world", flags);
         EXPECT_EQ(3, (int)ss.size());
         EXPECT_STREQ("hello", ss.at(0).c_str());
         EXPECT_STREQ("", ss.at(1).c_str());
@@ -2843,40 +2843,40 @@ VOID TEST(KernelUtility, StringSplitUtils2)
 VOID TEST(KernelUtility, BytesUtils)
 {
     if (true) {
-        EXPECT_TRUE(srs_bytes_equals(NULL, NULL, 0));
-        EXPECT_TRUE(srs_bytes_equals((void *)"s", (void *)"s", 0));
-        EXPECT_TRUE(srs_bytes_equals((void *)"s", (void *)"s", 1));
-        EXPECT_TRUE(srs_bytes_equals((void *)"s", (void *)"srs", 1));
-        EXPECT_TRUE(!srs_bytes_equals((void *)"xrs", (void *)"srs", 3));
+        EXPECT_TRUE(srs_bytes_equal(NULL, NULL, 0));
+        EXPECT_TRUE(srs_bytes_equal((void *)"s", (void *)"s", 0));
+        EXPECT_TRUE(srs_bytes_equal((void *)"s", (void *)"s", 1));
+        EXPECT_TRUE(srs_bytes_equal((void *)"s", (void *)"srs", 1));
+        EXPECT_TRUE(!srs_bytes_equal((void *)"xrs", (void *)"srs", 3));
     }
 }
 
 VOID TEST(KernelUtility, PathUtils)
 {
     if (true) {
-        EXPECT_TRUE("./" == srs_path_dirname(""));
-        EXPECT_TRUE("/" == srs_path_dirname("/"));
-        EXPECT_TRUE("/" == srs_path_dirname("//"));
-        EXPECT_TRUE("/" == srs_path_dirname("/stream"));
-        EXPECT_TRUE("live" == srs_path_dirname("live/stream"));
+        EXPECT_TRUE("./" == srs_path_filepath_dir(""));
+        EXPECT_TRUE("/" == srs_path_filepath_dir("/"));
+        EXPECT_TRUE("/" == srs_path_filepath_dir("//"));
+        EXPECT_TRUE("/" == srs_path_filepath_dir("/stream"));
+        EXPECT_TRUE("live" == srs_path_filepath_dir("live/stream"));
     }
 
     if (true) {
-        EXPECT_TRUE("" == srs_path_basename(""));
-        EXPECT_TRUE("/" == srs_path_basename("/"));
-        EXPECT_TRUE("stream" == srs_path_basename("/stream"));
-        EXPECT_TRUE("stream" == srs_path_basename("live/stream"));
-        EXPECT_TRUE("stream.flv" == srs_path_basename("live/stream.flv"));
+        EXPECT_TRUE("" == srs_path_filepath_base(""));
+        EXPECT_TRUE("/" == srs_path_filepath_base("/"));
+        EXPECT_TRUE("stream" == srs_path_filepath_base("/stream"));
+        EXPECT_TRUE("stream" == srs_path_filepath_base("live/stream"));
+        EXPECT_TRUE("stream.flv" == srs_path_filepath_base("live/stream.flv"));
     }
 
     if (true) {
-        EXPECT_TRUE("" == srs_path_filename(""));
-        EXPECT_TRUE("stream" == srs_path_filename("stream.flv"));
+        EXPECT_TRUE("" == srs_path_filepath_filename(""));
+        EXPECT_TRUE("stream" == srs_path_filepath_filename("stream.flv"));
     }
 
     if (true) {
-        EXPECT_TRUE("" == srs_path_filext(""));
-        EXPECT_TRUE(".flv" == srs_path_filext("stream.flv"));
+        EXPECT_TRUE("" == srs_path_filepath_ext(""));
+        EXPECT_TRUE(".flv" == srs_path_filepath_ext("stream.flv"));
     }
 }
 
@@ -4376,7 +4376,7 @@ VOID TEST(KernelCoecTest, VideoFormatRbspData)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)nalu.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), nalu.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), nalu.data(), nb_rbsp));
     }
 
     if (true) {
@@ -4403,7 +4403,7 @@ VOID TEST(KernelCoecTest, VideoFormatRbspData)
             int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
             ASSERT_EQ(nb_rbsp, (int)expect.size());
-            EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+            EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
         }
 
         // 0x00 0x00 0x04 ~ 0x00 0x00 0xFF, no need to add emulation bytes.
@@ -4415,7 +4415,7 @@ VOID TEST(KernelCoecTest, VideoFormatRbspData)
             int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
             ASSERT_EQ(nb_rbsp, (int)nalu.size());
-            EXPECT_TRUE(srs_bytes_equals(rbsp.data(), nalu.data(), nb_rbsp));
+            EXPECT_TRUE(srs_bytes_equal(rbsp.data(), nalu.data(), nb_rbsp));
         }
     }
 
@@ -4430,7 +4430,7 @@ VOID TEST(KernelCoecTest, VideoFormatRbspData)
         int nb_rbsp = srs_rbsp_remove_emulation_bytes(&b, rbsp);
 
         ASSERT_EQ(nb_rbsp, (int)expect.size());
-        EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
+        EXPECT_TRUE(srs_bytes_equal(rbsp.data(), expect.data(), nb_rbsp));
     }
 }
 
@@ -5587,7 +5587,7 @@ VOID TEST(KernelUtilityTest, CoverTimeSpecial)
 {
     if (true) {
         MockTime _mt(mock_gettimeofday);
-        EXPECT_TRUE(-1 == srs_update_system_time());
+        EXPECT_TRUE(-1 == srs_time_now_realtime());
     }
 }
 #endif
@@ -5601,15 +5601,15 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
 
     _srs_system_time_us_cache = 0;
     _srs_system_time_startup_time = 0;
-    EXPECT_TRUE(srs_get_system_startup_time() > 0);
+    EXPECT_TRUE(srs_time_since_startup() > 0);
 
     _srs_system_time_us_cache -= 300 * 1000 * 1000 + 1;
-    EXPECT_TRUE(srs_update_system_time() > 0);
+    EXPECT_TRUE(srs_time_now_realtime() > 0);
 
     if (true) {
         string host = "127.0.0.1:1935";
         int port = 0;
-        srs_parse_hostport(host, host, port);
+        srs_net_split_hostport(host, host, port);
         EXPECT_EQ(1935, port);
         EXPECT_STREQ("127.0.0.1", host.c_str());
     }
@@ -5617,7 +5617,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 8080;
-        srs_parse_hostport("::1", host, port);
+        srs_net_split_hostport("::1", host, port);
         EXPECT_EQ(8080, port);
         EXPECT_STREQ("::1", host.c_str());
     }
@@ -5625,7 +5625,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 8080;
-        srs_parse_hostport("::", host, port);
+        srs_net_split_hostport("::", host, port);
         EXPECT_EQ(8080, port);
         EXPECT_STREQ("::", host.c_str());
     }
@@ -5633,7 +5633,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("3ffe:dead:beef::1", host, port);
+        srs_net_split_hostport("3ffe:dead:beef::1", host, port);
         EXPECT_EQ(0, port);
         EXPECT_STREQ("3ffe:dead:beef::1", host.c_str());
     }
@@ -5641,7 +5641,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 10;
-        srs_parse_hostport("2001:da8:6000:291:21f:d0ff:fed4:928c", host, port);
+        srs_net_split_hostport("2001:da8:6000:291:21f:d0ff:fed4:928c", host, port);
         EXPECT_EQ(10, port);
         EXPECT_STREQ("2001:da8:6000:291:21f:d0ff:fed4:928c", host.c_str());
     }
@@ -5649,7 +5649,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("[2001:da8:6000:291:21f:d0ff:fed4:928c]:167", host, port);
+        srs_net_split_hostport("[2001:da8:6000:291:21f:d0ff:fed4:928c]:167", host, port);
         EXPECT_EQ(167, port);
         EXPECT_STREQ("2001:da8:6000:291:21f:d0ff:fed4:928c", host.c_str());
     }
@@ -5657,7 +5657,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("[::A.B.C.D]:167", host, port);
+        srs_net_split_hostport("[::A.B.C.D]:167", host, port);
         EXPECT_EQ(167, port);
         EXPECT_STREQ("::A.B.C.D", host.c_str());
     }
@@ -5665,7 +5665,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("::A.B.C.D", host, port);
+        srs_net_split_hostport("::A.B.C.D", host, port);
         EXPECT_EQ(0, port);
         EXPECT_STREQ("::A.B.C.D", host.c_str());
     }
@@ -5673,7 +5673,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("[::FFFF:A.B.C.D]:167", host, port);
+        srs_net_split_hostport("[::FFFF:A.B.C.D]:167", host, port);
         EXPECT_EQ(167, port);
         EXPECT_STREQ("::FFFF:A.B.C.D", host.c_str());
     }
@@ -5681,7 +5681,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("[ff00::]:167", host, port);
+        srs_net_split_hostport("[ff00::]:167", host, port);
         EXPECT_EQ(167, port);
         EXPECT_STREQ("ff00::", host.c_str());
     }
@@ -5689,7 +5689,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("[fe80::a00:27ff:fe84:be2%eth0]:167", host, port);
+        srs_net_split_hostport("[fe80::a00:27ff:fe84:be2%eth0]:167", host, port);
         EXPECT_EQ(167, port);
         EXPECT_STREQ("fe80::a00:27ff:fe84:be2%eth0", host.c_str());
     }
@@ -5697,7 +5697,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("::FFFF:A.B.C.D", host, port);
+        srs_net_split_hostport("::FFFF:A.B.C.D", host, port);
         EXPECT_EQ(0, port);
         EXPECT_STREQ("::FFFF:A.B.C.D", host.c_str());
     }
@@ -5705,7 +5705,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 8080;
-        srs_parse_hostport("", host, port);
+        srs_net_split_hostport("", host, port);
         EXPECT_EQ(8080, port);
         EXPECT_STREQ("", host.c_str());
     }
@@ -5713,7 +5713,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 8080;
-        srs_parse_hostport("3ffe:dead:beef::1", host, port);
+        srs_net_split_hostport("3ffe:dead:beef::1", host, port);
         EXPECT_EQ(8080, port);
         EXPECT_STREQ("3ffe:dead:beef::1", host.c_str());
     }
@@ -5721,7 +5721,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("[3ffe:dead:beef::1]:1935", host, port);
+        srs_net_split_hostport("[3ffe:dead:beef::1]:1935", host, port);
         EXPECT_EQ(1935, port);
         EXPECT_STREQ("3ffe:dead:beef::1", host.c_str());
     }
@@ -5729,27 +5729,27 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_hostport("domain.com", host, port);
+        srs_net_split_hostport("domain.com", host, port);
         EXPECT_STREQ("domain.com", host.c_str());
     }
 
     if (true) {
         string host;
         int port = 1935;
-        srs_parse_hostport("domain.com:0", host, port);
+        srs_net_split_hostport("domain.com:0", host, port);
         EXPECT_EQ(1935, port);
         EXPECT_STREQ("domain.com", host.c_str());
     }
 
     if (true) {
-        string ep = srs_any_address_for_listener();
+        string ep = srs_net_address_any();
         EXPECT_TRUE(ep == "0.0.0.0" || ep == "::");
     }
 
     if (true) {
         string host;
         int port = 0;
-        srs_parse_endpoint("[3ffe:dead:beef::1]:1935", host, port);
+        srs_net_split_for_listener("[3ffe:dead:beef::1]:1935", host, port);
         EXPECT_EQ(1935, port);
         EXPECT_STREQ("3ffe:dead:beef::1", host.c_str());
     }
@@ -5757,7 +5757,7 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_endpoint("domain.com:1935", host, port);
+        srs_net_split_for_listener("domain.com:1935", host, port);
         EXPECT_EQ(1935, port);
         EXPECT_STREQ("domain.com", host.c_str());
     }
@@ -5765,15 +5765,15 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     if (true) {
         string host;
         int port = 0;
-        srs_parse_endpoint("1935", host, port);
+        srs_net_split_for_listener("1935", host, port);
         EXPECT_EQ(1935, port);
         EXPECT_TRUE(host == "0.0.0.0" || host == "::");
     }
 
     if (true) {
-        EXPECT_STREQ("1.00", srs_float2str(1).c_str());
-        EXPECT_STREQ("on", srs_bool2switch(true).c_str());
-        EXPECT_STREQ("off", srs_bool2switch(false).c_str());
+        EXPECT_STREQ("1.00", srs_strconv_format_float(1).c_str());
+        EXPECT_STREQ("on", srs_strconv_format_bool(true).c_str());
+        EXPECT_STREQ("off", srs_strconv_format_bool(false).c_str());
     }
 
     if (true) {
@@ -5784,12 +5784,12 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
 
     if (true) {
         EXPECT_TRUE(srs_path_exists("."));
-        HELPER_EXPECT_SUCCESS(srs_create_dir_recursively("."));
+        HELPER_EXPECT_SUCCESS(srs_os_mkdir_all("."));
     }
 
     if (true) {
         char buf[16] = {0};
-        EXPECT_STREQ("FE", srs_data_to_hex(buf, (const uint8_t *)"\xfe", 1));
+        EXPECT_STREQ("FE", srs_hex_encode_to_string(buf, (const uint8_t *)"\xfe", 1));
     }
 }
 
@@ -6879,23 +6879,23 @@ VOID TEST(KernelUtilityTest, CoverStringAssign)
 
 VOID TEST(KernelUtilityTest, CoverCheckIPAddrValid)
 {
-    ASSERT_TRUE(srs_check_ip_addr_valid("172.16.254.1"));
-    ASSERT_TRUE(srs_check_ip_addr_valid("2001:0db8:85a3:0:0:8A2E:0370:7334"));
-    ASSERT_FALSE(srs_check_ip_addr_valid(""));
+    ASSERT_TRUE(srs_net_is_valid_ip("172.16.254.1"));
+    ASSERT_TRUE(srs_net_is_valid_ip("2001:0db8:85a3:0:0:8A2E:0370:7334"));
+    ASSERT_FALSE(srs_net_is_valid_ip(""));
 
     // IPv4 any addr
-    ASSERT_TRUE(srs_check_ip_addr_valid("0.0.0.0"));
+    ASSERT_TRUE(srs_net_is_valid_ip("0.0.0.0"));
     // IPV6 any addr
-    ASSERT_TRUE(srs_check_ip_addr_valid("::"));
+    ASSERT_TRUE(srs_net_is_valid_ip("::"));
 
-    ASSERT_FALSE(srs_check_ip_addr_valid("256.256.256.256"));
+    ASSERT_FALSE(srs_net_is_valid_ip("256.256.256.256"));
 #ifdef SRS_CYGWIN64
     // TODO: Might be a bug for cygwin64.
-    ASSERT_TRUE(srs_check_ip_addr_valid("2001:0db8:85a3:0:0:8A2E:0370:7334:"));
+    ASSERT_TRUE(srs_net_is_valid_ip("2001:0db8:85a3:0:0:8A2E:0370:7334:"));
 #else
-    ASSERT_FALSE(srs_check_ip_addr_valid("2001:0db8:85a3:0:0:8A2E:0370:7334:"));
+    ASSERT_FALSE(srs_net_is_valid_ip("2001:0db8:85a3:0:0:8A2E:0370:7334:"));
 #endif
-    ASSERT_FALSE(srs_check_ip_addr_valid("1e1.4.5.6"));
+    ASSERT_FALSE(srs_net_is_valid_ip("1e1.4.5.6"));
 }
 
 VOID TEST(KernelUtilityTest, Base64Decode)

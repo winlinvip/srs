@@ -300,7 +300,7 @@ srs_error_t SrsDtlsCertificate::initialize()
         X509_NAME *subject = X509_NAME_new();
         srs_assert(subject);
 
-        int serial = (int)srs_random();
+        int serial = (int)srs_rand_integer();
         ASN1_INTEGER_set(X509_get_serialNumber(dtls_cert), serial);
 
         const std::string &aor = RTMP_SIG_SRS_DOMAIN;
@@ -440,7 +440,7 @@ srs_error_t SrsDtlsImpl::write_dtls_data(void *data, int size)
 
     if (size > 0 && (err = callback_->write_dtls_data(data, size)) != srs_success) {
         return srs_error_wrap(err, "dtls send size=%u, data=[%s]", size,
-                              srs_string_dumps_hex((char *)data, size, 32).c_str());
+                              srs_strings_dumps_hex((char *)data, size, 32).c_str());
     }
 
     // change_cipher_spec(20), alert(21), handshake(22), application_data(23)
@@ -563,7 +563,7 @@ srs_error_t SrsDtlsImpl::on_dtls(char *data, int nb_data)
 
     if ((err = do_on_dtls(data, nb_data)) != srs_success) {
         return srs_error_wrap(err, "on_dtls size=%u, data=[%s]", nb_data,
-                              srs_string_dumps_hex(data, nb_data, 32).c_str());
+                              srs_strings_dumps_hex(data, nb_data, 32).c_str());
     }
 
     return err;
@@ -602,11 +602,11 @@ srs_error_t SrsDtlsImpl::do_on_dtls(char *data, int nb_data)
         }
     } else {
         srs_trace("DTLS: read r0=%d, r1=%d, padding=%d, done=%d, data=[%s]",
-                  r0, r1, BIO_ctrl_pending(bio_in), handshake_done_for_us, srs_string_dumps_hex(buf, r0, 32).c_str());
+                  r0, r1, BIO_ctrl_pending(bio_in), handshake_done_for_us, srs_strings_dumps_hex(buf, r0, 32).c_str());
 
         if ((err = callback_->on_dtls_application_data(buf, r0)) != srs_success) {
             return srs_error_wrap(err, "on DTLS data, done=%d, r1=%d, size=%u, data=[%s]", handshake_done_for_us,
-                                  r1, r0, srs_string_dumps_hex(buf, r0, 32).c_str());
+                                  r1, r0, srs_strings_dumps_hex(buf, r0, 32).c_str());
         }
     }
 

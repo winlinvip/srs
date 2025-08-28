@@ -599,8 +599,9 @@ function apply_auto_options() {
     fi
 
     # parse the jobs for make
-    if [[ ! -z SRS_JOBS ]]; then
+    if [[ ! -z $SRS_JOBS ]]; then
         export SRS_JOBS="--jobs=${SRS_JOBS}"
+        echo "Export SRS_JOBS=$SRS_JOBS"
     fi
 
     # H.265/HEVC is always enabled, see https://github.com/ossrs/srs/issues/4349
@@ -609,10 +610,10 @@ function apply_auto_options() {
         SRS_H265=ON
     fi
 
-    if [[ $SRS_APM == YES ]; then
+    if [[ $SRS_APM == YES ]]; then
         echo "Warning: APM(Application Performance Monitor) is no longer supported."
         SRS_APM=NO
-    fi]
+    fi
 }
 apply_auto_options
 

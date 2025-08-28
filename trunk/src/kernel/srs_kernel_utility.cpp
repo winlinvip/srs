@@ -18,8 +18,8 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <vector>
 #include <sstream>
+#include <vector>
 using namespace std;
 
 #include <srs_core_autofree.hpp>
@@ -27,8 +27,8 @@ using namespace std;
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_flv.hpp>
-#include <srs_kernel_log.hpp>
 #include <srs_kernel_io.hpp>
+#include <srs_kernel_log.hpp>
 
 #include <climits>
 #include <cmath>

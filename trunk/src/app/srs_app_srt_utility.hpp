@@ -11,8 +11,8 @@
 
 #include <string>
 
-#include <srs_kernel_utility.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_utility.hpp>
 #include <srs_protocol_utility.hpp>
 
 class ISrsRequest;

@@ -5169,7 +5169,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
 
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
     EXPECT_STREQ("std.ossrs.net", req.host.c_str());
@@ -5179,7 +5179,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
 
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://s td.os srs.n et/li v e",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
     EXPECT_STREQ("std.ossrs.net", req.host.c_str());
@@ -5189,7 +5189,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
 
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://s\ntd.o\rssrs.ne\nt/li\nve",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
     EXPECT_STREQ("std.ossrs.net", req.host.c_str());
@@ -5199,7 +5199,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
 
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live ",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     req.strip();
     EXPECT_STREQ("rtmp", req.schema.c_str());
     EXPECT_STREQ("std.ossrs.net", req.host.c_str());
@@ -5217,28 +5217,28 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
     param = "";
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live#b=2",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("#b=2", param.c_str());
 
     param = "";
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1#b=2",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1#b=2", param.c_str());
 
     param = "";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1&c=3#b=2",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1&c=3#b=2", param.c_str());
 
     param = "";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1&c=3#b=2#d=4",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1&c=3#b=2#d=4", param.c_str());
 
     param = "";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live?a=1#e=5&c=3#b=2#d=4",
-                         req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
+                            req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
     EXPECT_STREQ("?a=1#e=5&c=3#b=2#d=4", param.c_str());
 }
 

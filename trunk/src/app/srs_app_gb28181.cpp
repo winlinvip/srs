@@ -855,7 +855,7 @@ srs_error_t SrsGbSipTcpConn::invite_request(uint32_t *pssrc)
     local_sdp.session_name_ = "Play";
     local_sdp.start_time_ = 0;
     local_sdp.end_time_ = 0;
-    local_sdp.ice_lite_ = "";                                    // Disable this line.
+    local_sdp.ice_lite_ = "";                                            // Disable this line.
     local_sdp.connection_ = srs_fmt_sprintf("c=IN IP4 %s", pip.c_str()); // Session level connection.
 
     local_sdp.media_descs_.push_back(SrsMediaDesc("video"));

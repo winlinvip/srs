@@ -131,7 +131,7 @@ srs_error_t SrsGoApiRtcPlay::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
     srs_net_url_parse_rtmp_url(streamurl, ruc.req_->tcUrl, ruc.req_->stream);
 
     srs_net_url_parse_tcurl(ruc.req_->tcUrl, ruc.req_->schema, ruc.req_->host, ruc.req_->vhost,
-                         ruc.req_->app, ruc.req_->stream, ruc.req_->port, ruc.req_->param);
+                            ruc.req_->app, ruc.req_->stream, ruc.req_->port, ruc.req_->param);
 
     // discovery vhost, resolve the vhost from config
     SrsConfDirective *parsed_vhost = _srs_config->get_vhost(ruc.req_->vhost);
@@ -426,7 +426,7 @@ srs_error_t SrsGoApiRtcPublish::do_serve_http(ISrsHttpResponseWriter *w, ISrsHtt
 
     srs_net_url_parse_rtmp_url(streamurl, ruc.req_->tcUrl, ruc.req_->stream);
     srs_net_url_parse_tcurl(ruc.req_->tcUrl, ruc.req_->schema, ruc.req_->host, ruc.req_->vhost,
-                         ruc.req_->app, ruc.req_->stream, ruc.req_->port, ruc.req_->param);
+                            ruc.req_->app, ruc.req_->stream, ruc.req_->port, ruc.req_->param);
 
     // Identify WebRTC publisher by param upstream=rtc
     ruc.req_->param = srs_strings_trim_start(ruc.req_->param + "&upstream=rtc", "&");
@@ -656,7 +656,7 @@ srs_error_t SrsGoApiRtcWhip::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     w->header()->set("Content-Type", "application/sdp");
     // The location for DELETE resource, not required by SRS, but required by WHIP.
     w->header()->set("Location", srs_fmt_sprintf("/rtc/v1/whip/?action=delete&token=%s&app=%s&stream=%s&session=%s",
-                                         ruc.token_.c_str(), ruc.req_->app.c_str(), ruc.req_->stream.c_str(), ruc.session_id_.c_str()));
+                                                 ruc.token_.c_str(), ruc.req_->app.c_str(), ruc.req_->stream.c_str(), ruc.session_id_.c_str()));
     w->header()->set_content_length((int64_t)sdp.length());
     // Must be 201, see https://datatracker.ietf.org/doc/draft-ietf-wish-whip/
     w->write_header(201);

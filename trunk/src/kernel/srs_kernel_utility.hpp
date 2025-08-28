@@ -9,10 +9,10 @@
 
 #include <srs_core.hpp>
 
+#include <map>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <map>
 
 class SrsBuffer;
 class SrsBitBuffer;
@@ -210,7 +210,7 @@ extern bool srs_net_url_is_rtmp(std::string url);
  *       output: schema, host, vhost, app, stream, port, param
  */
 extern void srs_net_url_parse_tcurl(std::string tcUrl, std::string &schema, std::string &host, std::string &vhost, std::string &app,
-                                 std::string &stream, int &port, std::string &param);
+                                    std::string &stream, int &port, std::string &param);
 
 // Guessing stream by app and param, to make OBS happy. For example:
 //      rtmp://ip/live/livestream

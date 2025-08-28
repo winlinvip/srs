@@ -7,6 +7,7 @@
 
 using namespace std;
 
+#include <srs_app_rtc_server.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_aac.hpp>
 #include <srs_kernel_balance.hpp>
@@ -20,11 +21,10 @@ using namespace std;
 #include <srs_kernel_mp4.hpp>
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
-#include <srs_protocol_utility.hpp>
-#include <srs_app_rtc_server.hpp>
-#include <srs_protocol_rtc_stun.hpp>
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_raw_avc.hpp>
+#include <srs_protocol_rtc_stun.hpp>
+#include <srs_protocol_utility.hpp>
 
 #define MAX_MOCK_DATA_SIZE 1024 * 1024
 

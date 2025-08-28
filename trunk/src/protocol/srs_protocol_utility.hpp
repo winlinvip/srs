@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
-#include <srs_kernel_utility.hpp>
 #include <srs_kernel_consts.hpp>
+#include <srs_kernel_utility.hpp>
 
 #include <arpa/inet.h>
 #include <string>
@@ -54,7 +54,7 @@ class ISrsReader;
  *       output: schema, host, vhost, app, stream, port, param
  */
 extern void srs_net_url_parse_tcurl(std::string tcUrl, std::string &schema, std::string &host, std::string &vhost, std::string &app,
-                                 std::string &stream, int &port, std::string &param);
+                                    std::string &stream, int &port, std::string &param);
 
 // Guessing stream by app and param, to make OBS happy. For example:
 //      rtmp://ip/live/livestream

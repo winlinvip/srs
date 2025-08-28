@@ -86,23 +86,23 @@ const char *_srs_version = "XCORE-" RTMP_SIG_SRS_SERVER;
 #define SRS_OVERWRITE_BY_ENV_FLOAT_MILLISECONDS(key) \
     if (!srs_getenv(key).empty())                    \
     return srs_utime_t(::atof(srs_getenv(key).c_str()) * SRS_UTIME_MILLISECONDS)
-#define SRS_OVERWRITE_BY_ENV_DIRECTIVE(key)                                   \
-    {                                                                         \
-        SrsConfDirective *dir = env_cache_->get(key);                         \
-        if (!dir && !srs_getenv(key).empty()) {                               \
+#define SRS_OVERWRITE_BY_ENV_DIRECTIVE(key)                                    \
+    {                                                                          \
+        SrsConfDirective *dir = env_cache_->get(key);                          \
+        if (!dir && !srs_getenv(key).empty()) {                                \
             std::vector<string> vec = srs_strings_split(srs_getenv(key), " "); \
-            dir = new SrsConfDirective();                                     \
-            dir->name = key;                                                  \
-            for (size_t i = 0; i < vec.size(); ++i) {                         \
-                std::string value = vec[i];                                   \
-                if (!value.empty()) {                                         \
-                    dir->args.push_back(value);                               \
-                }                                                             \
-            }                                                                 \
-            env_cache_->directives.push_back(dir);                            \
-        }                                                                     \
-        if (dir)                                                              \
-            return dir;                                                       \
+            dir = new SrsConfDirective();                                      \
+            dir->name = key;                                                   \
+            for (size_t i = 0; i < vec.size(); ++i) {                          \
+                std::string value = vec[i];                                    \
+                if (!value.empty()) {                                          \
+                    dir->args.push_back(value);                                \
+                }                                                              \
+            }                                                                  \
+            env_cache_->directives.push_back(dir);                             \
+        }                                                                      \
+        if (dir)                                                               \
+            return dir;                                                        \
     }
 
 /**

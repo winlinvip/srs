@@ -686,7 +686,7 @@ srs_error_t SrsRtspConnection::do_describe(SrsRtspRequest *req, std::string &sdp
     srs_net_url_parse_rtmp_url(req->uri, request_->tcUrl, request_->stream);
 
     srs_net_url_parse_tcurl(request_->tcUrl, request_->schema, request_->host, request_->vhost,
-                         request_->app, request_->stream, request_->port, request_->param);
+                            request_->app, request_->stream, request_->port, request_->param);
 
     // discovery vhost, resolve the vhost from config
     SrsConfDirective *parsed_vhost = _srs_config->get_vhost(request_->vhost);

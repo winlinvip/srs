@@ -3748,7 +3748,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         EXPECT_STREQ("8088", conf.get_https_stream_listens().at(0).c_str());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_api_listens().at(0).c_str());
-        EXPECT_STREQ("8088", conf.get_https_api_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_api_listens().size());
+        EXPECT_STREQ("8088", conf.get_https_api_listens().at(0).c_str());
         EXPECT_TRUE(conf.get_http_stream_crossdomain());
     }
 
@@ -3762,7 +3763,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         EXPECT_STREQ("yyy", conf.get_https_stream_listens().at(0).c_str());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("mmm", conf.get_http_api_listens().at(0).c_str());
-        EXPECT_STREQ("zzz", conf.get_https_api_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_api_listens().size());
+        EXPECT_STREQ("zzz", conf.get_https_api_listens().at(0).c_str());
         EXPECT_TRUE(conf.get_http_stream_crossdomain());
     }
 
@@ -3776,7 +3778,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         EXPECT_STREQ("yyy", conf.get_https_stream_listens().at(0).c_str());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_api_listens().at(0).c_str());
-        EXPECT_STREQ("yyy", conf.get_https_api_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_api_listens().size());
+        EXPECT_STREQ("yyy", conf.get_https_api_listenss().at(0).c_str());
         EXPECT_TRUE(conf.get_http_stream_crossdomain());
     }
 
@@ -4399,7 +4402,8 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHttpApi)
         EXPECT_TRUE(conf.get_https_api_enabled());
 
         SrsSetEnvConfig(conf, https_api_listen, "SRS_HTTP_API_HTTPS_LISTEN", "xxx");
-        EXPECT_STREQ("xxx", conf.get_https_api_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_api_listens().size());
+        EXPECT_STREQ("xxx", conf.get_https_api_listens().at(0).c_str());
 
         SrsSetEnvConfig(conf, https_api_ssl_key, "SRS_HTTP_API_HTTPS_KEY", "xxx2");
         EXPECT_STREQ("xxx2", conf.get_https_api_ssl_key().c_str());

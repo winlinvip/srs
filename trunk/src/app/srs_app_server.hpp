@@ -133,7 +133,7 @@ private:
     // HTTP API listener, over TCP. Please note that it might reuse with stream listener.
     SrsMultipleTcpListeners *api_listener_;
     // HTTPS API listener, over TCP. Please note that it might reuse with stream listener.
-    SrsTcpListener *apis_listener_;
+    SrsMultipleTcpListeners *apis_listener_;
     // HTTP server listener, over TCP. Please note that request of both HTTP static and stream are served by this
     // listener, and it might be reused by HTTP API and WebRTC TCP.
     SrsMultipleTcpListeners *http_listener_;

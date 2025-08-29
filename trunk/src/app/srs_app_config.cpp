@@ -2556,9 +2556,24 @@ srs_error_t SrsConfig::check_normal_config()
             }
         }
 
-        string sapi = get_https_api_listen();
-        vector<string> sapis;
-        sapis.push_back(sapi);
+        vector<string> sapis = get_https_api_listens();
+        // Validate HTTPS API listen addresses
+        for (int i = 0; i < (int)sapis.size(); i++) {
+            int port;
+            string ip;
+            srs_net_split_for_listener(sapis[i], ip, port);
+
+            // check ip
+            if (!srs_net_is_valid_ip(ip)) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.https.listen.ip=%s is invalid", ip.c_str());
+            }
+
+            // check port
+            if (port <= 0) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.https.listen.port=%d is invalid", port);
+            }
+        }
+
         vector<string> sservers = get_https_stream_listens();
         if (srs_strings_equal(apis, servers) && !srs_strings_equal(sapis, sservers)) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", srs_strings_join(sapis, ",").c_str(), srs_strings_join(sservers, ",").c_str());
@@ -7779,23 +7794,36 @@ bool SrsConfig::get_https_api_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_https_api_listen()
+vector<string> SrsConfig::get_https_api_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.https.listen"); // SRS_HTTP_API_HTTPS_LISTEN
+    std::vector<string> listens;
 
-    string DEFAULT = "1990";
+    if (!srs_getenv("srs.http_api.https.listen").empty()) { // SRS_HTTP_API_HTTPS_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_api.https.listen"), " ");
+    }
 
     SrsConfDirective *conf = get_https_api();
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("1990");
+        return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("1990");
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("1990");
+    }
+
+    return listens;
 }
 
 string SrsConfig::get_https_api_ssl_key()

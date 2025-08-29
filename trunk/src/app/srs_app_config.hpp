@@ -1086,7 +1086,7 @@ private:
 
 public:
     virtual bool get_https_api_enabled();
-    virtual std::string get_https_api_listen();
+    virtual std::vector<std::string> get_https_api_listens();
     virtual std::string get_https_api_ssl_key();
     virtual std::string get_https_api_ssl_cert();
     // http stream section

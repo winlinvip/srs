@@ -2537,46 +2537,22 @@ srs_error_t SrsConfig::check_normal_config()
     ////////////////////////////////////////////////////////////////////////
     if (true) {
         vector<string> apis = get_http_api_listens();
-        vector<string> servers = get_http_stream_listens();
         if (apis.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen requires params");
         }
+        for (int i = 0; i < (int)apis.size(); i++) {
+            if (!srs_net_is_valid_endpoint(apis[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen=%s is invalid", apis[i].c_str());
+            }
+        }
+
+        vector<string> servers = get_http_stream_listens();
         if (servers.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen requires params");
         }
-
-        // Validate HTTP API listen addresses
-        for (int i = 0; i < (int)apis.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(apis[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen.port=%d is invalid", port);
-            }
-        }
-
-        // Validate HTTP stream listen addresses
-        vector<string> http_listens = get_http_stream_listens();
-        for (int i = 0; i < (int)http_listens.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(http_listens[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen.port=%d is invalid", port);
+        for (int i = 0; i < (int)servers.size(); i++) {
+            if (!srs_net_is_valid_endpoint(servers[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen=%s is invalid", servers[i].c_str());
             }
         }
 

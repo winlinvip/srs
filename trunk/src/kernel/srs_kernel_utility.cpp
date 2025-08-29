@@ -855,6 +855,27 @@ bool srs_net_is_valid_ip(string ip)
     return false;
 }
 
+bool srs_net_is_valid_endpoint(std::string endpoint)
+{
+    if (endpoint.empty()) {
+        return false;
+    }
+
+    string host;
+    int port = 0;
+    srs_net_split_for_listener(endpoint, host, port);
+
+    if (!srs_net_is_valid_ip(host)) {
+        return false;
+    }
+    
+    if (port <= 0) {
+        return false;
+    }
+
+    return true;
+}
+
 bool srs_net_is_ipv4(string domain)
 {
     for (int i = 0; i < (int)domain.length(); i++) {

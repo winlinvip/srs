@@ -191,6 +191,9 @@ extern std::string srs_net_address_any();
 // Check whether the ip is valid.
 extern bool srs_net_is_valid_ip(std::string ip);
 
+// Check whether the endpoint is valid.
+extern bool srs_net_is_valid_endpoint(std::string endpoint);
+
 // Whether domain is an IPv4 address.
 extern bool srs_net_is_ipv4(std::string domain);
 

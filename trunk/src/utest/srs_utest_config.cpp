@@ -4531,7 +4531,8 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesRtspServer)
         EXPECT_TRUE(conf.get_rtsp_server_enabled());
 
         SrsSetEnvConfig(conf, rtsp_server_listen, "SRS_RTSP_SERVER_LISTEN", "554");
-        EXPECT_EQ(554, conf.get_rtsp_server_listen());
+        EXPECT_EQ(1, (int)conf.get_rtsp_server_listens().size());
+        EXPECT_STREQ("554", conf.get_rtsp_server_listens().at(0).c_str());
     }
 }
 

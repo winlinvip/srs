@@ -346,7 +346,7 @@ SrsServer::SrsServer()
     https_listener_ = new SrsMultipleTcpListeners(this);
     webrtc_listener_ = new SrsMultipleTcpListeners(this);
 #ifdef SRS_RTSP
-    rtsp_listener_ = new SrsTcpListener(this);
+    rtsp_listener_ = new SrsMultipleTcpListeners(this);
 #endif
     stream_caster_flv_listener_ = new SrsHttpFlvListener();
     stream_caster_mpegts_ = new SrsUdpCasterListener();
@@ -659,7 +659,7 @@ srs_error_t SrsServer::listen()
 #ifdef SRS_RTSP
     // Start RTSP listener. RTC is a critical dependency.
     if (_srs_config->get_rtsp_server_enabled()) {
-        rtsp_listener_->set_endpoint(srs_strconv_format_int(_srs_config->get_rtsp_server_listen()))->set_label("RTSP");
+        rtsp_listener_->add(_srs_config->get_rtsp_server_listens())->set_label("RTSP");
         if ((err = rtsp_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "rtsp listen");
         }

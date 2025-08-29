@@ -130,8 +130,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("rtsp", o);
 
-            int endpoint = _srs_config->get_rtsp_server_listen();
-            o->append(SrsJsonAny::str(srs_fmt_sprintf("rtsp://0.0.0.0:%d", endpoint).c_str()));
+            vector<string> endpoints = _srs_config->get_rtsp_server_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For WebRTC listen endpoints.

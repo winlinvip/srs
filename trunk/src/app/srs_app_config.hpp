@@ -513,7 +513,8 @@ public:
 public:
     virtual bool get_rtsp_server_enabled();
     virtual bool get_rtsp_server_enabled(SrsConfDirective *conf);
-    virtual int get_rtsp_server_listen();
+    // Get the rtsp server listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_rtsp_server_listens();
 
 public:
     SrsConfDirective *get_rtsp(std::string vhost);

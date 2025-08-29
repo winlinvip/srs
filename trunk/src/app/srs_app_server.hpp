@@ -144,7 +144,7 @@ private:
     SrsMultipleTcpListeners *webrtc_listener_;
 #ifdef SRS_RTSP
     // RTSP listener, over TCP.
-    SrsTcpListener *rtsp_listener_;
+    SrsMultipleTcpListeners *rtsp_listener_;
 #endif
     // Stream Caster for push over HTTP-FLV.
     SrsHttpFlvListener *stream_caster_flv_listener_;

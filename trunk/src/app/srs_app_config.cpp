@@ -2611,6 +2611,29 @@ srs_error_t SrsConfig::check_normal_config()
     }
 
     ////////////////////////////////////////////////////////////////////////
+    // Check RTSP server.
+    ////////////////////////////////////////////////////////////////////////
+    if (get_rtsp_server_enabled()) {
+        // Validate RTSP server listen addresses
+        vector<string> rtsp_listens = get_rtsp_server_listens();
+        for (int i = 0; i < (int)rtsp_listens.size(); i++) {
+            int port;
+            string ip;
+            srs_net_split_for_listener(rtsp_listens[i], ip, port);
+
+            // check ip
+            if (!srs_net_is_valid_ip(ip)) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtsp_server.listen.ip=%s is invalid", ip.c_str());
+            }
+
+            // check port
+            if (port <= 0) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtsp_server.listen.port=%d is invalid", port);
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // Check RTC server.
     ////////////////////////////////////////////////////////////////////////
     if (get_rtc_server_enabled()) {
@@ -3849,24 +3872,36 @@ bool SrsConfig::get_rtsp_server_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-int SrsConfig::get_rtsp_server_listen()
+vector<string> SrsConfig::get_rtsp_server_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.rtsp_server.listen"); // SRS_RTSP_SERVER_LISTEN
+    std::vector<string> listens;
+
+    if (!srs_getenv("srs.rtsp_server.listen").empty()) { // SRS_RTSP_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.rtsp_server.listen"), " ");
+    }
 
     SrsConfDirective *conf = root->get("rtsp_server");
-
-    static int DEFAULT = 554;
-
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("554");
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back("554");
+        return listens;
     }
 
-    return ::atoi(conf->arg0().c_str());
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("554");
+    }
+
+    return listens;
 }
 
 SrsConfDirective *SrsConfig::get_rtsp(string vhost)

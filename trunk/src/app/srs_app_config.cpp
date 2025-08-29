@@ -2107,7 +2107,7 @@ srs_error_t SrsConfig::raw_to_json(SrsJsonObject *obj)
     obj->set("http_api", sobj);
 
     sobj->set("enabled", SrsJsonAny::boolean(get_http_api_enabled()));
-    sobj->set("listen", SrsJsonAny::str(get_http_api_listen().c_str()));
+    sobj->set("listen", SrsJsonAny::str(get_http_api_listens().at(0).c_str()));
     sobj->set("crossdomain", SrsJsonAny::boolean(get_http_api_crossdomain()));
 
     SrsJsonObject *ssobj = SrsJsonAny::object();
@@ -2536,14 +2536,30 @@ srs_error_t SrsConfig::check_normal_config()
     // Check HTTP API and server.
     ////////////////////////////////////////////////////////////////////////
     if (true) {
-        string api = get_http_api_listen();
-        vector<string> apis;
+        vector<string> apis = get_http_api_listens();
         vector<string> servers = get_http_stream_listens();
-        if (api.empty()) {
+        if (apis.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen requires params");
         }
         if (servers.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen requires params");
+        }
+
+        // Validate HTTP API listen addresses
+        for (int i = 0; i < (int)apis.size(); i++) {
+            int port;
+            string ip;
+            srs_net_split_for_listener(apis[i], ip, port);
+
+            // check ip
+            if (!srs_net_is_valid_ip(ip)) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen.ip=%s is invalid", ip.c_str());
+            }
+
+            // check port
+            if (port <= 0) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen.port=%d is invalid", port);
+            }
         }
 
         // Validate HTTP stream listen addresses
@@ -2566,8 +2582,10 @@ srs_error_t SrsConfig::check_normal_config()
 
         string sapi = get_https_api_listen();
         vector<string> sapis;
+        sapis.push_back(sapi);
         string sserver = get_https_stream_listen();
         vector<string> sservers;
+        sservers.push_back(sserver);
         if (srs_strings_equal(apis, servers) && !srs_strings_equal(sapis, sservers)) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", srs_strings_join(sapis, ",").c_str(), srs_strings_join(sservers, ",").c_str());
         }
@@ -7485,24 +7503,36 @@ bool SrsConfig::get_http_api_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_http_api_listen()
+vector<string> SrsConfig::get_http_api_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.listen"); // SRS_HTTP_API_LISTEN
+    std::vector<string> listens;
 
-    static string DEFAULT = "1985";
+    if (!srs_getenv("srs.http_api.listen").empty()) { // SRS_HTTP_API_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_api.listen"), " ");
+    }
 
     SrsConfDirective *conf = root->get("http_api");
-
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("1985");
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back("1985");
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("1985");
+    }
+
+    return listens;
 }
 
 bool SrsConfig::get_http_api_crossdomain()

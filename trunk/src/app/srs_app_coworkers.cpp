@@ -84,7 +84,7 @@ SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, strin
     }
 
     // The backend API endpoint.
-    string backend = _srs_config->get_http_api_listen();
+    string backend = _srs_config->get_http_api_listens().at(0);
     if (backend.find(":") == string::npos) {
         backend = service_ip + ":" + backend;
     }

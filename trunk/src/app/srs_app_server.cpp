@@ -340,7 +340,7 @@ SrsServer::SrsServer()
 
     rtmp_listener_ = new SrsMultipleTcpListeners(this);
     rtmps_listener_ = new SrsMultipleTcpListeners(this);
-    api_listener_ = new SrsTcpListener(this);
+    api_listener_ = new SrsMultipleTcpListeners(this);
     apis_listener_ = new SrsTcpListener(this);
     http_listener_ = new SrsMultipleTcpListeners(this);
     https_listener_ = new SrsTcpListener(this);
@@ -530,8 +530,7 @@ srs_error_t SrsServer::initialize()
 
     // If enabled and the listen is the same value, reuse port.
     bool api = _srs_config->get_http_api_enabled();
-    string api_listen = _srs_config->get_http_api_listen();
-    vector<string> api_listens;
+    vector<string> api_listens = _srs_config->get_http_api_listens();
     string apis_listen = _srs_config->get_https_api_listen();
     vector<string> apis_listens;
     if (stream && api && srs_strings_equal(api_listens, http_listens) && srs_strings_equal(apis_listens, https_listens)) {
@@ -615,7 +614,7 @@ srs_error_t SrsServer::listen()
             vector<string> listens = _srs_config->get_http_stream_listens();
             srs_trace("HTTP-API: Reuse listen to http server %s", srs_strings_join(listens, ",").c_str());
         } else {
-            api_listener_->set_endpoint(_srs_config->get_http_api_listen())->set_label("HTTP-API");
+            api_listener_->add(_srs_config->get_http_api_listens())->set_label("HTTP-API");
             if ((err = api_listener_->listen()) != srs_success) {
                 return srs_error_wrap(err, "http api listen");
             }

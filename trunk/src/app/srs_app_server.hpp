@@ -131,7 +131,7 @@ private:
     // RTMPS stream listeners, over TCP.
     SrsMultipleTcpListeners *rtmps_listener_;
     // HTTP API listener, over TCP. Please note that it might reuse with stream listener.
-    SrsTcpListener *api_listener_;
+    SrsMultipleTcpListeners *api_listener_;
     // HTTPS API listener, over TCP. Please note that it might reuse with stream listener.
     SrsTcpListener *apis_listener_;
     // HTTP server listener, over TCP. Please note that request of both HTTP static and stream are served by this

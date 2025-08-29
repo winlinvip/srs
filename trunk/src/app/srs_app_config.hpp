@@ -1060,8 +1060,8 @@ private:
 public:
     // Whether http api enabled.
     virtual bool get_http_api_enabled();
-    // Get the http api listen port.
-    virtual std::string get_http_api_listen();
+    // Get the http api listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_http_api_listens();
     // Whether enable crossdomain for http api.
     virtual bool get_http_api_crossdomain();
     // Whether enable the HTTP RAW API.

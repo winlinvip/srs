@@ -97,8 +97,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("http", o);
 
-            string endpoint = _srs_config->get_http_stream_listen();
-            o->append(SrsJsonAny::str(endpoint.c_str()));
+            vector<string> endpoints = _srs_config->get_http_stream_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For HTTP API listen endpoints.

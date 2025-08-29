@@ -3731,7 +3731,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         MockSrsConfig conf;
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen xxx;}http_server{enabled on;listen xxx;}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx", conf.get_http_api_listen().c_str());
         EXPECT_TRUE(conf.get_http_stream_crossdomain());
     }
@@ -3740,7 +3741,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         MockSrsConfig conf;
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen xxx;}http_server{enabled on;listen xxx;}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("8088", conf.get_https_stream_listen().c_str());
         EXPECT_STREQ("xxx", conf.get_http_api_listen().c_str());
         EXPECT_STREQ("8088", conf.get_https_api_listen().c_str());
@@ -3751,7 +3753,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         MockSrsConfig conf;
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen mmm;https{enabled on;listen zzz;}}http_server{enabled on;listen xxx;https{enabled on;listen yyy;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("yyy", conf.get_https_stream_listen().c_str());
         EXPECT_STREQ("mmm", conf.get_http_api_listen().c_str());
         EXPECT_STREQ("zzz", conf.get_https_api_listen().c_str());
@@ -3762,7 +3765,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         MockSrsConfig conf;
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen xxx;https{enabled on;listen yyy;}}http_server{enabled on;listen xxx;https{enabled on;listen yyy;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("yyy", conf.get_https_stream_listen().c_str());
         EXPECT_STREQ("xxx", conf.get_http_api_listen().c_str());
         EXPECT_STREQ("yyy", conf.get_https_api_listen().c_str());
@@ -3899,7 +3903,8 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
         MockSrsConfig conf;
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_server{enabled on;listen xxx;dir xxx2;crossdomain on;}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
         EXPECT_TRUE(conf.get_http_stream_crossdomain());
     }
@@ -3966,7 +3971,8 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         EXPECT_FALSE(conf.get_log_tank_file());
 
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
 
         EXPECT_TRUE(conf.get_hls_enabled("ossrs.net"));
@@ -3991,7 +3997,8 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         EXPECT_FALSE(conf.get_log_tank_file());
 
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
 
         EXPECT_TRUE(conf.get_hls_enabled("ossrs.net"));
@@ -4017,7 +4024,8 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         EXPECT_FALSE(conf.get_log_tank_file());
 
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
 
         EXPECT_TRUE(conf.get_hls_enabled("ossrs.net"));
@@ -4045,7 +4053,8 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         EXPECT_FALSE(conf.get_log_tank_file());
 
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("8080", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("8080", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
 
         EXPECT_TRUE(conf.get_hls_enabled("ossrs.net"));
@@ -4076,7 +4085,8 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         EXPECT_FALSE(conf.get_log_tank_file());
 
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
 
         EXPECT_TRUE(conf.get_http_api_enabled());
@@ -4108,7 +4118,8 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         EXPECT_FALSE(conf.get_log_tank_file());
 
         EXPECT_TRUE(conf.get_http_stream_enabled());
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());
 
         EXPECT_TRUE(conf.get_http_api_enabled());
@@ -4395,7 +4406,8 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHttpServer)
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         SrsSetEnvConfig(conf, http_stream_listen, "SRS_HTTP_SERVER_LISTEN", "xxx");
-        EXPECT_STREQ("xxx", conf.get_http_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
 
         SrsSetEnvConfig(conf, http_stream_dir, "SRS_HTTP_SERVER_DIR", "xxx2");
         EXPECT_STREQ("xxx2", conf.get_http_stream_dir().c_str());

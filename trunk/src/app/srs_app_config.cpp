@@ -2537,21 +2537,42 @@ srs_error_t SrsConfig::check_normal_config()
     ////////////////////////////////////////////////////////////////////////
     if (true) {
         string api = get_http_api_listen();
-        string server = get_http_stream_listen();
+        vector<string> apis;
+        vector<string> servers = get_http_stream_listens();
         if (api.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen requires params");
         }
-        if (server.empty()) {
+        if (servers.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen requires params");
         }
 
-        string apis = get_https_api_listen();
-        string servers = get_https_stream_listen();
-        if (api == server && apis != servers) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", apis.c_str(), servers.c_str());
+        // Validate HTTP stream listen addresses
+        vector<string> http_listens = get_http_stream_listens();
+        for (int i = 0; i < (int)http_listens.size(); i++) {
+            int port;
+            string ip;
+            srs_net_split_for_listener(http_listens[i], ip, port);
+
+            // check ip
+            if (!srs_net_is_valid_ip(ip)) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen.ip=%s is invalid", ip.c_str());
+            }
+
+            // check port
+            if (port <= 0) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen.port=%d is invalid", port);
+            }
         }
-        if (apis == servers && api != server) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same https, http api(%s) != server(%s)", api.c_str(), server.c_str());
+
+        string sapi = get_https_api_listen();
+        vector<string> sapis;
+        string sserver = get_https_stream_listen();
+        vector<string> sservers;
+        if (srs_strings_equal(apis, servers) && !srs_strings_equal(sapis, sservers)) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", srs_strings_join(sapis, ",").c_str(), srs_strings_join(sservers, ",").c_str());
+        }
+        if (srs_strings_equal(sapis, sservers) && !srs_strings_equal(apis, servers)) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same https, http api(%s) != server(%s)", srs_strings_join(apis, ",").c_str(), srs_strings_join(servers, ",").c_str());
         }
 
         if (get_https_api_enabled() && !get_http_api_enabled()) {
@@ -7668,12 +7689,7 @@ string SrsConfig::get_https_api_listen()
 {
     SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.https.listen"); // SRS_HTTP_API_HTTPS_LISTEN
 
-    // We should not use static default, because we need to reset for different use scenarios.
     string DEFAULT = "1990";
-    // Follow the HTTPS server if config HTTP API as the same of HTTP server.
-    if (get_http_api_listen() == get_http_stream_listen()) {
-        DEFAULT = get_https_stream_listen();
-    }
 
     SrsConfDirective *conf = get_https_api();
     if (!conf) {
@@ -8104,23 +8120,36 @@ bool SrsConfig::get_http_stream_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_http_stream_listen()
+vector<string> SrsConfig::get_http_stream_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_server.listen"); // SRS_HTTP_SERVER_LISTEN
+    std::vector<string> listens;
 
-    static string DEFAULT = "8080";
+    if (!srs_getenv("srs.http_server.listen").empty()) { // SRS_HTTP_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_server.listen"), " ");
+    }
 
     SrsConfDirective *conf = root->get("http_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("8080");
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back("8080");
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("8080");
+    }
+
+    return listens;
 }
 
 string SrsConfig::get_http_stream_dir()

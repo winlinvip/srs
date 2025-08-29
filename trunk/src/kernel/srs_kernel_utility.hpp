@@ -105,6 +105,23 @@ std::string srs_strings_join(std::vector<T> &vs, std::string separator)
     return ss.str();
 }
 
+// Compare two vector with string.
+template <typename T>
+bool srs_strings_equal(std::vector<T> &a, std::vector<T> &b)
+{
+    if (a.size() != b.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < (int)a.size(); i++) {
+        if (a.at(i) != b.at(i)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Compare the memory in bytes.
 // @return true if completely equal; otherwise, false.
 extern bool srs_bytes_equal(void *pa, void *pb, int size);

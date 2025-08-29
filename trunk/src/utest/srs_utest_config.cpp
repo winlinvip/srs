@@ -3744,7 +3744,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
-        EXPECT_STREQ("8088", conf.get_https_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_stream_listens().size());
+        EXPECT_STREQ("8088", conf.get_https_stream_listens().at(0).c_str());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_api_listens().at(0).c_str());
         EXPECT_STREQ("8088", conf.get_https_api_listen().c_str());
@@ -3757,7 +3758,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
-        EXPECT_STREQ("yyy", conf.get_https_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_stream_listens().size());
+        EXPECT_STREQ("yyy", conf.get_https_stream_listens().at(0).c_str());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("mmm", conf.get_http_api_listens().at(0).c_str());
         EXPECT_STREQ("zzz", conf.get_https_api_listen().c_str());
@@ -3770,7 +3772,8 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_stream_listens().at(0).c_str());
-        EXPECT_STREQ("yyy", conf.get_https_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_stream_listens().size());
+        EXPECT_STREQ("yyy", conf.get_https_stream_listens().at(0).c_str());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("xxx", conf.get_http_api_listens().at(0).c_str());
         EXPECT_STREQ("yyy", conf.get_https_api_listen().c_str());
@@ -4432,7 +4435,8 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHttpServer)
         EXPECT_TRUE(conf.get_https_stream_enabled());
 
         SrsSetEnvConfig(conf, https_stream_listen, "SRS_HTTP_SERVER_HTTPS_LISTEN", "xxx");
-        EXPECT_STREQ("xxx", conf.get_https_stream_listen().c_str());
+        EXPECT_EQ(1, (int)conf.get_https_stream_listens().size());
+        EXPECT_STREQ("xxx", conf.get_https_stream_listens().at(0).c_str());
 
         SrsSetEnvConfig(conf, https_stream_ssl_key, "SRS_HTTP_SERVER_HTTPS_KEY", "xxx2");
         EXPECT_STREQ("xxx2", conf.get_https_stream_ssl_key().c_str());

@@ -139,7 +139,7 @@ private:
     SrsMultipleTcpListeners *http_listener_;
     // HTTPS server listener, over TCP. Please note that request of both HTTP static and stream are served by this
     // listener, and it might be reused by HTTP API and WebRTC TCP.
-    SrsTcpListener *https_listener_;
+    SrsMultipleTcpListeners *https_listener_;
     // WebRTC over TCP listener. Please note that there is always a UDP listener by RTC server.
     SrsMultipleTcpListeners *webrtc_listener_;
 #ifdef SRS_RTSP

@@ -343,7 +343,7 @@ SrsServer::SrsServer()
     api_listener_ = new SrsMultipleTcpListeners(this);
     apis_listener_ = new SrsTcpListener(this);
     http_listener_ = new SrsMultipleTcpListeners(this);
-    https_listener_ = new SrsTcpListener(this);
+    https_listener_ = new SrsMultipleTcpListeners(this);
     webrtc_listener_ = new SrsMultipleTcpListeners(this);
 #ifdef SRS_RTSP
     rtsp_listener_ = new SrsTcpListener(this);
@@ -511,8 +511,7 @@ srs_error_t SrsServer::initialize()
 
     bool stream = _srs_config->get_http_stream_enabled();
     vector<string> http_listens = _srs_config->get_http_stream_listens();
-    string https_listen = _srs_config->get_https_stream_listen();
-    vector<string> https_listens;
+    vector<string> https_listens = _srs_config->get_https_stream_listens();
 
     bool rtc = _srs_config->get_rtc_server_enabled();
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
@@ -623,7 +622,8 @@ srs_error_t SrsServer::listen()
     // Create HTTPS API listener.
     if (_srs_config->get_https_api_enabled()) {
         if (reuse_api_over_server_) {
-            srs_trace("HTTPS-API: Reuse listen to http server %s", _srs_config->get_https_stream_listen().c_str());
+            vector<string> listens = _srs_config->get_https_stream_listens();
+            srs_trace("HTTPS-API: Reuse listen to http server %s", srs_strings_join(listens, ",").c_str());
         } else {
             apis_listener_->set_endpoint(_srs_config->get_https_api_listen())->set_label("HTTPS-API");
             if ((err = apis_listener_->listen()) != srs_success) {
@@ -642,7 +642,7 @@ srs_error_t SrsServer::listen()
 
     // Create HTTPS server listener.
     if (_srs_config->get_https_stream_enabled()) {
-        https_listener_->set_endpoint(_srs_config->get_https_stream_listen())->set_label("HTTPS-Server");
+        https_listener_->add(_srs_config->get_https_stream_listens())->set_label("HTTPS-Server");
         if ((err = https_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "https server listen");
         }

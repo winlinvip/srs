@@ -2559,9 +2559,7 @@ srs_error_t SrsConfig::check_normal_config()
         string sapi = get_https_api_listen();
         vector<string> sapis;
         sapis.push_back(sapi);
-        string sserver = get_https_stream_listen();
-        vector<string> sservers;
-        sservers.push_back(sserver);
+        vector<string> sservers = get_https_stream_listens();
         if (srs_strings_equal(apis, servers) && !srs_strings_equal(sapis, sservers)) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", srs_strings_join(sapis, ",").c_str(), srs_strings_join(sservers, ",").c_str());
         }
@@ -2574,6 +2572,26 @@ srs_error_t SrsConfig::check_normal_config()
         }
         if (get_https_stream_enabled() && !get_http_stream_enabled()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https stream depends on http");
+        }
+
+        // Validate HTTPS stream listen addresses
+        if (get_https_stream_enabled()) {
+            vector<string> https_listens = get_https_stream_listens();
+            for (int i = 0; i < (int)https_listens.size(); i++) {
+                int port;
+                string ip;
+                srs_net_split_for_listener(https_listens[i], ip, port);
+
+                // check ip
+                if (!srs_net_is_valid_ip(ip)) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https_server.listen.ip=%s is invalid", ip.c_str());
+                }
+
+                // check port
+                if (port <= 0) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https_server.listen.port=%d is invalid", port);
+                }
+            }
         }
     }
 
@@ -8295,23 +8313,36 @@ bool SrsConfig::get_https_stream_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_https_stream_listen()
+vector<string> SrsConfig::get_https_stream_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_server.https.listen"); // SRS_HTTP_SERVER_HTTPS_LISTEN
+    std::vector<string> listens;
 
-    static string DEFAULT = "8088";
+    if (!srs_getenv("srs.http_server.https.listen").empty()) { // SRS_HTTP_SERVER_HTTPS_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_server.https.listen"), " ");
+    }
 
     SrsConfDirective *conf = get_https_stream();
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("8088");
+        return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("8088");
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("8088");
+    }
+
+    return listens;
 }
 
 string SrsConfig::get_https_stream_ssl_key()

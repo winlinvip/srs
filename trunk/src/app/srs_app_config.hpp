@@ -1110,7 +1110,8 @@ private:
 
 public:
     virtual bool get_https_stream_enabled();
-    virtual std::string get_https_stream_listen();
+    // Get the https stream listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_https_stream_listens();
     virtual std::string get_https_stream_ssl_key();
     virtual std::string get_https_stream_ssl_cert();
     // rtmps section

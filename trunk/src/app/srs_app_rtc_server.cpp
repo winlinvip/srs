@@ -366,25 +366,32 @@ srs_error_t SrsRtcServer::listen_udp()
         return err;
     }
 
-    int port = _srs_config->get_rtc_server_listen();
-    if (port <= 0) {
-        return srs_error_new(ERROR_RTC_PORT, "invalid port=%d", port);
-    }
-
-    string ip = srs_net_address_any();
+    vector<string> rtc_listens = _srs_config->get_rtc_server_listens();
     srs_assert(listeners.empty());
 
     int nn_listeners = _srs_config->get_rtc_server_reuseport();
-    for (int i = 0; i < nn_listeners; i++) {
-        SrsUdpMuxListener *listener = new SrsUdpMuxListener(this, ip, port);
 
-        if ((err = listener->listen()) != srs_success) {
-            srs_freep(listener);
-            return srs_error_wrap(err, "listen %s:%d", ip.c_str(), port);
+    // For each listen address, create multiple listeners based on reuseport setting
+    for (int j = 0; j < (int)rtc_listens.size(); j++) {
+        string ip;
+        int port;
+        srs_net_split_for_listener(rtc_listens[j], ip, port);
+
+        if (port <= 0) {
+            return srs_error_new(ERROR_RTC_PORT, "invalid port=%d", port);
         }
 
-        srs_trace("rtc listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
-        listeners.push_back(listener);
+        for (int i = 0; i < nn_listeners; i++) {
+            SrsUdpMuxListener *listener = new SrsUdpMuxListener(this, ip, port);
+
+            if ((err = listener->listen()) != srs_success) {
+                srs_freep(listener);
+                return srs_error_wrap(err, "listen %s:%d", ip.c_str(), port);
+            }
+
+            srs_trace("rtc listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
+            listeners.push_back(listener);
+        }
     }
 
     return err;
@@ -589,7 +596,14 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
 
     // We allows to mock the eip of server.
     if (true) {
-        int udp_port = _srs_config->get_rtc_server_listen();
+        // TODO: Support multiple listen ports.
+        int udp_port = 0;
+        if (true) {
+            string udp_host;
+            string udp_hostport = _srs_config->get_rtc_server_listens().at(0);
+            srs_net_split_hostport(udp_hostport, udp_host, udp_port);
+        }
+
         int tcp_port = _srs_config->get_rtc_server_tcp_listen();
         string protocol = _srs_config->get_rtc_server_protocol();
 

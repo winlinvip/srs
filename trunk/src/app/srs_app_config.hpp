@@ -524,7 +524,8 @@ public:
 public:
     virtual bool get_rtc_server_enabled();
     virtual bool get_rtc_server_enabled(SrsConfDirective *conf);
-    virtual int get_rtc_server_listen();
+    // Get the rtc server listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_rtc_server_listens();
     virtual std::string get_rtc_server_candidates();
     virtual bool get_api_as_candidates();
     virtual bool get_resolve_api_domain();

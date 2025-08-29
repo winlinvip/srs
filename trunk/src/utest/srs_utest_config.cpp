@@ -4535,7 +4535,8 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesRtcServer)
         EXPECT_TRUE(conf.get_rtc_server_enabled());
 
         SrsSetEnvConfig(conf, rtc_server_listen, "SRS_RTC_SERVER_LISTEN", "8080");
-        EXPECT_EQ(8080, conf.get_rtc_server_listen());
+        EXPECT_EQ(1, (int)conf.get_rtc_server_listens().size());
+        EXPECT_STREQ("8080", conf.get_rtc_server_listens().at(0).c_str());
 
         SrsSetEnvConfig(conf, rtc_server_protocol, "SRS_RTC_SERVER_PROTOCOL", "xxx");
         EXPECT_STREQ("xxx", conf.get_rtc_server_protocol().c_str());

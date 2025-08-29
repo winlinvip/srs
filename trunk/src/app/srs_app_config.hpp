@@ -691,8 +691,8 @@ public:
 public:
     // Whether the srt sevice enabled
     virtual bool get_srt_enabled();
-    // Get the srt service listen port
-    virtual unsigned short get_srt_listen_port();
+    // Get the srt service listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_srt_listens();
     // Get the srt SRTO_MAXBW, max bandwith, default is -1.
     virtual int64_t get_srto_maxbw();
     // Get the srt SRTO_MSS, Maximum Segment Size, default is 1500.

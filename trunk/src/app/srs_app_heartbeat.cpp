@@ -119,8 +119,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("srt", o);
 
-            uint16_t endpoint = _srs_config->get_srt_listen_port();
-            o->append(SrsJsonAny::str(srs_fmt_sprintf("udp://0.0.0.0:%d", endpoint).c_str()));
+            vector<string> endpoints = _srs_config->get_srt_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For RTSP listen endpoints.

@@ -4459,7 +4459,8 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesSrtServer)
         EXPECT_TRUE(conf.get_srt_enabled());
 
         SrsSetEnvConfig(conf, srt_listen_port, "SRS_SRT_SERVER_LISTEN", "10000");
-        EXPECT_EQ(10000, conf.get_srt_listen_port());
+        EXPECT_EQ(1, (int)conf.get_srt_listens().size());
+        EXPECT_STREQ("10000", conf.get_srt_listens().at(0).c_str());
 
         SrsSetEnvConfig(conf, srto_maxbw, "SRS_SRT_SERVER_MAXBW", "1000000000");
         EXPECT_EQ(1000000000, conf.get_srto_maxbw());

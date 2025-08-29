@@ -2654,6 +2654,29 @@ srs_error_t SrsConfig::check_normal_config()
     }
 
     ////////////////////////////////////////////////////////////////////////
+    // Check SRT server.
+    ////////////////////////////////////////////////////////////////////////
+    if (get_srt_enabled()) {
+        // Validate SRT server listen addresses
+        vector<string> srt_listens = get_srt_listens();
+        for (int i = 0; i < (int)srt_listens.size(); i++) {
+            int port;
+            string ip;
+            srs_net_split_for_listener(srt_listens[i], ip, port);
+
+            // check ip
+            if (!srs_net_is_valid_ip(ip)) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "srt_server.listen.ip=%s is invalid", ip.c_str());
+            }
+
+            // check port
+            if (port <= 0) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "srt_server.listen.port=%d is invalid", port);
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // check log name and level
     ////////////////////////////////////////////////////////////////////////
     if (true) {
@@ -7883,21 +7906,36 @@ bool SrsConfig::get_srt_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-unsigned short SrsConfig::get_srt_listen_port()
+vector<string> SrsConfig::get_srt_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.srt_server.listen"); // SRS_SRT_SERVER_LISTEN
+    std::vector<string> listens;
 
-    static unsigned short DEFAULT = 10080;
+    if (!srs_getenv("srs.srt_server.listen").empty()) { // SRS_SRT_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.srt_server.listen"), " ");
+    }
+
     SrsConfDirective *conf = root->get("srt_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("10080");
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back("10080");
+        return listens;
     }
-    return (unsigned short)atoi(conf->arg0().c_str());
+
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("10080");
+    }
+
+    return listens;
 }
 
 int64_t SrsConfig::get_srto_maxbw()

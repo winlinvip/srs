@@ -195,16 +195,28 @@ srs_error_t SrsSrtServer::listen_srt_mpegts()
     // Close all listener for SRT if exists.
     close_listeners();
 
-    // Start a listener for SRT, we might need multiple listeners in the future.
-    SrsSrtAcceptor *acceptor = new SrsSrtAcceptor(this);
-    acceptors_.push_back(acceptor);
+    // Start listeners for SRT, support multiple addresses including IPv6.
+    vector<string> srt_listens = _srs_config->get_srt_listens();
+    for (int i = 0; i < (int)srt_listens.size(); i++) {
+        SrsSrtAcceptor *acceptor = new SrsSrtAcceptor(this);
 
-    int port;
-    string ip;
-    srs_net_split_for_listener(srs_strconv_format_int(_srs_config->get_srt_listen_port()), ip, port);
+        int port;
+        string ip;
+        srs_net_split_for_listener(srt_listens[i], ip, port);
 
-    if ((err = acceptor->listen(ip, port)) != srs_success) {
-        return srs_error_wrap(err, "srt listen %s:%d", ip.c_str(), port);
+        if ((err = acceptor->listen(ip, port)) != srs_success) {
+            srs_freep(acceptor);
+            srs_warn("srt listen %s:%d failed, err=%s", ip.c_str(), port, srs_error_desc(err).c_str());
+            srs_error_reset(err);
+            continue;
+        }
+
+        acceptors_.push_back(acceptor);
+    }
+
+    // Check if at least one listener succeeded
+    if (acceptors_.empty()) {
+        return srs_error_new(ERROR_SOCKET_LISTEN, "no srt listeners available");
     }
 
     return err;

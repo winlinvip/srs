@@ -286,7 +286,7 @@ srs_error_t SrsMpegtsSrtConn::do_cycle()
 
     // Acquire stream publish token to prevent race conditions across all protocols.
     SrsStreamPublishToken *publish_token_raw = NULL;
-    if ((err = _srs_stream_publish_tokens->acquire_token(req_, publish_token_raw)) != srs_success) {
+    if (mode == SrtModePush && (err = _srs_stream_publish_tokens->acquire_token(req_, publish_token_raw)) != srs_success) {
         return srs_error_wrap(err, "acquire stream publish token");
     }
     SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
@@ -446,6 +446,8 @@ void SrsMpegtsSrtConn::release_publish()
 srs_error_t SrsMpegtsSrtConn::do_publishing()
 {
     srs_error_t err = srs_success;
+
+    srs_trace("SRT: start publish url=%s", req_->get_stream_url().c_str());
 
     SrsUniquePtr<SrsPithyPrint> pprint(SrsPithyPrint::create_srt_publish());
 

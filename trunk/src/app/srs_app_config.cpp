@@ -2598,6 +2598,26 @@ srs_error_t SrsConfig::check_normal_config()
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.listen.port=%d is invalid", port);
             }
         }
+
+        // Validate RTC server TCP listen addresses
+        if (get_rtc_server_tcp_enabled()) {
+            vector<string> rtc_tcp_listens = get_rtc_server_tcp_listens();
+            for (int i = 0; i < (int)rtc_tcp_listens.size(); i++) {
+                int port;
+                string ip;
+                srs_net_split_for_listener(rtc_tcp_listens[i], ip, port);
+
+                // check ip
+                if (!srs_net_is_valid_ip(ip)) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.tcp.listen.ip=%s is invalid", ip.c_str());
+                }
+
+                // check port
+                if (port <= 0) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.tcp.listen.port=%d is invalid", port);
+                }
+            }
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -4030,28 +4050,42 @@ bool SrsConfig::get_rtc_server_tcp_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-int SrsConfig::get_rtc_server_tcp_listen()
+vector<string> SrsConfig::get_rtc_server_tcp_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.rtc_server.tcp.listen"); // SRS_RTC_SERVER_TCP_LISTEN
+    std::vector<string> listens;
 
-    static int DEFAULT = 8000;
+    if (!srs_getenv("srs.rtc_server.tcp.listen").empty()) { // SRS_RTC_SERVER_TCP_LISTEN
+        return srs_strings_split(srs_getenv("srs.rtc_server.tcp.listen"), " ");
+    }
 
     SrsConfDirective *conf = root->get("rtc_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("8000");
+        return listens;
     }
 
     conf = conf->get("tcp");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("8000");
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back("8000");
+        return listens;
     }
 
-    return ::atoi(conf->arg0().c_str());
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("8000");
+    }
+
+    return listens;
 }
 
 std::string SrsConfig::get_rtc_server_protocol()

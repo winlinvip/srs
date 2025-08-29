@@ -532,7 +532,8 @@ public:
     virtual bool get_keep_api_domain();
     virtual bool get_use_auto_detect_network_ip();
     virtual bool get_rtc_server_tcp_enabled();
-    virtual int get_rtc_server_tcp_listen();
+    // Get the rtc server tcp listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_rtc_server_tcp_listens();
     virtual std::string get_rtc_server_protocol();
     virtual std::string get_rtc_server_ip_family();
     virtual bool get_rtc_server_ecdsa();

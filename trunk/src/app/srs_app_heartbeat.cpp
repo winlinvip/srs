@@ -137,15 +137,18 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("rtc", o);
 
+            if (_srs_config->get_rtc_server_tcp_enabled()) {
+                vector<string> endpoints = _srs_config->get_rtc_server_tcp_listens();
+                for (int i = 0; i < (int)endpoints.size(); i++) {
+                    string endpoint = srs_fmt_sprintf("tcp://%s", endpoints.at(i).c_str());
+                    o->append(SrsJsonAny::str(endpoint.c_str()));
+                }
+            }
+
             vector<string> endpoints = _srs_config->get_rtc_server_listens();
             for (int i = 0; i < (int)endpoints.size(); i++) {
                 string endpoint = srs_fmt_sprintf("udp://%s", endpoints.at(i).c_str());
                 o->append(SrsJsonAny::str(endpoint.c_str()));
-            }
-
-            if (_srs_config->get_rtc_server_tcp_enabled()) {
-                int endpoint = _srs_config->get_rtc_server_tcp_listen();
-                o->append(SrsJsonAny::str(srs_fmt_sprintf("tcp://0.0.0.0:%d", endpoint).c_str()));
             }
         }
     }

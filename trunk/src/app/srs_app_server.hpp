@@ -141,7 +141,7 @@ private:
     // listener, and it might be reused by HTTP API and WebRTC TCP.
     SrsTcpListener *https_listener_;
     // WebRTC over TCP listener. Please note that there is always a UDP listener by RTC server.
-    SrsTcpListener *webrtc_listener_;
+    SrsMultipleTcpListeners *webrtc_listener_;
 #ifdef SRS_RTSP
     // RTSP listener, over TCP.
     SrsTcpListener *rtsp_listener_;

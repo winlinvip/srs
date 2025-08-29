@@ -344,7 +344,7 @@ SrsServer::SrsServer()
     apis_listener_ = new SrsTcpListener(this);
     http_listener_ = new SrsMultipleTcpListeners(this);
     https_listener_ = new SrsTcpListener(this);
-    webrtc_listener_ = new SrsTcpListener(this);
+    webrtc_listener_ = new SrsMultipleTcpListeners(this);
 #ifdef SRS_RTSP
     rtsp_listener_ = new SrsTcpListener(this);
 #endif
@@ -516,8 +516,7 @@ srs_error_t SrsServer::initialize()
 
     bool rtc = _srs_config->get_rtc_server_enabled();
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
-    string rtc_listen = srs_strconv_format_int(_srs_config->get_rtc_server_tcp_listen());
-    vector<string> rtc_listens;
+    vector<string> rtc_listens = _srs_config->get_rtc_server_tcp_listens();
     // If enabled and listen is the same value, resue port for WebRTC over TCP.
     if (stream && rtc && rtc_tcp && srs_strings_equal(http_listens, rtc_listens)) {
         srs_trace("WebRTC tcp=%s reuses http=%s server", srs_strings_join(rtc_listens, ",").c_str(), srs_strings_join(http_listens, ",").c_str());
@@ -650,8 +649,9 @@ srs_error_t SrsServer::listen()
     }
 
     // Start WebRTC over TCP listener.
-    if (!reuse_rtc_over_server_ && _srs_config->get_rtc_server_tcp_enabled()) {
-        webrtc_listener_->set_endpoint(srs_strconv_format_int(_srs_config->get_rtc_server_tcp_listen()))->set_label("WebRTC");
+    string protocol = _srs_config->get_rtc_server_protocol();
+    if (!reuse_rtc_over_server_ && protocol != "udp" && _srs_config->get_rtc_server_tcp_enabled()) {
+        webrtc_listener_->add(_srs_config->get_rtc_server_tcp_listens())->set_label("WebRTC");
         if ((err = webrtc_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "webrtc tcp listen");
         }

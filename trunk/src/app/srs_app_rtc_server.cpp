@@ -366,6 +366,13 @@ srs_error_t SrsRtcServer::listen_udp()
         return err;
     }
 
+    // Check protocol setting - only create UDP listeners if protocol allows UDP
+    string protocol = _srs_config->get_rtc_server_protocol();
+    if (protocol == "tcp") {
+        // When protocol is "tcp", don't create UDP listeners
+        return err;
+    }
+
     vector<string> rtc_listens = _srs_config->get_rtc_server_listens();
     srs_assert(listeners.empty());
 
@@ -389,7 +396,7 @@ srs_error_t SrsRtcServer::listen_udp()
                 return srs_error_wrap(err, "listen %s:%d", ip.c_str(), port);
             }
 
-            srs_trace("rtc listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
+            srs_trace("WebRTC listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
             listeners.push_back(listener);
         }
     }
@@ -601,10 +608,16 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         if (true) {
             string udp_host;
             string udp_hostport = _srs_config->get_rtc_server_listens().at(0);
-            srs_net_split_hostport(udp_hostport, udp_host, udp_port);
+            srs_net_split_for_listener(udp_hostport, udp_host, udp_port);
         }
 
-        int tcp_port = _srs_config->get_rtc_server_tcp_listen();
+        int tcp_port = 0;
+        if (true) {
+            string tcp_host;
+            string tcp_hostport = _srs_config->get_rtc_server_tcp_listens().at(0);
+            srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
+        }
+        
         string protocol = _srs_config->get_rtc_server_protocol();
 
         set<string> candidates = discover_candidates(ruc);
@@ -626,7 +639,8 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         }
 
         vector<string> v = vector<string>(candidates.begin(), candidates.end());
-        srs_trace("RTC: Use candidates %s, protocol=%s", srs_strings_join(v, ", ").c_str(), protocol.c_str());
+        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d", 
+            srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
     }
 
     // Setup the negotiate DTLS by config.

@@ -123,6 +123,13 @@ void srs_close_stfd(srs_netfd_t &stfd)
     }
 }
 
+void srs_close_stfd_ptr(srs_netfd_t *stfd)
+{
+    if (stfd && *stfd) {
+        srs_close_stfd(*stfd);
+    }
+}
+
 srs_error_t srs_fd_closeexec(int fd)
 {
     int flags = fcntl(fd, F_GETFD);

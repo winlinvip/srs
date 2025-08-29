@@ -33,6 +33,7 @@ extern void srs_st_destroy(void);
 // Close the netfd, and close the underlayer fd.
 // @remark when close, user must ensure io completed.
 extern void srs_close_stfd(srs_netfd_t &stfd);
+extern void srs_close_stfd_ptr(srs_netfd_t *stfd);
 
 // Set the FD_CLOEXEC of FD.
 extern srs_error_t srs_fd_closeexec(int fd);

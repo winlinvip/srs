@@ -868,7 +868,7 @@ bool srs_net_is_valid_endpoint(std::string endpoint)
     if (!srs_net_is_valid_ip(host)) {
         return false;
     }
-    
+
     if (port <= 0) {
         return false;
     }

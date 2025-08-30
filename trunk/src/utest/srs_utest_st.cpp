@@ -3,14 +3,14 @@
 //
 // SPDX-License-Identifier: MIT
 //
+#include <srs_core_autofree.hpp>
+#include <srs_kernel_error.hpp>
+#include <srs_kernel_utility.hpp>
+#include <srs_protocol_st.hpp>
 #include <srs_utest_st.hpp>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#include <srs_protocol_st.hpp>
-#include <srs_kernel_utility.hpp>
-#include <srs_kernel_error.hpp>
-#include <srs_core_autofree.hpp>
 
 using namespace std;
 
@@ -363,7 +363,7 @@ VOID TEST(StSocketTest, AddressParsingForListener)
 
     // Test IPv4 address without port (should use any address)
     srs_net_split_for_listener("8080", ip, port);
-    EXPECT_TRUE(ip == "0.0.0.0" || ip == "::");  // Should be any address
+    EXPECT_TRUE(ip == "0.0.0.0" || ip == "::"); // Should be any address
     EXPECT_EQ(port, 8080);
 
     // Test IPv6 address in RFC 2732 format [address]:port
@@ -407,7 +407,7 @@ VOID TEST(StSocketTest, IPv4Detection)
     EXPECT_TRUE(empty_result == true || empty_result == false);
 
     // Test invalid IPv4 (but still numeric format)
-    EXPECT_TRUE(srs_net_is_ipv4("999.999.999.999"));  // Invalid but IPv4 format
+    EXPECT_TRUE(srs_net_is_ipv4("999.999.999.999")); // Invalid but IPv4 format
 }
 
 VOID TEST(StSocketTest, DualStackBehavior)
@@ -441,7 +441,7 @@ VOID TEST(StSocketTest, SocketFileDescriptorValidation)
     EXPECT_TRUE(tcp_fd != NULL);
 
     int raw_fd = srs_netfd_fileno(tcp_fd);
-    EXPECT_GT(raw_fd, 0);  // Valid file descriptor should be > 0
+    EXPECT_GT(raw_fd, 0); // Valid file descriptor should be > 0
 
     srs_close_stfd(tcp_fd);
 
@@ -451,7 +451,7 @@ VOID TEST(StSocketTest, SocketFileDescriptorValidation)
     EXPECT_TRUE(udp_fd != NULL);
 
     raw_fd = srs_netfd_fileno(udp_fd);
-    EXPECT_GT(raw_fd, 0);  // Valid file descriptor should be > 0
+    EXPECT_GT(raw_fd, 0); // Valid file descriptor should be > 0
 
     srs_close_stfd(udp_fd);
 }
@@ -465,7 +465,7 @@ VOID TEST(StSocketTest, MultipleSocketsOnDifferentPorts)
 
     for (int i = 0; i < 5; i++) {
         srs_netfd_t fd = NULL;
-        HELPER_EXPECT_SUCCESS(srs_tcp_listen("127.0.0.1", 0, &fd));  // Port 0 = system assigns
+        HELPER_EXPECT_SUCCESS(srs_tcp_listen("127.0.0.1", 0, &fd)); // Port 0 = system assigns
         EXPECT_TRUE(fd != NULL);
 
         int raw_fd = srs_netfd_fileno(fd);
@@ -504,7 +504,7 @@ VOID TEST(StSocketTest, RandomPortTcpListenAndConnect)
     srs_netfd_t connect_fd = NULL;
     HELPER_EXPECT_SUCCESS(srs_tcp_connect("127.0.0.1", random_port, SRS_UTIME_SECONDS, &connect_fd));
     SrsUniquePtr<srs_netfd_t> connect_fd_ptr(&connect_fd, srs_close_stfd_ptr);
-    
+
     int connect_actual_fd = srs_netfd_fileno(connect_fd);
     EXPECT_GT(connect_actual_fd, 0);
 
@@ -564,7 +564,7 @@ VOID TEST(StSocketTest, RandomPortUdpListenIPv4)
     // For UDP, we can create another socket and bind to a different port
     // to simulate client behavior (UDP is connectionless)
     srs_netfd_t client_fd = NULL;
-    HELPER_EXPECT_SUCCESS(srs_udp_listen("127.0.0.1", 0, &client_fd));  // Port 0 = system assigns
+    HELPER_EXPECT_SUCCESS(srs_udp_listen("127.0.0.1", 0, &client_fd)); // Port 0 = system assigns
     EXPECT_TRUE(client_fd != NULL);
     SrsUniquePtr<srs_netfd_t> client_fd_ptr(&client_fd, srs_close_stfd_ptr);
 

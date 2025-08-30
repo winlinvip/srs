@@ -2477,18 +2477,8 @@ srs_error_t SrsConfig::check_normal_config()
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen requires params");
         }
         for (int i = 0; i < (int)listens.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(listens[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen.port=%d is invalid", port);
+            if (!srs_net_is_valid_endpoint(listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtmp.listen=%s is invalid", listens[i].c_str());
             }
         }
     }
@@ -2557,20 +2547,9 @@ srs_error_t SrsConfig::check_normal_config()
         }
 
         vector<string> sapis = get_https_api_listens();
-        // Validate HTTPS API listen addresses
         for (int i = 0; i < (int)sapis.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(sapis[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.https.listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.https.listen.port=%d is invalid", port);
+            if (!srs_net_is_valid_endpoint(sapis[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.https.listen=%s is invalid", sapis[i].c_str());
             }
         }
 
@@ -2593,18 +2572,8 @@ srs_error_t SrsConfig::check_normal_config()
         if (get_https_stream_enabled()) {
             vector<string> https_listens = get_https_stream_listens();
             for (int i = 0; i < (int)https_listens.size(); i++) {
-                int port;
-                string ip;
-                srs_net_split_for_listener(https_listens[i], ip, port);
-
-                // check ip
-                if (!srs_net_is_valid_ip(ip)) {
-                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https_server.listen.ip=%s is invalid", ip.c_str());
-                }
-
-                // check port
-                if (port <= 0) {
-                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https_server.listen.port=%d is invalid", port);
+                if (!srs_net_is_valid_endpoint(https_listens[i])) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https_server.listen=%s is invalid", https_listens[i].c_str());
                 }
             }
         }
@@ -2617,18 +2586,8 @@ srs_error_t SrsConfig::check_normal_config()
         // Validate RTSP server listen addresses
         vector<string> rtsp_listens = get_rtsp_server_listens();
         for (int i = 0; i < (int)rtsp_listens.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(rtsp_listens[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtsp_server.listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtsp_server.listen.port=%d is invalid", port);
+            if (!srs_net_is_valid_endpoint(rtsp_listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtsp_server.listen=%s is invalid", rtsp_listens[i].c_str());
             }
         }
     }
@@ -2640,18 +2599,8 @@ srs_error_t SrsConfig::check_normal_config()
         // Validate RTC server listen addresses
         vector<string> rtc_listens = get_rtc_server_listens();
         for (int i = 0; i < (int)rtc_listens.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(rtc_listens[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.listen.port=%d is invalid", port);
+            if (!srs_net_is_valid_endpoint(rtc_listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.listen=%s is invalid", rtc_listens[i].c_str());
             }
         }
 
@@ -2659,18 +2608,8 @@ srs_error_t SrsConfig::check_normal_config()
         if (get_rtc_server_tcp_enabled()) {
             vector<string> rtc_tcp_listens = get_rtc_server_tcp_listens();
             for (int i = 0; i < (int)rtc_tcp_listens.size(); i++) {
-                int port;
-                string ip;
-                srs_net_split_for_listener(rtc_tcp_listens[i], ip, port);
-
-                // check ip
-                if (!srs_net_is_valid_ip(ip)) {
-                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.tcp.listen.ip=%s is invalid", ip.c_str());
-                }
-
-                // check port
-                if (port <= 0) {
-                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.tcp.listen.port=%d is invalid", port);
+                if (!srs_net_is_valid_endpoint(rtc_tcp_listens[i])) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.tcp.listen=%s is invalid", rtc_tcp_listens[i].c_str());
                 }
             }
         }
@@ -2683,18 +2622,8 @@ srs_error_t SrsConfig::check_normal_config()
         // Validate SRT server listen addresses
         vector<string> srt_listens = get_srt_listens();
         for (int i = 0; i < (int)srt_listens.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(srt_listens[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "srt_server.listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "srt_server.listen.port=%d is invalid", port);
+            if (!srs_net_is_valid_endpoint(srt_listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "srt_server.listen=%s is invalid", srt_listens[i].c_str());
             }
         }
     }

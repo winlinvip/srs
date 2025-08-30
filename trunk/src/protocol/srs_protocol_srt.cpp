@@ -58,7 +58,7 @@ static srs_error_t do_srs_srt_listen(srs_srt_t srt_fd, addrinfo *r)
     // Set IPv6 options for IPv6 addresses
     if (r->ai_family == AF_INET6) {
         // Set SRTO_IPV6ONLY to 1 for IPv6-only behavior to avoid conflicts with IPv4 wildcard binding
-        int ipv6only = 1;  // IPv6-only to avoid conflicts
+        int ipv6only = 1; // IPv6-only to avoid conflicts
         if (srt_setsockflag(srt_fd, SRTO_IPV6ONLY, &ipv6only, sizeof(ipv6only)) == SRT_ERROR) {
             return srs_error_new(ERROR_SOCKET_BIND, "srt set SRTO_IPV6ONLY=%d failed, err=%s", ipv6only, srt_getlasterror_str());
         }
@@ -213,7 +213,7 @@ srs_error_t srs_srt_listen(srs_srt_t srt_fd, std::string ip, int port)
     addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;  // SRT is UDP-based
+    hints.ai_socktype = SOCK_DGRAM; // SRT is UDP-based
     hints.ai_flags = AI_NUMERICHOST;
 
     addrinfo *r_raw = NULL;
@@ -773,7 +773,7 @@ srs_error_t SrsSrtSocket::accept(srs_srt_t *client_srt_fd)
     srs_error_t err = srs_success;
 
     while (true) {
-        sockaddr_storage inaddr;  // Use sockaddr_storage to support both IPv4 and IPv6
+        sockaddr_storage inaddr; // Use sockaddr_storage to support both IPv4 and IPv6
         int addrlen = sizeof(inaddr);
         // @see https://github.com/Haivision/srt/blob/master/docs/API/API-functions.md#srt_accept
         srs_srt_t srt_fd = srt_accept(srt_fd_, (sockaddr *)&inaddr, &addrlen);

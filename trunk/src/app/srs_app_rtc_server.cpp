@@ -617,7 +617,7 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
             string tcp_hostport = _srs_config->get_rtc_server_tcp_listens().at(0);
             srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
         }
-        
+
         string protocol = _srs_config->get_rtc_server_protocol();
 
         set<string> candidates = discover_candidates(ruc);
@@ -639,8 +639,8 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         }
 
         vector<string> v = vector<string>(candidates.begin(), candidates.end());
-        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d", 
-            srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
+        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d",
+                  srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
     }
 
     // Setup the negotiate DTLS by config.

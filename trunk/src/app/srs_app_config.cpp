@@ -3809,15 +3809,17 @@ vector<string> SrsConfig::get_rtsp_server_listens()
         return srs_strings_split(srs_getenv("srs.rtsp_server.listen"), " ");
     }
 
+    static string DEFAULT = "554";
+
     SrsConfDirective *conf = root->get("rtsp_server");
     if (!conf) {
-        listens.push_back("554");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("554");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -3827,7 +3829,7 @@ vector<string> SrsConfig::get_rtsp_server_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("554");
+        listens.push_back(DEFAULT);
     }
 
     return listens;
@@ -4078,21 +4080,23 @@ vector<string> SrsConfig::get_rtc_server_tcp_listens()
         return srs_strings_split(srs_getenv("srs.rtc_server.tcp.listen"), " ");
     }
 
+    static string DEFAULT = "8000";
+
     SrsConfDirective *conf = root->get("rtc_server");
     if (!conf) {
-        listens.push_back("8000");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("tcp");
     if (!conf) {
-        listens.push_back("8000");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("8000");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -4102,7 +4106,7 @@ vector<string> SrsConfig::get_rtc_server_tcp_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("8000");
+        listens.push_back(DEFAULT);
     }
 
     return listens;
@@ -7577,15 +7581,17 @@ vector<string> SrsConfig::get_http_api_listens()
         return srs_strings_split(srs_getenv("srs.http_api.listen"), " ");
     }
 
+    static string DEFAULT = "1985";
+
     SrsConfDirective *conf = root->get("http_api");
     if (!conf) {
-        listens.push_back("1985");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("1985");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -7595,7 +7601,7 @@ vector<string> SrsConfig::get_http_api_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("1985");
+        listens.push_back(DEFAULT);
     }
 
     return listens;
@@ -7789,15 +7795,17 @@ vector<string> SrsConfig::get_https_api_listens()
         return srs_strings_split(srs_getenv("srs.http_api.https.listen"), " ");
     }
 
+    static string DEFAULT = "1990";
+
     SrsConfDirective *conf = get_https_api();
     if (!conf) {
-        listens.push_back("1990");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("1990");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -7807,7 +7815,7 @@ vector<string> SrsConfig::get_https_api_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("1990");
+        listens.push_back(DEFAULT);
     }
 
     return listens;
@@ -7878,15 +7886,17 @@ vector<string> SrsConfig::get_srt_listens()
         return srs_strings_split(srs_getenv("srs.srt_server.listen"), " ");
     }
 
+    static string DEFAULT = "10080";
+
     SrsConfDirective *conf = root->get("srt_server");
     if (!conf) {
-        listens.push_back("10080");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("10080");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -7896,7 +7906,7 @@ vector<string> SrsConfig::get_srt_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("10080");
+        listens.push_back(DEFAULT);
     }
 
     return listens;
@@ -8252,15 +8262,17 @@ vector<string> SrsConfig::get_http_stream_listens()
         return srs_strings_split(srs_getenv("srs.http_server.listen"), " ");
     }
 
+    static string DEFAULT = "8080";
+
     SrsConfDirective *conf = root->get("http_server");
     if (!conf) {
-        listens.push_back("8080");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("8080");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -8270,7 +8282,7 @@ vector<string> SrsConfig::get_http_stream_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("8080");
+        listens.push_back(DEFAULT);
     }
 
     return listens;
@@ -8351,15 +8363,17 @@ vector<string> SrsConfig::get_https_stream_listens()
         return srs_strings_split(srs_getenv("srs.http_server.https.listen"), " ");
     }
 
+    static string DEFAULT = "8088";
+
     SrsConfDirective *conf = get_https_stream();
     if (!conf) {
-        listens.push_back("8088");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        listens.push_back("8088");
+        listens.push_back(DEFAULT);
         return listens;
     }
 
@@ -8369,7 +8383,7 @@ vector<string> SrsConfig::get_https_stream_listens()
 
     // If no arguments, use default
     if (listens.empty()) {
-        listens.push_back("8088");
+        listens.push_back(DEFAULT);
     }
 
     return listens;

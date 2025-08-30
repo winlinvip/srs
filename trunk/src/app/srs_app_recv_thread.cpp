@@ -458,57 +458,7 @@ void SrsPublishRecvThread::on_read(ssize_t nread)
 }
 #endif
 
-srs_error_t SrsPublishRecvThread::on_reload_vhost_publish(string vhost)
-{
-    srs_error_t err = srs_success;
 
-    if (req->vhost != vhost) {
-        return err;
-    }
-
-    // the mr settings,
-    bool mr_enabled = _srs_config->get_mr_enabled(req->vhost);
-    srs_utime_t sleep_v = _srs_config->get_mr_sleep(req->vhost);
-
-    // update buffer when sleep ms changed.
-    if (mr_sleep != sleep_v) {
-        set_socket_buffer(sleep_v);
-    }
-
-#ifdef SRS_PERF_MERGED_READ
-    // mr enabled=>disabled
-    if (mr && !mr_enabled) {
-        // disable the merge read
-        rtmp->set_merge_read(false, NULL);
-    }
-    // mr disabled=>enabled
-    if (!mr && mr_enabled) {
-        // enable the merge read
-        rtmp->set_merge_read(true, this);
-    }
-#endif
-
-    // update to new state
-    mr = mr_enabled;
-    mr_sleep = sleep_v;
-
-    return err;
-}
-
-srs_error_t SrsPublishRecvThread::on_reload_vhost_realtime(string vhost)
-{
-    srs_error_t err = srs_success;
-
-    if (req->vhost != vhost) {
-        return err;
-    }
-
-    bool realtime_enabled = _srs_config->get_realtime_enabled(req->vhost);
-    srs_trace("realtime changed %d=>%d", realtime, realtime_enabled);
-    realtime = realtime_enabled;
-
-    return err;
-}
 
 void SrsPublishRecvThread::set_socket_buffer(srs_utime_t sleep_v)
 {

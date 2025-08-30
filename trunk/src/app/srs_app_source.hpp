@@ -400,15 +400,7 @@ public:
     virtual srs_error_t on_dvr_request_sh();
     // For the SrsHls to callback to request the sequence headers.
     virtual srs_error_t on_hls_request_sh();
-    // Interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_vhost_forward(std::string vhost);
-    virtual srs_error_t on_reload_vhost_dash(std::string vhost);
-    virtual srs_error_t on_reload_vhost_hls(std::string vhost);
-    virtual srs_error_t on_reload_vhost_hds(std::string vhost);
-    virtual srs_error_t on_reload_vhost_dvr(std::string vhost);
-    virtual srs_error_t on_reload_vhost_transcode(std::string vhost);
-    virtual srs_error_t on_reload_vhost_exec(std::string vhost);
+
 
 private:
     virtual srs_error_t create_forwarders();

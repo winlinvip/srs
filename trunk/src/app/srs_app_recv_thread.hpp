@@ -193,10 +193,7 @@ public:
 #ifdef SRS_PERF_MERGED_READ
     virtual void on_read(ssize_t nread);
 #endif
-    // Interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_vhost_publish(std::string vhost);
-    virtual srs_error_t on_reload_vhost_realtime(std::string vhost);
+
 
 private:
     virtual void set_socket_buffer(srs_utime_t sleep_v);

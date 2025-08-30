@@ -1507,17 +1507,11 @@ srs_error_t SrsConfig::reload_vhost(SrsConfDirective *old_root)
 
         //      DISABLED    =>  ENABLED
         if (!get_vhost_enabled(old_vhost) && get_vhost_enabled(new_vhost)) {
-            if ((err = do_reload_vhost_added(vhost)) != srs_success) {
-                return srs_error_wrap(err, "reload vhost added");
-            }
             continue;
         }
 
         //      ENABLED     =>  DISABLED
         if (get_vhost_enabled(old_vhost) && !get_vhost_enabled(new_vhost)) {
-            if ((err = do_reload_vhost_removed(vhost)) != srs_success) {
-                return srs_error_wrap(err, "reload vhost removed");
-            }
             continue;
         }
 
@@ -1549,126 +1543,11 @@ srs_error_t SrsConfig::reload_vhost(SrsConfDirective *old_root)
                 srs_trace("vhost %s reload chunk_size success.", vhost.c_str());
             }
 
-            // tcp_nodelay, only one per vhost
-            if (!srs_directive_equals(new_vhost->get("tcp_nodelay"), old_vhost->get("tcp_nodelay"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_tcp_nodelay(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes tcp_nodelay failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload tcp_nodelay success.", vhost.c_str());
-            }
 
-            // min_latency, only one per vhost
-            if (!srs_directive_equals(new_vhost->get("min_latency"), old_vhost->get("min_latency"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_realtime(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes min_latency failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload min_latency success.", vhost.c_str());
-            }
 
-            // play, only one per vhost
-            if (!srs_directive_equals(new_vhost->get("play"), old_vhost->get("play"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_play(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes play failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload play success.", vhost.c_str());
-            }
 
-            // forward, only one per vhost
-            if (!srs_directive_equals(new_vhost->get("forward"), old_vhost->get("forward"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_forward(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes forward failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload forward success.", vhost.c_str());
-            }
 
-            // To reload DASH.
-            if (!srs_directive_equals(new_vhost->get("dash"), old_vhost->get("dash"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_dash(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "Reload vhost %s dash failed", vhost.c_str());
-                    }
-                }
-                srs_trace("Reload vhost %s dash ok.", vhost.c_str());
-            }
 
-            // hls, only one per vhost
-            // @remark, the hls_on_error directly support reload.
-            if (!srs_directive_equals(new_vhost->get("hls"), old_vhost->get("hls"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_hls(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes hls failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload hls success.", vhost.c_str());
-            }
-
-            // hds reload
-            if (!srs_directive_equals(new_vhost->get("hds"), old_vhost->get("hds"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_hds(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes hds failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload hds success.", vhost.c_str());
-            }
-
-            // dvr, only one per vhost, except the dvr_apply
-            if (!srs_directive_equals(new_vhost->get("dvr"), old_vhost->get("dvr"), "dvr_apply")) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_dvr(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes dvr failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload dvr success.", vhost.c_str());
-            }
-
-            // exec, only one per vhost
-            if (!srs_directive_equals(new_vhost->get("exec"), old_vhost->get("exec"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_exec(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes exec failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload exec success.", vhost.c_str());
-            }
-
-            // publish, only one per vhost
-            if (!srs_directive_equals(new_vhost->get("publish"), old_vhost->get("publish"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_publish(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes publish failed", vhost.c_str());
-                    }
-                }
-                srs_trace("vhost %s reload publish success.", vhost.c_str());
-            }
-
-            // transcode, many per vhost.
-            if ((err = reload_transcode(new_vhost, old_vhost)) != srs_success) {
-                return srs_error_wrap(err, "reload transcode");
-            }
-
-            // ingest, many per vhost.
-            if ((err = reload_ingest(new_vhost, old_vhost)) != srs_success) {
-                return srs_error_wrap(err, "reload ingest");
-            }
             continue;
         }
         srs_trace("ignore reload vhost, enabled old: %d, new: %d",
@@ -1686,26 +1565,6 @@ srs_error_t SrsConfig::reload_conf(SrsConfig *conf)
     root = conf->root;
     conf->root = NULL;
 
-    // merge config: max_connections
-    if (!srs_directive_equals(root->get("max_connections"), old_root->get("max_connections"))) {
-        if ((err = do_reload_max_connections()) != srs_success) {
-            return srs_error_wrap(err, "max connections");
-        }
-    }
-
-    // merge config: pithy_print_ms
-    if (!srs_directive_equals(root->get("pithy_print_ms"), old_root->get("pithy_print_ms"))) {
-        if ((err = do_reload_pithy_print_ms()) != srs_success) {
-            return srs_error_wrap(err, "pithy print ms");
-        }
-    }
-
-    // Merge config: rtc_server
-    if ((err = reload_rtc_server(old_root.get())) != srs_success) {
-        return srs_error_wrap(err, "http steram");
-        ;
-    }
-
     // TODO: FIXME: support reload stream_caster.
 
     // merge config: vhost
@@ -1717,209 +1576,11 @@ srs_error_t SrsConfig::reload_conf(SrsConfig *conf)
     return err;
 }
 
-srs_error_t SrsConfig::reload_rtc_server(SrsConfDirective *old_root)
-{
-    srs_error_t err = srs_success;
 
-    // merge config.
-    std::vector<ISrsReloadHandler *>::iterator it;
 
-    // state graph
-    //      old_rtc_server     new_rtc_server
-    //      ENABLED     =>      ENABLED (modified)
 
-    SrsConfDirective *new_rtc_server = root->get("rtc_server");
-    SrsConfDirective *old_rtc_server = old_root->get("rtc_server");
 
-    // TODO: FIXME: Support disable or enable reloading.
 
-    //      ENABLED     =>  ENABLED (modified)
-    if (get_rtc_server_enabled(old_rtc_server) && get_rtc_server_enabled(new_rtc_server) && !srs_directive_equals(old_rtc_server, new_rtc_server)) {
-        for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-            ISrsReloadHandler *subscribe = *it;
-            if ((err = subscribe->on_reload_rtc_server()) != srs_success) {
-                return srs_error_wrap(err, "rtc server enabled");
-            }
-        }
-        srs_trace("reload rtc server success.");
-        return err;
-    }
-
-    srs_trace("reload rtc server success, nothing changed.");
-    return err;
-}
-
-srs_error_t SrsConfig::reload_transcode(SrsConfDirective *new_vhost, SrsConfDirective *old_vhost)
-{
-    srs_error_t err = srs_success;
-
-    std::vector<SrsConfDirective *> old_transcoders;
-    for (int i = 0; i < (int)old_vhost->directives.size(); i++) {
-        SrsConfDirective *conf = old_vhost->at(i);
-        if (conf->name == "transcode") {
-            old_transcoders.push_back(conf);
-        }
-    }
-
-    std::vector<SrsConfDirective *> new_transcoders;
-    for (int i = 0; i < (int)new_vhost->directives.size(); i++) {
-        SrsConfDirective *conf = new_vhost->at(i);
-        if (conf->name == "transcode") {
-            new_transcoders.push_back(conf);
-        }
-    }
-
-    std::vector<ISrsReloadHandler *>::iterator it;
-
-    std::string vhost = new_vhost->arg0();
-
-    // to be simple:
-    // whatever, once tiny changed of transcode,
-    // restart all ffmpeg of vhost.
-    bool changed = false;
-
-    // discovery the removed ffmpeg.
-    for (int i = 0; !changed && i < (int)old_transcoders.size(); i++) {
-        SrsConfDirective *old_transcoder = old_transcoders.at(i);
-        std::string transcoder_id = old_transcoder->arg0();
-
-        // if transcoder exists in new vhost, not removed, ignore.
-        if (new_vhost->get("transcode", transcoder_id)) {
-            continue;
-        }
-
-        changed = true;
-    }
-
-    // discovery the added ffmpeg.
-    for (int i = 0; !changed && i < (int)new_transcoders.size(); i++) {
-        SrsConfDirective *new_transcoder = new_transcoders.at(i);
-        std::string transcoder_id = new_transcoder->arg0();
-
-        // if transcoder exists in old vhost, not added, ignore.
-        if (old_vhost->get("transcode", transcoder_id)) {
-            continue;
-        }
-
-        changed = true;
-    }
-
-    // for updated transcoders, restart them.
-    for (int i = 0; !changed && i < (int)new_transcoders.size(); i++) {
-        SrsConfDirective *new_transcoder = new_transcoders.at(i);
-        std::string transcoder_id = new_transcoder->arg0();
-        SrsConfDirective *old_transcoder = old_vhost->get("transcode", transcoder_id);
-        srs_assert(old_transcoder);
-
-        if (srs_directive_equals(new_transcoder, old_transcoder)) {
-            continue;
-        }
-
-        changed = true;
-    }
-
-    // transcode, many per vhost
-    if (changed) {
-        for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-            ISrsReloadHandler *subscribe = *it;
-            if ((err = subscribe->on_reload_vhost_transcode(vhost)) != srs_success) {
-                return srs_error_wrap(err, "vhost %s notify subscribes transcode failed", vhost.c_str());
-            }
-        }
-        srs_trace("vhost %s reload transcode success.", vhost.c_str());
-    }
-
-    return err;
-}
-
-srs_error_t SrsConfig::reload_ingest(SrsConfDirective *new_vhost, SrsConfDirective *old_vhost)
-{
-    srs_error_t err = srs_success;
-
-    std::vector<SrsConfDirective *> old_ingesters;
-    for (int i = 0; i < (int)old_vhost->directives.size(); i++) {
-        SrsConfDirective *conf = old_vhost->at(i);
-        if (conf->name == "ingest") {
-            old_ingesters.push_back(conf);
-        }
-    }
-
-    std::vector<SrsConfDirective *> new_ingesters;
-    for (int i = 0; i < (int)new_vhost->directives.size(); i++) {
-        SrsConfDirective *conf = new_vhost->at(i);
-        if (conf->name == "ingest") {
-            new_ingesters.push_back(conf);
-        }
-    }
-
-    std::vector<ISrsReloadHandler *>::iterator it;
-
-    std::string vhost = new_vhost->arg0();
-
-    // for removed ingesters, stop them.
-    for (int i = 0; i < (int)old_ingesters.size(); i++) {
-        SrsConfDirective *old_ingester = old_ingesters.at(i);
-        std::string ingest_id = old_ingester->arg0();
-        SrsConfDirective *new_ingester = new_vhost->get("ingest", ingest_id);
-
-        // ENABLED => DISABLED
-        if (get_ingest_enabled(old_ingester) && !get_ingest_enabled(new_ingester)) {
-            // notice handler ingester removed.
-            for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                ISrsReloadHandler *subscribe = *it;
-                if ((err = subscribe->on_reload_ingest_removed(vhost, ingest_id)) != srs_success) {
-                    return srs_error_wrap(err, "vhost %s notify subscribes ingest=%s removed failed", vhost.c_str(), ingest_id.c_str());
-                }
-            }
-            srs_trace("vhost %s reload ingest=%s removed success.", vhost.c_str(), ingest_id.c_str());
-        }
-    }
-
-    // for added ingesters, start them.
-    for (int i = 0; i < (int)new_ingesters.size(); i++) {
-        SrsConfDirective *new_ingester = new_ingesters.at(i);
-        std::string ingest_id = new_ingester->arg0();
-        SrsConfDirective *old_ingester = old_vhost->get("ingest", ingest_id);
-
-        // DISABLED => ENABLED
-        if (!get_ingest_enabled(old_ingester) && get_ingest_enabled(new_ingester)) {
-            for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                ISrsReloadHandler *subscribe = *it;
-                if ((err = subscribe->on_reload_ingest_added(vhost, ingest_id)) != srs_success) {
-                    return srs_error_wrap(err, "vhost %s notify subscribes ingest=%s added failed", vhost.c_str(), ingest_id.c_str());
-                }
-            }
-            srs_trace("vhost %s reload ingest=%s added success.", vhost.c_str(), ingest_id.c_str());
-        }
-    }
-
-    // for updated ingesters, restart them.
-    for (int i = 0; i < (int)new_ingesters.size(); i++) {
-        SrsConfDirective *new_ingester = new_ingesters.at(i);
-        std::string ingest_id = new_ingester->arg0();
-        SrsConfDirective *old_ingester = old_vhost->get("ingest", ingest_id);
-
-        // ENABLED => ENABLED
-        if (get_ingest_enabled(old_ingester) && get_ingest_enabled(new_ingester)) {
-            if (srs_directive_equals(new_ingester, old_ingester)) {
-                continue;
-            }
-
-            // notice handler ingester removed.
-            for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                ISrsReloadHandler *subscribe = *it;
-                if ((err = subscribe->on_reload_ingest_updated(vhost, ingest_id)) != srs_success) {
-                    return srs_error_wrap(err, "vhost %s notify subscribes ingest=%s updated failed", vhost.c_str(), ingest_id.c_str());
-                }
-            }
-            srs_trace("vhost %s reload ingest=%s updated success.", vhost.c_str(), ingest_id.c_str());
-        }
-    }
-
-    srs_trace("ingest nothing changed for vhost=%s", vhost.c_str());
-
-    return err;
-}
 
 // see: ngx_get_options
 // LCOV_EXCL_START
@@ -2121,74 +1782,7 @@ srs_error_t SrsConfig::raw_to_json(SrsJsonObject *obj)
     return err;
 }
 
-srs_error_t SrsConfig::do_reload_max_connections()
-{
-    srs_error_t err = srs_success;
 
-    vector<ISrsReloadHandler *>::iterator it;
-    for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-        ISrsReloadHandler *subscribe = *it;
-        if ((err = subscribe->on_reload_max_conns()) != srs_success) {
-            return srs_error_wrap(err, "notify subscribes reload max_connections failed");
-        }
-    }
-    srs_trace("reload max_connections success.");
-
-    return err;
-}
-
-srs_error_t SrsConfig::do_reload_pithy_print_ms()
-{
-    srs_error_t err = srs_success;
-
-    vector<ISrsReloadHandler *>::iterator it;
-    for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-        ISrsReloadHandler *subscribe = *it;
-        if ((err = subscribe->on_reload_pithy_print()) != srs_success) {
-            return srs_error_wrap(err, "notify subscribes pithy_print_ms failed");
-        }
-    }
-    srs_trace("reload pithy_print_ms success.");
-
-    return err;
-}
-
-srs_error_t SrsConfig::do_reload_vhost_added(string vhost)
-{
-    srs_error_t err = srs_success;
-
-    srs_trace("vhost %s added, reload it.", vhost.c_str());
-
-    vector<ISrsReloadHandler *>::iterator it;
-    for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-        ISrsReloadHandler *subscribe = *it;
-        if ((err = subscribe->on_reload_vhost_added(vhost)) != srs_success) {
-            return srs_error_wrap(err, "notify subscribes added vhost %s failed", vhost.c_str());
-        }
-    }
-
-    srs_trace("reload new vhost %s success.", vhost.c_str());
-
-    return err;
-}
-
-srs_error_t SrsConfig::do_reload_vhost_removed(string vhost)
-{
-    srs_error_t err = srs_success;
-
-    srs_trace("vhost %s removed, reload it.", vhost.c_str());
-
-    vector<ISrsReloadHandler *>::iterator it;
-    for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-        ISrsReloadHandler *subscribe = *it;
-        if ((err = subscribe->on_reload_vhost_removed(vhost)) != srs_success) {
-            return srs_error_wrap(err, "notify subscribes removed vhost %s failed", vhost.c_str());
-        }
-    }
-    srs_trace("reload removed vhost %s success.", vhost.c_str());
-
-    return err;
-}
 
 string SrsConfig::config()
 {

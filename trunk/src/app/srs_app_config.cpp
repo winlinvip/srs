@@ -7795,6 +7795,16 @@ vector<string> SrsConfig::get_https_api_listens()
         return srs_strings_split(srs_getenv("srs.http_api.https.listen"), " ");
     }
 
+    // If HTTP API uses the same port to HTTP server, then HTTPS API should 
+    // always default to the same port to HTTPS server.
+    if (true) {
+        vector<string> apis = get_http_api_listens();
+        vector<string> servers = get_http_stream_listens();
+        if (srs_strings_equal(apis, servers)) {
+            return get_https_stream_listens();
+        }
+    }
+
     static string DEFAULT = "1990";
 
     SrsConfDirective *conf = get_https_api();

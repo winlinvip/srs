@@ -401,7 +401,6 @@ public:
     // For the SrsHls to callback to request the sequence headers.
     virtual srs_error_t on_hls_request_sh();
 
-
 private:
     virtual srs_error_t create_forwarders();
     virtual srs_error_t create_backend_forwarders(bool &applied);

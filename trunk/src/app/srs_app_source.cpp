@@ -1257,18 +1257,6 @@ srs_error_t SrsOriginHub::on_hls_request_sh()
     return err;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 srs_error_t SrsOriginHub::create_forwarders()
 {
     srs_error_t err = srs_success;

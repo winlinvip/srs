@@ -180,7 +180,6 @@ public:
 protected:
     virtual srs_error_t do_cycle();
 
-
 public:
     virtual ISrsKbpsDelta *delta();
 

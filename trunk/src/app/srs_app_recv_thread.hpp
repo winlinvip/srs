@@ -194,7 +194,6 @@ public:
     virtual void on_read(ssize_t nread);
 #endif
 
-
 private:
     virtual void set_socket_buffer(srs_utime_t sleep_v);
 };

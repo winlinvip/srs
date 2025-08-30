@@ -1462,21 +1462,16 @@ srs_error_t SrsConfig::reload(SrsReloadState *pstate)
 }
 // LCOV_EXCL_STOP
 
-srs_error_t SrsConfig::reload_vhost(SrsConfDirective *old_root)
+srs_error_t SrsConfig::reload_conf(SrsConfig *conf)
 {
     srs_error_t err = srs_success;
 
+    SrsUniquePtr<SrsConfDirective> old_root(root);
+    root = conf->root;
+    conf->root = NULL;
+
     // merge config.
     std::vector<ISrsReloadHandler *>::iterator it;
-
-    // following directly support reload.
-    //      origin, token_traverse, vhost, debug_srs_upnode
-
-    // state graph
-    //      old_vhost       new_vhost
-    //      DISABLED    =>  ENABLED
-    //      ENABLED     =>  DISABLED
-    //      ENABLED     =>  ENABLED (modified)
 
     // collect all vhost names
     std::vector<std::string> vhosts;
@@ -1501,86 +1496,25 @@ srs_error_t SrsConfig::reload_vhost(SrsConfDirective *old_root)
     // process each vhost
     for (int i = 0; i < (int)vhosts.size(); i++) {
         std::string vhost = vhosts.at(i);
+        srs_trace("reload vhost %s", vhost.c_str());
 
         SrsConfDirective *old_vhost = old_root->get("vhost", vhost);
         SrsConfDirective *new_vhost = root->get("vhost", vhost);
 
-        //      DISABLED    =>  ENABLED
-        if (!get_vhost_enabled(old_vhost) && get_vhost_enabled(new_vhost)) {
-            continue;
-        }
-
-        //      ENABLED     =>  DISABLED
-        if (get_vhost_enabled(old_vhost) && !get_vhost_enabled(new_vhost)) {
-            continue;
-        }
-
-        // cluster.mode, never supports reload.
-        // first, for the origin and edge role change is too complex.
-        // second, the vhosts in origin device group normally are all origin,
-        //      they never change to edge sometimes.
-        // third, the origin or upnode device can always be restart,
-        //      edge will retry and the users connected to edge are ok.
-        // it's ok to add or remove edge/origin vhost.
-        if (get_vhost_is_edge(old_vhost) != get_vhost_is_edge(new_vhost)) {
-            return srs_error_new(ERROR_RTMP_EDGE_RELOAD, "vhost mode changed");
-        }
-
-        // the auto reload configs:
-        //      publish.parse_sps
-
-        //      ENABLED     =>  ENABLED (modified)
-        if (get_vhost_enabled(new_vhost) && get_vhost_enabled(old_vhost)) {
-            srs_trace("vhost %s maybe modified, reload its detail.", vhost.c_str());
-            // chunk_size, only one per vhost.
-            if (!srs_directive_equals(new_vhost->get("chunk_size"), old_vhost->get("chunk_size"))) {
-                for (it = subscribes.begin(); it != subscribes.end(); ++it) {
-                    ISrsReloadHandler *subscribe = *it;
-                    if ((err = subscribe->on_reload_vhost_chunk_size(vhost)) != srs_success) {
-                        return srs_error_wrap(err, "vhost %s notify subscribes chunk_size failed", vhost.c_str());
-                    }
+        // chunk_size, only one per vhost.
+        if (!srs_directive_equals(new_vhost->get("chunk_size"), old_vhost->get("chunk_size"))) {
+            for (it = subscribes.begin(); it != subscribes.end(); ++it) {
+                ISrsReloadHandler *subscribe = *it;
+                if ((err = subscribe->on_reload_vhost_chunk_size(vhost)) != srs_success) {
+                    return srs_error_wrap(err, "vhost %s notify subscribes chunk_size failed", vhost.c_str());
                 }
-                srs_trace("vhost %s reload chunk_size success.", vhost.c_str());
             }
-
-
-
-
-
-
-            continue;
+            srs_trace("vhost %s reload chunk_size success.", vhost.c_str());
         }
-        srs_trace("ignore reload vhost, enabled old: %d, new: %d",
-                  get_vhost_enabled(old_vhost), get_vhost_enabled(new_vhost));
     }
 
     return err;
 }
-
-srs_error_t SrsConfig::reload_conf(SrsConfig *conf)
-{
-    srs_error_t err = srs_success;
-
-    SrsUniquePtr<SrsConfDirective> old_root(root);
-    root = conf->root;
-    conf->root = NULL;
-
-    // TODO: FIXME: support reload stream_caster.
-
-    // merge config: vhost
-    if ((err = reload_vhost(old_root.get())) != srs_success) {
-        return srs_error_wrap(err, "vhost");
-        ;
-    }
-
-    return err;
-}
-
-
-
-
-
-
 
 // see: ngx_get_options
 // LCOV_EXCL_START
@@ -1781,8 +1715,6 @@ srs_error_t SrsConfig::raw_to_json(SrsJsonObject *obj)
 
     return err;
 }
-
-
 
 string SrsConfig::config()
 {
@@ -7389,7 +7321,7 @@ vector<string> SrsConfig::get_https_api_listens()
         return srs_strings_split(srs_getenv("srs.http_api.https.listen"), " ");
     }
 
-    // If HTTP API uses the same port to HTTP server, then HTTPS API should 
+    // If HTTP API uses the same port to HTTP server, then HTTPS API should
     // always default to the same port to HTTPS server.
     if (true) {
         vector<string> apis = get_http_api_listens();

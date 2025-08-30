@@ -338,8 +338,6 @@ srs_error_t SrsRtmpConn::do_cycle()
     return err;
 }
 
-
-
 ISrsKbpsDelta *SrsRtmpConn::delta()
 {
     return delta_;

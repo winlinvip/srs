@@ -124,9 +124,3 @@ VOID TEST(ConfigReloadTest, ReloadVhostChunkSize)
     EXPECT_EQ(1, handler.count_true());
     handler.reset();
 }
-
-
-
-
-
-

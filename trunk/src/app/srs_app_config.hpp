@@ -333,17 +333,12 @@ public:
     // @remark, user can test the config before reload it.
     virtual srs_error_t reload(SrsReloadState *pstate);
 
-private:
-    // Reload  the vhost section of config.
-    virtual srs_error_t reload_vhost(SrsConfDirective *old_root);
-
 protected:
     // Reload  from the config.
     // @remark, use protected for the utest to override with mock.
     virtual srs_error_t reload_conf(SrsConfig *conf);
 
 private:
-
     // Parse options and file
 public:
     // Parse the cli, the main(argc,argv) function.
@@ -362,8 +357,6 @@ public:
     virtual srs_error_t raw_to_json(SrsJsonObject *obj);
 
 private:
-
-
 public:
     // Get the config file path.
     virtual std::string config();

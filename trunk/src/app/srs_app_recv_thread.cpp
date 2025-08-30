@@ -458,8 +458,6 @@ void SrsPublishRecvThread::on_read(ssize_t nread)
 }
 #endif
 
-
-
 void SrsPublishRecvThread::set_socket_buffer(srs_utime_t sleep_v)
 {
     // the bytes:

@@ -11,7 +11,7 @@
 
 #include <string>
 
-// The main purpose of reload is for quick application during performance optimization. 
+// The main purpose of reload is for quick application during performance optimization.
 // So, we only need to keep a basic framework.
 class ISrsReloadHandler
 {

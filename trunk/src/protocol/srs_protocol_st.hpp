@@ -14,6 +14,9 @@
 #include <srs_kernel_error.hpp>
 #include <srs_protocol_io.hpp>
 
+// Wrap for SRT.
+typedef int srs_srt_t;
+
 // Wrap for coroutine.
 typedef void *srs_netfd_t;
 typedef void *srs_thread_t;

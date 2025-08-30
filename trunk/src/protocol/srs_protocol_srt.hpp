@@ -17,7 +17,6 @@ class SrsSrtSocket;
 
 extern srs_error_t srs_srt_log_initialize();
 
-typedef int srs_srt_t;
 extern srs_srt_t srs_srt_socket_invalid();
 
 // Create srt socket only, with libsrt's default option.

@@ -44,12 +44,27 @@ using namespace std;
 #include <srs_app_gb28181.hpp>
 #endif
 #ifdef SRS_SRT
+#include <srs_app_srt_conn.hpp>
+#include <srs_app_srt_server.hpp>
 #include <srs_app_srt_source.hpp>
 #endif
 #ifdef SRS_RTSP
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_rtsp_source.hpp>
 #endif
+
+ISrsSrtClientHandler::ISrsSrtClientHandler()
+{
+}
+
+ISrsSrtClientHandler::~ISrsSrtClientHandler()
+{
+}
+
+srs_error_t ISrsSrtClientHandler::accept_srt_client(srs_srt_t srt_fd)
+{
+    return srs_success;
+}
 
 SrsSignalManager *SrsSignalManager::instance = NULL;
 
@@ -415,6 +430,9 @@ void SrsServer::destroy()
 #ifdef SRS_GB28181
     srs_freep(stream_caster_gb28181_);
 #endif
+#ifdef SRS_SRT
+    close_srt_listeners();
+#endif
 }
 
 void SrsServer::dispose()
@@ -437,6 +455,9 @@ void SrsServer::dispose()
     exporter_listener_->close();
 #ifdef SRS_GB28181
     stream_caster_gb28181_->close();
+#endif
+#ifdef SRS_SRT
+    close_srt_listeners();
 #endif
 
     // Fast stop to notify FFMPEG to quit, wait for a while then fast kill.
@@ -472,6 +493,9 @@ void SrsServer::gracefully_dispose()
     exporter_listener_->close();
 #ifdef SRS_GB28181
     stream_caster_gb28181_->close();
+#endif
+#ifdef SRS_SRT
+    close_srt_listeners();
 #endif
     srs_trace("listeners closed");
 
@@ -712,6 +736,15 @@ srs_error_t SrsServer::listen()
             return srs_error_wrap(err, "exporter server listen");
         }
     }
+
+#ifdef SRS_SRT
+    // Listen MPEG-TS over SRT.
+    if ((err = listen_srt_mpegts()) != srs_success) {
+        return srs_error_wrap(err, "srt mpegts listen");
+    }
+
+    // SRT connections will be managed by the main conn_manager_
+#endif
 
     if ((err = conn_manager_->start()) != srs_success) {
         return srs_error_wrap(err, "connection manager");
@@ -1210,6 +1243,14 @@ void SrsServer::resample_kbps()
             continue;
         }
 
+#ifdef SRS_SRT
+        SrsMpegtsSrtConn *srt = dynamic_cast<SrsMpegtsSrtConn *>(c);
+        if (srt) {
+            stat->kbps_add_delta(c->get_id().c_str(), srt->delta());
+            continue;
+        }
+#endif
+
         // Impossible path, because we only create these connections above.
         srs_assert(false);
     }
@@ -1217,6 +1258,105 @@ void SrsServer::resample_kbps()
     // Update the global server level statistics.
     stat->kbps_sample();
 }
+
+#ifdef SRS_SRT
+srs_error_t SrsServer::listen_srt_mpegts()
+{
+    srs_error_t err = srs_success;
+
+    if (!_srs_config->get_srt_enabled()) {
+        return err;
+    }
+
+    // Close all listener for SRT if exists.
+    close_srt_listeners();
+
+    // Start listeners for SRT, support multiple addresses including IPv6.
+    vector<string> srt_listens = _srs_config->get_srt_listens();
+    for (int i = 0; i < (int)srt_listens.size(); i++) {
+        SrsSrtAcceptor *acceptor = new SrsSrtAcceptor(this);
+
+        int port;
+        string ip;
+        srs_net_split_for_listener(srt_listens[i], ip, port);
+
+        if ((err = acceptor->listen(ip, port)) != srs_success) {
+            srs_freep(acceptor);
+            srs_warn("srt listen %s:%d failed, err=%s", ip.c_str(), port, srs_error_desc(err).c_str());
+            srs_error_reset(err);
+            continue;
+        }
+
+        srt_acceptors_.push_back(acceptor);
+    }
+
+    // Check if at least one listener succeeded
+    if (srt_acceptors_.empty()) {
+        return srs_error_new(ERROR_SOCKET_LISTEN, "no srt listeners available");
+    }
+
+    return err;
+}
+
+void SrsServer::close_srt_listeners()
+{
+    std::vector<SrsSrtAcceptor *>::iterator it;
+    for (it = srt_acceptors_.begin(); it != srt_acceptors_.end();) {
+        SrsSrtAcceptor *acceptor = *it;
+        srs_freep(acceptor);
+
+        it = srt_acceptors_.erase(it);
+    }
+}
+
+srs_error_t SrsServer::accept_srt_client(srs_srt_t srt_fd)
+{
+    srs_error_t err = srs_success;
+
+    ISrsResource *resource = NULL;
+    if ((err = srt_fd_to_resource(srt_fd, &resource)) != srs_success) {
+        // close fd on conn error, otherwise will lead to fd leak
+        srs_srt_close(srt_fd);
+        return srs_error_wrap(err, "srt fd to resource");
+    }
+    srs_assert(resource);
+
+    // directly enqueue, the cycle thread will remove the client.
+    conn_manager_->add(resource);
+
+    // Note that conn is managed by conn_manager_, so we don't need to free it.
+    ISrsStartable *conn = dynamic_cast<ISrsStartable *>(resource);
+    if ((err = conn->start()) != srs_success) {
+        return srs_error_wrap(err, "start srt conn coroutine");
+    }
+
+    return err;
+}
+
+srs_error_t SrsServer::srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr)
+{
+    srs_error_t err = srs_success;
+
+    string ip = "";
+    int port = 0;
+    if ((err = srs_srt_get_remote_ip_port(srt_fd, ip, port)) != srs_success) {
+        return srs_error_wrap(err, "get srt ip port");
+    }
+
+    // Security or system flow control check.
+    if ((err = on_before_connection("SRT", (int)srt_fd, ip, port)) != srs_success) {
+        return srs_error_wrap(err, "check");
+    }
+
+    // The context id may change during creating the bellow objects.
+    SrsContextRestore(_srs_context->get_id());
+
+    // Convert to SRT connection.
+    *pr = new SrsMpegtsSrtConn(conn_manager_, srt_fd, ip, port);
+
+    return err;
+}
+#endif
 
 ISrsHttpServeMux *SrsServer::api_server()
 {
@@ -1249,8 +1389,21 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     }
 
     // Security or system flow control check.
-    if ((err = on_before_connection(stfd, ip, port)) != srs_success) {
+    if ((err = on_before_connection("TCP", fd, ip, port)) != srs_success) {
         return srs_error_wrap(err, "check");
+    }
+
+    // Set to close the fd when forking, to avoid fd leak when start a process.
+    // See https://github.com/ossrs/srs/issues/518
+    if (true) {
+        int val;
+        if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
+            return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fnctl F_GETFD error! fd=%d", fd);
+        }
+        val |= FD_CLOEXEC;
+        if (fcntl(fd, F_SETFD, val) < 0) {
+            return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "fcntl F_SETFD error! fd=%d", fd);
+        }
     }
 
     // Covert handler to resource.
@@ -1353,31 +1506,16 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     return err;
 }
 
-srs_error_t SrsServer::on_before_connection(srs_netfd_t &stfd, const std::string &ip, int port)
+srs_error_t SrsServer::on_before_connection(const char *label, int fd, const std::string &ip, int port)
 {
     srs_error_t err = srs_success;
-
-    int fd = srs_netfd_fileno(stfd);
 
     // Failed if exceed the connection limitation.
     int max_connections = _srs_config->get_max_connections();
 
     if ((int)conn_manager_->size() >= max_connections) {
-        return srs_error_new(ERROR_EXCEED_CONNECTIONS, "drop fd=%d, ip=%s:%d, max=%d, cur=%d for exceed connection limits",
-                             fd, ip.c_str(), port, max_connections, (int)conn_manager_->size());
-    }
-
-    // Set to close the fd when forking, to avoid fd leak when start a process.
-    // See https://github.com/ossrs/srs/issues/518
-    if (true) {
-        int val;
-        if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
-            return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fnctl F_GETFD error! fd=%d", fd);
-        }
-        val |= FD_CLOEXEC;
-        if (fcntl(fd, F_SETFD, val) < 0) {
-            return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "fcntl F_SETFD error! fd=%d", fd);
-        }
+        return srs_error_new(ERROR_EXCEED_CONNECTIONS, "drop %s fd=%d, ip=%s:%d, max=%d, cur=%d for exceed connection limits",
+                             label, fd, ip.c_str(), port, max_connections, (int)conn_manager_->size());
     }
 
     return err;
@@ -1426,6 +1564,23 @@ SrsServerAdapter::~SrsServerAdapter()
 srs_error_t SrsServerAdapter::initialize()
 {
     srs_error_t err = srs_success;
+
+#ifdef SRS_SRT
+    if ((err = srs_srt_log_initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt log initialize");
+    }
+
+    _srt_eventloop = new SrsSrtEventLoop();
+
+    if ((err = _srt_eventloop->initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt poller initialize");
+    }
+
+    if ((err = _srt_eventloop->start()) != srs_success) {
+        return srs_error_wrap(err, "srt poller start");
+    }
+#endif
+
     return err;
 }
 

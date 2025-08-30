@@ -460,10 +460,6 @@ srs_error_t run_hybrid_server()
     // Create servers and register them.
     _srs_hybrid->register_server(new SrsServerAdapter());
 
-#ifdef SRS_SRT
-    _srs_hybrid->register_server(new SrsSrtServerAdapter());
-#endif
-
     _srs_hybrid->register_server(new SrsRtcServerAdapter());
 
     // Do some system initialize.

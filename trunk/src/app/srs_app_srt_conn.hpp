@@ -80,7 +80,7 @@ private:
 class SrsMpegtsSrtConn : public ISrsConnection, public ISrsStartable, public ISrsCoroutineHandler, public ISrsExpire
 {
 public:
-    SrsMpegtsSrtConn(SrsSrtServer *srt_server, srs_srt_t srt_fd, std::string ip, int port);
+    SrsMpegtsSrtConn(ISrsResourceManager *resource_manager, srs_srt_t srt_fd, std::string ip, int port);
     virtual ~SrsMpegtsSrtConn();
     // Interface ISrsResource.
 public:
@@ -125,7 +125,7 @@ private:
     void http_hooks_on_stop();
 
 private:
-    SrsSrtServer *srt_server_;
+    ISrsResourceManager *resource_manager_;
     srs_srt_t srt_fd_;
     SrsSrtConnection *srt_conn_;
     SrsNetworkDelta *delta_;

@@ -270,6 +270,7 @@ public:
     // Interface ISrsRtcSourceChangeCallback
 public:
     void on_stream_change(SrsRtcSourceDescription *desc);
+
 public:
     virtual const SrsContextId &context_id();
 

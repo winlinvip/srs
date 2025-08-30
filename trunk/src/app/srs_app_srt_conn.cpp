@@ -152,12 +152,12 @@ srs_error_t SrsSrtRecvThread::get_recv_err()
     return srs_error_copy(recv_err_);
 }
 
-SrsMpegtsSrtConn::SrsMpegtsSrtConn(SrsSrtServer *srt_server, srs_srt_t srt_fd, std::string ip, int port) : srt_source_(new SrsSrtSource())
+SrsMpegtsSrtConn::SrsMpegtsSrtConn(ISrsResourceManager *resource_manager, srs_srt_t srt_fd, std::string ip, int port) : srt_source_(new SrsSrtSource())
 {
     // Create a identify for this client.
     _srs_context->set_id(_srs_context->generate_id());
 
-    srt_server_ = srt_server;
+    resource_manager_ = resource_manager;
 
     srt_fd_ = srt_fd;
     srt_conn_ = new SrsSrtConnection(srt_fd_);
@@ -235,7 +235,7 @@ srs_error_t SrsMpegtsSrtConn::cycle()
 
     // Notify manager to remove it.
     // Note that we create this object, so we use manager to remove it.
-    srt_server_->remove(this);
+    resource_manager_->remove(this);
 
     // success.
     if (err == srs_success) {

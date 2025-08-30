@@ -48,6 +48,19 @@ class SrsUdpCasterListener;
 class SrsGbListener;
 class SrsRtmpTransport;
 class SrsRtmpsTransport;
+class SrsSrtAcceptor;
+class SrsSrtEventLoop;
+
+// Interface for SRT client acceptance
+class ISrsSrtClientHandler
+{
+public:
+    ISrsSrtClientHandler();
+    virtual ~ISrsSrtClientHandler();
+
+public:
+    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
+};
 
 // Convert signal to io,
 // @see: st-1.9/docs/notes.html
@@ -102,9 +115,14 @@ public:
     virtual srs_error_t cycle();
 };
 
-// TODO: FIXME: Rename to SrsLiveServer.
 // SRS RTMP server, initialize and listen, start connection service thread, destroy client.
-class SrsServer : public ISrsReloadHandler, public ISrsLiveSourceHandler, public ISrsTcpHandler, public ISrsResourceManager, public ISrsCoroutineHandler, public ISrsHourGlass
+class SrsServer : public ISrsCoroutineHandler, // SRS server starts a coroutine to run.
+                  public ISrsReloadHandler,
+                  public ISrsLiveSourceHandler,
+                  public ISrsTcpHandler,
+                  public ISrsResourceManager,
+                  public ISrsHourGlass,
+                  public ISrsSrtClientHandler
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
@@ -161,6 +179,10 @@ private:
 #ifdef SRS_GB28181
     // Stream Caster for GB28181.
     SrsGbListener *stream_caster_gb28181_;
+#endif
+#ifdef SRS_SRT
+    // SRT acceptors for MPEG-TS over SRT.
+    std::vector<SrsSrtAcceptor *> srt_acceptors_;
 #endif
 
 private:
@@ -245,6 +267,14 @@ private:
     // Resample the server kbs.
     virtual void resample_kbps();
 
+#ifdef SRS_SRT
+    // SRT-related methods
+    virtual srs_error_t listen_srt_mpegts();
+    virtual void close_srt_listeners();
+    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
+    virtual srs_error_t srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr);
+#endif
+
     // For internal only
 public:
     // TODO: FIXME: Fetch from hybrid server manager.
@@ -256,7 +286,7 @@ public:
 
 private:
     virtual srs_error_t do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stfd);
-    virtual srs_error_t on_before_connection(srs_netfd_t &stfd, const std::string &ip, int port);
+    virtual srs_error_t on_before_connection(const char *label, int fd, const std::string &ip, int port);
 
     // Interface ISrsResourceManager
 public:

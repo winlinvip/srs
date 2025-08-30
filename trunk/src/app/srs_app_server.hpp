@@ -22,6 +22,11 @@
 #include <srs_app_st.hpp>
 #include <srs_protocol_st.hpp>
 
+#ifdef SRS_SRT
+#include <srs_app_srt_listener.hpp>
+#include <srs_protocol_srt.hpp>
+#endif
+
 class SrsServer;
 class ISrsHttpServeMux;
 class SrsHttpServer;
@@ -103,13 +108,13 @@ class SrsServer : public ISrsReloadHandler, public ISrsLiveSourceHandler, public
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
-    ISrsHttpServeMux *http_api_mux;
-    SrsHttpServer *http_server;
+    ISrsHttpServeMux *http_api_mux_;
+    SrsHttpServer *http_server_;
 
 private:
-    SrsHttpHeartbeat *http_heartbeat;
-    SrsIngester *ingester;
-    SrsResourceManager *conn_manager;
+    SrsHttpHeartbeat *http_heartbeat_;
+    SrsIngester *ingester_;
+    SrsResourceManager *conn_manager_;
     SrsCoroutine *trd_;
     SrsHourGlass *timer_;
     SrsWaitGroup *wg_;
@@ -119,7 +124,7 @@ private:
     // @remark the init.d script should cleanup the pid file, when stop service,
     //       for the server never delete the file; when system startup, the pid in pid file
     //       maybe valid but the process is not SRS, the init.d script will never start server.
-    int pid_fd;
+    int pid_fd_;
 
 private:
     // If reusing, HTTP API use the same port of HTTP server.
@@ -157,19 +162,20 @@ private:
     // Stream Caster for GB28181.
     SrsGbListener *stream_caster_gb28181_;
 #endif
+
 private:
     // Signal manager which convert gignal to io message.
-    SrsSignalManager *signal_manager;
+    SrsSignalManager *signal_manager_;
     // To query the latest available version of SRS.
     SrsLatestVersion *latest_version_;
     // User send the signal, convert to variable.
-    bool signal_reload;
-    bool signal_persistence_config;
-    bool signal_gmc_stop;
-    bool signal_fast_quit;
-    bool signal_gracefully_quit;
+    bool signal_reload_;
+    bool signal_persistence_config_;
+    bool signal_gmc_stop_;
+    bool signal_fast_quit_;
+    bool signal_gracefully_quit_;
     // Parent pid for asprocess.
-    int ppid;
+    int ppid_;
 
 public:
     SrsServer();
@@ -186,6 +192,7 @@ private:
     // Close listener to stop accepting new connections,
     // then wait and quit when all connections finished.
     virtual void gracefully_dispose();
+
     // server startup workflow, @see run_master()
 public:
     // Initialize server with callback handler ch.
@@ -201,9 +208,11 @@ public:
 public:
     virtual srs_error_t start(SrsWaitGroup *wg);
     void stop();
+
     // interface ISrsCoroutineHandler
 public:
     virtual srs_error_t cycle();
+
     // server utilities.
 public:
     // The callback for signal manager got a signal.
@@ -226,6 +235,7 @@ private:
     // update the global static data, for instance, the current time,
     // the cpu/mem/network statistic.
     virtual srs_error_t do_cycle();
+
     // interface ISrsHourGlass
 private:
     virtual srs_error_t setup_ticks();
@@ -234,10 +244,12 @@ private:
 private:
     // Resample the server kbs.
     virtual void resample_kbps();
+
     // For internal only
 public:
     // TODO: FIXME: Fetch from hybrid server manager.
     virtual ISrsHttpServeMux *api_server();
+
     // Interface ISrsTcpHandler
 public:
     virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
@@ -245,14 +257,14 @@ public:
 private:
     virtual srs_error_t do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stfd);
     virtual srs_error_t on_before_connection(srs_netfd_t &stfd, const std::string &ip, int port);
+
     // Interface ISrsResourceManager
 public:
     // A callback for connection to remove itself.
     // When connection thread cycle terminated, callback this to delete connection.
     // @see SrsTcpConnection.on_thread_stop().
     virtual void remove(ISrsResource *c);
-    // Interface ISrsReloadHandler.
-public:
+
     // Interface ISrsLiveSourceHandler
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);

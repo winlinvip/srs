@@ -326,17 +326,17 @@ srs_error_t SrsInotifyWorker::cycle()
 
 SrsServer::SrsServer()
 {
-    signal_reload = false;
-    signal_persistence_config = false;
-    signal_gmc_stop = false;
-    signal_fast_quit = false;
-    signal_gracefully_quit = false;
-    pid_fd = -1;
+    signal_reload_ = false;
+    signal_persistence_config_ = false;
+    signal_gmc_stop_ = false;
+    signal_fast_quit_ = false;
+    signal_gracefully_quit_ = false;
+    pid_fd_ = -1;
 
-    signal_manager = new SrsSignalManager(this);
-    conn_manager = new SrsResourceManager("TCP", true);
+    signal_manager_ = new SrsSignalManager(this);
+    conn_manager_ = new SrsResourceManager("TCP", true);
     latest_version_ = new SrsLatestVersion();
-    ppid = ::getppid();
+    ppid_ = ::getppid();
 
     rtmp_listener_ = new SrsMultipleTcpListeners(this);
     rtmps_listener_ = new SrsMultipleTcpListeners(this);
@@ -358,13 +358,13 @@ SrsServer::SrsServer()
     // donot new object in constructor,
     // for some global instance is not ready now,
     // new these objects in initialize instead.
-    http_api_mux = new SrsHttpServeMux();
-    http_server = new SrsHttpServer(this);
+    http_api_mux_ = new SrsHttpServeMux();
+    http_server_ = new SrsHttpServer(this);
     reuse_api_over_server_ = false;
     reuse_rtc_over_server_ = false;
 
-    http_heartbeat = new SrsHttpHeartbeat();
-    ingester = new SrsIngester();
+    http_heartbeat_ = new SrsHttpHeartbeat();
+    ingester_ = new SrsIngester();
     trd_ = new SrsSTCoroutine("srs", this, _srs_context->get_id());
     timer_ = NULL;
     wg_ = NULL;
@@ -384,21 +384,21 @@ void SrsServer::destroy()
 
     // If api reuse the same port of server, they're the same object.
     if (!reuse_api_over_server_) {
-        srs_freep(http_api_mux);
+        srs_freep(http_api_mux_);
     }
-    srs_freep(http_server);
+    srs_freep(http_server_);
 
-    srs_freep(http_heartbeat);
-    srs_freep(ingester);
+    srs_freep(http_heartbeat_);
+    srs_freep(ingester_);
 
-    if (pid_fd > 0) {
-        ::close(pid_fd);
-        pid_fd = -1;
+    if (pid_fd_ > 0) {
+        ::close(pid_fd_);
+        pid_fd_ = -1;
     }
 
-    srs_freep(signal_manager);
+    srs_freep(signal_manager_);
     srs_freep(latest_version_);
-    srs_freep(conn_manager);
+    srs_freep(conn_manager_);
     srs_freep(rtmp_listener_);
     srs_freep(rtmps_listener_);
     srs_freep(api_listener_);
@@ -440,7 +440,7 @@ void SrsServer::dispose()
 #endif
 
     // Fast stop to notify FFMPEG to quit, wait for a while then fast kill.
-    ingester->dispose();
+    ingester_->dispose();
 
     // dispose the source for hls and dvr.
     _srs_sources->dispose();
@@ -476,19 +476,19 @@ void SrsServer::gracefully_dispose()
     srs_trace("listeners closed");
 
     // Fast stop to notify FFMPEG to quit, wait for a while then fast kill.
-    ingester->stop();
+    ingester_->stop();
     srs_trace("ingesters stopped");
 
     // Wait for connections to quit.
     // While gracefully quiting, user can requires SRS to fast quit.
     int wait_step = 1;
-    while (!conn_manager->empty() && !signal_fast_quit) {
-        for (int i = 0; i < wait_step && !conn_manager->empty() && !signal_fast_quit; i++) {
+    while (!conn_manager_->empty() && !signal_fast_quit_) {
+        for (int i = 0; i < wait_step && !conn_manager_->empty() && !signal_fast_quit_; i++) {
             srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
         }
 
         wait_step = (wait_step * 2) % 33;
-        srs_trace("wait for %d conns to quit", (int)conn_manager->size());
+        srs_trace("wait for %d conns to quit", (int)conn_manager_->size());
     }
 
     // dispose the source for hls and dvr.
@@ -537,18 +537,18 @@ srs_error_t SrsServer::initialize()
 
     // Only init HTTP API when not reusing HTTP server.
     if (!reuse_api_over_server_) {
-        SrsHttpServeMux *api = dynamic_cast<SrsHttpServeMux *>(http_api_mux);
+        SrsHttpServeMux *api = dynamic_cast<SrsHttpServeMux *>(http_api_mux_);
         srs_assert(api);
 
         if ((err = api->initialize()) != srs_success) {
             return srs_error_wrap(err, "http api initialize");
         }
     } else {
-        srs_freep(http_api_mux);
-        http_api_mux = http_server;
+        srs_freep(http_api_mux_);
+        http_api_mux_ = http_server_;
     }
 
-    if ((err = http_server->initialize()) != srs_success) {
+    if ((err = http_server_->initialize()) != srs_success) {
         return srs_error_wrap(err, "http server initialize");
     }
 
@@ -561,12 +561,12 @@ srs_error_t SrsServer::initialize_st()
 
     // check asprocess.
     bool asprocess = _srs_config->get_asprocess();
-    if (asprocess && ppid == 1) {
-        return srs_error_new(ERROR_SYSTEM_ASSERT_FAILED, "ppid=%d illegal for asprocess", ppid);
+    if (asprocess && ppid_ == 1) {
+        return srs_error_new(ERROR_SYSTEM_ASSERT_FAILED, "ppid=%d illegal for asprocess", ppid_);
     }
 
     srs_trace("server main cid=%s, pid=%d, ppid=%d, asprocess=%d",
-              _srs_context->get_id().c_str(), ::getpid(), ppid, asprocess);
+              _srs_context->get_id().c_str(), ::getpid(), ppid_, asprocess);
 
     return err;
 }
@@ -575,7 +575,7 @@ srs_error_t SrsServer::initialize_signal()
 {
     srs_error_t err = srs_success;
 
-    if ((err = signal_manager->initialize()) != srs_success) {
+    if ((err = signal_manager_->initialize()) != srs_success) {
         return srs_error_wrap(err, "init signal manager");
     }
 
@@ -713,7 +713,7 @@ srs_error_t SrsServer::listen()
         }
     }
 
-    if ((err = conn_manager->start()) != srs_success) {
+    if ((err = conn_manager_->start()) != srs_success) {
         return srs_error_wrap(err, "connection manager");
     }
 
@@ -724,7 +724,7 @@ srs_error_t SrsServer::register_signal()
 {
     srs_error_t err = srs_success;
 
-    if ((err = signal_manager->start()) != srs_success) {
+    if ((err = signal_manager_->start()) != srs_success) {
         return srs_error_wrap(err, "signal manager start");
     }
 
@@ -737,105 +737,105 @@ srs_error_t SrsServer::http_handle()
 
     // Ignore / and /api/v1/versions for already handled by HTTP server.
     if (!reuse_api_over_server_) {
-        if ((err = http_api_mux->handle("/", new SrsGoApiRoot())) != srs_success) {
+        if ((err = http_api_mux_->handle("/", new SrsGoApiRoot())) != srs_success) {
             return srs_error_wrap(err, "handle /");
         }
-        if ((err = http_api_mux->handle("/api/v1/versions", new SrsGoApiVersion())) != srs_success) {
+        if ((err = http_api_mux_->handle("/api/v1/versions", new SrsGoApiVersion())) != srs_success) {
             return srs_error_wrap(err, "handle versions");
         }
     }
 
-    if ((err = http_api_mux->handle("/api/", new SrsGoApiApi())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/", new SrsGoApiApi())) != srs_success) {
         return srs_error_wrap(err, "handle api");
     }
-    if ((err = http_api_mux->handle("/api/v1/", new SrsGoApiV1())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/", new SrsGoApiV1())) != srs_success) {
         return srs_error_wrap(err, "handle v1");
     }
-    if ((err = http_api_mux->handle("/api/v1/summaries", new SrsGoApiSummaries())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/summaries", new SrsGoApiSummaries())) != srs_success) {
         return srs_error_wrap(err, "handle summaries");
     }
-    if ((err = http_api_mux->handle("/api/v1/rusages", new SrsGoApiRusages())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/rusages", new SrsGoApiRusages())) != srs_success) {
         return srs_error_wrap(err, "handle rusages");
     }
-    if ((err = http_api_mux->handle("/api/v1/self_proc_stats", new SrsGoApiSelfProcStats())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/self_proc_stats", new SrsGoApiSelfProcStats())) != srs_success) {
         return srs_error_wrap(err, "handle self proc stats");
     }
-    if ((err = http_api_mux->handle("/api/v1/system_proc_stats", new SrsGoApiSystemProcStats())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/system_proc_stats", new SrsGoApiSystemProcStats())) != srs_success) {
         return srs_error_wrap(err, "handle system proc stats");
     }
-    if ((err = http_api_mux->handle("/api/v1/meminfos", new SrsGoApiMemInfos())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/meminfos", new SrsGoApiMemInfos())) != srs_success) {
         return srs_error_wrap(err, "handle meminfos");
     }
-    if ((err = http_api_mux->handle("/api/v1/authors", new SrsGoApiAuthors())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/authors", new SrsGoApiAuthors())) != srs_success) {
         return srs_error_wrap(err, "handle authors");
     }
-    if ((err = http_api_mux->handle("/api/v1/features", new SrsGoApiFeatures())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/features", new SrsGoApiFeatures())) != srs_success) {
         return srs_error_wrap(err, "handle features");
     }
-    if ((err = http_api_mux->handle("/api/v1/vhosts/", new SrsGoApiVhosts())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/vhosts/", new SrsGoApiVhosts())) != srs_success) {
         return srs_error_wrap(err, "handle vhosts");
     }
-    if ((err = http_api_mux->handle("/api/v1/streams/", new SrsGoApiStreams())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/streams/", new SrsGoApiStreams())) != srs_success) {
         return srs_error_wrap(err, "handle streams");
     }
-    if ((err = http_api_mux->handle("/api/v1/clients/", new SrsGoApiClients())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/clients/", new SrsGoApiClients())) != srs_success) {
         return srs_error_wrap(err, "handle clients");
     }
-    if ((err = http_api_mux->handle("/api/v1/raw", new SrsGoApiRaw(this))) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/raw", new SrsGoApiRaw(this))) != srs_success) {
         return srs_error_wrap(err, "handle raw");
     }
-    if ((err = http_api_mux->handle("/api/v1/clusters", new SrsGoApiClusters())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/clusters", new SrsGoApiClusters())) != srs_success) {
         return srs_error_wrap(err, "handle clusters");
     }
 
     // test the request info.
-    if ((err = http_api_mux->handle("/api/v1/tests/requests", new SrsGoApiRequests())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/tests/requests", new SrsGoApiRequests())) != srs_success) {
         return srs_error_wrap(err, "handle tests requests");
     }
     // test the error code response.
-    if ((err = http_api_mux->handle("/api/v1/tests/errors", new SrsGoApiError())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/tests/errors", new SrsGoApiError())) != srs_success) {
         return srs_error_wrap(err, "handle tests errors");
     }
     // test the redirect mechenism.
-    if ((err = http_api_mux->handle("/api/v1/tests/redirects", new SrsHttpRedirectHandler("/api/v1/tests/errors", SRS_CONSTS_HTTP_MovedPermanently))) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/tests/redirects", new SrsHttpRedirectHandler("/api/v1/tests/errors", SRS_CONSTS_HTTP_MovedPermanently))) != srs_success) {
         return srs_error_wrap(err, "handle tests redirects");
     }
     // test the http vhost.
-    if ((err = http_api_mux->handle("error.srs.com/api/v1/tests/errors", new SrsGoApiError())) != srs_success) {
+    if ((err = http_api_mux_->handle("error.srs.com/api/v1/tests/errors", new SrsGoApiError())) != srs_success) {
         return srs_error_wrap(err, "handle tests errors for error.srs.com");
     }
 
 #ifdef SRS_GPERF
     // The test api for get tcmalloc stats.
     // @see Memory Introspection in https://gperftools.github.io/gperftools/tcmalloc.html
-    if ((err = http_api_mux->handle("/api/v1/tcmalloc", new SrsGoApiTcmalloc())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/tcmalloc", new SrsGoApiTcmalloc())) != srs_success) {
         return srs_error_wrap(err, "handle tcmalloc errors");
     }
 #endif
 
 #ifdef SRS_VALGRIND
     // The test api for valgrind. See VALGRIND_DO_LEAK_CHECK in https://valgrind.org/docs/manual/mc-manual.html
-    if ((err = http_api_mux->handle("/api/v1/valgrind", new SrsGoApiValgrind())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/valgrind", new SrsGoApiValgrind())) != srs_success) {
         return srs_error_wrap(err, "handle valgrind errors");
     }
 #endif
 
 #ifdef SRS_SIGNAL_API
     // Simulate the signal by HTTP API, for debug signal issues in CLion.
-    if ((err = http_api_mux->handle("/api/v1/signal", new SrsGoApiSignal())) != srs_success) {
+    if ((err = http_api_mux_->handle("/api/v1/signal", new SrsGoApiSignal())) != srs_success) {
         return srs_error_wrap(err, "handle signal errors");
     }
 #endif
 
     // metrics by prometheus
-    if ((err = http_api_mux->handle("/metrics", new SrsGoApiMetrics())) != srs_success) {
+    if ((err = http_api_mux_->handle("/metrics", new SrsGoApiMetrics())) != srs_success) {
         return srs_error_wrap(err, "handle tests errors");
     }
 
     // TODO: FIXME: for console.
     // TODO: FIXME: support reload.
     std::string dir = _srs_config->get_http_stream_dir() + "/console";
-    if ((err = http_api_mux->handle("/console/", new SrsHttpFileServer(dir))) != srs_success) {
+    if ((err = http_api_mux_->handle("/console/", new SrsHttpFileServer(dir))) != srs_success) {
         return srs_error_wrap(err, "handle console at %s", dir.c_str());
     }
     srs_trace("http: api mount /console to %s", dir.c_str());
@@ -847,7 +847,7 @@ srs_error_t SrsServer::ingest()
 {
     srs_error_t err = srs_success;
 
-    if ((err = ingester->start()) != srs_success) {
+    if ((err = ingester_->start()) != srs_success) {
         return srs_error_wrap(err, "ingest start");
     }
 
@@ -911,13 +911,13 @@ void SrsServer::stop()
     srs_warn("main cycle terminated, system quit normally.");
 
     // fast quit, do some essential cleanup.
-    if (signal_fast_quit) {
+    if (signal_fast_quit_) {
         dispose(); // TODO: FIXME: Rename to essential_dispose.
         srs_trace("srs disposed");
     }
 
     // gracefully quit, do carefully cleanup.
-    if (signal_gracefully_quit) {
+    if (signal_gracefully_quit_) {
         gracefully_dispose();
         srs_trace("srs gracefully quit");
     }
@@ -958,7 +958,7 @@ void SrsServer::on_signal(int signo)
 
     if (signo == SRS_SIGNAL_RELOAD) {
         srs_trace("reload config, signo=%d", signo);
-        signal_reload = true;
+        signal_reload_ = true;
         return;
     }
 
@@ -973,21 +973,21 @@ void SrsServer::on_signal(int signo)
 
 #ifdef SRS_GPERF_MC
     if (signo == SRS_SIGNAL_REOPEN_LOG) {
-        signal_gmc_stop = true;
+        signal_gmc_stop_ = true;
         srs_warn("for gmc, the SIGUSR1 used as SIGINT, signo=%d", signo);
         return;
     }
 #endif
 
     if (signo == SRS_SIGNAL_PERSISTENCE_CONFIG) {
-        signal_persistence_config = true;
+        signal_persistence_config_ = true;
         return;
     }
 
     if (signo == SIGINT) {
 #ifdef SRS_GPERF_MC
         srs_trace("gmc is on, main cycle will terminate normally, signo=%d", signo);
-        signal_gmc_stop = true;
+        signal_gmc_stop_ = true;
 #endif
     }
 
@@ -998,15 +998,15 @@ void SrsServer::on_signal(int signo)
         signo = SRS_SIGNAL_GRACEFULLY_QUIT;
     }
 
-    if ((signo == SIGINT || signo == SRS_SIGNAL_FAST_QUIT) && !signal_fast_quit) {
+    if ((signo == SIGINT || signo == SRS_SIGNAL_FAST_QUIT) && !signal_fast_quit_) {
         srs_trace("sig=%d, user terminate program, fast quit", signo);
-        signal_fast_quit = true;
+        signal_fast_quit_ = true;
         return;
     }
 
-    if (signo == SRS_SIGNAL_GRACEFULLY_QUIT && !signal_gracefully_quit) {
+    if (signo == SRS_SIGNAL_GRACEFULLY_QUIT && !signal_gracefully_quit_) {
         srs_trace("sig=%d, user start gracefully quit", signo);
-        signal_gracefully_quit = true;
+        signal_gracefully_quit_ = true;
         return;
     }
 }
@@ -1028,13 +1028,13 @@ srs_error_t SrsServer::do_cycle()
         }
 
         // asprocess check.
-        if (asprocess && ::getppid() != ppid) {
-            return srs_error_new(ERROR_ASPROCESS_PPID, "asprocess ppid changed from %d to %d", ppid, ::getppid());
+        if (asprocess && ::getppid() != ppid_) {
+            return srs_error_new(ERROR_ASPROCESS_PPID, "asprocess ppid changed from %d to %d", ppid_, ::getppid());
         }
 
         // gracefully quit for SIGINT or SIGTERM or SIGQUIT.
-        if (signal_fast_quit || signal_gracefully_quit) {
-            srs_trace("cleanup for quit signal fast=%d, grace=%d", signal_fast_quit, signal_gracefully_quit);
+        if (signal_fast_quit_ || signal_gracefully_quit_) {
+            srs_trace("cleanup for quit signal fast=%d, grace=%d", signal_fast_quit_, signal_gracefully_quit_);
             return err;
         }
 
@@ -1044,15 +1044,15 @@ srs_error_t SrsServer::do_cycle()
         // but, if gperf, use reload to ensure main return normally,
         // because directly exit will cause core-dump.
 #ifdef SRS_GPERF_MC
-        if (signal_gmc_stop) {
+        if (signal_gmc_stop_) {
             srs_warn("gmc got singal to stop server.");
             return err;
         }
 #endif
 
         // do persistence config to file.
-        if (signal_persistence_config) {
-            signal_persistence_config = false;
+        if (signal_persistence_config_) {
+            signal_persistence_config_ = false;
             srs_info("get signal to persistence config to file.");
 
             if ((err = _srs_config->persistence()) != srs_success) {
@@ -1062,8 +1062,8 @@ srs_error_t SrsServer::do_cycle()
         }
 
         // do reload the config.
-        if (signal_reload) {
-            signal_reload = false;
+        if (signal_reload_) {
+            signal_reload_ = false;
             srs_trace("starting reload config.");
 
             SrsReloadState state = SrsReloadStateInit;
@@ -1166,7 +1166,7 @@ srs_error_t SrsServer::notify(int event, srs_utime_t interval, srs_utime_t tick)
         resample_kbps();
         break;
     case 9:
-        http_heartbeat->heartbeat();
+        http_heartbeat_->heartbeat();
         break;
     case 10:
         srs_update_udp_snmp_statistic();
@@ -1181,8 +1181,8 @@ void SrsServer::resample_kbps()
     SrsStatistic *stat = SrsStatistic::instance();
 
     // collect delta from all clients.
-    for (int i = 0; i < (int)conn_manager->size(); i++) {
-        ISrsResource *c = conn_manager->at(i);
+    for (int i = 0; i < (int)conn_manager_->size(); i++) {
+        ISrsResource *c = conn_manager_->at(i);
 
         SrsRtmpConn *rtmp = dynamic_cast<SrsRtmpConn *>(c);
         if (rtmp) {
@@ -1220,7 +1220,7 @@ void SrsServer::resample_kbps()
 
 ISrsHttpServeMux *SrsServer::api_server()
 {
-    return http_api_mux;
+    return http_api_mux_;
 }
 
 srs_error_t SrsServer::on_tcp_client(ISrsListener *listener, srs_netfd_t stfd)
@@ -1289,7 +1289,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         } else {
             string key = listener == https_listener_ ? _srs_config->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? _srs_config->get_https_stream_ssl_cert() : "";
-            resource = new SrsHttpxConn(this, io, http_server, ip, port, key, cert);
+            resource = new SrsHttpxConn(this, io, http_server_, ip, port, key, cert);
         }
     }
 
@@ -1304,11 +1304,11 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         } else if (listener == api_listener_ || listener == apis_listener_) {
             string key = listener == apis_listener_ ? _srs_config->get_https_api_ssl_key() : "";
             string cert = listener == apis_listener_ ? _srs_config->get_https_api_ssl_cert() : "";
-            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_api_mux, ip, port, key, cert);
+            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, key, cert);
         } else if (listener == http_listener_ || listener == https_listener_) {
             string key = listener == https_listener_ ? _srs_config->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? _srs_config->get_https_stream_ssl_cert() : "";
-            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_server, ip, port, key, cert);
+            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_server_, ip, port, key, cert);
         } else if (listener == webrtc_listener_) {
             resource = new SrsRtcTcpConn(new SrsTcpConnection(stfd2), ip, port);
 #ifdef SRS_RTSP
@@ -1317,7 +1317,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
 #endif
         } else if (listener == exporter_listener_) {
             // TODO: FIXME: Maybe should support https metrics.
-            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_api_mux, ip, port, "", "");
+            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, "", "");
         } else {
             srs_close_stfd(stfd2);
             srs_warn("Close for invalid fd=%d, ip=%s:%d", fd, ip.c_str(), port);
@@ -1340,7 +1340,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
 
     // Use connection manager to manage all the resources.
     srs_assert(resource);
-    conn_manager->add(resource);
+    conn_manager_->add(resource);
 
     // If connection is a resource to start, start a coroutine to handle it.
     // Note that conn is managed by conn_manager, so we don't need to free it.
@@ -1362,9 +1362,9 @@ srs_error_t SrsServer::on_before_connection(srs_netfd_t &stfd, const std::string
     // Failed if exceed the connection limitation.
     int max_connections = _srs_config->get_max_connections();
 
-    if ((int)conn_manager->size() >= max_connections) {
+    if ((int)conn_manager_->size() >= max_connections) {
         return srs_error_new(ERROR_EXCEED_CONNECTIONS, "drop fd=%d, ip=%s:%d, max=%d, cur=%d for exceed connection limits",
-                             fd, ip.c_str(), port, max_connections, (int)conn_manager->size());
+                             fd, ip.c_str(), port, max_connections, (int)conn_manager_->size());
     }
 
     // Set to close the fd when forking, to avoid fd leak when start a process.
@@ -1386,14 +1386,14 @@ srs_error_t SrsServer::on_before_connection(srs_netfd_t &stfd, const std::string
 void SrsServer::remove(ISrsResource *c)
 {
     // use manager to free it async.
-    conn_manager->remove(c);
+    conn_manager_->remove(c);
 }
 
 srs_error_t SrsServer::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    if ((err = http_server->http_mount(r)) != srs_success) {
+    if ((err = http_server_->http_mount(r)) != srs_success) {
         return srs_error_wrap(err, "http mount");
     }
 
@@ -1407,7 +1407,7 @@ srs_error_t SrsServer::on_publish(ISrsRequest *r)
 
 void SrsServer::on_unpublish(ISrsRequest *r)
 {
-    http_server->http_unmount(r);
+    http_server_->http_unmount(r);
 
     SrsCoWorkers *coworkers = SrsCoWorkers::instance();
     coworkers->on_unpublish(r);

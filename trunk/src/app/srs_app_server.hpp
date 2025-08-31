@@ -31,7 +31,7 @@ class SrsRtcUserConfig;
 class SrsSdp;
 class SrsRtcConnection;
 class ISrsAsyncCallTask;
-
+class SrsSignalManager;
 class SrsServer;
 class ISrsHttpServeMux;
 class SrsHttpServer;
@@ -67,59 +67,6 @@ public:
 
 public:
     virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
-};
-
-// Convert signal to io,
-// @see: st-1.9/docs/notes.html
-class SrsSignalManager : public ISrsCoroutineHandler
-{
-private:
-    // Per-process pipe which is used as a signal queue.
-    // Up to PIPE_BUF/sizeof(int) signals can be queued up.
-    int sig_pipe[2];
-    srs_netfd_t signal_read_stfd;
-
-private:
-    SrsServer *server;
-    SrsCoroutine *trd;
-
-public:
-    SrsSignalManager(SrsServer *s);
-    virtual ~SrsSignalManager();
-
-public:
-    virtual srs_error_t initialize();
-    virtual srs_error_t start();
-    // Interface ISrsEndlessThreadHandler.
-public:
-    virtual srs_error_t cycle();
-
-private:
-    // Global singleton instance
-    static SrsSignalManager *instance;
-    // Signal catching function.
-    // Converts signal event to I/O event.
-    static void sig_catcher(int signo);
-};
-
-// Auto reload by inotify.
-// @see https://github.com/ossrs/srs/issues/1635
-class SrsInotifyWorker : public ISrsCoroutineHandler
-{
-private:
-    SrsServer *server;
-    SrsCoroutine *trd;
-    srs_netfd_t inotify_fd;
-
-public:
-    SrsInotifyWorker(SrsServer *s);
-    virtual ~SrsInotifyWorker();
-
-public:
-    virtual srs_error_t start();
-    // Interface ISrsEndlessThreadHandler.
-public:
-    virtual srs_error_t cycle();
 };
 
 // SRS RTMP server, initialize and listen, start connection service thread, destroy client.
@@ -342,5 +289,58 @@ extern SrsServer *_srs_server;
 
 // Manager for RTC connections.
 extern SrsResourceManager *_srs_conn_manager;
+
+// Convert signal to io,
+// @see: st-1.9/docs/notes.html
+class SrsSignalManager : public ISrsCoroutineHandler
+{
+private:
+    // Per-process pipe which is used as a signal queue.
+    // Up to PIPE_BUF/sizeof(int) signals can be queued up.
+    int sig_pipe[2];
+    srs_netfd_t signal_read_stfd;
+
+private:
+    SrsServer *server;
+    SrsCoroutine *trd;
+
+public:
+    SrsSignalManager(SrsServer *s);
+    virtual ~SrsSignalManager();
+
+public:
+    virtual srs_error_t initialize();
+    virtual srs_error_t start();
+    // Interface ISrsEndlessThreadHandler.
+public:
+    virtual srs_error_t cycle();
+
+private:
+    // Global singleton instance
+    static SrsSignalManager *instance;
+    // Signal catching function.
+    // Converts signal event to I/O event.
+    static void sig_catcher(int signo);
+};
+
+// Auto reload by inotify.
+// @see https://github.com/ossrs/srs/issues/1635
+class SrsInotifyWorker : public ISrsCoroutineHandler
+{
+private:
+    SrsServer *server;
+    SrsCoroutine *trd;
+    srs_netfd_t inotify_fd;
+
+public:
+    SrsInotifyWorker(SrsServer *s);
+    virtual ~SrsInotifyWorker();
+
+public:
+    virtual srs_error_t start();
+    // Interface ISrsEndlessThreadHandler.
+public:
+    virtual srs_error_t cycle();
+};
 
 #endif

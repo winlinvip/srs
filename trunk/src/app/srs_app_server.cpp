@@ -151,279 +151,6 @@ srs_error_t ISrsSrtClientHandler::accept_srt_client(srs_srt_t srt_fd)
     return srs_success;
 }
 
-SrsSignalManager *SrsSignalManager::instance = NULL;
-
-SrsSignalManager::SrsSignalManager(SrsServer *s)
-{
-    SrsSignalManager::instance = this;
-
-    server = s;
-    sig_pipe[0] = sig_pipe[1] = -1;
-    trd = new SrsSTCoroutine("signal", this, _srs_context->get_id());
-    signal_read_stfd = NULL;
-}
-
-SrsSignalManager::~SrsSignalManager()
-{
-    srs_freep(trd);
-
-    srs_close_stfd(signal_read_stfd);
-
-    if (sig_pipe[0] > 0) {
-        ::close(sig_pipe[0]);
-    }
-    if (sig_pipe[1] > 0) {
-        ::close(sig_pipe[1]);
-    }
-}
-
-srs_error_t SrsSignalManager::initialize()
-{
-    /* Create signal pipe */
-    if (pipe(sig_pipe) < 0) {
-        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "create pipe");
-    }
-
-    if ((signal_read_stfd = srs_netfd_open(sig_pipe[0])) == NULL) {
-        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "open pipe");
-    }
-
-    return srs_success;
-}
-
-srs_error_t SrsSignalManager::start()
-{
-    srs_error_t err = srs_success;
-
-    /**
-     * Note that if multiple processes are used (see below),
-     * the signal pipe should be initialized after the fork(2) call
-     * so that each process has its own private pipe.
-     */
-    struct sigaction sa;
-
-    /* Install sig_catcher() as a signal handler */
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_RELOAD, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_FAST_QUIT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_GRACEFULLY_QUIT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_ASSERT_ABORT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_REOPEN_LOG, &sa, NULL);
-
-    srs_trace("signal installed, reload=%d, reopen=%d, fast_quit=%d, grace_quit=%d",
-              SRS_SIGNAL_RELOAD, SRS_SIGNAL_REOPEN_LOG, SRS_SIGNAL_FAST_QUIT, SRS_SIGNAL_GRACEFULLY_QUIT);
-
-    if ((err = trd->start()) != srs_success) {
-        return srs_error_wrap(err, "signal manager");
-    }
-
-    return err;
-}
-
-srs_error_t SrsSignalManager::cycle()
-{
-    srs_error_t err = srs_success;
-
-    while (true) {
-        if ((err = trd->pull()) != srs_success) {
-            return srs_error_wrap(err, "signal manager");
-        }
-
-        int signo;
-
-        /* Read the next signal from the pipe */
-        srs_read(signal_read_stfd, &signo, sizeof(int), SRS_UTIME_NO_TIMEOUT);
-
-        /* Process signal synchronously */
-        server->on_signal(signo);
-    }
-
-    return err;
-}
-
-void SrsSignalManager::sig_catcher(int signo)
-{
-    int err;
-
-    /* Save errno to restore it after the write() */
-    err = errno;
-
-    /* write() is reentrant/async-safe */
-    int fd = SrsSignalManager::instance->sig_pipe[1];
-    write(fd, &signo, sizeof(int));
-
-    errno = err;
-}
-
-// Whether we are in docker, defined in main module.
-extern bool _srs_in_docker;
-
-SrsInotifyWorker::SrsInotifyWorker(SrsServer *s)
-{
-    server = s;
-    trd = new SrsSTCoroutine("inotify", this);
-    inotify_fd = NULL;
-}
-
-SrsInotifyWorker::~SrsInotifyWorker()
-{
-    srs_freep(trd);
-    srs_close_stfd(inotify_fd);
-}
-
-srs_error_t SrsInotifyWorker::start()
-{
-    srs_error_t err = srs_success;
-
-#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
-    // Whether enable auto reload config.
-    bool auto_reload = _srs_config->inotify_auto_reload();
-    if (!auto_reload && _srs_in_docker && _srs_config->auto_reload_for_docker()) {
-        srs_warn("enable auto reload for docker");
-        auto_reload = true;
-    }
-
-    if (!auto_reload) {
-        return err;
-    }
-
-    // Create inotify to watch config file.
-    int fd = ::inotify_init1(IN_NONBLOCK);
-    if (fd < 0) {
-        return srs_error_new(ERROR_INOTIFY_CREATE, "create inotify");
-    }
-
-    // Open as stfd to read by ST.
-    if ((inotify_fd = srs_netfd_open(fd)) == NULL) {
-        ::close(fd);
-        return srs_error_new(ERROR_INOTIFY_OPENFD, "open fd=%d", fd);
-    }
-
-    if (((err = srs_fd_closeexec(fd))) != srs_success) {
-        return srs_error_wrap(err, "closeexec fd=%d", fd);
-    }
-
-    // /* the following are legal, implemented events that user-space can watch for */
-    // #define IN_ACCESS               0x00000001      /* File was accessed */
-    // #define IN_MODIFY               0x00000002      /* File was modified */
-    // #define IN_ATTRIB               0x00000004      /* Metadata changed */
-    // #define IN_CLOSE_WRITE          0x00000008      /* Writtable file was closed */
-    // #define IN_CLOSE_NOWRITE        0x00000010      /* Unwrittable file closed */
-    // #define IN_OPEN                 0x00000020      /* File was opened */
-    // #define IN_MOVED_FROM           0x00000040      /* File was moved from X */
-    // #define IN_MOVED_TO             0x00000080      /* File was moved to Y */
-    // #define IN_CREATE               0x00000100      /* Subfile was created */
-    // #define IN_DELETE               0x00000200      /* Subfile was deleted */
-    // #define IN_DELETE_SELF          0x00000400      /* Self was deleted */
-    // #define IN_MOVE_SELF            0x00000800      /* Self was moved */
-    //
-    // /* the following are legal events.  they are sent as needed to any watch */
-    // #define IN_UNMOUNT              0x00002000      /* Backing fs was unmounted */
-    // #define IN_Q_OVERFLOW           0x00004000      /* Event queued overflowed */
-    // #define IN_IGNORED              0x00008000      /* File was ignored */
-    //
-    // /* helper events */
-    // #define IN_CLOSE                (IN_CLOSE_WRITE | IN_CLOSE_NOWRITE) /* close */
-    // #define IN_MOVE                 (IN_MOVED_FROM | IN_MOVED_TO) /* moves */
-    //
-    // /* special flags */
-    // #define IN_ONLYDIR              0x01000000      /* only watch the path if it is a directory */
-    // #define IN_DONT_FOLLOW          0x02000000      /* don't follow a sym link */
-    // #define IN_EXCL_UNLINK          0x04000000      /* exclude events on unlinked objects */
-    // #define IN_MASK_ADD             0x20000000      /* add to the mask of an already existing watch */
-    // #define IN_ISDIR                0x40000000      /* event occurred against dir */
-    // #define IN_ONESHOT              0x80000000      /* only send event once */
-
-    // Watch the config directory events.
-    string config_dir = srs_path_filepath_dir(_srs_config->config());
-    uint32_t mask = IN_MODIFY | IN_CREATE | IN_MOVED_TO;
-    int watch_conf = 0;
-    if ((watch_conf = ::inotify_add_watch(fd, config_dir.c_str(), mask)) < 0) {
-        return srs_error_new(ERROR_INOTIFY_WATCH, "watch file=%s, fd=%d, watch=%d, mask=%#x",
-                             config_dir.c_str(), fd, watch_conf, mask);
-    }
-    srs_trace("auto reload watching fd=%d, watch=%d, file=%s", fd, watch_conf, config_dir.c_str());
-
-    if ((err = trd->start()) != srs_success) {
-        return srs_error_wrap(err, "inotify");
-    }
-#endif
-
-    return err;
-}
-
-srs_error_t SrsInotifyWorker::cycle()
-{
-    srs_error_t err = srs_success;
-
-#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
-    string config_path = _srs_config->config();
-    string config_file = srs_path_filepath_base(config_path);
-    string k8s_file = "..data";
-
-    while (true) {
-        char buf[4096];
-        ssize_t nn = srs_read(inotify_fd, buf, (size_t)sizeof(buf), SRS_UTIME_NO_TIMEOUT);
-        if (nn < 0) {
-            srs_warn("inotify ignore read failed, nn=%d", (int)nn);
-            break;
-        }
-
-        // Whether config file changed.
-        bool do_reload = false;
-
-        // Parse all inotify events.
-        inotify_event *ie = NULL;
-        for (char *ptr = buf; ptr < buf + nn; ptr += sizeof(inotify_event) + ie->len) {
-            ie = (inotify_event *)ptr;
-
-            if (!ie->len || !ie->name) {
-                continue;
-            }
-
-            string name = ie->name;
-            if ((name == k8s_file || name == config_file) && ie->mask & (IN_MODIFY | IN_CREATE | IN_MOVED_TO)) {
-                do_reload = true;
-            }
-
-            srs_trace("inotify event wd=%d, mask=%#x, len=%d, name=%s, reload=%d", ie->wd, ie->mask, ie->len, ie->name, do_reload);
-        }
-
-        // Notify server to do reload.
-        if (do_reload && srs_path_exists(config_path)) {
-            server->on_signal(SRS_SIGNAL_RELOAD);
-        }
-
-        srs_usleep(3000 * SRS_UTIME_MILLISECONDS);
-    }
-#endif
-
-    return err;
-}
-
 SrsServer::SrsServer()
 {
     signal_reload_ = false;
@@ -2243,4 +1970,277 @@ SrsFastTimer *SrsServer::timer1s()
 SrsFastTimer *SrsServer::timer5s()
 {
     return timer5s_;
+}
+
+SrsSignalManager *SrsSignalManager::instance = NULL;
+
+SrsSignalManager::SrsSignalManager(SrsServer *s)
+{
+    SrsSignalManager::instance = this;
+
+    server = s;
+    sig_pipe[0] = sig_pipe[1] = -1;
+    trd = new SrsSTCoroutine("signal", this, _srs_context->get_id());
+    signal_read_stfd = NULL;
+}
+
+SrsSignalManager::~SrsSignalManager()
+{
+    srs_freep(trd);
+
+    srs_close_stfd(signal_read_stfd);
+
+    if (sig_pipe[0] > 0) {
+        ::close(sig_pipe[0]);
+    }
+    if (sig_pipe[1] > 0) {
+        ::close(sig_pipe[1]);
+    }
+}
+
+srs_error_t SrsSignalManager::initialize()
+{
+    /* Create signal pipe */
+    if (pipe(sig_pipe) < 0) {
+        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "create pipe");
+    }
+
+    if ((signal_read_stfd = srs_netfd_open(sig_pipe[0])) == NULL) {
+        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "open pipe");
+    }
+
+    return srs_success;
+}
+
+srs_error_t SrsSignalManager::start()
+{
+    srs_error_t err = srs_success;
+
+    /**
+     * Note that if multiple processes are used (see below),
+     * the signal pipe should be initialized after the fork(2) call
+     * so that each process has its own private pipe.
+     */
+    struct sigaction sa;
+
+    /* Install sig_catcher() as a signal handler */
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_RELOAD, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_FAST_QUIT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_GRACEFULLY_QUIT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_ASSERT_ABORT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_REOPEN_LOG, &sa, NULL);
+
+    srs_trace("signal installed, reload=%d, reopen=%d, fast_quit=%d, grace_quit=%d",
+              SRS_SIGNAL_RELOAD, SRS_SIGNAL_REOPEN_LOG, SRS_SIGNAL_FAST_QUIT, SRS_SIGNAL_GRACEFULLY_QUIT);
+
+    if ((err = trd->start()) != srs_success) {
+        return srs_error_wrap(err, "signal manager");
+    }
+
+    return err;
+}
+
+srs_error_t SrsSignalManager::cycle()
+{
+    srs_error_t err = srs_success;
+
+    while (true) {
+        if ((err = trd->pull()) != srs_success) {
+            return srs_error_wrap(err, "signal manager");
+        }
+
+        int signo;
+
+        /* Read the next signal from the pipe */
+        srs_read(signal_read_stfd, &signo, sizeof(int), SRS_UTIME_NO_TIMEOUT);
+
+        /* Process signal synchronously */
+        server->on_signal(signo);
+    }
+
+    return err;
+}
+
+void SrsSignalManager::sig_catcher(int signo)
+{
+    int err;
+
+    /* Save errno to restore it after the write() */
+    err = errno;
+
+    /* write() is reentrant/async-safe */
+    int fd = SrsSignalManager::instance->sig_pipe[1];
+    write(fd, &signo, sizeof(int));
+
+    errno = err;
+}
+
+// Whether we are in docker, defined in main module.
+extern bool _srs_in_docker;
+
+SrsInotifyWorker::SrsInotifyWorker(SrsServer *s)
+{
+    server = s;
+    trd = new SrsSTCoroutine("inotify", this);
+    inotify_fd = NULL;
+}
+
+SrsInotifyWorker::~SrsInotifyWorker()
+{
+    srs_freep(trd);
+    srs_close_stfd(inotify_fd);
+}
+
+srs_error_t SrsInotifyWorker::start()
+{
+    srs_error_t err = srs_success;
+
+#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
+    // Whether enable auto reload config.
+    bool auto_reload = _srs_config->inotify_auto_reload();
+    if (!auto_reload && _srs_in_docker && _srs_config->auto_reload_for_docker()) {
+        srs_warn("enable auto reload for docker");
+        auto_reload = true;
+    }
+
+    if (!auto_reload) {
+        return err;
+    }
+
+    // Create inotify to watch config file.
+    int fd = ::inotify_init1(IN_NONBLOCK);
+    if (fd < 0) {
+        return srs_error_new(ERROR_INOTIFY_CREATE, "create inotify");
+    }
+
+    // Open as stfd to read by ST.
+    if ((inotify_fd = srs_netfd_open(fd)) == NULL) {
+        ::close(fd);
+        return srs_error_new(ERROR_INOTIFY_OPENFD, "open fd=%d", fd);
+    }
+
+    if (((err = srs_fd_closeexec(fd))) != srs_success) {
+        return srs_error_wrap(err, "closeexec fd=%d", fd);
+    }
+
+    // /* the following are legal, implemented events that user-space can watch for */
+    // #define IN_ACCESS               0x00000001      /* File was accessed */
+    // #define IN_MODIFY               0x00000002      /* File was modified */
+    // #define IN_ATTRIB               0x00000004      /* Metadata changed */
+    // #define IN_CLOSE_WRITE          0x00000008      /* Writtable file was closed */
+    // #define IN_CLOSE_NOWRITE        0x00000010      /* Unwrittable file closed */
+    // #define IN_OPEN                 0x00000020      /* File was opened */
+    // #define IN_MOVED_FROM           0x00000040      /* File was moved from X */
+    // #define IN_MOVED_TO             0x00000080      /* File was moved to Y */
+    // #define IN_CREATE               0x00000100      /* Subfile was created */
+    // #define IN_DELETE               0x00000200      /* Subfile was deleted */
+    // #define IN_DELETE_SELF          0x00000400      /* Self was deleted */
+    // #define IN_MOVE_SELF            0x00000800      /* Self was moved */
+    //
+    // /* the following are legal events.  they are sent as needed to any watch */
+    // #define IN_UNMOUNT              0x00002000      /* Backing fs was unmounted */
+    // #define IN_Q_OVERFLOW           0x00004000      /* Event queued overflowed */
+    // #define IN_IGNORED              0x00008000      /* File was ignored */
+    //
+    // /* helper events */
+    // #define IN_CLOSE                (IN_CLOSE_WRITE | IN_CLOSE_NOWRITE) /* close */
+    // #define IN_MOVE                 (IN_MOVED_FROM | IN_MOVED_TO) /* moves */
+    //
+    // /* special flags */
+    // #define IN_ONLYDIR              0x01000000      /* only watch the path if it is a directory */
+    // #define IN_DONT_FOLLOW          0x02000000      /* don't follow a sym link */
+    // #define IN_EXCL_UNLINK          0x04000000      /* exclude events on unlinked objects */
+    // #define IN_MASK_ADD             0x20000000      /* add to the mask of an already existing watch */
+    // #define IN_ISDIR                0x40000000      /* event occurred against dir */
+    // #define IN_ONESHOT              0x80000000      /* only send event once */
+
+    // Watch the config directory events.
+    string config_dir = srs_path_filepath_dir(_srs_config->config());
+    uint32_t mask = IN_MODIFY | IN_CREATE | IN_MOVED_TO;
+    int watch_conf = 0;
+    if ((watch_conf = ::inotify_add_watch(fd, config_dir.c_str(), mask)) < 0) {
+        return srs_error_new(ERROR_INOTIFY_WATCH, "watch file=%s, fd=%d, watch=%d, mask=%#x",
+                             config_dir.c_str(), fd, watch_conf, mask);
+    }
+    srs_trace("auto reload watching fd=%d, watch=%d, file=%s", fd, watch_conf, config_dir.c_str());
+
+    if ((err = trd->start()) != srs_success) {
+        return srs_error_wrap(err, "inotify");
+    }
+#endif
+
+    return err;
+}
+
+srs_error_t SrsInotifyWorker::cycle()
+{
+    srs_error_t err = srs_success;
+
+#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
+    string config_path = _srs_config->config();
+    string config_file = srs_path_filepath_base(config_path);
+    string k8s_file = "..data";
+
+    while (true) {
+        char buf[4096];
+        ssize_t nn = srs_read(inotify_fd, buf, (size_t)sizeof(buf), SRS_UTIME_NO_TIMEOUT);
+        if (nn < 0) {
+            srs_warn("inotify ignore read failed, nn=%d", (int)nn);
+            break;
+        }
+
+        // Whether config file changed.
+        bool do_reload = false;
+
+        // Parse all inotify events.
+        inotify_event *ie = NULL;
+        for (char *ptr = buf; ptr < buf + nn; ptr += sizeof(inotify_event) + ie->len) {
+            ie = (inotify_event *)ptr;
+
+            if (!ie->len || !ie->name) {
+                continue;
+            }
+
+            string name = ie->name;
+            if ((name == k8s_file || name == config_file) && ie->mask & (IN_MODIFY | IN_CREATE | IN_MOVED_TO)) {
+                do_reload = true;
+            }
+
+            srs_trace("inotify event wd=%d, mask=%#x, len=%d, name=%s, reload=%d", ie->wd, ie->mask, ie->len, ie->name, do_reload);
+        }
+
+        // Notify server to do reload.
+        if (do_reload && srs_path_exists(config_path)) {
+            server->on_signal(SRS_SIGNAL_RELOAD);
+        }
+
+        srs_usleep(3000 * SRS_UTIME_MILLISECONDS);
+    }
+#endif
+
+    return err;
 }

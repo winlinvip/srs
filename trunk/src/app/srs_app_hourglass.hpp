@@ -144,4 +144,33 @@ private:
     srs_error_t on_timer(srs_utime_t interval);
 };
 
+// Global shared timer manager
+class SrsSharedTimer
+{
+private:
+    SrsFastTimer *timer20ms_;
+    SrsFastTimer *timer100ms_;
+    SrsFastTimer *timer1s_;
+    SrsFastTimer *timer5s_;
+    SrsClockWallMonitor *clock_monitor_;
+
+public:
+    SrsSharedTimer();
+    virtual ~SrsSharedTimer();
+
+public:
+    // Initialize and start all timers
+    srs_error_t initialize();
+
+public:
+    // Access to global shared timers
+    SrsFastTimer *timer20ms();
+    SrsFastTimer *timer100ms();
+    SrsFastTimer *timer1s();
+    SrsFastTimer *timer5s();
+};
+
+// Global shared timer instance
+extern SrsSharedTimer *_srs_shared_timer;
+
 #endif

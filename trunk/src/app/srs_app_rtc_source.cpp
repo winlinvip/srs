@@ -12,6 +12,7 @@
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_conn.hpp>
+#include <srs_app_hourglass.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_pithy_print.hpp>
 #include <srs_app_rtc_conn.hpp>
@@ -691,7 +692,7 @@ srs_error_t SrsRtcSource::on_publish()
         pli_for_rtmp_ = _srs_config->get_rtc_pli_for_rtmp(req->vhost);
 
         // @see SrsRtcSource::on_timer()
-        _srs_server->timer100ms()->subscribe(this);
+        _srs_shared_timer->timer100ms()->subscribe(this);
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
@@ -725,7 +726,7 @@ void SrsRtcSource::on_unpublish()
     // free bridge resource
     if (bridge_) {
         // For SrsRtcSource::on_timer()
-        _srs_server->timer100ms()->unsubscribe(this);
+        _srs_shared_timer->timer100ms()->unsubscribe(this);
 
 #ifdef SRS_FFMPEG_FIT
         frame_builder_->on_unpublish();

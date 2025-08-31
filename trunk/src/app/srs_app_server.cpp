@@ -24,6 +24,7 @@ using namespace std;
 #include <srs_app_conn.hpp>
 #include <srs_app_coworkers.hpp>
 #include <srs_app_heartbeat.hpp>
+#include <srs_app_hourglass.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_http_hooks.hpp>
@@ -101,6 +102,12 @@ srs_error_t srs_global_initialize()
     // Initialize ST, which depends on pps cids.
     if ((err = srs_st_init()) != srs_success) {
         return srs_error_wrap(err, "initialize st failed");
+    }
+
+    // Initialize global shared timer, which depends on ST
+    _srs_shared_timer = new SrsSharedTimer();
+    if ((err = _srs_shared_timer->initialize()) != srs_success) {
+        return srs_error_wrap(err, "initialize shared timer");
     }
 
     // The global objects which depends on ST.
@@ -191,13 +198,6 @@ SrsServer::SrsServer()
     ingester_ = new SrsIngester();
     timer_ = NULL;
 
-    // Initialize global shared timers moved from SrsHybridServer
-    timer20ms_ = new SrsFastTimer("server", 20 * SRS_UTIME_MILLISECONDS);
-    timer100ms_ = new SrsFastTimer("server", 100 * SRS_UTIME_MILLISECONDS);
-    timer1s_ = new SrsFastTimer("server", 1 * SRS_UTIME_SECONDS);
-    timer5s_ = new SrsFastTimer("server", 5 * SRS_UTIME_SECONDS);
-    clock_monitor_ = new SrsClockWallMonitor();
-
     // Initialize WebRTC components
     rtc_async_ = new SrsAsyncCallWorker();
 }
@@ -210,13 +210,6 @@ SrsServer::~SrsServer()
 void SrsServer::destroy()
 {
     srs_freep(timer_);
-
-    // Free global shared timers
-    srs_freep(timer20ms_);
-    srs_freep(timer100ms_);
-    srs_freep(timer1s_);
-    srs_freep(timer5s_);
-    srs_freep(clock_monitor_);
 
     dispose();
 
@@ -445,26 +438,6 @@ srs_error_t SrsServer::initialize()
 
     // Start WebRTC async worker
     rtc_async_->start();
-
-    // Start global shared timers
-    if ((err = timer20ms_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer20ms");
-    }
-
-    if ((err = timer100ms_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer100ms");
-    }
-
-    if ((err = timer1s_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer1s");
-    }
-
-    if ((err = timer5s_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer5s");
-    }
-
-    // Register clock monitor to 20ms timer and statistics reporting to 5s timer
-    timer20ms_->subscribe(clock_monitor_);
 
     return err;
 }
@@ -1950,26 +1923,6 @@ void SrsServer::on_unpublish(ISrsRequest *r)
 
     SrsCoWorkers *coworkers = SrsCoWorkers::instance();
     coworkers->on_unpublish(r);
-}
-
-SrsFastTimer *SrsServer::timer20ms()
-{
-    return timer20ms_;
-}
-
-SrsFastTimer *SrsServer::timer100ms()
-{
-    return timer100ms_;
-}
-
-SrsFastTimer *SrsServer::timer1s()
-{
-    return timer1s_;
-}
-
-SrsFastTimer *SrsServer::timer5s()
-{
-    return timer5s_;
 }
 
 SrsSignalManager *SrsSignalManager::instance = NULL;

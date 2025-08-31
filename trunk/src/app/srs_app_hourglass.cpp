@@ -240,3 +240,77 @@ srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
 
     return err;
 }
+
+SrsSharedTimer::SrsSharedTimer()
+{
+    timer20ms_ = NULL;
+    timer100ms_ = NULL;
+    timer1s_ = NULL;
+    timer5s_ = NULL;
+    clock_monitor_ = NULL;
+}
+
+SrsSharedTimer::~SrsSharedTimer()
+{
+    srs_freep(timer20ms_);
+    srs_freep(timer100ms_);
+    srs_freep(timer1s_);
+    srs_freep(timer5s_);
+    srs_freep(clock_monitor_);
+}
+
+srs_error_t SrsSharedTimer::initialize()
+{
+    srs_error_t err = srs_success;
+
+    // Initialize global shared timers
+    timer20ms_ = new SrsFastTimer("shared", 20 * SRS_UTIME_MILLISECONDS);
+    timer100ms_ = new SrsFastTimer("shared", 100 * SRS_UTIME_MILLISECONDS);
+    timer1s_ = new SrsFastTimer("shared", 1 * SRS_UTIME_SECONDS);
+    timer5s_ = new SrsFastTimer("shared", 5 * SRS_UTIME_SECONDS);
+    clock_monitor_ = new SrsClockWallMonitor();
+
+    // Start all timers
+    if ((err = timer20ms_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer20ms");
+    }
+
+    if ((err = timer100ms_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer100ms");
+    }
+
+    if ((err = timer1s_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer1s");
+    }
+
+    if ((err = timer5s_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer5s");
+    }
+
+    // Register clock monitor to 20ms timer
+    timer20ms_->subscribe(clock_monitor_);
+
+    return err;
+}
+
+SrsFastTimer *SrsSharedTimer::timer20ms()
+{
+    return timer20ms_;
+}
+
+SrsFastTimer *SrsSharedTimer::timer100ms()
+{
+    return timer100ms_;
+}
+
+SrsFastTimer *SrsSharedTimer::timer1s()
+{
+    return timer1s_;
+}
+
+SrsFastTimer *SrsSharedTimer::timer5s()
+{
+    return timer5s_;
+}
+
+SrsSharedTimer *_srs_shared_timer = NULL;

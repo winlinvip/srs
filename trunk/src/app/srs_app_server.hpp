@@ -88,14 +88,6 @@ private:
     SrsHourGlass *timer_;
 
 private:
-    // Global shared timers moved from SrsHybridServer
-    SrsFastTimer *timer20ms_;
-    SrsFastTimer *timer100ms_;
-    SrsFastTimer *timer1s_;
-    SrsFastTimer *timer5s_;
-    SrsClockWallMonitor *clock_monitor_;
-
-private:
     // The pid file fd, lock the file write when server is running.
     // @remark the init.d script should cleanup the pid file, when stop service,
     //       for the server never delete the file; when system startup, the pid in pid file
@@ -275,13 +267,6 @@ private:
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
-
-public:
-    // Access to global shared timers
-    SrsFastTimer *timer20ms();
-    SrsFastTimer *timer100ms();
-    SrsFastTimer *timer1s();
-    SrsFastTimer *timer5s();
 };
 
 // @global main SRS server, for debugging

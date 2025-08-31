@@ -7,6 +7,7 @@
 #include <srs_app_circuit_breaker.hpp>
 
 #include <srs_app_config.hpp>
+#include <srs_app_hourglass.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_kbps.hpp>
@@ -62,7 +63,7 @@ srs_error_t SrsCircuitBreaker::initialize()
 
     // Update the water level for circuit breaker.
     // @see SrsCircuitBreaker::on_timer()
-    _srs_server->timer1s()->subscribe(this);
+    _srs_shared_timer->timer1s()->subscribe(this);
 
     srs_trace("CircuitBreaker: enabled=%d, high=%dx%d, critical=%dx%d, dying=%dx%d", enabled_,
               high_pulse_, high_threshold_, critical_pulse_, critical_threshold_,

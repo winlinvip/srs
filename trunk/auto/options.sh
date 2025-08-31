@@ -181,7 +181,6 @@ Configure to generate Makefile.
 Features:
   --https=on|off            Whether enable HTTPS client and server. Default: $(value2switch $SRS_HTTPS)
   --utest=on|off            Whether build the utest. Default: $(value2switch $SRS_UTEST)
-  --srt=on|off              Whether build the SRT. Default: $(value2switch $SRS_SRT)
   --rtsp=on|off             Whether build the RTSP (requires RTC). Default: $(value2switch $SRS_RTSP)
   --gb28181=on|off          Whether build the GB28181. Default: $(value2switch $SRS_GB28181)
   --ffmpeg-fit=on|off       Whether enable the FFmpeg fit(source code). Default: $(value2switch $SRS_FFMPEG_FIT)
@@ -252,6 +251,7 @@ Experts:
 Deprecated:
   --h265=on                 Always enable the build for the HEVC(H.265) support.
   --rtc=on                  Always enable WebRTC support. Default: $(value2switch $SRS_RTC)
+  --srt=on|off              Always enable SRT support. Default: $(value2switch $SRS_SRT)
   --single-thread=on        Always force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
   --cross-build             Enable cross-build, please set bellow Toolchain also. Default: $(value2switch $SRS_CROSS_BUILD)
   --hds=on|off              Whether build the hds streaming, mux RTMP to F4M/F4V files. Default: $(value2switch $SRS_HDS)

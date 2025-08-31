@@ -404,6 +404,8 @@ SrsServer::SrsServer()
     latest_version_ = new SrsLatestVersion();
     ppid_ = ::getppid();
 
+    http_api_mux_ = new SrsHttpServeMux();
+
     rtmp_listener_ = new SrsMultipleTcpListeners(this);
     rtmps_listener_ = new SrsMultipleTcpListeners(this);
     api_listener_ = new SrsMultipleTcpListeners(this);
@@ -421,10 +423,6 @@ SrsServer::SrsServer()
     stream_caster_gb28181_ = new SrsGbListener(http_api_mux_);
 #endif
 
-    // donot new object in constructor,
-    // for some global instance is not ready now,
-    // new these objects in initialize instead.
-    http_api_mux_ = new SrsHttpServeMux();
     http_server_ = new SrsHttpServer(this);
     reuse_api_over_server_ = false;
     reuse_rtc_over_server_ = false;

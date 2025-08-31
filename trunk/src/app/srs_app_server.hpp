@@ -319,24 +319,7 @@ public:
     virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
 };
 
-// The SRS server adapter, the master server.
-class SrsServerAdapter : public ISrsHybridServer
-{
-private:
-    SrsServer *srs;
 
-public:
-    SrsServerAdapter();
-    virtual ~SrsServerAdapter();
-
-public:
-    virtual srs_error_t initialize();
-    virtual srs_error_t run(SrsWaitGroup *wg);
-    virtual void stop();
-
-public:
-    virtual SrsServer *instance();
-};
 
 // Manager for RTC connections.
 extern SrsResourceManager *_srs_conn_manager;

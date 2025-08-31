@@ -2332,7 +2332,7 @@ srs_error_t SrsLiveSource::on_publish()
     }
 
     // notify the handler.
-    ISrsLiveSourceHandler *handler = _srs_hybrid->srs()->instance();
+    ISrsLiveSourceHandler *handler = _srs_hybrid->srs();
     srs_assert(handler);
     if ((err = handler->on_publish(req)) != srs_success) {
         return srs_error_wrap(err, "handle publish");
@@ -2381,7 +2381,7 @@ void SrsLiveSource::on_unpublish()
     _source_id = SrsContextId();
 
     // notify the handler.
-    ISrsLiveSourceHandler *handler = _srs_hybrid->srs()->instance();
+    ISrsLiveSourceHandler *handler = _srs_hybrid->srs();
     srs_assert(handler);
 
     SrsStatistic *stat = SrsStatistic::instance();

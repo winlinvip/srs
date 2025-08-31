@@ -456,9 +456,6 @@ srs_error_t run_hybrid_server()
 {
     srs_error_t err = srs_success;
 
-    // Create servers and register them.
-    _srs_hybrid->register_server(new SrsServerAdapter());
-
     // Do some system initialize.
     if ((err = _srs_hybrid->initialize()) != srs_success) {
         return srs_error_wrap(err, "hybrid initialize");

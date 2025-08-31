@@ -28,6 +28,7 @@
 #include <srs_protocol_st.hpp>
 #ifdef SRS_SRT
 #include <srs_app_srt_source.hpp>
+#include <srs_app_srt_server.hpp>
 #endif
 #ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
@@ -54,6 +55,13 @@ extern SrsPps *_srs_pps_timer;
 extern SrsPps *_srs_pps_pub;
 extern SrsPps *_srs_pps_conn;
 extern SrsPps *_srs_pps_dispose;
+
+#ifdef SRS_SRT
+extern SrsSrtEventLoop *_srt_eventloop;
+#endif
+#ifdef SRS_GB28181
+extern SrsResourceManager *_srs_gb_manager;
+#endif
 
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
 extern __thread unsigned long long _st_stat_recvfrom;
@@ -266,16 +274,10 @@ extern srs_error_t _srs_reload_err;
 extern SrsReloadState _srs_reload_state;
 extern std::string _srs_reload_id;
 
-ISrsHybridServer::ISrsHybridServer()
-{
-}
-
-ISrsHybridServer::~ISrsHybridServer()
-{
-}
-
 SrsHybridServer::SrsHybridServer()
 {
+    server_ = new SrsServer();
+
     // Create global shared timer.
     timer20ms_ = new SrsFastTimer("hybrid", 20 * SRS_UTIME_MILLISECONDS);
     timer100ms_ = new SrsFastTimer("hybrid", 100 * SRS_UTIME_MILLISECONDS);
@@ -289,14 +291,7 @@ SrsHybridServer::SrsHybridServer()
 
 SrsHybridServer::~SrsHybridServer()
 {
-    // We must free servers first, because it may depend on the timers of hybrid server.
-    vector<ISrsHybridServer *>::iterator it;
-    for (it = servers.begin(); it != servers.end(); ++it) {
-        ISrsHybridServer *server = *it;
-        srs_freep(server);
-    }
-    servers.clear();
-
+    srs_freep(server_);
     srs_freep(clock_monitor_);
 
     srs_freep(timer20ms_);
@@ -310,11 +305,6 @@ SrsHybridServer::~SrsHybridServer()
     }
 }
 
-void SrsHybridServer::register_server(ISrsHybridServer *svr)
-{
-    servers.push_back(svr);
-}
-
 srs_error_t SrsHybridServer::initialize()
 {
     srs_error_t err = srs_success;
@@ -324,6 +314,27 @@ srs_error_t SrsHybridServer::initialize()
     }
 
     srs_trace("Hybrid server initialized in single thread mode");
+
+#ifdef SRS_SRT
+    if ((err = srs_srt_log_initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt log initialize");
+    }
+
+    _srt_eventloop = new SrsSrtEventLoop();
+
+    if ((err = _srt_eventloop->initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt poller initialize");
+    }
+
+    if ((err = _srt_eventloop->start()) != srs_success) {
+        return srs_error_wrap(err, "srt poller start");
+    }
+#endif
+
+    // Initialize WebRTC DTLS certificate
+    if ((err = _srs_rtc_dtls_certificate->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtc dtls certificate initialize");
+    }
 
     // Start the timer first.
     if ((err = timer20ms_->start()) != srs_success) {
@@ -351,14 +362,9 @@ srs_error_t SrsHybridServer::initialize()
     timer20ms_->subscribe(clock_monitor_);
     timer5s_->subscribe(this);
 
-    // Initialize all hybrid servers.
-    vector<ISrsHybridServer *>::iterator it;
-    for (it = servers.begin(); it != servers.end(); ++it) {
-        ISrsHybridServer *server = *it;
-
-        if ((err = server->initialize()) != srs_success) {
-            return srs_error_wrap(err, "init server");
-        }
+    // Initialize the server.
+    if ((err = server_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "init server");
     }
 
     return err;
@@ -368,19 +374,45 @@ srs_error_t SrsHybridServer::run()
 {
     srs_error_t err = srs_success;
 
-    // Wait for all servers which need to do cleanup.
-    SrsWaitGroup wg;
-
-    vector<ISrsHybridServer *>::iterator it;
-    for (it = servers.begin(); it != servers.end(); ++it) {
-        ISrsHybridServer *server = *it;
-
-        if ((err = server->run(&wg)) != srs_success) {
-            return srs_error_wrap(err, "run server");
-        }
+    // Initialize the whole system, set hooks to handle server level events.
+    if ((err = server_->initialize_st()) != srs_success) {
+        return srs_error_wrap(err, "initialize st");
     }
 
-    // Wait for all server to quit.
+    if ((err = server_->initialize_signal()) != srs_success) {
+        return srs_error_wrap(err, "initialize signal");
+    }
+
+    if ((err = server_->listen()) != srs_success) {
+        return srs_error_wrap(err, "listen");
+    }
+
+    if ((err = server_->register_signal()) != srs_success) {
+        return srs_error_wrap(err, "register signal");
+    }
+
+    if ((err = server_->http_handle()) != srs_success) {
+        return srs_error_wrap(err, "http handle");
+    }
+
+    if ((err = server_->ingest()) != srs_success) {
+        return srs_error_wrap(err, "ingest");
+    }
+
+    // Wait for server which need to do cleanup.
+    SrsWaitGroup wg;
+
+    if ((err = server_->start(&wg)) != srs_success) {
+        return srs_error_wrap(err, "start");
+    }
+
+#ifdef SRS_GB28181
+    if ((err = _srs_gb_manager->start()) != srs_success) {
+        return srs_error_wrap(err, "start manager");
+    }
+#endif
+
+    // Wait for server to quit.
     wg.wait();
 
     return err;
@@ -388,21 +420,12 @@ srs_error_t SrsHybridServer::run()
 
 void SrsHybridServer::stop()
 {
-    vector<ISrsHybridServer *>::iterator it;
-    for (it = servers.begin(); it != servers.end(); ++it) {
-        ISrsHybridServer *server = *it;
-        server->stop();
-    }
+    server_->stop();
 }
 
-SrsServerAdapter *SrsHybridServer::srs()
+SrsServer *SrsHybridServer::srs()
 {
-    for (vector<ISrsHybridServer *>::iterator it = servers.begin(); it != servers.end(); ++it) {
-        if (dynamic_cast<SrsServerAdapter *>(*it)) {
-            return dynamic_cast<SrsServerAdapter *>(*it);
-        }
-    }
-    return NULL;
+    return server_;
 }
 
 SrsFastTimer *SrsHybridServer::timer20ms()
@@ -658,11 +681,14 @@ srs_error_t srs_global_initialize()
     }
 
     // The global objects which depends on ST.
-    _srs_hybrid = new SrsHybridServer();
-    _srs_sources = new SrsLiveSourceManager();
+    // Initialize _srs_stages first as it's needed by SrsServer constructor
     _srs_stages = new SrsStageManager();
+    _srs_sources = new SrsLiveSourceManager();
     _srs_circuit_breaker = new SrsCircuitBreaker();
     _srs_hooks = new SrsHttpHooks();
+
+    // Initialize _srs_hybrid after dependencies are ready
+    _srs_hybrid = new SrsHybridServer();
 
 #ifdef SRS_SRT
     _srs_srt_sources = new SrsSrtSourceManager();

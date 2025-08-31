@@ -9,6 +9,9 @@
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>
 
+#include <string>
+using namespace std;
+
 SrsRateSample::SrsRateSample()
 {
     total = time = -1;
@@ -112,14 +115,58 @@ srs_utime_t SrsWallClock::now()
 
 SrsWallClock *_srs_clock = NULL;
 
+// Global SrsPps statistics variables implementations
+// I/O operations statistics
+SrsPps *_srs_pps_recvfrom = NULL;
+SrsPps *_srs_pps_recvfrom_eagain = NULL;
+SrsPps *_srs_pps_sendto = NULL;
+SrsPps *_srs_pps_sendto_eagain = NULL;
+
+SrsPps *_srs_pps_read = NULL;
+SrsPps *_srs_pps_read_eagain = NULL;
+SrsPps *_srs_pps_readv = NULL;
+SrsPps *_srs_pps_readv_eagain = NULL;
+SrsPps *_srs_pps_writev = NULL;
+SrsPps *_srs_pps_writev_eagain = NULL;
+
+SrsPps *_srs_pps_recvmsg = NULL;
+SrsPps *_srs_pps_recvmsg_eagain = NULL;
+SrsPps *_srs_pps_sendmsg = NULL;
+SrsPps *_srs_pps_sendmsg_eagain = NULL;
+
+// Clock and timing statistics
+SrsPps *_srs_pps_clock_15ms = NULL;
+SrsPps *_srs_pps_clock_20ms = NULL;
+SrsPps *_srs_pps_clock_25ms = NULL;
+SrsPps *_srs_pps_clock_30ms = NULL;
+SrsPps *_srs_pps_clock_35ms = NULL;
+SrsPps *_srs_pps_clock_40ms = NULL;
+SrsPps *_srs_pps_clock_80ms = NULL;
+SrsPps *_srs_pps_clock_160ms = NULL;
+SrsPps *_srs_pps_timer_s = NULL;
+
+// WebRTC packet statistics (only the ones originally in srs_app_server.cpp)
+SrsPps *_srs_pps_rstuns = NULL;
+SrsPps *_srs_pps_rrtps = NULL;
+SrsPps *_srs_pps_rrtcps = NULL;
+
+// NACK and loss statistics (only _srs_pps_aloss2 was originally in srs_app_server.cpp)
+SrsPps *_srs_pps_aloss2 = NULL;
+
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+// Debug thread statistics
+SrsPps *_srs_pps_thread_run = NULL;
+SrsPps *_srs_pps_thread_idle = NULL;
+SrsPps *_srs_pps_thread_yield = NULL;
+SrsPps *_srs_pps_thread_yield2 = NULL;
+
+// Debug epoll statistics
 SrsPps *_srs_pps_epoll = NULL;
 SrsPps *_srs_pps_epoll_zero = NULL;
 SrsPps *_srs_pps_epoll_shake = NULL;
 SrsPps *_srs_pps_epoll_spin = NULL;
 
-SrsPps *_srs_pps_sched_160ms = NULL;
-SrsPps *_srs_pps_sched_s = NULL;
+// Debug scheduler statistics
 SrsPps *_srs_pps_sched_15ms = NULL;
 SrsPps *_srs_pps_sched_20ms = NULL;
 SrsPps *_srs_pps_sched_25ms = NULL;
@@ -127,5 +174,366 @@ SrsPps *_srs_pps_sched_30ms = NULL;
 SrsPps *_srs_pps_sched_35ms = NULL;
 SrsPps *_srs_pps_sched_40ms = NULL;
 SrsPps *_srs_pps_sched_80ms = NULL;
+SrsPps *_srs_pps_sched_160ms = NULL;
+SrsPps *_srs_pps_sched_s = NULL;
 #endif
 
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+extern "C" {
+// External ST statistics
+extern __thread unsigned long long _st_stat_recvfrom;
+extern __thread unsigned long long _st_stat_recvfrom_eagain;
+extern __thread unsigned long long _st_stat_sendto;
+extern __thread unsigned long long _st_stat_sendto_eagain;
+
+extern __thread unsigned long long _st_stat_read;
+extern __thread unsigned long long _st_stat_read_eagain;
+extern __thread unsigned long long _st_stat_readv;
+extern __thread unsigned long long _st_stat_readv_eagain;
+extern __thread unsigned long long _st_stat_writev;
+extern __thread unsigned long long _st_stat_writev_eagain;
+
+extern __thread unsigned long long _st_stat_recvmsg;
+extern __thread unsigned long long _st_stat_recvmsg_eagain;
+extern __thread unsigned long long _st_stat_sendmsg;
+extern __thread unsigned long long _st_stat_sendmsg_eagain;
+
+extern __thread unsigned long long _st_stat_epoll;
+extern __thread unsigned long long _st_stat_epoll_zero;
+extern __thread unsigned long long _st_stat_epoll_shake;
+extern __thread unsigned long long _st_stat_epoll_spin;
+
+extern __thread unsigned long long _st_stat_sched_15ms;
+extern __thread unsigned long long _st_stat_sched_20ms;
+extern __thread unsigned long long _st_stat_sched_25ms;
+extern __thread unsigned long long _st_stat_sched_30ms;
+extern __thread unsigned long long _st_stat_sched_35ms;
+extern __thread unsigned long long _st_stat_sched_40ms;
+extern __thread unsigned long long _st_stat_sched_80ms;
+extern __thread unsigned long long _st_stat_sched_160ms;
+extern __thread unsigned long long _st_stat_sched_s;
+
+extern __thread int _st_active_count;
+extern __thread int _st_num_free_stacks;
+
+extern __thread unsigned long long _st_stat_thread_run;
+extern __thread unsigned long long _st_stat_thread_idle;
+extern __thread unsigned long long _st_stat_thread_yield;
+extern __thread unsigned long long _st_stat_thread_yield2;
+}
+#endif
+
+srs_error_t srs_global_kbps_initialize()
+{
+    srs_error_t err = srs_success;
+
+    // The clock wall object.
+    _srs_clock = new SrsWallClock();
+
+    // Initialize global pps, which depends on _srs_clock
+    _srs_pps_ids = new SrsPps();
+    _srs_pps_fids = new SrsPps();
+    _srs_pps_fids_level0 = new SrsPps();
+    _srs_pps_dispose = new SrsPps();
+
+    _srs_pps_timer = new SrsPps();
+    _srs_pps_conn = new SrsPps();
+    _srs_pps_pub = new SrsPps();
+
+    _srs_pps_snack = new SrsPps();
+    _srs_pps_snack2 = new SrsPps();
+    _srs_pps_snack3 = new SrsPps();
+    _srs_pps_snack4 = new SrsPps();
+    _srs_pps_sanack = new SrsPps();
+    _srs_pps_svnack = new SrsPps();
+
+    _srs_pps_rnack = new SrsPps();
+    _srs_pps_rnack2 = new SrsPps();
+    _srs_pps_rhnack = new SrsPps();
+    _srs_pps_rmnack = new SrsPps();
+
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_recvfrom = new SrsPps();
+    _srs_pps_recvfrom_eagain = new SrsPps();
+    _srs_pps_sendto = new SrsPps();
+    _srs_pps_sendto_eagain = new SrsPps();
+
+    _srs_pps_read = new SrsPps();
+    _srs_pps_read_eagain = new SrsPps();
+    _srs_pps_readv = new SrsPps();
+    _srs_pps_readv_eagain = new SrsPps();
+    _srs_pps_writev = new SrsPps();
+    _srs_pps_writev_eagain = new SrsPps();
+
+    _srs_pps_recvmsg = new SrsPps();
+    _srs_pps_recvmsg_eagain = new SrsPps();
+    _srs_pps_sendmsg = new SrsPps();
+    _srs_pps_sendmsg_eagain = new SrsPps();
+
+    _srs_pps_epoll = new SrsPps();
+    _srs_pps_epoll_zero = new SrsPps();
+    _srs_pps_epoll_shake = new SrsPps();
+    _srs_pps_epoll_spin = new SrsPps();
+
+    _srs_pps_sched_15ms = new SrsPps();
+    _srs_pps_sched_20ms = new SrsPps();
+    _srs_pps_sched_25ms = new SrsPps();
+    _srs_pps_sched_30ms = new SrsPps();
+    _srs_pps_sched_35ms = new SrsPps();
+    _srs_pps_sched_40ms = new SrsPps();
+    _srs_pps_sched_80ms = new SrsPps();
+    _srs_pps_sched_160ms = new SrsPps();
+    _srs_pps_sched_s = new SrsPps();
+#endif
+
+    _srs_pps_clock_15ms = new SrsPps();
+    _srs_pps_clock_20ms = new SrsPps();
+    _srs_pps_clock_25ms = new SrsPps();
+    _srs_pps_clock_30ms = new SrsPps();
+    _srs_pps_clock_35ms = new SrsPps();
+    _srs_pps_clock_40ms = new SrsPps();
+    _srs_pps_clock_80ms = new SrsPps();
+    _srs_pps_clock_160ms = new SrsPps();
+    _srs_pps_timer_s = new SrsPps();
+
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_thread_run = new SrsPps();
+    _srs_pps_thread_idle = new SrsPps();
+    _srs_pps_thread_yield = new SrsPps();
+    _srs_pps_thread_yield2 = new SrsPps();
+#endif
+
+    _srs_pps_rpkts = new SrsPps();
+    _srs_pps_addrs = new SrsPps();
+    _srs_pps_fast_addrs = new SrsPps();
+
+    _srs_pps_spkts = new SrsPps();
+    _srs_pps_objs_msgs = new SrsPps();
+
+    _srs_pps_sstuns = new SrsPps();
+    _srs_pps_srtcps = new SrsPps();
+    _srs_pps_srtps = new SrsPps();
+
+    _srs_pps_rstuns = new SrsPps();
+    _srs_pps_rrtps = new SrsPps();
+    _srs_pps_rrtcps = new SrsPps();
+
+    _srs_pps_aloss2 = new SrsPps();
+
+    _srs_pps_pli = new SrsPps();
+    _srs_pps_twcc = new SrsPps();
+    _srs_pps_rr = new SrsPps();
+
+    _srs_pps_objs_rtps = new SrsPps();
+    _srs_pps_objs_rraw = new SrsPps();
+    _srs_pps_objs_rfua = new SrsPps();
+    _srs_pps_objs_rbuf = new SrsPps();
+    _srs_pps_objs_rothers = new SrsPps();
+
+    // The pps cids depends by st init.
+    _srs_pps_cids_get = new SrsPps();
+    _srs_pps_cids_set = new SrsPps();
+
+    return err;
+}
+
+void srs_global_kbps_update(SrsKbpsStats *stats)
+{
+    static char buf[128];
+
+    string &cid_desc = stats->cid_desc;
+    _srs_pps_cids_get->update();
+    _srs_pps_cids_set->update();
+    if (_srs_pps_cids_get->r10s() || _srs_pps_cids_set->r10s()) {
+        snprintf(buf, sizeof(buf), ", cid=%d,%d", _srs_pps_cids_get->r10s(), _srs_pps_cids_set->r10s());
+        cid_desc = buf;
+    }
+    string &timer_desc = stats->timer_desc;
+    _srs_pps_timer->update();
+    _srs_pps_pub->update();
+    _srs_pps_conn->update();
+    if (_srs_pps_timer->r10s() || _srs_pps_pub->r10s() || _srs_pps_conn->r10s()) {
+        snprintf(buf, sizeof(buf), ", timer=%d,%d,%d", _srs_pps_timer->r10s(), _srs_pps_pub->r10s(), _srs_pps_conn->r10s());
+        timer_desc = buf;
+    }
+
+    string &free_desc = stats->free_desc;
+    _srs_pps_dispose->update();
+    if (_srs_pps_dispose->r10s()) {
+        snprintf(buf, sizeof(buf), ", free=%d", _srs_pps_dispose->r10s());
+        free_desc = buf;
+    }
+
+    string &recvfrom_desc = stats->recvfrom_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_recvfrom->update(_st_stat_recvfrom);
+    _srs_pps_recvfrom_eagain->update(_st_stat_recvfrom_eagain);
+    _srs_pps_sendto->update(_st_stat_sendto);
+    _srs_pps_sendto_eagain->update(_st_stat_sendto_eagain);
+    if (_srs_pps_recvfrom->r10s() || _srs_pps_recvfrom_eagain->r10s() || _srs_pps_sendto->r10s() || _srs_pps_sendto_eagain->r10s()) {
+        snprintf(buf, sizeof(buf), ", udp=%d,%d,%d,%d", _srs_pps_recvfrom->r10s(), _srs_pps_recvfrom_eagain->r10s(), _srs_pps_sendto->r10s(), _srs_pps_sendto_eagain->r10s());
+        recvfrom_desc = buf;
+    }
+#endif
+
+    string &io_desc = stats->io_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_read->update(_st_stat_read);
+    _srs_pps_read_eagain->update(_st_stat_read_eagain);
+    _srs_pps_readv->update(_st_stat_readv);
+    _srs_pps_readv_eagain->update(_st_stat_readv_eagain);
+    _srs_pps_writev->update(_st_stat_writev);
+    _srs_pps_writev_eagain->update(_st_stat_writev_eagain);
+    if (_srs_pps_read->r10s() || _srs_pps_read_eagain->r10s() || _srs_pps_readv->r10s() || _srs_pps_readv_eagain->r10s() || _srs_pps_writev->r10s() || _srs_pps_writev_eagain->r10s()) {
+        snprintf(buf, sizeof(buf), ", io=%d,%d,%d,%d,%d,%d", _srs_pps_read->r10s(), _srs_pps_read_eagain->r10s(), _srs_pps_readv->r10s(), _srs_pps_readv_eagain->r10s(), _srs_pps_writev->r10s(), _srs_pps_writev_eagain->r10s());
+        io_desc = buf;
+    }
+#endif
+
+    string &msg_desc = stats->msg_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_recvmsg->update(_st_stat_recvmsg);
+    _srs_pps_recvmsg_eagain->update(_st_stat_recvmsg_eagain);
+    _srs_pps_sendmsg->update(_st_stat_sendmsg);
+    _srs_pps_sendmsg_eagain->update(_st_stat_sendmsg_eagain);
+    if (_srs_pps_recvmsg->r10s() || _srs_pps_recvmsg_eagain->r10s() || _srs_pps_sendmsg->r10s() || _srs_pps_sendmsg_eagain->r10s()) {
+        snprintf(buf, sizeof(buf), ", msg=%d,%d,%d,%d", _srs_pps_recvmsg->r10s(), _srs_pps_recvmsg_eagain->r10s(), _srs_pps_sendmsg->r10s(), _srs_pps_sendmsg_eagain->r10s());
+        msg_desc = buf;
+    }
+#endif
+
+    string &epoll_desc = stats->epoll_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_epoll->update(_st_stat_epoll);
+    _srs_pps_epoll_zero->update(_st_stat_epoll_zero);
+    _srs_pps_epoll_shake->update(_st_stat_epoll_shake);
+    _srs_pps_epoll_spin->update(_st_stat_epoll_spin);
+    if (_srs_pps_epoll->r10s() || _srs_pps_epoll_zero->r10s() || _srs_pps_epoll_shake->r10s() || _srs_pps_epoll_spin->r10s()) {
+        snprintf(buf, sizeof(buf), ", epoll=%d,%d,%d,%d", _srs_pps_epoll->r10s(), _srs_pps_epoll_zero->r10s(), _srs_pps_epoll_shake->r10s(), _srs_pps_epoll_spin->r10s());
+        epoll_desc = buf;
+    }
+#endif
+
+    string &sched_desc = stats->sched_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_sched_160ms->update(_st_stat_sched_160ms);
+    _srs_pps_sched_s->update(_st_stat_sched_s);
+    _srs_pps_sched_15ms->update(_st_stat_sched_15ms);
+    _srs_pps_sched_20ms->update(_st_stat_sched_20ms);
+    _srs_pps_sched_25ms->update(_st_stat_sched_25ms);
+    _srs_pps_sched_30ms->update(_st_stat_sched_30ms);
+    _srs_pps_sched_35ms->update(_st_stat_sched_35ms);
+    _srs_pps_sched_40ms->update(_st_stat_sched_40ms);
+    _srs_pps_sched_80ms->update(_st_stat_sched_80ms);
+    if (_srs_pps_sched_160ms->r10s() || _srs_pps_sched_s->r10s() || _srs_pps_sched_15ms->r10s() || _srs_pps_sched_20ms->r10s() || _srs_pps_sched_25ms->r10s() || _srs_pps_sched_30ms->r10s() || _srs_pps_sched_35ms->r10s() || _srs_pps_sched_40ms->r10s() || _srs_pps_sched_80ms->r10s()) {
+        snprintf(buf, sizeof(buf), ", sched=%d,%d,%d,%d,%d,%d,%d,%d,%d", _srs_pps_sched_15ms->r10s(), _srs_pps_sched_20ms->r10s(), _srs_pps_sched_25ms->r10s(), _srs_pps_sched_30ms->r10s(), _srs_pps_sched_35ms->r10s(), _srs_pps_sched_40ms->r10s(), _srs_pps_sched_80ms->r10s(), _srs_pps_sched_160ms->r10s(), _srs_pps_sched_s->r10s());
+        sched_desc = buf;
+    }
+#endif
+
+    string &clock_desc = stats->clock_desc;
+    _srs_pps_clock_15ms->update();
+    _srs_pps_clock_20ms->update();
+    _srs_pps_clock_25ms->update();
+    _srs_pps_clock_30ms->update();
+    _srs_pps_clock_35ms->update();
+    _srs_pps_clock_40ms->update();
+    _srs_pps_clock_80ms->update();
+    _srs_pps_clock_160ms->update();
+    _srs_pps_timer_s->update();
+    if (_srs_pps_clock_15ms->r10s() || _srs_pps_timer_s->r10s() || _srs_pps_clock_20ms->r10s() || _srs_pps_clock_25ms->r10s() || _srs_pps_clock_30ms->r10s() || _srs_pps_clock_35ms->r10s() || _srs_pps_clock_40ms->r10s() || _srs_pps_clock_80ms->r10s() || _srs_pps_clock_160ms->r10s()) {
+        snprintf(buf, sizeof(buf), ", clock=%d,%d,%d,%d,%d,%d,%d,%d,%d", _srs_pps_clock_15ms->r10s(), _srs_pps_clock_20ms->r10s(), _srs_pps_clock_25ms->r10s(), _srs_pps_clock_30ms->r10s(), _srs_pps_clock_35ms->r10s(), _srs_pps_clock_40ms->r10s(), _srs_pps_clock_80ms->r10s(), _srs_pps_clock_160ms->r10s(), _srs_pps_timer_s->r10s());
+        clock_desc = buf;
+    }
+
+    string &thread_desc = stats->thread_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_thread_run->update(_st_stat_thread_run);
+    _srs_pps_thread_idle->update(_st_stat_thread_idle);
+    _srs_pps_thread_yield->update(_st_stat_thread_yield);
+    _srs_pps_thread_yield2->update(_st_stat_thread_yield2);
+    if (_st_active_count > 0 || _st_num_free_stacks > 0 || _srs_pps_thread_run->r10s() || _srs_pps_thread_idle->r10s() || _srs_pps_thread_yield->r10s() || _srs_pps_thread_yield2->r10s()) {
+        snprintf(buf, sizeof(buf), ", co=%d,%d,%d, stk=%d, yield=%d,%d", _st_active_count, _srs_pps_thread_run->r10s(), _srs_pps_thread_idle->r10s(), _st_num_free_stacks, _srs_pps_thread_yield->r10s(), _srs_pps_thread_yield2->r10s());
+        thread_desc = buf;
+    }
+#endif
+
+    string &objs_desc = stats->objs_desc;
+    _srs_pps_objs_rtps->update();
+    _srs_pps_objs_rraw->update();
+    _srs_pps_objs_rfua->update();
+    _srs_pps_objs_rbuf->update();
+    _srs_pps_objs_msgs->update();
+    _srs_pps_objs_rothers->update();
+    if (_srs_pps_objs_rtps->r10s() || _srs_pps_objs_rraw->r10s() || _srs_pps_objs_rfua->r10s() || _srs_pps_objs_rbuf->r10s() || _srs_pps_objs_msgs->r10s() || _srs_pps_objs_rothers->r10s()) {
+        snprintf(buf, sizeof(buf), ", objs=(pkt:%d,raw:%d,fua:%d,msg:%d,oth:%d,buf:%d)",
+                 _srs_pps_objs_rtps->r10s(), _srs_pps_objs_rraw->r10s(), _srs_pps_objs_rfua->r10s(),
+                 _srs_pps_objs_msgs->r10s(), _srs_pps_objs_rothers->r10s(), _srs_pps_objs_rbuf->r10s());
+        objs_desc = buf;
+    }
+}
+
+void srs_global_rtc_update(SrsKbsRtcStats *stats)
+{
+    static char buf[128];
+
+    string &rpkts_desc = stats->rpkts_desc;
+    _srs_pps_rpkts->update();
+    _srs_pps_rrtps->update();
+    _srs_pps_rstuns->update();
+    _srs_pps_rrtcps->update();
+    if (_srs_pps_rpkts->r10s() || _srs_pps_rrtps->r10s() || _srs_pps_rstuns->r10s() || _srs_pps_rrtcps->r10s()) {
+        snprintf(buf, sizeof(buf), ", rpkts=(%d,rtp:%d,stun:%d,rtcp:%d)", _srs_pps_rpkts->r10s(), _srs_pps_rrtps->r10s(), _srs_pps_rstuns->r10s(), _srs_pps_rrtcps->r10s());
+        rpkts_desc = buf;
+    }
+
+    string &spkts_desc = stats->spkts_desc;
+    _srs_pps_spkts->update();
+    _srs_pps_srtps->update();
+    _srs_pps_sstuns->update();
+    _srs_pps_srtcps->update();
+    if (_srs_pps_spkts->r10s() || _srs_pps_srtps->r10s() || _srs_pps_sstuns->r10s() || _srs_pps_srtcps->r10s()) {
+        snprintf(buf, sizeof(buf), ", spkts=(%d,rtp:%d,stun:%d,rtcp:%d)", _srs_pps_spkts->r10s(), _srs_pps_srtps->r10s(), _srs_pps_sstuns->r10s(), _srs_pps_srtcps->r10s());
+        spkts_desc = buf;
+    }
+
+    string &rtcp_desc = stats->rtcp_desc;
+    _srs_pps_pli->update();
+    _srs_pps_twcc->update();
+    _srs_pps_rr->update();
+    if (_srs_pps_pli->r10s() || _srs_pps_twcc->r10s() || _srs_pps_rr->r10s()) {
+        snprintf(buf, sizeof(buf), ", rtcp=(pli:%d,twcc:%d,rr:%d)", _srs_pps_pli->r10s(), _srs_pps_twcc->r10s(), _srs_pps_rr->r10s());
+        rtcp_desc = buf;
+    }
+
+    string &snk_desc = stats->snk_desc;
+    _srs_pps_snack->update();
+    _srs_pps_snack2->update();
+    _srs_pps_sanack->update();
+    _srs_pps_svnack->update();
+    if (_srs_pps_snack->r10s() || _srs_pps_sanack->r10s() || _srs_pps_svnack->r10s() || _srs_pps_snack2->r10s()) {
+        snprintf(buf, sizeof(buf), ", snk=(%d,a:%d,v:%d,h:%d)", _srs_pps_snack->r10s(), _srs_pps_sanack->r10s(), _srs_pps_svnack->r10s(), _srs_pps_snack2->r10s());
+        snk_desc = buf;
+    }
+
+    string &rnk_desc = stats->rnk_desc;
+    _srs_pps_rnack->update();
+    _srs_pps_rnack2->update();
+    _srs_pps_rhnack->update();
+    _srs_pps_rmnack->update();
+    if (_srs_pps_rnack->r10s() || _srs_pps_rnack2->r10s() || _srs_pps_rhnack->r10s() || _srs_pps_rmnack->r10s()) {
+        snprintf(buf, sizeof(buf), ", rnk=(%d,%d,h:%d,m:%d)", _srs_pps_rnack->r10s(), _srs_pps_rnack2->r10s(), _srs_pps_rhnack->r10s(), _srs_pps_rmnack->r10s());
+        rnk_desc = buf;
+    }
+
+    string &fid_desc = stats->fid_desc;
+    _srs_pps_ids->update();
+    _srs_pps_fids->update();
+    _srs_pps_fids_level0->update();
+    _srs_pps_addrs->update();
+    _srs_pps_fast_addrs->update();
+    if (_srs_pps_ids->r10s(), _srs_pps_fids->r10s(), _srs_pps_fids_level0->r10s(), _srs_pps_addrs->r10s(), _srs_pps_fast_addrs->r10s()) {
+        snprintf(buf, sizeof(buf), ", fid=(id:%d,fid:%d,ffid:%d,addr:%d,faddr:%d)", _srs_pps_ids->r10s(), _srs_pps_fids->r10s(), _srs_pps_fids_level0->r10s(), _srs_pps_addrs->r10s(), _srs_pps_fast_addrs->r10s());
+        fid_desc = buf;
+    }
+}

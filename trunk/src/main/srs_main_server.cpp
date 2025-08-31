@@ -42,6 +42,7 @@ using namespace std;
 #include <srs_core_performance.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_file.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_srt.hpp>
 
@@ -72,9 +73,6 @@ bool _srs_in_docker = false;
 #ifdef SRS_SANITIZER_LOG
 extern void asan_report_callback(const char *str);
 #endif
-
-extern SrsPps *_srs_pps_cids_get;
-extern SrsPps *_srs_pps_cids_set;
 
 /**
  * main entrance.

@@ -128,8 +128,7 @@ class SrsServer : public ISrsReloadHandler, // Reload framework for permormance 
                   public ISrsTcpHandler,
                   public ISrsHourGlass,
                   public ISrsSrtClientHandler,
-                  public ISrsUdpMuxHandler,
-                  public ISrsFastTimer
+                  public ISrsUdpMuxHandler
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
@@ -315,6 +314,7 @@ private:
 
 private:
     virtual srs_error_t srs_update_rtc_sessions();
+    virtual srs_error_t srs_update_server_statistics();
 
     // Interface ISrsTcpHandler
 public:
@@ -335,10 +335,6 @@ public:
     SrsFastTimer *timer100ms();
     SrsFastTimer *timer1s();
     SrsFastTimer *timer5s();
-
-    // interface ISrsFastTimer for statistics reporting
-private:
-    virtual srs_error_t on_timer(srs_utime_t interval);
 };
 
 // @global main SRS server, for debugging

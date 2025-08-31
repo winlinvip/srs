@@ -13,6 +13,7 @@
 #include <srs_app_hourglass.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
+#include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_sdp.hpp>
 #include <srs_app_st.hpp>
 
@@ -26,6 +27,7 @@ class ISrsRequest;
 class SrsSdp;
 class SrsRtcSource;
 class SrsResourceManager;
+class SrsAsyncCallWorker;
 
 // The UDP black hole, for developer to use wireshark to catch plaintext packets.
 // For example, server receive UDP packets at udp://8000, and forward the plaintext packet to black hole,
@@ -86,5 +88,37 @@ extern std::set<std::string> discover_candidates(SrsRtcUserConfig *ruc);
 
 // The dns resolve utility, return the resolved ip address.
 extern std::string srs_dns_resolve(std::string host, int &family);
+
+// RTC session manager to handle WebRTC session lifecycle and management.
+class SrsRtcSessionManager : public ISrsExecRtcAsyncTask
+{
+private:
+    // WebRTC async call worker for non-blocking operations.
+    SrsAsyncCallWorker *rtc_async_;
+
+public:
+    SrsRtcSessionManager();
+    virtual ~SrsRtcSessionManager();
+
+public:
+    virtual srs_error_t initialize();
+
+public:
+    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
+
+private:
+    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
+
+public:
+    virtual void srs_update_rtc_sessions();
+
+    // interface ISrsExecRtcAsyncTask
+public:
+    virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
+
+public:
+    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
+};
 
 #endif

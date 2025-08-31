@@ -1005,3 +1005,5 @@ srs_error_t SrsSslConnection::writev(const iovec *iov, int iov_size, ssize_t *nw
 
     return err;
 }
+
+SrsResourceManager *_srs_conn_manager = NULL;

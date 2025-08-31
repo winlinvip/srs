@@ -54,6 +54,7 @@ class SrsRtmpTransport;
 class SrsRtmpsTransport;
 class SrsSrtAcceptor;
 class SrsSrtEventLoop;
+class SrsRtcSessionManager;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
@@ -134,8 +135,8 @@ private:
     std::vector<SrsSrtAcceptor *> srt_acceptors_;
     // WebRTC UDP listeners for RTC server functionality.
     std::vector<SrsUdpMuxListener *> rtc_listeners_;
-    // WebRTC async call worker for non-blocking operations.
-    SrsAsyncCallWorker *rtc_async_;
+    // WebRTC session manager.
+    SrsRtcSessionManager *rtc_session_manager_;
 
 private:
     // Signal manager which convert gignal to io message.
@@ -155,21 +156,17 @@ public:
     SrsServer();
     virtual ~SrsServer();
 
-public:
-    // Get the HTTP API server mux.
-    ISrsHttpServeMux* api_server();
-
 private:
-    // The destroy is for gmc to analysis the memory leak,
-    // if not destroy global/static data, the gmc will warning memory leak.
-    // In service, server never destroy, directly exit when restart.
-    virtual void destroy();
     // When SIGTERM, SRS should do cleanup, for example,
     // to stop all ingesters, cleanup HLS and dvr.
     virtual void dispose();
     // Close listener to stop accepting new connections,
     // then wait and quit when all connections finished.
     virtual void gracefully_dispose();
+
+public:
+    // Get the HTTP API server mux.
+    ISrsHttpServeMux *api_server();
 
     // server startup workflow, @see run_master()
 public:
@@ -249,15 +246,10 @@ private:
     virtual srs_error_t listen_rtc_api();
 
 public:
-    virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
     virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
     virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
 
 private:
-    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
-
-private:
-    virtual srs_error_t srs_update_rtc_sessions();
     virtual srs_error_t srs_update_server_statistics();
 
     // Interface ISrsTcpHandler
@@ -276,9 +268,6 @@ public:
 
 // @global main SRS server, for debugging
 extern SrsServer *_srs_server;
-
-// Manager for RTC connections.
-extern SrsResourceManager *_srs_conn_manager;
 
 // Convert signal to io,
 // @see: st-1.9/docs/notes.html

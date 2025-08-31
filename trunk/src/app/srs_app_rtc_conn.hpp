@@ -461,6 +461,17 @@ private:
     srs_error_t on_timer(srs_utime_t interval);
 };
 
+// The interface for RTC async task.
+class ISrsExecRtcAsyncTask
+{
+public:
+    ISrsExecRtcAsyncTask();
+    virtual ~ISrsExecRtcAsyncTask();
+
+public:
+    virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t) = 0;
+};
+
 // A RTC Peer Connection, SDP level object.
 //
 // For performance, we use non-public from resource,
@@ -479,7 +490,7 @@ public:
     bool disposing_;
 
 private:
-    SrsServer *server_;
+    ISrsExecRtcAsyncTask *exec_;
 
 private:
     iovec *cache_iov_;
@@ -529,7 +540,7 @@ private:
     bool nack_enabled_;
 
 public:
-    SrsRtcConnection(SrsServer *s, const SrsContextId &cid);
+    SrsRtcConnection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
     virtual ~SrsRtcConnection();
     // interface ISrsDisposingHandler
 public:

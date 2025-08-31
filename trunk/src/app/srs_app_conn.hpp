@@ -328,4 +328,7 @@ public:
     virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
 };
 
+// Manager for RTC connections.
+extern SrsResourceManager *_srs_conn_manager;
+
 #endif

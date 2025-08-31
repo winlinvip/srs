@@ -443,7 +443,7 @@ SrsRtcPlayStream::SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid)
 SrsRtcPlayStream::~SrsRtcPlayStream()
 {
     if (req_) {
-        session_->server_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
+        session_->exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
     }
 
     _srs_config->unsubscribe(this);
@@ -1085,7 +1085,7 @@ SrsRtcPublishStream::SrsRtcPublishStream(SrsRtcConnection *session, const SrsCon
 SrsRtcPublishStream::~SrsRtcPublishStream()
 {
     if (req_) {
-        session_->server_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
+        session_->exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
     }
 
     srs_freep(timer_rtcp_);
@@ -1760,12 +1760,20 @@ srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
     return err;
 }
 
-SrsRtcConnection::SrsRtcConnection(SrsServer *s, const SrsContextId &cid)
+ISrsExecRtcAsyncTask::ISrsExecRtcAsyncTask()
+{
+}
+
+ISrsExecRtcAsyncTask::~ISrsExecRtcAsyncTask()
+{
+}
+
+SrsRtcConnection::SrsRtcConnection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
 {
     req_ = NULL;
     cid_ = cid;
 
-    server_ = s;
+    exec_ = exec;
     networks_ = new SrsRtcNetworks(this);
 
     cache_iov_ = new iovec();

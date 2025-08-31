@@ -8,7 +8,6 @@
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_statistic.hpp>

@@ -7,7 +7,7 @@
 #include <srs_app_circuit_breaker.hpp>
 
 #include <srs_app_config.hpp>
-#include <srs_app_hybrid.hpp>
+#include <srs_app_server.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
@@ -16,6 +16,8 @@
 extern SrsPps *_srs_pps_snack2;
 extern SrsPps *_srs_pps_snack3;
 extern SrsPps *_srs_pps_snack4;
+
+extern SrsServer *_srs_server;
 
 using namespace std;
 
@@ -60,7 +62,7 @@ srs_error_t SrsCircuitBreaker::initialize()
 
     // Update the water level for circuit breaker.
     // @see SrsCircuitBreaker::on_timer()
-    _srs_hybrid->timer1s()->subscribe(this);
+    _srs_server->timer1s()->subscribe(this);
 
     srs_trace("CircuitBreaker: enabled=%d, high=%dx%d, critical=%dx%d, dying=%dx%d", enabled_,
               high_pulse_, high_threshold_, critical_pulse_, critical_threshold_,

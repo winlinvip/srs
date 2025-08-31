@@ -16,7 +16,6 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_pithy_print.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_source.hpp>
@@ -61,13 +60,13 @@ void SrsHlsVirtualConn::expire()
 
 SrsHlsStream::SrsHlsStream()
 {
-    _srs_hybrid->timer5s()->subscribe(this);
+    _srs_server->timer5s()->subscribe(this);
     security_ = new SrsSecurity();
 }
 
 SrsHlsStream::~SrsHlsStream()
 {
-    _srs_hybrid->timer5s()->unsubscribe(this);
+    _srs_server->timer5s()->unsubscribe(this);
 
     std::map<std::string, SrsHlsVirtualConn *>::iterator it;
     for (it = map_ctx_info_.begin(); it != map_ctx_info_.end(); ++it) {

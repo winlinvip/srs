@@ -19,7 +19,6 @@ using namespace std;
 #include <srs_app_hds.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_ng_exec.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_server.hpp>
@@ -2332,7 +2331,7 @@ srs_error_t SrsLiveSource::on_publish()
     }
 
     // notify the handler.
-    ISrsLiveSourceHandler *handler = _srs_hybrid->srs();
+    ISrsLiveSourceHandler *handler = _srs_server;
     srs_assert(handler);
     if ((err = handler->on_publish(req)) != srs_success) {
         return srs_error_wrap(err, "handle publish");
@@ -2381,7 +2380,7 @@ void SrsLiveSource::on_unpublish()
     _source_id = SrsContextId();
 
     // notify the handler.
-    ISrsLiveSourceHandler *handler = _srs_hybrid->srs();
+    ISrsLiveSourceHandler *handler = _srs_server;
     srs_assert(handler);
 
     SrsStatistic *stat = SrsStatistic::instance();

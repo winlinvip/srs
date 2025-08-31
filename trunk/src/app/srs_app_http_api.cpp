@@ -1225,7 +1225,7 @@ srs_error_t SrsGoApiSignal::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessag
         signo = SRS_SIGNAL_ASSERT_ABORT;
     }
 
-    _srs_hybrid->srs()->on_signal(signo);
+    _srs_server->on_signal(signo);
 
     // By default, response the json style response.
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());

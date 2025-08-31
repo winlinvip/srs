@@ -16,6 +16,7 @@
 #include <srs_app_pithy_print.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_queue.hpp>
+#include <srs_app_server.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_core_autofree.hpp>
@@ -53,6 +54,7 @@ SrsPps *_srs_pps_rhnack = NULL;
 SrsPps *_srs_pps_rmnack = NULL;
 
 extern SrsPps *_srs_pps_aloss2;
+extern SrsServer *_srs_server;
 
 static const int kAudioChannel = 2;
 static const int kAudioSamplerate = 48000;
@@ -689,7 +691,7 @@ srs_error_t SrsRtcSource::on_publish()
         pli_for_rtmp_ = _srs_config->get_rtc_pli_for_rtmp(req->vhost);
 
         // @see SrsRtcSource::on_timer()
-        _srs_hybrid->timer100ms()->subscribe(this);
+        _srs_server->timer100ms()->subscribe(this);
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
@@ -723,7 +725,7 @@ void SrsRtcSource::on_unpublish()
     // free bridge resource
     if (bridge_) {
         // For SrsRtcSource::on_timer()
-        _srs_hybrid->timer100ms()->unsubscribe(this);
+        _srs_server->timer100ms()->unsubscribe(this);
 
 #ifdef SRS_FFMPEG_FIT
         frame_builder_->on_unpublish();

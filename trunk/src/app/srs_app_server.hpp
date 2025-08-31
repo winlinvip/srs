@@ -15,7 +15,6 @@
 #include <srs_app_conn.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_hourglass.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_source.hpp>
@@ -58,6 +57,9 @@ class SrsRtmpTransport;
 class SrsRtmpsTransport;
 class SrsSrtAcceptor;
 class SrsSrtEventLoop;
+
+// Initialize global shared variables cross all threads.
+extern srs_error_t srs_global_initialize();
 
 // Interface for SRT client acceptance
 class ISrsSrtClientHandler
@@ -130,7 +132,8 @@ class SrsServer : public ISrsCoroutineHandler, // SRS server starts a coroutine 
                   public ISrsTcpHandler,
                   public ISrsHourGlass,
                   public ISrsSrtClientHandler,
-                  public ISrsUdpMuxHandler
+                  public ISrsUdpMuxHandler,
+                  public ISrsFastTimer
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
@@ -143,6 +146,14 @@ private:
     SrsCoroutine *trd_;
     SrsHourGlass *timer_;
     SrsWaitGroup *wg_;
+
+private:
+    // Global shared timers moved from SrsHybridServer
+    SrsFastTimer *timer20ms_;
+    SrsFastTimer *timer100ms_;
+    SrsFastTimer *timer1s_;
+    SrsFastTimer *timer5s_;
+    SrsClockWallMonitor *clock_monitor_;
 
 private:
     // The pid file fd, lock the file write when server is running.
@@ -231,6 +242,15 @@ public:
     // Initialize server with callback handler ch.
     // @remark user must free the handler.
     virtual srs_error_t initialize();
+
+private:
+    // Require the PID file for the whole process.
+    virtual srs_error_t acquire_pid_file();
+
+public:
+    srs_error_t run();
+
+private:
     virtual srs_error_t initialize_st();
     virtual srs_error_t initialize_signal();
     virtual srs_error_t listen();
@@ -288,8 +308,14 @@ private:
 
     // WebRTC-related methods
     virtual srs_error_t listen_rtc_udp();
+
+    // Interface ISrsUdpMuxHandler
+public:
+    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
+
+private:
     virtual srs_error_t listen_rtc_api();
-    
+
 public:
     virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
     virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
@@ -314,12 +340,20 @@ public:
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
 
-    // Interface ISrsUdpMuxHandler
 public:
-    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
+    // Access to global shared timers
+    SrsFastTimer *timer20ms();
+    SrsFastTimer *timer100ms();
+    SrsFastTimer *timer1s();
+    SrsFastTimer *timer5s();
+
+    // interface ISrsFastTimer for statistics reporting
+private:
+    virtual srs_error_t on_timer(srs_utime_t interval);
 };
 
-
+// @global main SRS server, for debugging
+extern SrsServer *_srs_server;
 
 // Manager for RTC connections.
 extern SrsResourceManager *_srs_conn_manager;

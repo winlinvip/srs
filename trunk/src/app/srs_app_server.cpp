@@ -17,25 +17,82 @@
 #endif
 using namespace std;
 
+#include <srs_app_async_call.hpp>
 #include <srs_app_caster_flv.hpp>
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_conn.hpp>
 #include <srs_app_coworkers.hpp>
 #include <srs_app_heartbeat.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_conn.hpp>
+#include <srs_app_http_hooks.hpp>
 #include <srs_app_ingest.hpp>
 #include <srs_app_latest_version.hpp>
+#include <srs_app_log.hpp>
 #include <srs_app_mpegts_udp.hpp>
-#include <srs_app_rtc_network.hpp>
+#include <srs_app_pithy_print.hpp>
+#include <srs_app_reload.hpp>
 #include <srs_app_rtc_api.hpp>
-#include <srs_app_rtc_source.hpp>
 #include <srs_app_rtc_dtls.hpp>
-#include <srs_app_async_call.hpp>
-#include <srs_app_statistic.hpp>
-#include <srs_protocol_rtc_stun.hpp>
+#include <srs_app_rtc_network.hpp>
 #include <srs_app_rtc_sdp.hpp>
 #include <srs_app_rtc_server.hpp>
+#include <srs_app_rtc_source.hpp>
+#include <srs_app_rtmp_conn.hpp>
+#include <srs_app_source.hpp>
+#include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
+#include <srs_app_utility.hpp>
+#include <srs_kernel_consts.hpp>
+#include <srs_kernel_error.hpp>
+#include <srs_kernel_log.hpp>
+#include <srs_kernel_utility.hpp>
+#include <srs_protocol_log.hpp>
+#include <srs_protocol_rtc_stun.hpp>
+#ifdef SRS_GB28181
+#include <srs_app_gb28181.hpp>
+#endif
+#ifdef SRS_SRT
+#include <srs_app_srt_conn.hpp>
+#include <srs_app_srt_server.hpp>
+#include <srs_app_srt_source.hpp>
+#endif
+#ifdef SRS_RTSP
+#include <srs_app_rtsp_conn.hpp>
+#include <srs_app_rtsp_source.hpp>
+#endif
+
+SrsServer *_srs_server = NULL;
+
+SrsAsyncCallWorker *_srs_dvr_async = NULL;
+
+SrsPps *_srs_pps_recvfrom = NULL;
+SrsPps *_srs_pps_recvfrom_eagain = NULL;
+SrsPps *_srs_pps_sendto = NULL;
+SrsPps *_srs_pps_sendto_eagain = NULL;
+
+SrsPps *_srs_pps_read = NULL;
+SrsPps *_srs_pps_read_eagain = NULL;
+SrsPps *_srs_pps_readv = NULL;
+SrsPps *_srs_pps_readv_eagain = NULL;
+SrsPps *_srs_pps_writev = NULL;
+SrsPps *_srs_pps_writev_eagain = NULL;
+
+SrsPps *_srs_pps_recvmsg = NULL;
+SrsPps *_srs_pps_recvmsg_eagain = NULL;
+SrsPps *_srs_pps_sendmsg = NULL;
+SrsPps *_srs_pps_sendmsg_eagain = NULL;
+
+SrsPps *_srs_pps_clock_15ms = NULL;
+SrsPps *_srs_pps_clock_20ms = NULL;
+SrsPps *_srs_pps_clock_25ms = NULL;
+SrsPps *_srs_pps_clock_30ms = NULL;
+SrsPps *_srs_pps_clock_35ms = NULL;
+SrsPps *_srs_pps_clock_40ms = NULL;
+SrsPps *_srs_pps_clock_80ms = NULL;
+SrsPps *_srs_pps_clock_160ms = NULL;
+SrsPps *_srs_pps_timer_s = NULL;
 
 // External declarations for WebRTC functions and variables
 extern bool srs_is_stun(const uint8_t *data, size_t size);
@@ -58,6 +115,131 @@ extern SrsPps *_srs_pps_srtps;
 extern SrsPps *_srs_pps_ids;
 extern SrsPps *_srs_pps_fids;
 extern SrsPps *_srs_pps_fids_level0;
+extern SrsPps *_srs_pps_dispose;
+
+extern SrsPps *_srs_pps_timer;
+extern SrsPps *_srs_pps_pub;
+extern SrsPps *_srs_pps_conn;
+
+extern SrsPps *_srs_pps_cids_get;
+extern SrsPps *_srs_pps_cids_set;
+
+extern SrsPps *_srs_pps_snack3;
+extern SrsPps *_srs_pps_snack4;
+extern SrsPps *_srs_pps_aloss2;
+
+extern SrsStageManager *_srs_stages;
+
+extern srs_error_t _srs_reload_err;
+extern SrsReloadState _srs_reload_state;
+extern std::string _srs_reload_id;
+
+// Clock and timing statistics
+extern SrsPps *_srs_pps_clock_15ms;
+extern SrsPps *_srs_pps_clock_20ms;
+extern SrsPps *_srs_pps_clock_25ms;
+extern SrsPps *_srs_pps_clock_30ms;
+extern SrsPps *_srs_pps_clock_35ms;
+extern SrsPps *_srs_pps_clock_40ms;
+extern SrsPps *_srs_pps_clock_80ms;
+extern SrsPps *_srs_pps_clock_160ms;
+extern SrsPps *_srs_pps_timer_s;
+
+// Object statistics
+extern SrsPps *_srs_pps_objs_rtps;
+extern SrsPps *_srs_pps_objs_rraw;
+extern SrsPps *_srs_pps_objs_rfua;
+extern SrsPps *_srs_pps_objs_rbuf;
+extern SrsPps *_srs_pps_objs_msgs;
+extern SrsPps *_srs_pps_objs_rothers;
+
+SrsPps *_srs_pps_aloss2 = NULL;
+
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+SrsPps *_srs_pps_thread_run = NULL;
+SrsPps *_srs_pps_thread_idle = NULL;
+SrsPps *_srs_pps_thread_yield = NULL;
+SrsPps *_srs_pps_thread_yield2 = NULL;
+
+// Debug statistics for I/O operations
+extern SrsPps *_srs_pps_recvfrom;
+extern SrsPps *_srs_pps_recvfrom_eagain;
+extern SrsPps *_srs_pps_sendto;
+extern SrsPps *_srs_pps_sendto_eagain;
+
+extern SrsPps *_srs_pps_read;
+extern SrsPps *_srs_pps_read_eagain;
+extern SrsPps *_srs_pps_readv;
+extern SrsPps *_srs_pps_readv_eagain;
+extern SrsPps *_srs_pps_writev;
+extern SrsPps *_srs_pps_writev_eagain;
+
+extern SrsPps *_srs_pps_recvmsg;
+extern SrsPps *_srs_pps_recvmsg_eagain;
+extern SrsPps *_srs_pps_sendmsg;
+extern SrsPps *_srs_pps_sendmsg_eagain;
+
+extern SrsPps *_srs_pps_epoll;
+extern SrsPps *_srs_pps_epoll_zero;
+extern SrsPps *_srs_pps_epoll_shake;
+extern SrsPps *_srs_pps_epoll_spin;
+
+extern SrsPps *_srs_pps_sched_160ms;
+extern SrsPps *_srs_pps_sched_s;
+extern SrsPps *_srs_pps_sched_15ms;
+extern SrsPps *_srs_pps_sched_20ms;
+extern SrsPps *_srs_pps_sched_25ms;
+extern SrsPps *_srs_pps_sched_30ms;
+extern SrsPps *_srs_pps_sched_35ms;
+extern SrsPps *_srs_pps_sched_40ms;
+extern SrsPps *_srs_pps_sched_80ms;
+
+extern SrsPps *_srs_pps_thread_run;
+extern SrsPps *_srs_pps_thread_idle;
+extern SrsPps *_srs_pps_thread_yield;
+extern SrsPps *_srs_pps_thread_yield2;
+
+// External ST statistics
+extern __thread unsigned long long _st_stat_recvfrom;
+extern __thread unsigned long long _st_stat_recvfrom_eagain;
+extern __thread unsigned long long _st_stat_sendto;
+extern __thread unsigned long long _st_stat_sendto_eagain;
+
+extern __thread unsigned long long _st_stat_read;
+extern __thread unsigned long long _st_stat_read_eagain;
+extern __thread unsigned long long _st_stat_readv;
+extern __thread unsigned long long _st_stat_readv_eagain;
+extern __thread unsigned long long _st_stat_writev;
+extern __thread unsigned long long _st_stat_writev_eagain;
+
+extern __thread unsigned long long _st_stat_recvmsg;
+extern __thread unsigned long long _st_stat_recvmsg_eagain;
+extern __thread unsigned long long _st_stat_sendmsg;
+extern __thread unsigned long long _st_stat_sendmsg_eagain;
+
+extern __thread unsigned long long _st_stat_epoll;
+extern __thread unsigned long long _st_stat_epoll_zero;
+extern __thread unsigned long long _st_stat_epoll_shake;
+extern __thread unsigned long long _st_stat_epoll_spin;
+
+extern __thread unsigned long long _st_stat_sched_15ms;
+extern __thread unsigned long long _st_stat_sched_20ms;
+extern __thread unsigned long long _st_stat_sched_25ms;
+extern __thread unsigned long long _st_stat_sched_30ms;
+extern __thread unsigned long long _st_stat_sched_35ms;
+extern __thread unsigned long long _st_stat_sched_40ms;
+extern __thread unsigned long long _st_stat_sched_80ms;
+extern __thread unsigned long long _st_stat_sched_160ms;
+extern __thread unsigned long long _st_stat_sched_s;
+
+extern __thread int _st_active_count;
+extern __thread int _st_num_free_stacks;
+
+extern __thread unsigned long long _st_stat_thread_run;
+extern __thread unsigned long long _st_stat_thread_idle;
+extern __thread unsigned long long _st_stat_thread_yield;
+extern __thread unsigned long long _st_stat_thread_yield2;
+#endif
 
 extern SrsPps *_srs_pps_pli;
 extern SrsPps *_srs_pps_twcc;
@@ -82,28 +264,164 @@ SrsResourceManager *_srs_conn_manager = NULL;
 // External WebRTC global variables
 extern SrsRtcBlackhole *_srs_blackhole;
 extern SrsDtlsCertificate *_srs_rtc_dtls_certificate;
-#include <srs_app_rtmp_conn.hpp>
-#include <srs_app_source.hpp>
-#include <srs_app_statistic.hpp>
-#include <srs_app_stream_token.hpp>
-#include <srs_app_utility.hpp>
-#include <srs_kernel_consts.hpp>
-#include <srs_kernel_error.hpp>
-#include <srs_kernel_log.hpp>
-#include <srs_kernel_utility.hpp>
-#include <srs_protocol_log.hpp>
-#ifdef SRS_GB28181
-#include <srs_app_gb28181.hpp>
-#endif
+
+srs_error_t srs_global_initialize()
+{
+    srs_error_t err = srs_success;
+
+    // Root global objects.
+    _srs_log = new SrsFileLog();
+    _srs_context = new SrsThreadContext();
+    _srs_config = new SrsConfig();
+
+    // The clock wall object.
+    _srs_clock = new SrsWallClock();
+
+    // The pps cids depends by st init.
+    _srs_pps_cids_get = new SrsPps();
+    _srs_pps_cids_set = new SrsPps();
+
+    // Initialize ST, which depends on pps cids.
+    if ((err = srs_st_init()) != srs_success) {
+        return srs_error_wrap(err, "initialize st failed");
+    }
+
+    // The global objects which depends on ST.
+    // Initialize _srs_stages first as it's needed by SrsServer constructor
+    _srs_stages = new SrsStageManager();
+    _srs_sources = new SrsLiveSourceManager();
+    _srs_circuit_breaker = new SrsCircuitBreaker();
+    _srs_hooks = new SrsHttpHooks();
+
 #ifdef SRS_SRT
-#include <srs_app_srt_conn.hpp>
-#include <srs_app_srt_server.hpp>
-#include <srs_app_srt_source.hpp>
+    _srs_srt_sources = new SrsSrtSourceManager();
 #endif
+
+    _srs_rtc_sources = new SrsRtcSourceManager();
+    _srs_blackhole = new SrsRtcBlackhole();
+
+    // Initialize stream publish token manager
+    _srs_stream_publish_tokens = new SrsStreamPublishTokenManager();
+
+    _srs_conn_manager = new SrsResourceManager("RTC", true);
+    _srs_rtc_dtls_certificate = new SrsDtlsCertificate();
 #ifdef SRS_RTSP
-#include <srs_app_rtsp_conn.hpp>
-#include <srs_app_rtsp_source.hpp>
+    _srs_rtsp_sources = new SrsRtspSourceManager();
+    _srs_rtsp_manager = new SrsResourceManager("RTSP", true);
 #endif
+#ifdef SRS_GB28181
+    _srs_gb_manager = new SrsResourceManager("GB", true);
+#endif
+
+    // Initialize global pps, which depends on _srs_clock
+    _srs_pps_ids = new SrsPps();
+    _srs_pps_fids = new SrsPps();
+    _srs_pps_fids_level0 = new SrsPps();
+    _srs_pps_dispose = new SrsPps();
+
+    _srs_pps_timer = new SrsPps();
+    _srs_pps_conn = new SrsPps();
+    _srs_pps_pub = new SrsPps();
+
+    _srs_pps_snack = new SrsPps();
+    _srs_pps_snack2 = new SrsPps();
+    _srs_pps_snack3 = new SrsPps();
+    _srs_pps_snack4 = new SrsPps();
+    _srs_pps_sanack = new SrsPps();
+    _srs_pps_svnack = new SrsPps();
+
+    _srs_pps_rnack = new SrsPps();
+    _srs_pps_rnack2 = new SrsPps();
+    _srs_pps_rhnack = new SrsPps();
+    _srs_pps_rmnack = new SrsPps();
+
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_recvfrom = new SrsPps();
+    _srs_pps_recvfrom_eagain = new SrsPps();
+    _srs_pps_sendto = new SrsPps();
+    _srs_pps_sendto_eagain = new SrsPps();
+
+    _srs_pps_read = new SrsPps();
+    _srs_pps_read_eagain = new SrsPps();
+    _srs_pps_readv = new SrsPps();
+    _srs_pps_readv_eagain = new SrsPps();
+    _srs_pps_writev = new SrsPps();
+    _srs_pps_writev_eagain = new SrsPps();
+
+    _srs_pps_recvmsg = new SrsPps();
+    _srs_pps_recvmsg_eagain = new SrsPps();
+    _srs_pps_sendmsg = new SrsPps();
+    _srs_pps_sendmsg_eagain = new SrsPps();
+
+    _srs_pps_epoll = new SrsPps();
+    _srs_pps_epoll_zero = new SrsPps();
+    _srs_pps_epoll_shake = new SrsPps();
+    _srs_pps_epoll_spin = new SrsPps();
+
+    _srs_pps_sched_15ms = new SrsPps();
+    _srs_pps_sched_20ms = new SrsPps();
+    _srs_pps_sched_25ms = new SrsPps();
+    _srs_pps_sched_30ms = new SrsPps();
+    _srs_pps_sched_35ms = new SrsPps();
+    _srs_pps_sched_40ms = new SrsPps();
+    _srs_pps_sched_80ms = new SrsPps();
+    _srs_pps_sched_160ms = new SrsPps();
+    _srs_pps_sched_s = new SrsPps();
+#endif
+
+    _srs_pps_clock_15ms = new SrsPps();
+    _srs_pps_clock_20ms = new SrsPps();
+    _srs_pps_clock_25ms = new SrsPps();
+    _srs_pps_clock_30ms = new SrsPps();
+    _srs_pps_clock_35ms = new SrsPps();
+    _srs_pps_clock_40ms = new SrsPps();
+    _srs_pps_clock_80ms = new SrsPps();
+    _srs_pps_clock_160ms = new SrsPps();
+    _srs_pps_timer_s = new SrsPps();
+
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_thread_run = new SrsPps();
+    _srs_pps_thread_idle = new SrsPps();
+    _srs_pps_thread_yield = new SrsPps();
+    _srs_pps_thread_yield2 = new SrsPps();
+#endif
+
+    _srs_pps_rpkts = new SrsPps();
+    _srs_pps_addrs = new SrsPps();
+    _srs_pps_fast_addrs = new SrsPps();
+
+    _srs_pps_spkts = new SrsPps();
+    _srs_pps_objs_msgs = new SrsPps();
+
+    _srs_pps_sstuns = new SrsPps();
+    _srs_pps_srtcps = new SrsPps();
+    _srs_pps_srtps = new SrsPps();
+
+    _srs_pps_rstuns = new SrsPps();
+    _srs_pps_rrtps = new SrsPps();
+    _srs_pps_rrtcps = new SrsPps();
+
+    _srs_pps_aloss2 = new SrsPps();
+
+    _srs_pps_pli = new SrsPps();
+    _srs_pps_twcc = new SrsPps();
+    _srs_pps_rr = new SrsPps();
+
+    _srs_pps_objs_rtps = new SrsPps();
+    _srs_pps_objs_rraw = new SrsPps();
+    _srs_pps_objs_rfua = new SrsPps();
+    _srs_pps_objs_rbuf = new SrsPps();
+    _srs_pps_objs_rothers = new SrsPps();
+
+    // Create global async worker for DVR.
+    _srs_dvr_async = new SrsAsyncCallWorker();
+
+    _srs_reload_err = srs_success;
+    _srs_reload_state = SrsReloadStateInit;
+    _srs_reload_id = srs_rand_gen_str(7);
+
+    return err;
+}
 
 ISrsSrtClientHandler::ISrsSrtClientHandler()
 {
@@ -433,6 +751,13 @@ SrsServer::SrsServer()
     timer_ = NULL;
     wg_ = NULL;
 
+    // Initialize global shared timers moved from SrsHybridServer
+    timer20ms_ = new SrsFastTimer("server", 20 * SRS_UTIME_MILLISECONDS);
+    timer100ms_ = new SrsFastTimer("server", 100 * SRS_UTIME_MILLISECONDS);
+    timer1s_ = new SrsFastTimer("server", 1 * SRS_UTIME_SECONDS);
+    timer5s_ = new SrsFastTimer("server", 5 * SRS_UTIME_SECONDS);
+    clock_monitor_ = new SrsClockWallMonitor();
+
     // Initialize WebRTC components
     rtc_async_ = new SrsAsyncCallWorker();
 }
@@ -446,6 +771,13 @@ void SrsServer::destroy()
 {
     srs_freep(trd_);
     srs_freep(timer_);
+
+    // Free global shared timers
+    srs_freep(timer20ms_);
+    srs_freep(timer100ms_);
+    srs_freep(timer1s_);
+    srs_freep(timer5s_);
+    srs_freep(clock_monitor_);
 
     dispose();
 
@@ -593,6 +925,39 @@ srs_error_t SrsServer::initialize()
 {
     srs_error_t err = srs_success;
 
+    srs_trace("SRS server initialized in single thread mode");
+
+    // Initialize the server.
+    if ((err = acquire_pid_file()) != srs_success) {
+        return srs_error_wrap(err, "init server");
+    }
+
+#ifdef SRS_SRT
+    if ((err = srs_srt_log_initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt log initialize");
+    }
+
+    _srt_eventloop = new SrsSrtEventLoop();
+
+    if ((err = _srt_eventloop->initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt poller initialize");
+    }
+
+    if ((err = _srt_eventloop->start()) != srs_success) {
+        return srs_error_wrap(err, "srt poller start");
+    }
+#endif
+
+    // Initialize WebRTC DTLS certificate
+    if ((err = _srs_rtc_dtls_certificate->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtc dtls certificate initialize");
+    }
+
+    // Start the DVR async call.
+    if ((err = _srs_dvr_async->start()) != srs_success) {
+        return srs_error_wrap(err, "dvr async");
+    }
+
     // for the main objects(server, config, log, context),
     // never subscribe handler in constructor,
     // instead, subscribe handler in initialize method.
@@ -649,6 +1014,133 @@ srs_error_t SrsServer::initialize()
 
     // Start WebRTC async worker
     rtc_async_->start();
+
+    // Start global shared timers
+    if ((err = timer20ms_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer20ms");
+    }
+
+    if ((err = timer100ms_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer100ms");
+    }
+
+    if ((err = timer1s_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer1s");
+    }
+
+    if ((err = timer5s_->start()) != srs_success) {
+        return srs_error_wrap(err, "start timer5s");
+    }
+
+    // Register clock monitor to 20ms timer and statistics reporting to 5s timer
+    timer20ms_->subscribe(clock_monitor_);
+    timer5s_->subscribe(this);
+
+    return err;
+}
+
+srs_error_t SrsServer::acquire_pid_file()
+{
+    std::string pid_file = _srs_config->get_pid_file();
+
+    // -rw-r--r--
+    // 644
+    int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+    int fd;
+    // open pid file
+    if ((fd = ::open(pid_file.c_str(), O_WRONLY | O_CREAT, mode)) == -1) {
+        return srs_error_new(ERROR_SYSTEM_PID_ACQUIRE, "open pid file=%s", pid_file.c_str());
+    }
+
+    // require write lock
+    struct flock lock;
+
+    lock.l_type = F_WRLCK;    // F_RDLCK, F_WRLCK, F_UNLCK
+    lock.l_start = 0;         // type offset, relative to l_whence
+    lock.l_whence = SEEK_SET; // SEEK_SET, SEEK_CUR, SEEK_END
+    lock.l_len = 0;
+
+    if (fcntl(fd, F_SETLK, &lock) == -1) {
+        if (errno == EACCES || errno == EAGAIN) {
+            ::close(fd);
+            srs_error("srs is already running!");
+            return srs_error_new(ERROR_SYSTEM_PID_ALREADY_RUNNING, "srs is already running");
+        }
+        return srs_error_new(ERROR_SYSTEM_PID_LOCK, "access to pid=%s", pid_file.c_str());
+    }
+
+    // truncate file
+    if (ftruncate(fd, 0) != 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_TRUNCATE_FILE, "truncate pid file=%s", pid_file.c_str());
+    }
+
+    // write the pid
+    string pid = srs_strconv_format_int(getpid());
+    if (write(fd, pid.c_str(), pid.length()) != (int)pid.length()) {
+        return srs_error_new(ERROR_SYSTEM_PID_WRITE_FILE, "write pid=%s to file=%s", pid.c_str(), pid_file.c_str());
+    }
+
+    // auto close when fork child process.
+    int val;
+    if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fcntl fd=%d", fd);
+    }
+    val |= FD_CLOEXEC;
+    if (fcntl(fd, F_SETFD, val) < 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "lock file=%s fd=%d", pid_file.c_str(), fd);
+    }
+
+    srs_trace("write pid=%s to %s success!", pid.c_str(), pid_file.c_str());
+    pid_fd_ = fd;
+
+    return srs_success;
+}
+
+srs_error_t SrsServer::run()
+{
+    srs_error_t err = srs_success;
+
+    // Initialize the whole system, set hooks to handle server level events.
+    if ((err = initialize_st()) != srs_success) {
+        return srs_error_wrap(err, "initialize st");
+    }
+
+    if ((err = initialize_signal()) != srs_success) {
+        return srs_error_wrap(err, "initialize signal");
+    }
+
+    if ((err = listen()) != srs_success) {
+        return srs_error_wrap(err, "listen");
+    }
+
+    if ((err = register_signal()) != srs_success) {
+        return srs_error_wrap(err, "register signal");
+    }
+
+    if ((err = http_handle()) != srs_success) {
+        return srs_error_wrap(err, "http handle");
+    }
+
+    if ((err = ingest()) != srs_success) {
+        return srs_error_wrap(err, "ingest");
+    }
+
+    // Wait for server which need to do cleanup.
+    SrsWaitGroup wg;
+
+    if ((err = start(&wg)) != srs_success) {
+        return srs_error_wrap(err, "start");
+    }
+
+#ifdef SRS_GB28181
+    if ((err = _srs_gb_manager->start()) != srs_success) {
+        return srs_error_wrap(err, "start manager");
+    }
+#endif
+
+    // Wait for server to quit.
+    wg.wait();
 
     return err;
 }
@@ -1646,7 +2138,7 @@ srs_error_t SrsServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_s
 
     ISrsRequest *req = ruc->req_;
 
-    // Security or system flow control check. For WebRTC, use 0 as fd and port, because for 
+    // Security or system flow control check. For WebRTC, use 0 as fd and port, because for
     // the WebRTC HTTP API, it's not useful information.
     if ((err = on_before_connection("RTC", (int)0, req->ip, 0)) != srs_success) {
         return srs_error_wrap(err, "check");
@@ -2092,4 +2584,174 @@ void SrsServer::on_unpublish(ISrsRequest *r)
     coworkers->on_unpublish(r);
 }
 
+SrsFastTimer *SrsServer::timer20ms()
+{
+    return timer20ms_;
+}
 
+SrsFastTimer *SrsServer::timer100ms()
+{
+    return timer100ms_;
+}
+
+SrsFastTimer *SrsServer::timer1s()
+{
+    return timer1s_;
+}
+
+SrsFastTimer *SrsServer::timer5s()
+{
+    return timer5s_;
+}
+
+srs_error_t SrsServer::on_timer(srs_utime_t interval)
+{
+    srs_error_t err = srs_success;
+
+    // Show statistics for RTC server.
+    SrsProcSelfStat *u = srs_get_self_proc_stat();
+    // Resident Set Size: number of pages the process has in real memory.
+    int memory = (int)(u->rss * 4 / 1024);
+
+    static char buf[128];
+
+    string cid_desc;
+    _srs_pps_cids_get->update();
+    _srs_pps_cids_set->update();
+    if (_srs_pps_cids_get->r10s() || _srs_pps_cids_set->r10s()) {
+        snprintf(buf, sizeof(buf), ", cid=%d,%d", _srs_pps_cids_get->r10s(), _srs_pps_cids_set->r10s());
+        cid_desc = buf;
+    }
+    string timer_desc;
+    _srs_pps_timer->update();
+    _srs_pps_pub->update();
+    _srs_pps_conn->update();
+    if (_srs_pps_timer->r10s() || _srs_pps_pub->r10s() || _srs_pps_conn->r10s()) {
+        snprintf(buf, sizeof(buf), ", timer=%d,%d,%d", _srs_pps_timer->r10s(), _srs_pps_pub->r10s(), _srs_pps_conn->r10s());
+        timer_desc = buf;
+    }
+
+    string free_desc;
+    _srs_pps_dispose->update();
+    if (_srs_pps_dispose->r10s()) {
+        snprintf(buf, sizeof(buf), ", free=%d", _srs_pps_dispose->r10s());
+        free_desc = buf;
+    }
+
+    string recvfrom_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_recvfrom->update(_st_stat_recvfrom);
+    _srs_pps_recvfrom_eagain->update(_st_stat_recvfrom_eagain);
+    _srs_pps_sendto->update(_st_stat_sendto);
+    _srs_pps_sendto_eagain->update(_st_stat_sendto_eagain);
+    if (_srs_pps_recvfrom->r10s() || _srs_pps_recvfrom_eagain->r10s() || _srs_pps_sendto->r10s() || _srs_pps_sendto_eagain->r10s()) {
+        snprintf(buf, sizeof(buf), ", udp=%d,%d,%d,%d", _srs_pps_recvfrom->r10s(), _srs_pps_recvfrom_eagain->r10s(), _srs_pps_sendto->r10s(), _srs_pps_sendto_eagain->r10s());
+        recvfrom_desc = buf;
+    }
+#endif
+
+    string io_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_read->update(_st_stat_read);
+    _srs_pps_read_eagain->update(_st_stat_read_eagain);
+    _srs_pps_readv->update(_st_stat_readv);
+    _srs_pps_readv_eagain->update(_st_stat_readv_eagain);
+    _srs_pps_writev->update(_st_stat_writev);
+    _srs_pps_writev_eagain->update(_st_stat_writev_eagain);
+    if (_srs_pps_read->r10s() || _srs_pps_read_eagain->r10s() || _srs_pps_readv->r10s() || _srs_pps_readv_eagain->r10s() || _srs_pps_writev->r10s() || _srs_pps_writev_eagain->r10s()) {
+        snprintf(buf, sizeof(buf), ", io=%d,%d,%d,%d,%d,%d", _srs_pps_read->r10s(), _srs_pps_read_eagain->r10s(), _srs_pps_readv->r10s(), _srs_pps_readv_eagain->r10s(), _srs_pps_writev->r10s(), _srs_pps_writev_eagain->r10s());
+        io_desc = buf;
+    }
+#endif
+
+    string msg_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_recvmsg->update(_st_stat_recvmsg);
+    _srs_pps_recvmsg_eagain->update(_st_stat_recvmsg_eagain);
+    _srs_pps_sendmsg->update(_st_stat_sendmsg);
+    _srs_pps_sendmsg_eagain->update(_st_stat_sendmsg_eagain);
+    if (_srs_pps_recvmsg->r10s() || _srs_pps_recvmsg_eagain->r10s() || _srs_pps_sendmsg->r10s() || _srs_pps_sendmsg_eagain->r10s()) {
+        snprintf(buf, sizeof(buf), ", msg=%d,%d,%d,%d", _srs_pps_recvmsg->r10s(), _srs_pps_recvmsg_eagain->r10s(), _srs_pps_sendmsg->r10s(), _srs_pps_sendmsg_eagain->r10s());
+        msg_desc = buf;
+    }
+#endif
+
+    string epoll_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_epoll->update(_st_stat_epoll);
+    _srs_pps_epoll_zero->update(_st_stat_epoll_zero);
+    _srs_pps_epoll_shake->update(_st_stat_epoll_shake);
+    _srs_pps_epoll_spin->update(_st_stat_epoll_spin);
+    if (_srs_pps_epoll->r10s() || _srs_pps_epoll_zero->r10s() || _srs_pps_epoll_shake->r10s() || _srs_pps_epoll_spin->r10s()) {
+        snprintf(buf, sizeof(buf), ", epoll=%d,%d,%d,%d", _srs_pps_epoll->r10s(), _srs_pps_epoll_zero->r10s(), _srs_pps_epoll_shake->r10s(), _srs_pps_epoll_spin->r10s());
+        epoll_desc = buf;
+    }
+#endif
+
+    string sched_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_sched_160ms->update(_st_stat_sched_160ms);
+    _srs_pps_sched_s->update(_st_stat_sched_s);
+    _srs_pps_sched_15ms->update(_st_stat_sched_15ms);
+    _srs_pps_sched_20ms->update(_st_stat_sched_20ms);
+    _srs_pps_sched_25ms->update(_st_stat_sched_25ms);
+    _srs_pps_sched_30ms->update(_st_stat_sched_30ms);
+    _srs_pps_sched_35ms->update(_st_stat_sched_35ms);
+    _srs_pps_sched_40ms->update(_st_stat_sched_40ms);
+    _srs_pps_sched_80ms->update(_st_stat_sched_80ms);
+    if (_srs_pps_sched_160ms->r10s() || _srs_pps_sched_s->r10s() || _srs_pps_sched_15ms->r10s() || _srs_pps_sched_20ms->r10s() || _srs_pps_sched_25ms->r10s() || _srs_pps_sched_30ms->r10s() || _srs_pps_sched_35ms->r10s() || _srs_pps_sched_40ms->r10s() || _srs_pps_sched_80ms->r10s()) {
+        snprintf(buf, sizeof(buf), ", sched=%d,%d,%d,%d,%d,%d,%d,%d,%d", _srs_pps_sched_15ms->r10s(), _srs_pps_sched_20ms->r10s(), _srs_pps_sched_25ms->r10s(), _srs_pps_sched_30ms->r10s(), _srs_pps_sched_35ms->r10s(), _srs_pps_sched_40ms->r10s(), _srs_pps_sched_80ms->r10s(), _srs_pps_sched_160ms->r10s(), _srs_pps_sched_s->r10s());
+        sched_desc = buf;
+    }
+#endif
+
+    string clock_desc;
+    _srs_pps_clock_15ms->update();
+    _srs_pps_clock_20ms->update();
+    _srs_pps_clock_25ms->update();
+    _srs_pps_clock_30ms->update();
+    _srs_pps_clock_35ms->update();
+    _srs_pps_clock_40ms->update();
+    _srs_pps_clock_80ms->update();
+    _srs_pps_clock_160ms->update();
+    _srs_pps_timer_s->update();
+    if (_srs_pps_clock_15ms->r10s() || _srs_pps_timer_s->r10s() || _srs_pps_clock_20ms->r10s() || _srs_pps_clock_25ms->r10s() || _srs_pps_clock_30ms->r10s() || _srs_pps_clock_35ms->r10s() || _srs_pps_clock_40ms->r10s() || _srs_pps_clock_80ms->r10s() || _srs_pps_clock_160ms->r10s()) {
+        snprintf(buf, sizeof(buf), ", clock=%d,%d,%d,%d,%d,%d,%d,%d,%d", _srs_pps_clock_15ms->r10s(), _srs_pps_clock_20ms->r10s(), _srs_pps_clock_25ms->r10s(), _srs_pps_clock_30ms->r10s(), _srs_pps_clock_35ms->r10s(), _srs_pps_clock_40ms->r10s(), _srs_pps_clock_80ms->r10s(), _srs_pps_clock_160ms->r10s(), _srs_pps_timer_s->r10s());
+        clock_desc = buf;
+    }
+
+    string thread_desc;
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+    _srs_pps_thread_run->update(_st_stat_thread_run);
+    _srs_pps_thread_idle->update(_st_stat_thread_idle);
+    _srs_pps_thread_yield->update(_st_stat_thread_yield);
+    _srs_pps_thread_yield2->update(_st_stat_thread_yield2);
+    if (_st_active_count > 0 || _st_num_free_stacks > 0 || _srs_pps_thread_run->r10s() || _srs_pps_thread_idle->r10s() || _srs_pps_thread_yield->r10s() || _srs_pps_thread_yield2->r10s()) {
+        snprintf(buf, sizeof(buf), ", co=%d,%d,%d, stk=%d, yield=%d,%d", _st_active_count, _srs_pps_thread_run->r10s(), _srs_pps_thread_idle->r10s(), _st_num_free_stacks, _srs_pps_thread_yield->r10s(), _srs_pps_thread_yield2->r10s());
+        thread_desc = buf;
+    }
+#endif
+
+    string objs_desc;
+    _srs_pps_objs_rtps->update();
+    _srs_pps_objs_rraw->update();
+    _srs_pps_objs_rfua->update();
+    _srs_pps_objs_rbuf->update();
+    _srs_pps_objs_msgs->update();
+    _srs_pps_objs_rothers->update();
+    if (_srs_pps_objs_rtps->r10s() || _srs_pps_objs_rraw->r10s() || _srs_pps_objs_rfua->r10s() || _srs_pps_objs_rbuf->r10s() || _srs_pps_objs_msgs->r10s() || _srs_pps_objs_rothers->r10s()) {
+        snprintf(buf, sizeof(buf), ", objs=(pkt:%d,raw:%d,fua:%d,msg:%d,oth:%d,buf:%d)",
+                 _srs_pps_objs_rtps->r10s(), _srs_pps_objs_rraw->r10s(), _srs_pps_objs_rfua->r10s(),
+                 _srs_pps_objs_msgs->r10s(), _srs_pps_objs_rothers->r10s(), _srs_pps_objs_rbuf->r10s());
+        objs_desc = buf;
+    }
+
+    srs_trace("Hybrid cpu=%.2f%%,%dMB%s%s%s%s%s%s%s%s%s%s%s",
+              u->percent * 100, memory,
+              cid_desc.c_str(), timer_desc.c_str(),
+              recvfrom_desc.c_str(), io_desc.c_str(), msg_desc.c_str(),
+              epoll_desc.c_str(), sched_desc.c_str(), clock_desc.c_str(),
+              thread_desc.c_str(), free_desc.c_str(), objs_desc.c_str());
+
+    return err;
+}

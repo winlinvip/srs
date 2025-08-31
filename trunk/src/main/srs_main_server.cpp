@@ -33,7 +33,6 @@ using namespace std;
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_utility.hpp>
@@ -64,9 +63,6 @@ SrsConfig *_srs_config = NULL;
 
 // @global version of srs, which can grep keyword "XCORE"
 extern const char *_srs_version;
-
-// @global main SRS server, for debugging
-SrsServer *_srs_server = NULL;
 
 // Whether setup config by environment variables, see https://github.com/ossrs/srs/issues/2277
 bool _srs_config_by_env = false;
@@ -456,23 +452,25 @@ srs_error_t run_hybrid_server()
 {
     srs_error_t err = srs_success;
 
+    _srs_server = new SrsServer();
+
     // Do some system initialize.
-    if ((err = _srs_hybrid->initialize()) != srs_success) {
+    if ((err = _srs_server->initialize()) != srs_success) {
         return srs_error_wrap(err, "hybrid initialize");
     }
 
-    // Circuit breaker to protect server, which depends on hybrid.
+    // Circuit breaker to protect server, which depends on server.
     if ((err = _srs_circuit_breaker->initialize()) != srs_success) {
         return srs_error_wrap(err, "init circuit breaker");
     }
 
     // Should run util hybrid servers all done.
-    if ((err = _srs_hybrid->run()) != srs_success) {
+    if ((err = _srs_server->run()) != srs_success) {
         return srs_error_wrap(err, "hybrid run");
     }
 
     // After all done, stop and cleanup.
-    _srs_hybrid->stop();
+    _srs_server->stop();
 
     return err;
 }

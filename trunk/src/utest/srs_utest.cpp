@@ -36,7 +36,6 @@ ISrsLog *_srs_log = NULL;
 ISrsContext *_srs_context = NULL;
 // app module.
 SrsConfig *_srs_config = NULL;
-SrsServer *_srs_server = NULL;
 bool _srs_in_docker = false;
 bool _srs_config_by_env = false;
 
@@ -61,6 +60,8 @@ srs_error_t prepare_main()
     if ((err = srs_global_initialize()) != srs_success) {
         return srs_error_wrap(err, "init global");
     }
+
+    _srs_server = new SrsServer();
 
     srs_freep(_srs_log);
     _srs_log = new MockEmptyLog(SrsLogLevelError);

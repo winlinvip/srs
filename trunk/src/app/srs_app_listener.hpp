@@ -114,6 +114,7 @@ public:
     // Interface ISrsReusableThreadHandler.
 public:
     virtual srs_error_t cycle();
+
 private:
     srs_error_t do_cycle();
 };
@@ -147,6 +148,7 @@ public:
     // Interface ISrsReusableThreadHandler.
 public:
     virtual srs_error_t cycle();
+
 private:
     srs_error_t do_cycle();
 };

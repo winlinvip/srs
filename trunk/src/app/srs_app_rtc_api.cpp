@@ -12,12 +12,12 @@
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_server.hpp>
+#include <srs_app_server.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_server.hpp>
 #include <unistd.h>
 using namespace std;
 

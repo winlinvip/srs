@@ -231,7 +231,7 @@ srs_error_t SrsUdpListener::do_cycle()
     if ((err = handler->on_udp_packet((const sockaddr *)&from, nb_from, buf, nread)) != srs_success) {
         return srs_error_wrap(err, "handle packet %d bytes", nread);
     }
-    
+
     return err;
 }
 
@@ -341,7 +341,7 @@ srs_error_t SrsTcpListener::do_cycle()
     if ((err = handler->on_tcp_client(this, fd)) != srs_success) {
         return srs_error_wrap(err, "handle fd=%d", srs_netfd_fileno(fd));
     }
-    
+
     return err;
 }
 

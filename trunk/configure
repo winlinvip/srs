@@ -55,27 +55,6 @@ SRS_BUILD_SUMMARY="_srs_build_summary.sh"
 SrsUtestMakeEntry="@echo -e \"ignore utest for it's disabled\""
 if [[ $SRS_UTEST == YES ]]; then SrsUtestMakeEntry="\$(MAKE)\$(JOBS) -C ${SRS_OBJS}/${SRS_PLATFORM}/utest"; fi
 
-#####################################################################################
-# finger out modules to install.
-# where srs module is a dir which contains a config file.
-SRS_MODULES=()
-__mfiles=$(find $SRS_WORKDIR/modules -name "config") && for __mfile in $__mfiles; do
-    SRS_MODULES+=("`dirname $__mfile`")
-done
-
-# variables for makefile for all modules.
-__mphonys="" && __mdefaults="" && __mcleanups=""
-# add each modules for application
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    echo "install module at: $SRS_MODULE"
-    . $SRS_WORKDIR/auto/reset_module.sh && . $SRS_MODULE/config
-    if [[ 0 -ne ${#SRS_MODULE_MAIN[@]} ]]; then
-        __mphonys="$__mphonys $SRS_MODULE_NAME"
-        __mdefaults="$__mdefaults $SRS_MODULE_NAME"
-        __mcleanups="$__mcleanups $SRS_MODULE_NAME"
-    fi
-done
-
 # generate extra phony for each modules.
 cat << END > ${SRS_OBJS}/Makefile
 
@@ -339,11 +318,6 @@ fi
 
 DEFINES=""
 # add each modules for app
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    . $SRS_WORKDIR/auto/reset_module.sh && . $SRS_MODULE/config
-    MODULE_FILES+=("${SRS_MODULE_APP[*]}")
-    DEFINES="${DEFINES} ${SRS_MODULE_DEFINES}"
-done
 APP_INCS="src/app"; MODULE_DIR=${APP_INCS} . $SRS_WORKDIR/auto/modules.sh
 APP_OBJS="${MODULE_OBJS[@]}"
 #
@@ -357,24 +331,6 @@ fi
 MODULE_FILES=("srs_main_server")
 SERVER_INCS="src/main"; MODULE_DIR=${SERVER_INCS} . $SRS_WORKDIR/auto/modules.sh
 SERVER_OBJS="${MODULE_OBJS[@]}"
-#
-#Main Module, for app from modules.
-MODULE_ID="MAIN"
-MODULE_DEPENDS=("CORE" "KERNEL" "PROTOCOL" "APP")
-ModuleLibIncs=(${SRS_OBJS} ${LibGperfRoot} ${LibSSLRoot} ${LibSrtpRoot})
-if [[ $SRS_FFMPEG_FIT == YES ]]; then
-    ModuleLibIncs+=("${LibFfmpegRoot[*]}")
-fi
-MODULE_FILES=()
-DEFINES=""
-# add each modules for main
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    . $SRS_WORKDIR/auto/reset_module.sh && . $SRS_MODULE/config
-    MODULE_FILES+=("${SRS_MODULE_MAIN[*]}")
-    DEFINES="${DEFINES} ${SRS_MODULE_DEFINES}"
-done
-MAIN_INCS="src/main"; MODULE_DIR=${MAIN_INCS} . $SRS_WORKDIR/auto/modules.sh
-MAIN_OBJS="${MODULE_OBJS[@]}"
 
 #####################################################################################
 # Binaries, main entrances, link the module and its depends modules,
@@ -382,10 +338,6 @@ MAIN_OBJS="${MODULE_OBJS[@]}"
 #
 # all main entrances
 MAIN_ENTRANCES=("srs_main_server")
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    . $SRS_WORKDIR/auto/reset_module.sh && . $SRS_MODULE/config
-    MAIN_ENTRANCES+=("${SRS_MODULE_MAIN[*]}")
-done
 #
 # all depends libraries
 ModuleLibFiles=(${LibSTfile} ${LibSSLfile} ${LibGperfFile} ${LibSrtpFile})
@@ -419,13 +371,6 @@ fi
 if [[ $SRS_SRT == YES ]]; then
     ModuleLibFiles+=("${LibSRTfile[*]}")
 fi
-#
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    . $SRS_WORKDIR/auto/reset_module.sh && . $SRS_MODULE/config
-    # no SRS_MODULE_MAIN
-    if [[ 0 -eq ${#SRS_MODULE_MAIN[@]} ]]; then continue; fi
-    BUILD_KEY="$SRS_MODULE_NAME" APP_MAIN="${SRS_MODULE_MAIN[0]}" APP_NAME="$SRS_MODULE_NAME" . $SRS_WORKDIR/auto/apps.sh
-done
 # For utest on mac.
 # @see https://github.com/protocolbuffers/protobuf/issues/51#issuecomment-111044468
 if [[ $SRS_OSX == YES ]]; then
@@ -480,7 +425,7 @@ mv ${SRS_MAKEFILE} ${SRS_MAKEFILE}.bk
 # generate phony header
 cat << END > ${SRS_MAKEFILE}
 .PHONY: default all _default install help clean destroy server utest _prepare_dir $__mphonys
-.PHONY: clean_srs clean_modules clean_openssl clean_srtp2 clean_opus clean_ffmpeg clean_st
+.PHONY: clean_srs clean_openssl clean_srtp2 clean_opus clean_ffmpeg clean_st
 .PHONY: st ffmpeg
 
 CC = ${SRS_TOOL_CC}
@@ -512,7 +457,7 @@ default: server
 
 all: _default
 
-_default: server utest $__mdefaults
+_default: server utest
 
 help:
 	@echo "Usage: make <help>|<clean>|<destroy>|<server>|<utest>|<install>|<uninstall>"
@@ -541,16 +486,13 @@ doclean:
 	(cd ${SRS_OBJS} && rm -rf src/* include lib)
 	(mkdir -p ${SRS_OBJS}/utest && cd ${SRS_OBJS}/utest && rm -rf *.o *.a)
 
-clean: clean_srs clean_modules
+clean: clean_srs
 
 destroy:
 	(cd ${SRS_OBJS} && rm -rf ${SRS_PLATFORM})
 
 clean_srs:
 	@(cd ${SRS_OBJS} && rm -rf srs srs_utest src/* utest/*)
-
-clean_modules:
-	@(cd ${SRS_OBJS} && rm -rf $__mdefaults)
 
 clean_openssl:
 	@rm -rf ${SRS_OBJS}/${SRS_PLATFORM}/3rdparty/openssl
@@ -594,17 +536,6 @@ server: _prepare_dir
 	@bash objs/_srs_build_summary.sh
 
 END
-
-# generate all modules entry
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    . $SRS_WORKDIR/auto/reset_module.sh && . $SRS_MODULE/config
-    cat << END >> ${SRS_MAKEFILE}
-$SRS_MODULE_NAME: _prepare_dir server
-	@echo "Build the $SRS_MODULE_NAME over SRS"
-	\$(MAKE)\$(JOBS) -f ${SRS_OBJS}/Makefile $SRS_MODULE_NAME
-
-END
-done
 
 # install entry
 cat << END >> ${SRS_MAKEFILE}
@@ -816,11 +747,6 @@ if [[ $SRS_SANITIZER == YES ]]; then
 else
     echo -e "${GREEN}Note: The sanitizer is disabled.${BLACK}"
 fi
-
-# add each modules for application
-for SRS_MODULE in ${SRS_MODULES[*]}; do
-    echo -e "${GREEN}Enable module: $SRS_MODULE${BLACK}"
-done
 
 #####################################################################################
 # Do cleanup when configure done.

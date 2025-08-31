@@ -111,3 +111,21 @@ srs_utime_t SrsWallClock::now()
 }
 
 SrsWallClock *_srs_clock = NULL;
+
+#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
+SrsPps *_srs_pps_epoll = NULL;
+SrsPps *_srs_pps_epoll_zero = NULL;
+SrsPps *_srs_pps_epoll_shake = NULL;
+SrsPps *_srs_pps_epoll_spin = NULL;
+
+SrsPps *_srs_pps_sched_160ms = NULL;
+SrsPps *_srs_pps_sched_s = NULL;
+SrsPps *_srs_pps_sched_15ms = NULL;
+SrsPps *_srs_pps_sched_20ms = NULL;
+SrsPps *_srs_pps_sched_25ms = NULL;
+SrsPps *_srs_pps_sched_30ms = NULL;
+SrsPps *_srs_pps_sched_35ms = NULL;
+SrsPps *_srs_pps_sched_40ms = NULL;
+SrsPps *_srs_pps_sched_80ms = NULL;
+#endif
+

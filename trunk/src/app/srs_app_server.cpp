@@ -187,7 +187,7 @@ SrsServer::SrsServer()
     stream_caster_mpegts_ = new SrsUdpCasterListener();
     exporter_listener_ = new SrsTcpListener(this);
 #ifdef SRS_GB28181
-    stream_caster_gb28181_ = new SrsGbListener(http_api_mux_);
+    stream_caster_gb28181_ = new SrsGbListener();
 #endif
 
     http_server_ = new SrsHttpServer(this);
@@ -205,6 +205,11 @@ SrsServer::SrsServer()
 SrsServer::~SrsServer()
 {
     destroy();
+}
+
+ISrsHttpServeMux* SrsServer::api_server()
+{
+    return http_api_mux_;
 }
 
 void SrsServer::destroy()

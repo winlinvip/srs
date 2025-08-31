@@ -84,9 +84,6 @@ public:
 // Discover the candidates for RTC server.
 extern std::set<std::string> discover_candidates(SrsRtcUserConfig *ruc);
 
-// Manager for RTC connections.
-extern SrsResourceManager *_srs_conn_manager;
-
 // The dns resolve utility, return the resolved ip address.
 extern std::string srs_dns_resolve(std::string host, int &family);
 

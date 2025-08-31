@@ -219,10 +219,9 @@ private:
     SrsConfDirective *conf_;
     SrsTcpListener *media_listener_;
     SrsTcpListener *sip_listener_;
-    ISrsHttpServeMux *http_api_mux_;
 
 public:
-    SrsGbListener(ISrsHttpServeMux *http_api_mux);
+    SrsGbListener();
     virtual ~SrsGbListener();
 
 public:

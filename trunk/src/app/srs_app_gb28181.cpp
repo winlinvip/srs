@@ -408,12 +408,11 @@ std::string SrsGbSession::desc()
     return "GBS";
 }
 
-SrsGbListener::SrsGbListener(ISrsHttpServeMux *http_api_mux)
+SrsGbListener::SrsGbListener()
 {
     conf_ = NULL;
     sip_listener_ = new SrsTcpListener(this);
     media_listener_ = new SrsTcpListener(this);
-    http_api_mux_ = http_api_mux;
 }
 
 SrsGbListener::~SrsGbListener()
@@ -470,7 +469,8 @@ srs_error_t SrsGbListener::listen_api()
 {
     srs_error_t err = srs_success;
 
-    if ((err = http_api_mux_->handle("/gb/v1/publish/", new SrsGoApiGbPublish(conf_))) != srs_success) {
+    ISrsHttpServeMux *mux = _srs_server->api_server();
+    if ((err = mux->handle("/gb/v1/publish/", new SrsGoApiGbPublish(conf_))) != srs_success) {
         return srs_error_wrap(err, "handle publish");
     }
 

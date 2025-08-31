@@ -155,6 +155,10 @@ public:
     SrsServer();
     virtual ~SrsServer();
 
+public:
+    // Get the HTTP API server mux.
+    ISrsHttpServeMux* api_server();
+
 private:
     // The destroy is for gmc to analysis the memory leak,
     // if not destroy global/static data, the gmc will warning memory leak.
@@ -233,6 +237,7 @@ private:
     virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
     virtual srs_error_t srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr);
 
+private:
     // WebRTC-related methods
     virtual srs_error_t listen_rtc_udp();
 

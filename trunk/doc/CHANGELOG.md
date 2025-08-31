@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-08-31, Merge [#4460](https://github.com/ossrs/srs/pull/4460): AI: Always enable SRT protocol. v7.0.69 (#4460)
 * v7.0, 2025-08-31, Merge [#4459](https://github.com/ossrs/srs/pull/4459): AI: Merge SRT and RTC servers into unified SrsServer. v7.0.68 (#4459)
 * v7.0, 2025-08-29, Merge [#4457](https://github.com/ossrs/srs/pull/4457): Support IPv6 for all protocols: RTMP, HTTP/HTTPS, WebRTC, SRT, RTSP. v7.0.67 (#4457)
 * v7.0, 2025-08-28, Merge [#4456](https://github.com/ossrs/srs/pull/4456): AI: Remove cloud CLS and APM. v7.0.66 (#4456)

@@ -18,11 +18,11 @@
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_source.hpp>
-#include <srs_app_st.hpp>
-#include <srs_protocol_st.hpp>
-
 #include <srs_app_srt_listener.hpp>
+#include <srs_app_srt_server.hpp>
+#include <srs_app_st.hpp>
 #include <srs_protocol_srt.hpp>
+#include <srs_protocol_st.hpp>
 
 class SrsAsyncCallWorker;
 class SrsUdpMuxListener;
@@ -55,20 +55,10 @@ class SrsRtmpsTransport;
 class SrsSrtAcceptor;
 class SrsSrtEventLoop;
 class SrsRtcSessionManager;
+class SrsPidFileLocker;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
-
-// Interface for SRT client acceptance
-class ISrsSrtClientHandler
-{
-public:
-    ISrsSrtClientHandler();
-    virtual ~ISrsSrtClientHandler();
-
-public:
-    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
-};
 
 // SRS RTMP server, initialize and listen, start connection service thread, destroy client.
 class SrsServer : public ISrsReloadHandler, // Reload framework for permormance optimization.
@@ -89,11 +79,8 @@ private:
     SrsHourGlass *timer_;
 
 private:
-    // The pid file fd, lock the file write when server is running.
-    // @remark the init.d script should cleanup the pid file, when stop service,
-    //       for the server never delete the file; when system startup, the pid in pid file
-    //       maybe valid but the process is not SRS, the init.d script will never start server.
-    int pid_fd_;
+    // PID file manager for process identification and locking.
+    SrsPidFileLocker *pid_file_locker_;
 
 private:
     // If reusing, HTTP API use the same port of HTTP server.
@@ -173,10 +160,6 @@ public:
     // Initialize server with callback handler ch.
     // @remark user must free the handler.
     virtual srs_error_t initialize();
-
-private:
-    // Require the PID file for the whole process.
-    virtual srs_error_t acquire_pid_file();
 
 public:
     srs_error_t run();
@@ -320,6 +303,26 @@ public:
     // Interface ISrsEndlessThreadHandler.
 public:
     virtual srs_error_t cycle();
+};
+
+// PID file manager for process identification and locking.
+class SrsPidFileLocker
+{
+private:
+    int pid_fd_;
+    std::string pid_file_;
+
+public:
+    SrsPidFileLocker();
+    virtual ~SrsPidFileLocker();
+
+public:
+    // Acquire the PID file for the whole process.
+    virtual srs_error_t acquire();
+
+private:
+    // Close the PID file descriptor.
+    virtual void close();
 };
 
 #endif

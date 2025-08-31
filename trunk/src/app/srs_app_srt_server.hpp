@@ -9,13 +9,23 @@
 
 #include <srs_core.hpp>
 
-#include <srs_app_server.hpp>
 #include <srs_app_srt_listener.hpp>
 #include <srs_protocol_srt.hpp>
 
 class SrsSrtServer;
 class SrsHourGlass;
 class ISrsSrtClientHandler;
+
+// Interface for SRT client acceptance
+class ISrsSrtClientHandler
+{
+public:
+    ISrsSrtClientHandler();
+    virtual ~ISrsSrtClientHandler();
+
+public:
+    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd) = 0;
+};
 
 // A common srt acceptor, for SRT server.
 class SrsSrtAcceptor : public ISrsSrtHandler

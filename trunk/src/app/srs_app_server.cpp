@@ -67,12 +67,6 @@ SrsServer *_srs_server = NULL;
 
 SrsAsyncCallWorker *_srs_dvr_async = NULL;
 
-// External declarations for WebRTC functions and variables
-extern bool srs_is_stun(const uint8_t *data, size_t size);
-extern bool srs_is_dtls(const uint8_t *data, size_t len);
-extern bool srs_is_rtp_or_rtcp(const uint8_t *data, size_t len);
-extern bool srs_is_rtcp(const uint8_t *data, size_t len);
-
 extern SrsStageManager *_srs_stages;
 
 extern srs_error_t _srs_reload_err;
@@ -143,19 +137,6 @@ srs_error_t srs_global_initialize()
     return err;
 }
 
-ISrsSrtClientHandler::ISrsSrtClientHandler()
-{
-}
-
-ISrsSrtClientHandler::~ISrsSrtClientHandler()
-{
-}
-
-srs_error_t ISrsSrtClientHandler::accept_srt_client(srs_srt_t srt_fd)
-{
-    return srs_success;
-}
-
 SrsServer::SrsServer()
 {
     signal_reload_ = false;
@@ -163,7 +144,8 @@ SrsServer::SrsServer()
     signal_gmc_stop_ = false;
     signal_fast_quit_ = false;
     signal_gracefully_quit_ = false;
-    pid_fd_ = -1;
+
+    pid_file_locker_ = new SrsPidFileLocker();
 
     signal_manager_ = new SrsSignalManager(this);
     latest_version_ = new SrsLatestVersion();
@@ -215,10 +197,7 @@ SrsServer::~SrsServer()
     srs_freep(http_heartbeat_);
     srs_freep(ingester_);
 
-    if (pid_fd_ > 0) {
-        ::close(pid_fd_);
-        pid_fd_ = -1;
-    }
+    srs_freep(pid_file_locker_);
 
     srs_freep(signal_manager_);
     srs_freep(latest_version_);
@@ -349,7 +328,7 @@ srs_error_t SrsServer::initialize()
     srs_trace("SRS server initialized in single thread mode");
 
     // Initialize the server.
-    if ((err = acquire_pid_file()) != srs_success) {
+    if ((err = pid_file_locker_->acquire()) != srs_success) {
         return srs_error_wrap(err, "init server");
     }
 
@@ -437,64 +416,6 @@ srs_error_t SrsServer::initialize()
     }
 
     return err;
-}
-
-srs_error_t SrsServer::acquire_pid_file()
-{
-    std::string pid_file = _srs_config->get_pid_file();
-
-    // -rw-r--r--
-    // 644
-    int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-
-    int fd;
-    // open pid file
-    if ((fd = ::open(pid_file.c_str(), O_WRONLY | O_CREAT, mode)) == -1) {
-        return srs_error_new(ERROR_SYSTEM_PID_ACQUIRE, "open pid file=%s", pid_file.c_str());
-    }
-
-    // require write lock
-    struct flock lock;
-
-    lock.l_type = F_WRLCK;    // F_RDLCK, F_WRLCK, F_UNLCK
-    lock.l_start = 0;         // type offset, relative to l_whence
-    lock.l_whence = SEEK_SET; // SEEK_SET, SEEK_CUR, SEEK_END
-    lock.l_len = 0;
-
-    if (fcntl(fd, F_SETLK, &lock) == -1) {
-        if (errno == EACCES || errno == EAGAIN) {
-            ::close(fd);
-            srs_error("srs is already running!");
-            return srs_error_new(ERROR_SYSTEM_PID_ALREADY_RUNNING, "srs is already running");
-        }
-        return srs_error_new(ERROR_SYSTEM_PID_LOCK, "access to pid=%s", pid_file.c_str());
-    }
-
-    // truncate file
-    if (ftruncate(fd, 0) != 0) {
-        return srs_error_new(ERROR_SYSTEM_PID_TRUNCATE_FILE, "truncate pid file=%s", pid_file.c_str());
-    }
-
-    // write the pid
-    string pid = srs_strconv_format_int(getpid());
-    if (write(fd, pid.c_str(), pid.length()) != (int)pid.length()) {
-        return srs_error_new(ERROR_SYSTEM_PID_WRITE_FILE, "write pid=%s to file=%s", pid.c_str(), pid_file.c_str());
-    }
-
-    // auto close when fork child process.
-    int val;
-    if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
-        return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fcntl fd=%d", fd);
-    }
-    val |= FD_CLOEXEC;
-    if (fcntl(fd, F_SETFD, val) < 0) {
-        return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "lock file=%s fd=%d", pid_file.c_str(), fd);
-    }
-
-    srs_trace("write pid=%s to %s success!", pid.c_str(), pid_file.c_str());
-    pid_fd_ = fd;
-
-    return srs_success;
 }
 
 srs_error_t SrsServer::run()
@@ -1903,4 +1824,82 @@ srs_error_t SrsInotifyWorker::cycle()
 #endif
 
     return err;
+}
+
+SrsPidFileLocker::SrsPidFileLocker()
+{
+    pid_fd_ = -1;
+}
+
+SrsPidFileLocker::~SrsPidFileLocker()
+{
+    close();
+}
+
+srs_error_t SrsPidFileLocker::acquire()
+{
+    srs_error_t err = srs_success;
+
+    pid_file_ = _srs_config->get_pid_file();
+
+    // -rw-r--r--
+    // 644
+    int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+    int fd;
+    // open pid file
+    if ((fd = ::open(pid_file_.c_str(), O_WRONLY | O_CREAT, mode)) == -1) {
+        return srs_error_new(ERROR_SYSTEM_PID_ACQUIRE, "open pid file=%s", pid_file_.c_str());
+    }
+
+    // require write lock
+    struct flock lock;
+
+    lock.l_type = F_WRLCK;    // F_RDLCK, F_WRLCK, F_UNLCK
+    lock.l_start = 0;         // type offset, relative to l_whence
+    lock.l_whence = SEEK_SET; // SEEK_SET, SEEK_CUR, SEEK_END
+    lock.l_len = 0;
+
+    if (fcntl(fd, F_SETLK, &lock) == -1) {
+        if (errno == EACCES || errno == EAGAIN) {
+            ::close(fd);
+            srs_error("srs is already running!");
+            return srs_error_new(ERROR_SYSTEM_PID_ALREADY_RUNNING, "srs is already running");
+        }
+        return srs_error_new(ERROR_SYSTEM_PID_LOCK, "access to pid=%s", pid_file_.c_str());
+    }
+
+    // truncate file
+    if (ftruncate(fd, 0) != 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_TRUNCATE_FILE, "truncate pid file=%s", pid_file_.c_str());
+    }
+
+    // write the pid
+    std::string pid = srs_strconv_format_int(getpid());
+    if (write(fd, pid.c_str(), pid.length()) != (int)pid.length()) {
+        return srs_error_new(ERROR_SYSTEM_PID_WRITE_FILE, "write pid=%s to file=%s", pid.c_str(), pid_file_.c_str());
+    }
+
+    // auto close when fork child process.
+    int val;
+    if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fcntl fd=%d", fd);
+    }
+    val |= FD_CLOEXEC;
+    if (fcntl(fd, F_SETFD, val) < 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "lock file=%s fd=%d", pid_file_.c_str(), fd);
+    }
+
+    srs_trace("write pid=%s to %s success!", pid.c_str(), pid_file_.c_str());
+    pid_fd_ = fd;
+
+    return err;
+}
+
+void SrsPidFileLocker::close()
+{
+    if (pid_fd_ > 0) {
+        ::close(pid_fd_);
+        pid_fd_ = -1;
+    }
 }

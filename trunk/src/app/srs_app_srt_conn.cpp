@@ -12,6 +12,7 @@ using namespace std;
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_pithy_print.hpp>
 #include <srs_app_rtc_source.hpp>
+#include <srs_app_source.hpp>
 #include <srs_app_srt_server.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_app_statistic.hpp>

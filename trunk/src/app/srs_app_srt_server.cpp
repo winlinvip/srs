@@ -9,6 +9,8 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
+#include <srs_app_server.hpp>
+#include <srs_app_source.hpp>
 #include <srs_app_srt_conn.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_kernel_log.hpp>
@@ -16,6 +18,14 @@ using namespace std;
 #include <srs_protocol_log.hpp>
 
 SrsSrtEventLoop *_srt_eventloop = NULL;
+
+ISrsSrtClientHandler::ISrsSrtClientHandler()
+{
+}
+
+ISrsSrtClientHandler::~ISrsSrtClientHandler()
+{
+}
 
 SrsSrtAcceptor::SrsSrtAcceptor(ISrsSrtClientHandler *srt_handler)
 {

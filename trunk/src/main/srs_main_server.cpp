@@ -34,20 +34,16 @@ using namespace std;
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_log.hpp>
+#include <srs_app_rtc_conn.hpp>
 #include <srs_app_server.hpp>
+#include <srs_app_srt_server.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_core_performance.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_utility.hpp>
-
-#include <srs_app_rtc_conn.hpp>
-
-#ifdef SRS_SRT
-#include <srs_app_srt_server.hpp>
 #include <srs_protocol_srt.hpp>
-#endif
 
 // pre-declare
 srs_error_t run_directly_or_daemon();
@@ -269,7 +265,7 @@ void show_macro_features()
         ss << ", dash:" << "on";
         ss << ", hls:" << srs_strconv_format_bool(true);
         ss << ", hds:" << srs_strconv_format_bool(SRS_HDS_BOOL);
-        ss << ", srt:" << srs_strconv_format_bool(SRS_SRT_BOOL);
+        ss << ", srt:" << srs_strconv_format_bool(true);
         // hc(http callback)
         ss << ", hc:" << srs_strconv_format_bool(true);
         // ha(http api)

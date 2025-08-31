@@ -213,12 +213,10 @@ SrsPithyPrint::SrsPithyPrint(int _stage_id)
 // for the rtc recv
 #define SRS_CONSTS_STAGE_RTC_RECV 14
 
-#ifdef SRS_SRT
 // the pithy stage for srt play clients.
 #define SRS_CONSTS_STAGE_SRT_PLAY 15
 // the pithy stage for srt publish clients.
 #define SRS_CONSTS_STAGE_SRT_PUBLISH 16
-#endif
 
 SrsPithyPrint *SrsPithyPrint::create_rtmp_play()
 {
@@ -290,7 +288,6 @@ SrsPithyPrint *SrsPithyPrint::create_rtc_recv(int fd)
     return new SrsPithyPrint(fd << 16 | SRS_CONSTS_STAGE_RTC_RECV);
 }
 
-#ifdef SRS_SRT
 SrsPithyPrint *SrsPithyPrint::create_srt_play()
 {
     return new SrsPithyPrint(SRS_CONSTS_STAGE_SRT_PLAY);
@@ -300,7 +297,6 @@ SrsPithyPrint *SrsPithyPrint::create_srt_publish()
 {
     return new SrsPithyPrint(SRS_CONSTS_STAGE_SRT_PUBLISH);
 }
-#endif
 
 SrsPithyPrint::~SrsPithyPrint()
 {

@@ -53,11 +53,9 @@ using namespace std;
 #ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
 #endif
-#ifdef SRS_SRT
 #include <srs_app_srt_conn.hpp>
 #include <srs_app_srt_server.hpp>
 #include <srs_app_srt_source.hpp>
-#endif
 #ifdef SRS_RTSP
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_rtsp_source.hpp>
@@ -293,9 +291,7 @@ srs_error_t srs_global_initialize()
     _srs_circuit_breaker = new SrsCircuitBreaker();
     _srs_hooks = new SrsHttpHooks();
 
-#ifdef SRS_SRT
     _srs_srt_sources = new SrsSrtSourceManager();
-#endif
 
     _srs_rtc_sources = new SrsRtcSourceManager();
     _srs_blackhole = new SrsRtcBlackhole();
@@ -810,9 +806,7 @@ void SrsServer::destroy()
 #ifdef SRS_GB28181
     srs_freep(stream_caster_gb28181_);
 #endif
-#ifdef SRS_SRT
     close_srt_listeners();
-#endif
 
     // Cleanup WebRTC components
     if (true) {
@@ -851,9 +845,7 @@ void SrsServer::dispose()
 #ifdef SRS_GB28181
     stream_caster_gb28181_->close();
 #endif
-#ifdef SRS_SRT
     close_srt_listeners();
-#endif
 
     // Fast stop to notify FFMPEG to quit, wait for a while then fast kill.
     ingester_->dispose();
@@ -889,9 +881,7 @@ void SrsServer::gracefully_dispose()
 #ifdef SRS_GB28181
     stream_caster_gb28181_->close();
 #endif
-#ifdef SRS_SRT
     close_srt_listeners();
-#endif
     srs_trace("listeners closed");
 
     // Fast stop to notify FFMPEG to quit, wait for a while then fast kill.
@@ -929,7 +919,6 @@ srs_error_t SrsServer::initialize()
         return srs_error_wrap(err, "init server");
     }
 
-#ifdef SRS_SRT
     if ((err = srs_srt_log_initialize()) != srs_success) {
         return srs_error_wrap(err, "srt log initialize");
     }
@@ -943,7 +932,6 @@ srs_error_t SrsServer::initialize()
     if ((err = _srt_eventloop->start()) != srs_success) {
         return srs_error_wrap(err, "srt poller start");
     }
-#endif
 
     // Initialize WebRTC DTLS certificate
     if ((err = _srs_rtc_dtls_certificate->initialize()) != srs_success) {
@@ -1132,11 +1120,9 @@ srs_error_t SrsServer::run()
         return srs_error_wrap(err, "live sources");
     }
 
-#ifdef SRS_SRT
     if ((err = _srs_srt_sources->initialize()) != srs_success) {
         return srs_error_wrap(err, "srt sources");
     }
-#endif
 
     if ((err = _srs_rtc_sources->initialize()) != srs_success) {
         return srs_error_wrap(err, "rtc sources");
@@ -1319,12 +1305,10 @@ srs_error_t SrsServer::listen()
         }
     }
 
-#ifdef SRS_SRT
     // Listen MPEG-TS over SRT.
     if ((err = listen_srt_mpegts()) != srs_success) {
         return srs_error_wrap(err, "srt mpegts listen");
     }
-#endif
 
     // Listen WebRTC UDP.
     if ((err = listen_rtc_udp()) != srs_success) {
@@ -1794,13 +1778,11 @@ void SrsServer::resample_kbps()
             continue;
         }
 
-#ifdef SRS_SRT
         SrsMpegtsSrtConn *srt = dynamic_cast<SrsMpegtsSrtConn *>(c);
         if (srt) {
             stat->kbps_add_delta(c->get_id().c_str(), srt->delta());
             continue;
         }
-#endif
 
         SrsRtcConnection *rtc = dynamic_cast<SrsRtcConnection *>(c);
         if (rtc) {
@@ -1816,7 +1798,6 @@ void SrsServer::resample_kbps()
     stat->kbps_sample();
 }
 
-#ifdef SRS_SRT
 srs_error_t SrsServer::listen_srt_mpegts()
 {
     srs_error_t err = srs_success;
@@ -1913,7 +1894,6 @@ srs_error_t SrsServer::srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr)
 
     return err;
 }
-#endif
 
 srs_error_t SrsServer::listen_rtc_udp()
 {

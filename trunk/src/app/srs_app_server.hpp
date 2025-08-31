@@ -21,10 +21,8 @@
 #include <srs_app_st.hpp>
 #include <srs_protocol_st.hpp>
 
-#ifdef SRS_SRT
 #include <srs_app_srt_listener.hpp>
 #include <srs_protocol_srt.hpp>
-#endif
 
 class SrsAsyncCallWorker;
 class SrsUdpMuxListener;
@@ -194,10 +192,8 @@ private:
     // Stream Caster for GB28181.
     SrsGbListener *stream_caster_gb28181_;
 #endif
-#ifdef SRS_SRT
     // SRT acceptors for MPEG-TS over SRT.
     std::vector<SrsSrtAcceptor *> srt_acceptors_;
-#endif
     // WebRTC UDP listeners for RTC server functionality.
     std::vector<SrsUdpMuxListener *> rtc_listeners_;
     // WebRTC async call worker for non-blocking operations.
@@ -293,13 +289,11 @@ private:
     // Resample the server kbs.
     virtual void resample_kbps();
 
-#ifdef SRS_SRT
     // SRT-related methods
     virtual srs_error_t listen_srt_mpegts();
     virtual void close_srt_listeners();
     virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
     virtual srs_error_t srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr);
-#endif
 
     // WebRTC-related methods
     virtual srs_error_t listen_rtc_udp();

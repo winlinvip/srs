@@ -19,10 +19,8 @@ using namespace std;
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#ifdef SRS_SRT
 #include <srs_app_srt_server.hpp>
 #include <srt/srt.h>
-#endif
 
 // Temporary disk config.
 std::string _srs_tmp_file_prefix = "/tmp/srs-utest-";
@@ -44,13 +42,11 @@ const char *_srs_binary = NULL;
 
 #include <srs_app_st.hpp>
 
-#ifdef SRS_SRT
 static void srs_srt_utest_null_log_handler(void *opaque, int level, const char *file, int line,
                                            const char *area, const char *message)
 {
     // srt null log handler, do no print any log.
 }
-#endif
 
 // Initialize global settings.
 srs_error_t prepare_main()
@@ -73,7 +69,6 @@ srs_error_t prepare_main()
     srs_freep(_srs_context);
     _srs_context = new SrsThreadContext();
 
-#ifdef SRS_SRT
     if ((err = srs_srt_log_initialize()) != srs_success) {
         return srs_error_wrap(err, "srt log initialize");
     }
@@ -88,7 +83,6 @@ srs_error_t prepare_main()
     if ((err = _srt_eventloop->start()) != srs_success) {
         return srs_error_wrap(err, "srt poller start");
     }
-#endif
 
     return err;
 }

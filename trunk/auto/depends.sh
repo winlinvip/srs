@@ -680,10 +680,10 @@ fi
 #####################################################################################
 # SRT module, https://github.com/ossrs/srs/issues/1147#issuecomment-577469119
 #####################################################################################
-if [[ $SRS_SRT == YES && $SRS_USE_SYS_SRT == YES ]]; then
+if [[ $SRS_USE_SYS_SRT == YES ]]; then
     echo "Warning: Use system libsrt, without compiling srt."
 fi
-if [[ $SRS_SRT == YES && $SRS_USE_SYS_SRT == NO ]]; then
+if [[ $SRS_USE_SYS_SRT == NO ]]; then
     # Always disable c++11 for libsrt, because only the srt-app requres it.
     LIBSRT_OPTIONS="--enable-apps=0  --enable-static=1 --enable-c++11=0"
     CMAKE_VERSION=$(cmake --version | head -n1 | cut -d' ' -f3)

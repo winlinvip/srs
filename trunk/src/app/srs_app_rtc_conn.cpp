@@ -1189,7 +1189,6 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     }
 
     // Check whether SRT stream is busy.
-#ifdef SRS_SRT
     bool srt_server_enabled = _srs_config->get_srt_enabled();
     bool srt_enabled = _srs_config->get_srt_enabled(r->vhost);
     if (srt_server_enabled && srt_enabled) {
@@ -1202,7 +1201,6 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
             return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "srt stream %s busy", r->get_stream_url().c_str());
         }
     }
-#endif
 
     // Bridge to rtmp
 #if defined(SRS_FFMPEG_FIT)

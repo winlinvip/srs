@@ -575,6 +575,12 @@ function apply_auto_options() {
         SRS_RTC=YES
     fi
 
+    # Force enable SRT always - SRT support is required
+    if [[ $SRS_SRT != YES ]]; then
+        echo "Warning: SRT support is always enabled. Forcing SRT mode."
+        SRS_SRT=YES
+    fi
+
     if [[ $SRS_SRTP_ASM == YES && $SRS_NASM == NO ]]; then
         echo "Disable SRTP-ASM, because NASM is disabled."
         SRS_SRTP_ASM=NO

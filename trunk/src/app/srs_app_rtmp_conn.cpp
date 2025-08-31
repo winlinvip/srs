@@ -1032,7 +1032,6 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
     }
 
     // Check whether SRT stream is busy.
-#ifdef SRS_SRT
     bool srt_server_enabled = _srs_config->get_srt_enabled();
     bool srt_enabled = _srs_config->get_srt_enabled(req->vhost);
     if (srt_server_enabled && srt_enabled && !info->edge) {
@@ -1045,7 +1044,6 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
             return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "srt stream %s busy", req->get_stream_url().c_str());
         }
     }
-#endif
 
 #ifdef SRS_RTSP
     // RTSP only support viewer, so we don't need to check it.

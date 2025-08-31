@@ -363,11 +363,11 @@ void SrsRtcUdpNetwork::update_sendonly_socket(SrsUdpMuxSocket *skt)
     // If no cache, build cache and setup the relations in connection.
     if (!addr_cache) {
         peer_addresses_[peer_id] = addr_cache = skt->copy_sendonly();
-        _srs_rtc_manager->add_with_id(peer_id, conn_);
+        _srs_conn_manager->add_with_id(peer_id, conn_);
 
         uint64_t fast_id = skt->fast_id();
         if (fast_id) {
-            _srs_rtc_manager->add_with_fast_id(fast_id, conn_);
+            _srs_conn_manager->add_with_fast_id(fast_id, conn_);
         }
     }
 
@@ -888,7 +888,7 @@ srs_error_t SrsRtcTcpConn::handshake()
     }
 
     srs_assert(!session_);
-    SrsRtcConnection *session = dynamic_cast<SrsRtcConnection *>(_srs_rtc_manager->find_by_name(ping.get_username()));
+    SrsRtcConnection *session = dynamic_cast<SrsRtcConnection *>(_srs_conn_manager->find_by_name(ping.get_username()));
     // TODO: FIXME: For ICE trickle, we may get STUN packets before SDP answer, so maybe should response it.
     if (!session) {
         return srs_error_new(ERROR_RTC_TCP_STUN, "no session, stun username=%s", ping.get_username().c_str());

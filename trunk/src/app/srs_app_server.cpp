@@ -28,8 +28,60 @@ using namespace std;
 #include <srs_app_latest_version.hpp>
 #include <srs_app_mpegts_udp.hpp>
 #include <srs_app_rtc_network.hpp>
-#include <srs_app_rtc_server.hpp>
+#include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_source.hpp>
+#include <srs_app_rtc_dtls.hpp>
+#include <srs_app_async_call.hpp>
+#include <srs_app_statistic.hpp>
+#include <srs_protocol_rtc_stun.hpp>
+#include <srs_app_rtc_sdp.hpp>
+#include <srs_app_rtc_server.hpp>
+
+// External declarations for WebRTC functions and variables
+extern bool srs_is_stun(const uint8_t *data, size_t size);
+extern bool srs_is_dtls(const uint8_t *data, size_t len);
+extern bool srs_is_rtp_or_rtcp(const uint8_t *data, size_t len);
+extern bool srs_is_rtcp(const uint8_t *data, size_t len);
+
+extern SrsPps *_srs_pps_rpkts;
+SrsPps *_srs_pps_rstuns = NULL;
+SrsPps *_srs_pps_rrtps = NULL;
+SrsPps *_srs_pps_rrtcps = NULL;
+extern SrsPps *_srs_pps_addrs;
+extern SrsPps *_srs_pps_fast_addrs;
+
+extern SrsPps *_srs_pps_spkts;
+extern SrsPps *_srs_pps_sstuns;
+extern SrsPps *_srs_pps_srtcps;
+extern SrsPps *_srs_pps_srtps;
+
+extern SrsPps *_srs_pps_ids;
+extern SrsPps *_srs_pps_fids;
+extern SrsPps *_srs_pps_fids_level0;
+
+extern SrsPps *_srs_pps_pli;
+extern SrsPps *_srs_pps_twcc;
+extern SrsPps *_srs_pps_rr;
+
+extern SrsPps *_srs_pps_snack;
+extern SrsPps *_srs_pps_snack2;
+extern SrsPps *_srs_pps_sanack;
+extern SrsPps *_srs_pps_svnack;
+
+extern SrsPps *_srs_pps_rnack;
+extern SrsPps *_srs_pps_rnack2;
+extern SrsPps *_srs_pps_rhnack;
+extern SrsPps *_srs_pps_rmnack;
+
+extern SrsPps *_srs_pps_sstuns;
+extern SrsPps *_srs_pps_srtcps;
+extern SrsPps *_srs_pps_srtps;
+
+SrsResourceManager *_srs_conn_manager = NULL;
+
+// External WebRTC global variables
+extern SrsRtcBlackhole *_srs_blackhole;
+extern SrsDtlsCertificate *_srs_rtc_dtls_certificate;
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
@@ -349,7 +401,6 @@ SrsServer::SrsServer()
     pid_fd_ = -1;
 
     signal_manager_ = new SrsSignalManager(this);
-    conn_manager_ = new SrsResourceManager("TCP", true);
     latest_version_ = new SrsLatestVersion();
     ppid_ = ::getppid();
 
@@ -367,7 +418,7 @@ SrsServer::SrsServer()
     stream_caster_mpegts_ = new SrsUdpCasterListener();
     exporter_listener_ = new SrsTcpListener(this);
 #ifdef SRS_GB28181
-    stream_caster_gb28181_ = new SrsGbListener();
+    stream_caster_gb28181_ = new SrsGbListener(http_api_mux_);
 #endif
 
     // donot new object in constructor,
@@ -383,6 +434,9 @@ SrsServer::SrsServer()
     trd_ = new SrsSTCoroutine("srs", this, _srs_context->get_id());
     timer_ = NULL;
     wg_ = NULL;
+
+    // Initialize WebRTC components
+    rtc_async_ = new SrsAsyncCallWorker();
 }
 
 SrsServer::~SrsServer()
@@ -413,7 +467,6 @@ void SrsServer::destroy()
 
     srs_freep(signal_manager_);
     srs_freep(latest_version_);
-    srs_freep(conn_manager_);
     srs_freep(rtmp_listener_);
     srs_freep(rtmps_listener_);
     srs_freep(api_listener_);
@@ -433,6 +486,21 @@ void SrsServer::destroy()
 #ifdef SRS_SRT
     close_srt_listeners();
 #endif
+
+    // Cleanup WebRTC components
+    if (true) {
+        std::vector<SrsUdpMuxListener *>::iterator it;
+        for (it = rtc_listeners_.begin(); it != rtc_listeners_.end(); ++it) {
+            SrsUdpMuxListener *listener = *it;
+            srs_freep(listener);
+        }
+        rtc_listeners_.clear();
+    }
+
+    if (rtc_async_) {
+        rtc_async_->stop();
+        srs_freep(rtc_async_);
+    }
 }
 
 void SrsServer::dispose()
@@ -506,13 +574,13 @@ void SrsServer::gracefully_dispose()
     // Wait for connections to quit.
     // While gracefully quiting, user can requires SRS to fast quit.
     int wait_step = 1;
-    while (!conn_manager_->empty() && !signal_fast_quit_) {
-        for (int i = 0; i < wait_step && !conn_manager_->empty() && !signal_fast_quit_; i++) {
+    while (!_srs_conn_manager->empty() && !signal_fast_quit_) {
+        for (int i = 0; i < wait_step && !_srs_conn_manager->empty() && !signal_fast_quit_; i++) {
             srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
         }
 
         wait_step = (wait_step * 2) % 33;
-        srs_trace("wait for %d conns to quit", (int)conn_manager_->size());
+        srs_trace("wait for %d conns to quit", (int)_srs_conn_manager->size());
     }
 
     // dispose the source for hls and dvr.
@@ -575,6 +643,14 @@ srs_error_t SrsServer::initialize()
     if ((err = http_server_->initialize()) != srs_success) {
         return srs_error_wrap(err, "http server initialize");
     }
+
+    // Initialize the black hole.
+    if ((err = _srs_blackhole->initialize()) != srs_success) {
+        return srs_error_wrap(err, "black hole");
+    }
+
+    // Start WebRTC async worker
+    rtc_async_->start();
 
     return err;
 }
@@ -742,11 +818,14 @@ srs_error_t SrsServer::listen()
     if ((err = listen_srt_mpegts()) != srs_success) {
         return srs_error_wrap(err, "srt mpegts listen");
     }
-
-    // SRT connections will be managed by the main conn_manager_
 #endif
 
-    if ((err = conn_manager_->start()) != srs_success) {
+    // Listen WebRTC UDP.
+    if ((err = listen_rtc_udp()) != srs_success) {
+        return srs_error_wrap(err, "rtc udp listen");
+    }
+
+    if ((err = _srs_conn_manager->start()) != srs_success) {
         return srs_error_wrap(err, "connection manager");
     }
 
@@ -872,6 +951,11 @@ srs_error_t SrsServer::http_handle()
         return srs_error_wrap(err, "handle console at %s", dir.c_str());
     }
     srs_trace("http: api mount /console to %s", dir.c_str());
+
+    // WebRTC API endpoints
+    if ((err = listen_rtc_api()) != srs_success) {
+        return srs_error_wrap(err, "rtc api");
+    }
 
     return err;
 }
@@ -1160,6 +1244,10 @@ srs_error_t SrsServer::setup_ticks()
         if ((err = timer_->tick(10, 9 * SRS_UTIME_SECONDS)) != srs_success) {
             return srs_error_wrap(err, "tick");
         }
+
+        if ((err = timer_->tick(11, 5 * SRS_UTIME_SECONDS)) != srs_success) {
+            return srs_error_wrap(err, "tick");
+        }
     }
 
     if (_srs_config->get_heartbeat_enabled()) {
@@ -1204,6 +1292,9 @@ srs_error_t SrsServer::notify(int event, srs_utime_t interval, srs_utime_t tick)
     case 10:
         srs_update_udp_snmp_statistic();
         break;
+    case 11:
+        srs_update_rtc_sessions();
+        break;
     }
 
     return err;
@@ -1214,8 +1305,8 @@ void SrsServer::resample_kbps()
     SrsStatistic *stat = SrsStatistic::instance();
 
     // collect delta from all clients.
-    for (int i = 0; i < (int)conn_manager_->size(); i++) {
-        ISrsResource *c = conn_manager_->at(i);
+    for (int i = 0; i < (int)_srs_conn_manager->size(); i++) {
+        ISrsResource *c = _srs_conn_manager->at(i);
 
         SrsRtmpConn *rtmp = dynamic_cast<SrsRtmpConn *>(c);
         if (rtmp) {
@@ -1250,6 +1341,12 @@ void SrsServer::resample_kbps()
             continue;
         }
 #endif
+
+        SrsRtcConnection *rtc = dynamic_cast<SrsRtcConnection *>(c);
+        if (rtc) {
+            stat->kbps_add_delta(c->get_id().c_str(), rtc->delta());
+            continue;
+        }
 
         // Impossible path, because we only create these connections above.
         srs_assert(false);
@@ -1322,9 +1419,9 @@ srs_error_t SrsServer::accept_srt_client(srs_srt_t srt_fd)
     srs_assert(resource);
 
     // directly enqueue, the cycle thread will remove the client.
-    conn_manager_->add(resource);
+    _srs_conn_manager->add(resource);
 
-    // Note that conn is managed by conn_manager_, so we don't need to free it.
+    // Note that conn is managed by _srs_conn_manager, so we don't need to free it.
     ISrsStartable *conn = dynamic_cast<ISrsStartable *>(resource);
     if ((err = conn->start()) != srs_success) {
         return srs_error_wrap(err, "start srt conn coroutine");
@@ -1352,15 +1449,467 @@ srs_error_t SrsServer::srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr)
     SrsContextRestore(_srs_context->get_id());
 
     // Convert to SRT connection.
-    *pr = new SrsMpegtsSrtConn(conn_manager_, srt_fd, ip, port);
+    *pr = new SrsMpegtsSrtConn(_srs_conn_manager, srt_fd, ip, port);
 
     return err;
 }
 #endif
 
-ISrsHttpServeMux *SrsServer::api_server()
+srs_error_t SrsServer::listen_rtc_udp()
 {
-    return http_api_mux_;
+    srs_error_t err = srs_success;
+
+    if (!_srs_config->get_rtc_server_enabled()) {
+        return err;
+    }
+
+    // Check protocol setting - only create UDP listeners if protocol allows UDP
+    string protocol = _srs_config->get_rtc_server_protocol();
+    if (protocol == "tcp") {
+        // When protocol is "tcp", don't create UDP listeners
+        return err;
+    }
+
+    vector<string> rtc_listens = _srs_config->get_rtc_server_listens();
+    if (rtc_listens.empty()) {
+        return srs_error_new(ERROR_RTC_PORT, "empty rtc listen");
+    }
+
+    // There should be no listeners before listening.
+    srs_assert(rtc_listeners_.empty());
+
+    // For each listen address, create multiple listeners based on reuseport setting
+    int nn_listeners = _srs_config->get_rtc_server_reuseport();
+    for (int j = 0; j < (int)rtc_listens.size(); j++) {
+        string ip;
+        int port;
+        srs_net_split_for_listener(rtc_listens[j], ip, port);
+
+        if (port <= 0) {
+            return srs_error_new(ERROR_RTC_PORT, "invalid port=%d", port);
+        }
+
+        for (int i = 0; i < nn_listeners; i++) {
+            SrsUdpMuxListener *listener = new SrsUdpMuxListener(this, ip, port);
+
+            if ((err = listener->listen()) != srs_success) {
+                srs_freep(listener);
+                return srs_error_wrap(err, "listen %s:%d", ip.c_str(), port);
+            }
+
+            srs_trace("WebRTC listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
+            rtc_listeners_.push_back(listener);
+        }
+    }
+
+    return err;
+}
+
+srs_error_t SrsServer::on_udp_packet(SrsUdpMuxSocket *skt)
+{
+    srs_error_t err = srs_success;
+
+    SrsRtcConnection *session = NULL;
+    char *data = skt->data();
+    int size = skt->size();
+    bool is_rtp_or_rtcp = srs_is_rtp_or_rtcp((uint8_t *)data, size);
+    bool is_rtcp = srs_is_rtcp((uint8_t *)data, size);
+
+    uint64_t fast_id = skt->fast_id();
+    // Try fast id first, if not found, search by long peer id.
+    if (fast_id) {
+        session = (SrsRtcConnection *)_srs_conn_manager->find_by_fast_id(fast_id);
+    }
+    if (!session) {
+        string peer_id = skt->peer_id();
+        session = (SrsRtcConnection *)_srs_conn_manager->find_by_id(peer_id);
+    }
+
+    if (session) {
+        // When got any packet, the session is alive now.
+        session->alive();
+    }
+
+    // For STUN, the peer address may change.
+    if (!is_rtp_or_rtcp && srs_is_stun((uint8_t *)data, size)) {
+        ++_srs_pps_rstuns->sugar;
+        string peer_id = skt->peer_id();
+
+        // TODO: FIXME: Should support ICE renomination, to switch network between candidates.
+        SrsStunPacket ping;
+        if ((err = ping.decode(data, size)) != srs_success) {
+            return srs_error_wrap(err, "decode stun packet failed");
+        }
+        if (!session) {
+            session = find_rtc_session_by_username(ping.get_username());
+        }
+        if (session) {
+            session->switch_to_context();
+        }
+
+        srs_info("recv stun packet from %s, fast=%" PRId64 ", use-candidate=%d, ice-controlled=%d, ice-controlling=%d",
+                 peer_id.c_str(), fast_id, ping.get_use_candidate(), ping.get_ice_controlled(), ping.get_ice_controlling());
+
+        // TODO: FIXME: For ICE trickle, we may get STUN packets before SDP answer, so maybe should response it.
+        if (!session) {
+            return srs_error_new(ERROR_RTC_STUN, "no session, stun username=%s, peer_id=%s, fast=%" PRId64,
+                                 ping.get_username().c_str(), peer_id.c_str(), fast_id);
+        }
+
+        // For each binding request, update the UDP socket.
+        if (ping.is_binding_request()) {
+            session->udp()->update_sendonly_socket(skt);
+        }
+
+        return session->udp()->on_stun(&ping, data, size);
+    }
+
+    // For DTLS, RTCP or RTP, which does not support peer address changing.
+    if (!session) {
+        string peer_id = skt->peer_id();
+        return srs_error_new(ERROR_RTC_STUN, "no session, peer_id=%s, fast=%" PRId64, peer_id.c_str(), fast_id);
+    }
+
+    // Note that we don't(except error) switch to the context of session, for performance issue.
+    if (is_rtp_or_rtcp && !is_rtcp) {
+        ++_srs_pps_rrtps->sugar;
+
+        err = session->udp()->on_rtp(data, size);
+        if (err != srs_success) {
+            session->switch_to_context();
+        }
+        return err;
+    }
+
+    session->switch_to_context();
+    if (is_rtp_or_rtcp && is_rtcp) {
+        ++_srs_pps_rrtcps->sugar;
+
+        return session->udp()->on_rtcp(data, size);
+    }
+    if (srs_is_dtls((uint8_t *)data, size)) {
+        ++_srs_pps_rstuns->sugar;
+
+        return session->udp()->on_dtls(data, size);
+    }
+    return srs_error_new(ERROR_RTC_UDP, "unknown packet");
+}
+
+srs_error_t SrsServer::listen_rtc_api()
+{
+    srs_error_t err = srs_success;
+
+    if ((err = http_api_mux_->handle("/rtc/v1/play/", new SrsGoApiRtcPlay(this))) != srs_success) {
+        return srs_error_wrap(err, "handle play");
+    }
+
+    if ((err = http_api_mux_->handle("/rtc/v1/publish/", new SrsGoApiRtcPublish(this))) != srs_success) {
+        return srs_error_wrap(err, "handle publish");
+    }
+
+    // Generally, WHIP is a publishing protocol, but it can be also used as playing.
+    // See https://datatracker.ietf.org/doc/draft-ietf-wish-whep/
+    if ((err = http_api_mux_->handle("/rtc/v1/whip/", new SrsGoApiRtcWhip(this))) != srs_success) {
+        return srs_error_wrap(err, "handle whip");
+    }
+
+    // We create another mount, to support play with the same query string as publish.
+    // See https://datatracker.ietf.org/doc/draft-murillo-whep/
+    if ((err = http_api_mux_->handle("/rtc/v1/whip-play/", new SrsGoApiRtcWhip(this))) != srs_success) {
+        return srs_error_wrap(err, "handle whep play");
+    }
+    if ((err = http_api_mux_->handle("/rtc/v1/whep/", new SrsGoApiRtcWhip(this))) != srs_success) {
+        return srs_error_wrap(err, "handle whep play");
+    }
+
+#ifdef SRS_SIMULATOR
+    if ((err = http_api_mux_->handle("/rtc/v1/nack/", new SrsGoApiRtcNACK(this))) != srs_success) {
+        return srs_error_wrap(err, "handle nack");
+    }
+#endif
+
+    return err;
+}
+
+srs_error_t SrsServer::exec_rtc_async_work(ISrsAsyncCallTask *t)
+{
+    return rtc_async_->execute(t);
+}
+
+SrsRtcConnection *SrsServer::find_rtc_session_by_username(const std::string &username)
+{
+    ISrsResource *conn = _srs_conn_manager->find_by_name(username);
+    return dynamic_cast<SrsRtcConnection *>(conn);
+}
+
+srs_error_t SrsServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession)
+{
+    srs_error_t err = srs_success;
+
+    ISrsRequest *req = ruc->req_;
+
+    // Security or system flow control check. For WebRTC, use 0 as fd and port, because for 
+    // the WebRTC HTTP API, it's not useful information.
+    if ((err = on_before_connection("RTC", (int)0, req->ip, 0)) != srs_success) {
+        return srs_error_wrap(err, "check");
+    }
+
+    // Acquire stream publish token to prevent race conditions across all protocols.
+    SrsStreamPublishToken *publish_token_raw = NULL;
+    if (ruc->publish_ && (err = _srs_stream_publish_tokens->acquire_token(req, publish_token_raw)) != srs_success) {
+        return srs_error_wrap(err, "acquire stream publish token");
+    }
+    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
+    if (publish_token.get()) {
+        srs_trace("stream publish token acquired, type=rtc, url=%s", req->get_stream_url().c_str());
+    }
+
+    SrsSharedPtr<SrsRtcSource> source;
+    if ((err = _srs_rtc_sources->fetch_or_create(req, source)) != srs_success) {
+        return srs_error_wrap(err, "create source");
+    }
+
+    if (ruc->publish_ && !source->can_publish()) {
+        return srs_error_new(ERROR_RTC_SOURCE_BUSY, "stream %s busy", req->get_stream_url().c_str());
+    }
+
+    // TODO: FIXME: add do_create_session to error process.
+    SrsContextId cid = _srs_context->get_id();
+    SrsRtcConnection *session = new SrsRtcConnection(this, cid);
+    if ((err = do_create_rtc_session(ruc, local_sdp, session)) != srs_success) {
+        srs_freep(session);
+        return srs_error_wrap(err, "create session");
+    }
+
+    *psession = session;
+
+    return err;
+}
+
+srs_error_t SrsServer::do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session)
+{
+    srs_error_t err = srs_success;
+
+    ISrsRequest *req = ruc->req_;
+
+    // first add publisher/player for negotiate sdp media info
+    if (ruc->publish_) {
+        if ((err = session->add_publisher(ruc, local_sdp)) != srs_success) {
+            return srs_error_wrap(err, "add publisher");
+        }
+    } else {
+        if ((err = session->add_player(ruc, local_sdp)) != srs_success) {
+            return srs_error_wrap(err, "add player");
+        }
+    }
+
+    // All tracks default as inactive, so we must enable them.
+    session->set_all_tracks_status(req->get_stream_url(), ruc->publish_, true);
+
+    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? srs_rand_gen_str(32) : ruc->req_->ice_pwd_;
+    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? srs_rand_gen_str(8) : ruc->req_->ice_ufrag_;
+    // TODO: FIXME: Rename for a better name, it's not an username.
+    std::string username = "";
+    while (true) {
+        username = local_ufrag + ":" + ruc->remote_sdp_.get_ice_ufrag();
+        if (!_srs_conn_manager->find_by_name(username)) {
+            break;
+        }
+
+        // Username conflict, regenerate a new one.
+        local_ufrag = srs_rand_gen_str(8);
+    }
+
+    local_sdp.set_ice_ufrag(local_ufrag);
+    local_sdp.set_ice_pwd(local_pwd);
+    local_sdp.set_fingerprint_algo("sha-256");
+    local_sdp.set_fingerprint(_srs_rtc_dtls_certificate->get_fingerprint());
+
+    // We allows to mock the eip of server.
+    if (true) {
+        // TODO: Support multiple listen ports.
+        int udp_port = 0;
+        if (true) {
+            string udp_host;
+            string udp_hostport = _srs_config->get_rtc_server_listens().at(0);
+            srs_net_split_for_listener(udp_hostport, udp_host, udp_port);
+        }
+
+        int tcp_port = 0;
+        if (true) {
+            string tcp_host;
+            string tcp_hostport = _srs_config->get_rtc_server_tcp_listens().at(0);
+            srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
+        }
+
+        string protocol = _srs_config->get_rtc_server_protocol();
+
+        set<string> candidates = discover_candidates(ruc);
+        for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
+            string hostname;
+            int uport = udp_port;
+            srs_net_split_hostport(*it, hostname, uport);
+            int tport = tcp_port;
+            srs_net_split_hostport(*it, hostname, tport);
+
+            if (protocol == "udp") {
+                local_sdp.add_candidate("udp", hostname, uport, "host");
+            } else if (protocol == "tcp") {
+                local_sdp.add_candidate("tcp", hostname, tport, "host");
+            } else {
+                local_sdp.add_candidate("udp", hostname, uport, "host");
+                local_sdp.add_candidate("tcp", hostname, tport, "host");
+            }
+        }
+
+        vector<string> v = vector<string>(candidates.begin(), candidates.end());
+        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d",
+                  srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
+    }
+
+    // Setup the negotiate DTLS by config.
+    local_sdp.session_negotiate_ = local_sdp.session_config_;
+
+    // Setup the negotiate DTLS role.
+    if (ruc->remote_sdp_.get_dtls_role() == "active") {
+        local_sdp.session_negotiate_.dtls_role = "passive";
+    } else if (ruc->remote_sdp_.get_dtls_role() == "passive") {
+        local_sdp.session_negotiate_.dtls_role = "active";
+    } else if (ruc->remote_sdp_.get_dtls_role() == "actpass") {
+        local_sdp.session_negotiate_.dtls_role = local_sdp.session_config_.dtls_role;
+    } else {
+        // @see: https://tools.ietf.org/html/rfc4145#section-4.1
+        // The default value of the setup attribute in an offer/answer exchange
+        // is 'active' in the offer and 'passive' in the answer.
+        local_sdp.session_negotiate_.dtls_role = "passive";
+    }
+    local_sdp.set_dtls_role(local_sdp.session_negotiate_.dtls_role);
+
+    session->set_remote_sdp(ruc->remote_sdp_);
+    // We must setup the local SDP, then initialize the session object.
+    session->set_local_sdp(local_sdp);
+    session->set_state_as_waiting_stun();
+
+    // Before session initialize, we must setup the local SDP.
+    if ((err = session->initialize(req, ruc->dtls_, ruc->srtp_, username)) != srs_success) {
+        return srs_error_wrap(err, "init");
+    }
+
+    // We allows username is optional, but it never empty here.
+    _srs_conn_manager->add_with_name(username, session);
+
+    return err;
+}
+
+srs_error_t SrsServer::srs_update_rtc_sessions()
+{
+    srs_error_t err = srs_success;
+
+    // Alive RTC sessions, for stat.
+    int nn_rtc_conns = 0;
+
+    // Check all sessions and dispose the dead sessions.
+    for (int i = 0; i < (int)_srs_conn_manager->size(); i++) {
+        SrsRtcConnection *session = dynamic_cast<SrsRtcConnection *>(_srs_conn_manager->at(i));
+        // Ignore not session, or already disposing.
+        if (!session || session->disposing_) {
+            continue;
+        }
+
+        // Update stat if session is alive.
+        if (session->is_alive()) {
+            nn_rtc_conns++;
+            continue;
+        }
+
+        SrsContextRestore(_srs_context->get_id());
+        session->switch_to_context();
+
+        string username = session->username();
+        srs_trace("RTC: session destroy by timeout, username=%s", username.c_str());
+
+        // Use manager to free session and notify other objects.
+        _srs_conn_manager->remove(session);
+    }
+
+    // Ignore stats if no RTC connections.
+    if (!nn_rtc_conns) {
+        return err;
+    }
+    static char buf[128];
+
+    string rpkts_desc;
+    _srs_pps_rpkts->update();
+    _srs_pps_rrtps->update();
+    _srs_pps_rstuns->update();
+    _srs_pps_rrtcps->update();
+    if (_srs_pps_rpkts->r10s() || _srs_pps_rrtps->r10s() || _srs_pps_rstuns->r10s() || _srs_pps_rrtcps->r10s()) {
+        snprintf(buf, sizeof(buf), ", rpkts=(%d,rtp:%d,stun:%d,rtcp:%d)", _srs_pps_rpkts->r10s(), _srs_pps_rrtps->r10s(), _srs_pps_rstuns->r10s(), _srs_pps_rrtcps->r10s());
+        rpkts_desc = buf;
+    }
+
+    string spkts_desc;
+    _srs_pps_spkts->update();
+    _srs_pps_srtps->update();
+    _srs_pps_sstuns->update();
+    _srs_pps_srtcps->update();
+    if (_srs_pps_spkts->r10s() || _srs_pps_srtps->r10s() || _srs_pps_sstuns->r10s() || _srs_pps_srtcps->r10s()) {
+        snprintf(buf, sizeof(buf), ", spkts=(%d,rtp:%d,stun:%d,rtcp:%d)", _srs_pps_spkts->r10s(), _srs_pps_srtps->r10s(), _srs_pps_sstuns->r10s(), _srs_pps_srtcps->r10s());
+        spkts_desc = buf;
+    }
+
+    string rtcp_desc;
+    _srs_pps_pli->update();
+    _srs_pps_twcc->update();
+    _srs_pps_rr->update();
+    if (_srs_pps_pli->r10s() || _srs_pps_twcc->r10s() || _srs_pps_rr->r10s()) {
+        snprintf(buf, sizeof(buf), ", rtcp=(pli:%d,twcc:%d,rr:%d)", _srs_pps_pli->r10s(), _srs_pps_twcc->r10s(), _srs_pps_rr->r10s());
+        rtcp_desc = buf;
+    }
+
+    string snk_desc;
+    _srs_pps_snack->update();
+    _srs_pps_snack2->update();
+    _srs_pps_sanack->update();
+    _srs_pps_svnack->update();
+    if (_srs_pps_snack->r10s() || _srs_pps_sanack->r10s() || _srs_pps_svnack->r10s() || _srs_pps_snack2->r10s()) {
+        snprintf(buf, sizeof(buf), ", snk=(%d,a:%d,v:%d,h:%d)", _srs_pps_snack->r10s(), _srs_pps_sanack->r10s(), _srs_pps_svnack->r10s(), _srs_pps_snack2->r10s());
+        snk_desc = buf;
+    }
+
+    string rnk_desc;
+    _srs_pps_rnack->update();
+    _srs_pps_rnack2->update();
+    _srs_pps_rhnack->update();
+    _srs_pps_rmnack->update();
+    if (_srs_pps_rnack->r10s() || _srs_pps_rnack2->r10s() || _srs_pps_rhnack->r10s() || _srs_pps_rmnack->r10s()) {
+        snprintf(buf, sizeof(buf), ", rnk=(%d,%d,h:%d,m:%d)", _srs_pps_rnack->r10s(), _srs_pps_rnack2->r10s(), _srs_pps_rhnack->r10s(), _srs_pps_rmnack->r10s());
+        rnk_desc = buf;
+    }
+
+    string loss_desc;
+    SrsSnmpUdpStat *s = srs_get_udp_snmp_stat();
+    if (s->rcv_buf_errors_delta || s->snd_buf_errors_delta) {
+        snprintf(buf, sizeof(buf), ", loss=(r:%d,s:%d)", s->rcv_buf_errors_delta, s->snd_buf_errors_delta);
+        loss_desc = buf;
+    }
+
+    string fid_desc;
+    _srs_pps_ids->update();
+    _srs_pps_fids->update();
+    _srs_pps_fids_level0->update();
+    _srs_pps_addrs->update();
+    _srs_pps_fast_addrs->update();
+    if (_srs_pps_ids->r10s(), _srs_pps_fids->r10s(), _srs_pps_fids_level0->r10s(), _srs_pps_addrs->r10s(), _srs_pps_fast_addrs->r10s()) {
+        snprintf(buf, sizeof(buf), ", fid=(id:%d,fid:%d,ffid:%d,addr:%d,faddr:%d)", _srs_pps_ids->r10s(), _srs_pps_fids->r10s(), _srs_pps_fids_level0->r10s(), _srs_pps_addrs->r10s(), _srs_pps_fast_addrs->r10s());
+        fid_desc = buf;
+    }
+
+    srs_trace("RTC: Server conns=%u%s%s%s%s%s%s%s",
+              nn_rtc_conns,
+              rpkts_desc.c_str(), spkts_desc.c_str(), rtcp_desc.c_str(), snk_desc.c_str(), rnk_desc.c_str(), loss_desc.c_str(), fid_desc.c_str());
+
+    return err;
 }
 
 srs_error_t SrsServer::on_tcp_client(ISrsListener *listener, srs_netfd_t stfd)
@@ -1442,7 +1991,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         } else {
             string key = listener == https_listener_ ? _srs_config->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? _srs_config->get_https_stream_ssl_cert() : "";
-            resource = new SrsHttpxConn(this, io, http_server_, ip, port, key, cert);
+            resource = new SrsHttpxConn(_srs_conn_manager, io, http_server_, ip, port, key, cert);
         }
     }
 
@@ -1457,20 +2006,20 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         } else if (listener == api_listener_ || listener == apis_listener_) {
             string key = listener == apis_listener_ ? _srs_config->get_https_api_ssl_key() : "";
             string cert = listener == apis_listener_ ? _srs_config->get_https_api_ssl_cert() : "";
-            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, key, cert);
+            resource = new SrsHttpxConn(_srs_conn_manager, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, key, cert);
         } else if (listener == http_listener_ || listener == https_listener_) {
             string key = listener == https_listener_ ? _srs_config->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? _srs_config->get_https_stream_ssl_cert() : "";
-            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_server_, ip, port, key, cert);
+            resource = new SrsHttpxConn(_srs_conn_manager, new SrsTcpConnection(stfd2), http_server_, ip, port, key, cert);
         } else if (listener == webrtc_listener_) {
             resource = new SrsRtcTcpConn(new SrsTcpConnection(stfd2), ip, port);
 #ifdef SRS_RTSP
         } else if (listener == rtsp_listener_) {
-            resource = new SrsRtspConnection(this, new SrsTcpConnection(stfd2), ip, port);
+            resource = new SrsRtspConnection(_srs_conn_manager, new SrsTcpConnection(stfd2), ip, port);
 #endif
         } else if (listener == exporter_listener_) {
             // TODO: FIXME: Maybe should support https metrics.
-            resource = new SrsHttpxConn(this, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, "", "");
+            resource = new SrsHttpxConn(_srs_conn_manager, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, "", "");
         } else {
             srs_close_stfd(stfd2);
             srs_warn("Close for invalid fd=%d, ip=%s:%d", fd, ip.c_str(), port);
@@ -1482,7 +2031,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     SrsRtcTcpConn *raw_conn = dynamic_cast<SrsRtcTcpConn *>(resource);
     if (raw_conn) {
         SrsSharedResource<SrsRtcTcpConn> *conn = new SrsSharedResource<SrsRtcTcpConn>(raw_conn);
-        SrsExecutorCoroutine *executor = new SrsExecutorCoroutine(_srs_rtc_manager, conn, raw_conn, raw_conn);
+        SrsExecutorCoroutine *executor = new SrsExecutorCoroutine(_srs_conn_manager, conn, raw_conn, raw_conn);
         raw_conn->setup_owner(conn, executor, executor);
         if ((err = executor->start()) != srs_success) {
             srs_freep(executor);
@@ -1493,7 +2042,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
 
     // Use connection manager to manage all the resources.
     srs_assert(resource);
-    conn_manager_->add(resource);
+    _srs_conn_manager->add(resource);
 
     // If connection is a resource to start, start a coroutine to handle it.
     // Note that conn is managed by conn_manager, so we don't need to free it.
@@ -1513,18 +2062,12 @@ srs_error_t SrsServer::on_before_connection(const char *label, int fd, const std
     // Failed if exceed the connection limitation.
     int max_connections = _srs_config->get_max_connections();
 
-    if ((int)conn_manager_->size() >= max_connections) {
+    if ((int)_srs_conn_manager->size() >= max_connections) {
         return srs_error_new(ERROR_EXCEED_CONNECTIONS, "drop %s fd=%d, ip=%s:%d, max=%d, cur=%d for exceed connection limits",
-                             label, fd, ip.c_str(), port, max_connections, (int)conn_manager_->size());
+                             label, fd, ip.c_str(), port, max_connections, (int)_srs_conn_manager->size());
     }
 
     return err;
-}
-
-void SrsServer::remove(ISrsResource *c)
-{
-    // use manager to free it async.
-    conn_manager_->remove(c);
 }
 
 srs_error_t SrsServer::on_publish(ISrsRequest *r)
@@ -1580,6 +2123,11 @@ srs_error_t SrsServerAdapter::initialize()
         return srs_error_wrap(err, "srt poller start");
     }
 #endif
+
+    // Initialize WebRTC DTLS certificate
+    if ((err = _srs_rtc_dtls_certificate->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtc dtls certificate initialize");
+    }
 
     return err;
 }

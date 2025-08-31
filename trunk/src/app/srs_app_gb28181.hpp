@@ -40,6 +40,7 @@ class SrsRawHEVCStream;
 class SrsSharedPtrMessage;
 class SrsPithyPrint;
 class SrsRawAacStream;
+class ISrsHttpServeMux;
 
 // The state machine for GB session.
 // init:
@@ -218,9 +219,10 @@ private:
     SrsConfDirective *conf_;
     SrsTcpListener *media_listener_;
     SrsTcpListener *sip_listener_;
+    ISrsHttpServeMux *http_api_mux_;
 
 public:
-    SrsGbListener();
+    SrsGbListener(ISrsHttpServeMux *http_api_mux);
     virtual ~SrsGbListener();
 
 public:

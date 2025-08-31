@@ -11,7 +11,7 @@
 #include <srs_core.hpp>
 #include <srs_protocol_http_stack.hpp>
 
-class SrsRtcServer;
+class SrsServer;
 class ISrsRequest;
 class SrsSdp;
 class SrsRtcUserConfig;
@@ -19,11 +19,11 @@ class SrsRtcUserConfig;
 class SrsGoApiRtcPlay : public ISrsHttpHandler
 {
 private:
-    SrsRtcServer *server_;
+    SrsServer *server_;
     SrsSecurity *security_;
 
 public:
-    SrsGoApiRtcPlay(SrsRtcServer *server);
+    SrsGoApiRtcPlay(SrsServer *server);
     virtual ~SrsGoApiRtcPlay();
 
 public:
@@ -45,11 +45,11 @@ private:
 class SrsGoApiRtcPublish : public ISrsHttpHandler
 {
 private:
-    SrsRtcServer *server_;
+    SrsServer *server_;
     SrsSecurity *security_;
 
 public:
-    SrsGoApiRtcPublish(SrsRtcServer *server);
+    SrsGoApiRtcPublish(SrsServer *server);
     virtual ~SrsGoApiRtcPublish();
 
 public:
@@ -72,12 +72,12 @@ private:
 class SrsGoApiRtcWhip : public ISrsHttpHandler
 {
 private:
-    SrsRtcServer *server_;
+    SrsServer *server_;
     SrsGoApiRtcPublish *publish_;
     SrsGoApiRtcPlay *play_;
 
 public:
-    SrsGoApiRtcWhip(SrsRtcServer *server);
+    SrsGoApiRtcWhip(SrsServer *server);
     virtual ~SrsGoApiRtcWhip();
 
 public:
@@ -90,10 +90,10 @@ private:
 class SrsGoApiRtcNACK : public ISrsHttpHandler
 {
 private:
-    SrsRtcServer *server_;
+    SrsServer *server_;
 
 public:
-    SrsGoApiRtcNACK(SrsRtcServer *server);
+    SrsGoApiRtcNACK(SrsServer *server);
     virtual ~SrsGoApiRtcNACK();
 
 public:

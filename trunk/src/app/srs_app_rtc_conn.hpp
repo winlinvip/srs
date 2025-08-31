@@ -34,7 +34,7 @@
 class SrsUdpMuxSocket;
 class SrsLiveConsumer;
 class SrsStunPacket;
-class SrsRtcServer;
+class SrsServer;
 class SrsRtcConnection;
 class SrsSharedPtrMessage;
 class SrsRtcSource;
@@ -480,7 +480,7 @@ public:
     bool disposing_;
 
 private:
-    SrsRtcServer *server_;
+    SrsServer *server_;
 
 private:
     iovec *cache_iov_;
@@ -530,7 +530,7 @@ private:
     bool nack_enabled_;
 
 public:
-    SrsRtcConnection(SrsRtcServer *s, const SrsContextId &cid);
+    SrsRtcConnection(SrsServer *s, const SrsContextId &cid);
     virtual ~SrsRtcConnection();
     // interface ISrsDisposingHandler
 public:

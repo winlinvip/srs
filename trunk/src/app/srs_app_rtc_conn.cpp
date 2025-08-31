@@ -442,7 +442,7 @@ SrsRtcPlayStream::SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid)
 SrsRtcPlayStream::~SrsRtcPlayStream()
 {
     if (req_) {
-        session_->server_->exec_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
+        session_->server_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
     }
 
     _srs_config->unsubscribe(this);
@@ -1084,7 +1084,7 @@ SrsRtcPublishStream::SrsRtcPublishStream(SrsRtcConnection *session, const SrsCon
 SrsRtcPublishStream::~SrsRtcPublishStream()
 {
     if (req_) {
-        session_->server_->exec_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
+        session_->server_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
     }
 
     srs_freep(timer_rtcp_);
@@ -1174,16 +1174,6 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     for (int i = 0; i < (int)video_tracks_.size(); i++) {
         SrsRtcVideoRecvTrack *track = video_tracks_.at(i);
         track->set_nack_no_copy(nack_no_copy_);
-    }
-
-    // Acquire stream publish token to prevent race conditions across all protocols.
-    SrsStreamPublishToken *publish_token_raw = NULL;
-    if ((err = _srs_stream_publish_tokens->acquire_token(req_, publish_token_raw)) != srs_success) {
-        return srs_error_wrap(err, "acquire stream publish token");
-    }
-    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
-    if (publish_token.get()) {
-        srs_trace("stream publish token acquired, type=rtc, url=%s", req_->get_stream_url().c_str());
     }
 
     // Setup the publish stream in source to enable PLI as such.
@@ -1771,7 +1761,7 @@ srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
     return err;
 }
 
-SrsRtcConnection::SrsRtcConnection(SrsRtcServer *s, const SrsContextId &cid)
+SrsRtcConnection::SrsRtcConnection(SrsServer *s, const SrsContextId &cid)
 {
     req_ = NULL;
     cid_ = cid;
@@ -1795,12 +1785,12 @@ SrsRtcConnection::SrsRtcConnection(SrsRtcServer *s, const SrsContextId &cid)
     nack_enabled_ = false;
     timer_nack_ = new SrsRtcConnectionNackTimer(this);
 
-    _srs_rtc_manager->subscribe(this);
+    _srs_conn_manager->subscribe(this);
 }
 
 SrsRtcConnection::~SrsRtcConnection()
 {
-    _srs_rtc_manager->unsubscribe(this);
+    _srs_conn_manager->unsubscribe(this);
 
     srs_freep(timer_nack_);
 
@@ -1912,7 +1902,7 @@ std::string SrsRtcConnection::desc()
 void SrsRtcConnection::expire()
 {
     // TODO: FIXME: Should set session to expired and remove it by heartbeat checking. Should not remove it directly.
-    _srs_rtc_manager->remove(this);
+    _srs_conn_manager->remove(this);
 }
 
 void SrsRtcConnection::switch_to_context()
@@ -2255,7 +2245,7 @@ srs_error_t SrsRtcConnection::on_dtls_alert(std::string type, std::string desc)
         switch_to_context();
 
         srs_trace("RTC: session destroy by DTLS alert(%s %s), username=%s", type.c_str(), desc.c_str(), username_.c_str());
-        _srs_rtc_manager->remove(this);
+        _srs_conn_manager->remove(this);
     }
 
     return err;

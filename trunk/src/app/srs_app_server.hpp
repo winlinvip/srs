@@ -27,6 +27,14 @@
 #include <srs_protocol_srt.hpp>
 #endif
 
+class SrsAsyncCallWorker;
+class SrsUdpMuxListener;
+class SrsUdpMuxSocket;
+class SrsRtcUserConfig;
+class SrsSdp;
+class SrsRtcConnection;
+class ISrsAsyncCallTask;
+
 class SrsServer;
 class ISrsHttpServeMux;
 class SrsHttpServer;
@@ -120,9 +128,9 @@ class SrsServer : public ISrsCoroutineHandler, // SRS server starts a coroutine 
                   public ISrsReloadHandler,
                   public ISrsLiveSourceHandler,
                   public ISrsTcpHandler,
-                  public ISrsResourceManager,
                   public ISrsHourGlass,
-                  public ISrsSrtClientHandler
+                  public ISrsSrtClientHandler,
+                  public ISrsUdpMuxHandler
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
@@ -132,7 +140,6 @@ private:
 private:
     SrsHttpHeartbeat *http_heartbeat_;
     SrsIngester *ingester_;
-    SrsResourceManager *conn_manager_;
     SrsCoroutine *trd_;
     SrsHourGlass *timer_;
     SrsWaitGroup *wg_;
@@ -184,6 +191,10 @@ private:
     // SRT acceptors for MPEG-TS over SRT.
     std::vector<SrsSrtAcceptor *> srt_acceptors_;
 #endif
+    // WebRTC UDP listeners for RTC server functionality.
+    std::vector<SrsUdpMuxListener *> rtc_listeners_;
+    // WebRTC async call worker for non-blocking operations.
+    SrsAsyncCallWorker *rtc_async_;
 
 private:
     // Signal manager which convert gignal to io message.
@@ -275,10 +286,20 @@ private:
     virtual srs_error_t srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr);
 #endif
 
-    // For internal only
+    // WebRTC-related methods
+    virtual srs_error_t listen_rtc_udp();
+    virtual srs_error_t listen_rtc_api();
+    
 public:
-    // TODO: FIXME: Fetch from hybrid server manager.
-    virtual ISrsHttpServeMux *api_server();
+    virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
+    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
+
+private:
+    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
+
+private:
+    virtual srs_error_t srs_update_rtc_sessions();
 
     // Interface ISrsTcpHandler
 public:
@@ -288,17 +309,14 @@ private:
     virtual srs_error_t do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stfd);
     virtual srs_error_t on_before_connection(const char *label, int fd, const std::string &ip, int port);
 
-    // Interface ISrsResourceManager
-public:
-    // A callback for connection to remove itself.
-    // When connection thread cycle terminated, callback this to delete connection.
-    // @see SrsTcpConnection.on_thread_stop().
-    virtual void remove(ISrsResource *c);
-
     // Interface ISrsLiveSourceHandler
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
+
+    // Interface ISrsUdpMuxHandler
+public:
+    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
 };
 
 // The SRS server adapter, the master server.
@@ -319,5 +337,8 @@ public:
 public:
     virtual SrsServer *instance();
 };
+
+// Manager for RTC connections.
+extern SrsResourceManager *_srs_conn_manager;
 
 #endif

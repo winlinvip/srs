@@ -44,7 +44,6 @@ using namespace std;
 #include <srs_kernel_utility.hpp>
 
 #include <srs_app_rtc_conn.hpp>
-#include <srs_app_rtc_server.hpp>
 
 #ifdef SRS_SRT
 #include <srs_app_srt_server.hpp>
@@ -459,8 +458,6 @@ srs_error_t run_hybrid_server()
 
     // Create servers and register them.
     _srs_hybrid->register_server(new SrsServerAdapter());
-
-    _srs_hybrid->register_server(new SrsRtcServerAdapter());
 
     // Do some system initialize.
     if ((err = _srs_hybrid->initialize()) != srs_success) {

@@ -184,7 +184,7 @@ SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip
     server = svr;
 
     transport_ = transport;
-    manager = svr;
+    manager = _srs_conn_manager;
     ip = cip;
     port = cport;
     create_time = srsu2ms(srs_time_now_cached());

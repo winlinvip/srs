@@ -153,7 +153,7 @@ extern SrsConfig *_srs_config;
 extern SrsStageManager *_srs_stages;
 
 extern SrsRtcBlackhole *_srs_blackhole;
-extern SrsResourceManager *_srs_rtc_manager;
+extern SrsResourceManager *_srs_conn_manager;
 
 extern SrsDtlsCertificate *_srs_rtc_dtls_certificate;
 
@@ -674,7 +674,7 @@ srs_error_t srs_global_initialize()
     // Initialize stream publish token manager
     _srs_stream_publish_tokens = new SrsStreamPublishTokenManager();
 
-    _srs_rtc_manager = new SrsResourceManager("RTC", true);
+    _srs_conn_manager = new SrsResourceManager("RTC", true);
     _srs_rtc_dtls_certificate = new SrsDtlsCertificate();
 #ifdef SRS_RTSP
     _srs_rtsp_sources = new SrsRtspSourceManager();

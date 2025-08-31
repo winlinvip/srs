@@ -18,6 +18,7 @@
 #include <srs_app_st.hpp>
 
 #include <string>
+#include <set>
 
 class SrsRtcServer;
 class SrsHourGlass;
@@ -82,62 +83,11 @@ public:
     virtual ~SrsRtcUserConfig();
 };
 
-// The RTC server instance, listen UDP port, handle UDP packet, manage RTC connections.
-class SrsRtcServer : public ISrsUdpMuxHandler, public ISrsFastTimer, public ISrsReloadHandler
-{
-private:
-    std::vector<SrsUdpMuxListener *> listeners;
-    SrsAsyncCallWorker *async;
-
-public:
-    SrsRtcServer();
-    virtual ~SrsRtcServer();
-
-public:
-    virtual srs_error_t initialize();
-
-public:
-    srs_error_t exec_async_work(ISrsAsyncCallTask *t);
-
-public:
-    // TODO: FIXME: Support gracefully quit.
-    // TODO: FIXME: Support reload.
-    srs_error_t listen_udp();
-    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
-    srs_error_t listen_api();
-
-public:
-    // Peer start offering, we answer it.
-    srs_error_t create_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
-
-private:
-    srs_error_t do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
-
-public:
-    SrsRtcConnection *find_session_by_username(const std::string &ufrag);
-    // interface ISrsFastTimer
-private:
-    srs_error_t on_timer(srs_utime_t interval);
-};
-
-// The RTC server adapter.
-class SrsRtcServerAdapter : public ISrsHybridServer
-{
-private:
-    SrsRtcServer *rtc;
-
-public:
-    SrsRtcServerAdapter();
-    virtual ~SrsRtcServerAdapter();
-
-public:
-    virtual srs_error_t initialize();
-    virtual srs_error_t run(SrsWaitGroup *wg);
-    virtual void stop();
-};
+// Discover the candidates for RTC server.
+extern std::set<std::string> discover_candidates(SrsRtcUserConfig *ruc);
 
 // Manager for RTC connections.
-extern SrsResourceManager *_srs_rtc_manager;
+extern SrsResourceManager *_srs_conn_manager;
 
 // The dns resolve utility, return the resolved ip address.
 extern std::string srs_dns_resolve(std::string host, int &family);

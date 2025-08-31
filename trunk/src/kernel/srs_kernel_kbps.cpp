@@ -10,6 +10,7 @@
 #include <srs_kernel_utility.hpp>
 
 #include <string>
+#include <cstdio>
 using namespace std;
 
 SrsRateSample::SrsRateSample()

@@ -51,7 +51,7 @@ using namespace std;
 
 // pre-declare
 srs_error_t run_directly_or_daemon();
-srs_error_t run_hybrid_server();
+srs_error_t run_srs_server();
 void show_macro_features();
 
 // @global log and context.
@@ -404,7 +404,7 @@ srs_error_t run_directly_or_daemon()
 
     // If not daemon, directly run hybrid server.
     if (!run_as_daemon) {
-        if ((err = run_hybrid_server()) != srs_success) {
+        if ((err = run_srs_server()) != srs_success) {
             return srs_error_wrap(err, "run server");
         }
         return srs_success;
@@ -441,14 +441,14 @@ srs_error_t run_directly_or_daemon()
     // son
     srs_trace("son(daemon) process running.");
 
-    if ((err = run_hybrid_server()) != srs_success) {
+    if ((err = run_srs_server()) != srs_success) {
         return srs_error_wrap(err, "daemon run server");
     }
 
     return err;
 }
 
-srs_error_t run_hybrid_server()
+srs_error_t run_srs_server()
 {
     srs_error_t err = srs_success;
 
@@ -457,11 +457,6 @@ srs_error_t run_hybrid_server()
     // Do some system initialize.
     if ((err = _srs_server->initialize()) != srs_success) {
         return srs_error_wrap(err, "hybrid initialize");
-    }
-
-    // Circuit breaker to protect server, which depends on server.
-    if ((err = _srs_circuit_breaker->initialize()) != srs_success) {
-        return srs_error_wrap(err, "init circuit breaker");
     }
 
     // Should run util hybrid servers all done.

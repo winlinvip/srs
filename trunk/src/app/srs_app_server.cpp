@@ -747,9 +747,7 @@ SrsServer::SrsServer()
 
     http_heartbeat_ = new SrsHttpHeartbeat();
     ingester_ = new SrsIngester();
-    trd_ = new SrsSTCoroutine("srs", this, _srs_context->get_id());
     timer_ = NULL;
-    wg_ = NULL;
 
     // Initialize global shared timers moved from SrsHybridServer
     timer20ms_ = new SrsFastTimer("server", 20 * SRS_UTIME_MILLISECONDS);
@@ -769,7 +767,6 @@ SrsServer::~SrsServer()
 
 void SrsServer::destroy()
 {
-    srs_freep(trd_);
     srs_freep(timer_);
 
     // Free global shared timers
@@ -1101,6 +1098,11 @@ srs_error_t SrsServer::run()
 {
     srs_error_t err = srs_success;
 
+    // Circuit breaker to protect server, which depends on server.
+    if ((err = _srs_circuit_breaker->initialize()) != srs_success) {
+        return srs_error_wrap(err, "init circuit breaker");
+    }
+
     // Initialize the whole system, set hooks to handle server level events.
     if ((err = initialize_st()) != srs_success) {
         return srs_error_wrap(err, "initialize st");
@@ -1126,11 +1128,28 @@ srs_error_t SrsServer::run()
         return srs_error_wrap(err, "ingest");
     }
 
-    // Wait for server which need to do cleanup.
-    SrsWaitGroup wg;
+    if ((err = _srs_sources->initialize()) != srs_success) {
+        return srs_error_wrap(err, "live sources");
+    }
 
-    if ((err = start(&wg)) != srs_success) {
-        return srs_error_wrap(err, "start");
+#ifdef SRS_SRT
+    if ((err = _srs_srt_sources->initialize()) != srs_success) {
+        return srs_error_wrap(err, "srt sources");
+    }
+#endif
+
+    if ((err = _srs_rtc_sources->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtc sources");
+    }
+
+#ifdef SRS_RTSP
+    if ((err = _srs_rtsp_sources->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtsp sources");
+    }
+#endif
+
+    if ((err = setup_ticks()) != srs_success) {
+        return srs_error_wrap(err, "tick");
     }
 
 #ifdef SRS_GB28181
@@ -1139,10 +1158,7 @@ srs_error_t SrsServer::run()
     }
 #endif
 
-    // Wait for server to quit.
-    wg.wait();
-
-    return err;
+    return cycle();
 }
 
 srs_error_t SrsServer::initialize_st()
@@ -1461,45 +1477,6 @@ srs_error_t SrsServer::ingest()
     return err;
 }
 
-srs_error_t SrsServer::start(SrsWaitGroup *wg)
-{
-    srs_error_t err = srs_success;
-
-    if ((err = _srs_sources->initialize()) != srs_success) {
-        return srs_error_wrap(err, "live sources");
-    }
-
-#ifdef SRS_SRT
-    if ((err = _srs_srt_sources->initialize()) != srs_success) {
-        return srs_error_wrap(err, "srt sources");
-    }
-#endif
-
-    if ((err = _srs_rtc_sources->initialize()) != srs_success) {
-        return srs_error_wrap(err, "rtc sources");
-    }
-
-#ifdef SRS_RTSP
-    if ((err = _srs_rtsp_sources->initialize()) != srs_success) {
-        return srs_error_wrap(err, "rtsp sources");
-    }
-#endif
-
-    if ((err = trd_->start()) != srs_success) {
-        return srs_error_wrap(err, "start");
-    }
-
-    if ((err = setup_ticks()) != srs_success) {
-        return srs_error_wrap(err, "tick");
-    }
-
-    // OK, we start SRS server.
-    wg_ = wg;
-    wg->add(1);
-
-    return err;
-}
-
 void SrsServer::stop()
 {
 #ifdef SRS_GPERF_MC
@@ -1547,9 +1524,6 @@ srs_error_t SrsServer::cycle()
     if ((err = do_cycle()) != srs_success) {
         srs_error("server err %s", srs_error_desc(err).c_str());
     }
-
-    // OK, SRS server is done.
-    wg_->done();
 
     return err;
 }
@@ -1630,10 +1604,6 @@ srs_error_t SrsServer::do_cycle()
     bool asprocess = _srs_config->get_asprocess();
 
     while (true) {
-        if ((err = trd_->pull()) != srs_success) {
-            return srs_error_wrap(err, "pull");
-        }
-
         // asprocess check.
         if (asprocess && ::getppid() != ppid_) {
             return srs_error_new(ERROR_ASPROCESS_PPID, "asprocess ppid changed from %d to %d", ppid_, ::getppid());

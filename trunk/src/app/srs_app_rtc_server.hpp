@@ -26,7 +26,6 @@ class ISrsRequest;
 class SrsSdp;
 class SrsRtcSource;
 class SrsResourceManager;
-class SrsWaitGroup;
 
 // The UDP black hole, for developer to use wireshark to catch plaintext packets.
 // For example, server receive UDP packets at udp://8000, and forward the plaintext packet to black hole,

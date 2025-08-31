@@ -48,7 +48,6 @@ class SrsTcpListener;
 class SrsAppCasterFlv;
 class SrsResourceManager;
 class SrsLatestVersion;
-class SrsWaitGroup;
 class SrsMultipleTcpListeners;
 class SrsHttpFlvListener;
 class SrsUdpCasterListener;
@@ -126,8 +125,7 @@ public:
 };
 
 // SRS RTMP server, initialize and listen, start connection service thread, destroy client.
-class SrsServer : public ISrsCoroutineHandler, // SRS server starts a coroutine to run.
-                  public ISrsReloadHandler,
+class SrsServer : public ISrsReloadHandler, // Reload framework for permormance optimization.
                   public ISrsLiveSourceHandler,
                   public ISrsTcpHandler,
                   public ISrsHourGlass,
@@ -143,9 +141,7 @@ private:
 private:
     SrsHttpHeartbeat *http_heartbeat_;
     SrsIngester *ingester_;
-    SrsCoroutine *trd_;
     SrsHourGlass *timer_;
-    SrsWaitGroup *wg_;
 
 private:
     // Global shared timers moved from SrsHybridServer
@@ -259,11 +255,10 @@ private:
     virtual srs_error_t ingest();
 
 public:
-    virtual srs_error_t start(SrsWaitGroup *wg);
     void stop();
 
     // interface ISrsCoroutineHandler
-public:
+private:
     virtual srs_error_t cycle();
 
     // server utilities.

@@ -1525,9 +1525,11 @@ srs_error_t SrsMetaCache::update_data(SrsMessageHeader *header, SrsOnMetaDataPac
 
     // dump message to shared ptr message.
     // the payload/size managed by cache_metadata, user should not free it.
-    if ((err = meta->create(header, payload, size)) != srs_success) {
+    SrsCommonMessage common_msg;
+    if ((err = common_msg.create(header, payload, size)) != srs_success) {
         return srs_error_wrap(err, "create metadata");
     }
+    common_msg.to_msg(meta);
 
     return err;
 }
@@ -1962,7 +1964,6 @@ srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage *msg, SrsOnMetaDataPack
 
 srs_error_t SrsLiveSource::on_audio(SrsCommonMessage *shared_audio)
 {
-    srs_error_t err = srs_success;
 
     // Detect where stream is monotonically increasing.
     if (!mix_correct && is_monotonically_increase) {
@@ -1977,9 +1978,7 @@ srs_error_t SrsLiveSource::on_audio(SrsCommonMessage *shared_audio)
     // convert shared_audio to msg, user should not use shared_audio again.
     // the payload is transfer to msg, and set to NULL in shared_audio.
     SrsSharedPtrMessage msg;
-    if ((err = msg.create(shared_audio)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
+    shared_audio->to_msg(&msg);
 
     return on_frame(&msg);
 }
@@ -2123,9 +2122,7 @@ srs_error_t SrsLiveSource::on_video(SrsCommonMessage *shared_video)
     // convert shared_video to msg, user should not use shared_video again.
     // the payload is transfer to msg, and set to NULL in shared_video.
     SrsSharedPtrMessage msg;
-    if ((err = msg.create(shared_video)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
+    shared_video->to_msg(&msg);
 
     return on_frame(&msg);
 }

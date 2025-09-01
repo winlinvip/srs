@@ -2107,12 +2107,14 @@ srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *d
         return srs_error_wrap(err, "connect");
     }
 
-    SrsSharedPtrMessage *msg = NULL;
-
-    if ((err = srs_rtmp_create_msg(type, timestamp, data, size, sdk_->sid(), &msg)) != srs_success) {
+    SrsCommonMessage *cmsg = NULL;
+    if ((err = srs_rtmp_create_msg(type, timestamp, data, size, sdk_->sid(), &cmsg)) != srs_success) {
         return srs_error_wrap(err, "create message");
     }
-    srs_assert(msg);
+
+    SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+    cmsg->to_msg(msg);
+    srs_freep(cmsg);
 
     // push msg to queue.
     if ((err = queue_->push(msg)) != srs_success) {

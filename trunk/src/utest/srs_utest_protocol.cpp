@@ -898,7 +898,9 @@ VOID TEST(ProtocolMsgArrayTest, MessageArray)
     SrsMessageHeader header;
     SrsSharedPtrMessage msg;
     char *payload = new char[1024];
-    HELPER_EXPECT_SUCCESS(msg.create(&header, payload, 1024));
+    SrsCommonMessage common_msg;
+    HELPER_EXPECT_SUCCESS(common_msg.create(&header, payload, 1024));
+    common_msg.to_msg(&msg);
 
     if (true) {
         SrsMessageArray arr(3);
@@ -4374,7 +4376,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendVMessage)
     memcpy(msg->payload(), data, sizeof(data));
 
     SrsSharedPtrMessage m;
-    HELPER_ASSERT_SUCCESS(m.create(msg));
+    msg->to_msg(&m);
 
     HELPER_EXPECT_SUCCESS(proto.send_and_free_message(m.copy(), 0));
     EXPECT_EQ(16, bio.out_buffer.length());
@@ -4938,7 +4940,7 @@ VOID TEST(ProtocolStackTest, ProtocolAckSizeFlow)
         EXPECT_TRUE(msg->header.is_video());
 
         SrsSharedPtrMessage m;
-        HELPER_ASSERT_SUCCESS(m.create(msg));
+        msg->to_msg(&m);
 
         HELPER_EXPECT_SUCCESS(proto.send_and_free_message(m.copy(), 1));
     }
@@ -4988,7 +4990,7 @@ VOID TEST(ProtocolStackTest, ProtocolAckSizeFlow)
         EXPECT_TRUE(msg->header.is_video());
 
         SrsSharedPtrMessage m;
-        HELPER_ASSERT_SUCCESS(m.create(msg));
+        msg->to_msg(&m);
 
         HELPER_EXPECT_SUCCESS(proto.send_and_free_message(m.copy(), 1));
     }

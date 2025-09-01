@@ -410,7 +410,7 @@ srs_error_t SrsProtocol::do_send_messages(SrsSharedPtrMessage **msgs, int nb_msg
         while (p < pend) {
             // always has header
             int nb_cache = SRS_CONSTS_C0C3_HEADERS_MAX - c0c3_cache_index;
-            int nbh = msg->chunk_header(c0c3_cache, nb_cache, p == msg->payload());
+            int nbh = srs_rtmp_write_chunk_header(msg, c0c3_cache, nb_cache, p == msg->payload());
             srs_assert(nbh > 0);
 
             // header iov
@@ -512,7 +512,7 @@ srs_error_t SrsProtocol::do_send_messages(SrsSharedPtrMessage **msgs, int nb_msg
             int nb_cache = SRS_CONSTS_C0C3_HEADERS_MAX;
 
             // always has header
-            int nbh = msg->chunk_header(c0c3_cache, nb_cache, p == msg->payload);
+            int nbh = srs_rtmp_write_chunk_header(msg, c0c3_cache, nb_cache, p == msg->payload);
             srs_assert(nbh > 0);
 
             // header iov
@@ -555,10 +555,7 @@ srs_error_t SrsProtocol::do_send_and_free_packet(SrsPacket *packet_raw, int stre
     }
 
     SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
-    if ((err = shared_msg->create(msg.get())) != srs_success) {
-        srs_freep(shared_msg);
-        return srs_error_wrap(err, "create message");
-    }
+    msg->to_msg(shared_msg);
 
     if ((err = send_and_free_message(shared_msg, stream_id)) != srs_success) {
         return srs_error_wrap(err, "send packet");

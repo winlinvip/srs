@@ -79,7 +79,7 @@ SrsSrtPacket *SrsSrtPacket::copy()
 {
     SrsSrtPacket *cp = new SrsSrtPacket();
 
-    cp->shared_buffer_ = shared_buffer_ ? shared_buffer_->copy2() : NULL;
+    cp->shared_buffer_ = shared_buffer_ ? shared_buffer_->copy() : NULL;
     cp->actual_buffer_size_ = actual_buffer_size_;
 
     return cp;
@@ -508,9 +508,7 @@ srs_error_t SrsSrtFrameBuilder::check_sps_pps_change(SrsTsMessage *msg)
     }
 
     SrsSharedPtrMessage frame;
-    if ((err = frame.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create frame");
-    }
+    rtmp.to_msg(&frame);
 
     if ((err = bridge_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp sps/pps");
@@ -568,9 +566,7 @@ srs_error_t SrsSrtFrameBuilder::on_h264_frame(SrsTsMessage *msg, vector<pair<cha
     }
 
     SrsSharedPtrMessage frame;
-    if ((err = frame.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create frame");
-    }
+    rtmp.to_msg(&frame);
 
     if ((err = bridge_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt ts video to rtmp");
@@ -698,9 +694,7 @@ srs_error_t SrsSrtFrameBuilder::check_vps_sps_pps_change(SrsTsMessage *msg)
     }
 
     SrsSharedPtrMessage frame;
-    if ((err = frame.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create frame");
-    }
+    rtmp.to_msg(&frame);
 
     if ((err = bridge_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp vps/sps/pps");
@@ -765,9 +759,7 @@ srs_error_t SrsSrtFrameBuilder::on_hevc_frame(SrsTsMessage *msg, vector<pair<cha
     }
 
     SrsSharedPtrMessage frame;
-    if ((err = frame.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create frame");
-    }
+    rtmp.to_msg(&frame);
 
     if ((err = bridge_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt ts hevc video to rtmp");
@@ -881,9 +873,7 @@ srs_error_t SrsSrtFrameBuilder::check_audio_sh_change(SrsTsMessage *msg, uint32_
     stream.write_bytes((char *)audio_sh_.data(), audio_sh_.size());
 
     SrsSharedPtrMessage frame;
-    if ((err = frame.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create frame");
-    }
+    rtmp.to_msg(&frame);
 
     if ((err = bridge_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp audio sh");
@@ -911,9 +901,7 @@ srs_error_t SrsSrtFrameBuilder::on_aac_frame(SrsTsMessage *msg, uint32_t pts, ch
     stream.write_bytes(data, data_size);
 
     SrsSharedPtrMessage frame;
-    if ((err = frame.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create frame");
-    }
+    rtmp.to_msg(&frame);
 
     if ((err = bridge_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp audio sh");

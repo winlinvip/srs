@@ -283,19 +283,18 @@ string srs_net_url_encode_rtmp_url(string server, int port, string host, string 
     return url;
 }
 
-template <typename T>
-srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, T **ppmsg)
+srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsCommonMessage **ppmsg)
 {
     srs_error_t err = srs_success;
 
     *ppmsg = NULL;
-    T *msg = NULL;
+    SrsCommonMessage *msg = NULL;
 
     if (type == SrsFrameTypeAudio) {
         SrsMessageHeader header;
         header.initialize_audio(size, timestamp, stream_id);
 
-        msg = new T();
+        msg = new SrsCommonMessage();
         if ((err = msg->create(&header, data, size)) != srs_success) {
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
@@ -304,7 +303,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
         SrsMessageHeader header;
         header.initialize_video(size, timestamp, stream_id);
 
-        msg = new T();
+        msg = new SrsCommonMessage();
         if ((err = msg->create(&header, data, size)) != srs_success) {
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
@@ -313,7 +312,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
         SrsMessageHeader header;
         header.initialize_amf0_script(size, stream_id);
 
-        msg = new T();
+        msg = new SrsCommonMessage();
         if ((err = msg->create(&header, data, size)) != srs_success) {
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
@@ -323,19 +322,6 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
     }
 
     *ppmsg = msg;
-
-    return err;
-}
-
-srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsSharedPtrMessage **ppmsg)
-{
-    srs_error_t err = srs_success;
-
-    // only when failed, we must free the data.
-    if ((err = srs_do_rtmp_create_msg(type, timestamp, data, size, stream_id, ppmsg)) != srs_success) {
-        srs_freepa(data);
-        return srs_error_wrap(err, "create message");
-    }
 
     return err;
 }

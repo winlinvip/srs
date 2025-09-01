@@ -1868,9 +1868,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
         packet_aac(&out_rtmp, (char *)header, header_len, ts, is_first_audio_);
 
         SrsSharedPtrMessage msg;
-        if ((err = msg.create(&out_rtmp)) != srs_success) {
-            return srs_error_wrap(err, "create message");
-        }
+        out_rtmp.to_msg(&msg);
 
         if ((err = bridge_->on_frame(&msg)) != srs_success) {
             return srs_error_wrap(err, "source on audio");
@@ -1900,9 +1898,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
         packet_aac(&out_rtmp, (*it)->samples[0].bytes, (*it)->samples[0].size, ts, is_first_audio_);
 
         SrsSharedPtrMessage msg;
-        if ((err = msg.create(&out_rtmp)) != srs_success) {
-            return srs_error_wrap(err, "create message");
-        }
+        out_rtmp.to_msg(&msg);
 
         if ((err = bridge_->on_frame(&msg)) != srs_success) {
             err = srs_error_wrap(err, "source on audio");
@@ -2079,9 +2075,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_avc(SrsRtpPacket *pkt,
     }
 
     SrsSharedPtrMessage msg;
-    if ((err = msg.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
+    rtmp.to_msg(&msg);
 
     if ((err = bridge_->on_frame(&msg)) != srs_success) {
         return err;
@@ -2178,9 +2172,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_hevc(SrsRtpPacket *pkt
     }
 
     SrsSharedPtrMessage msg;
-    if ((err = msg.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
+    rtmp.to_msg(&msg);
 
     if ((err = bridge_->on_frame(&msg)) != srs_success) {
         return err;
@@ -2436,9 +2428,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
     }
 
     SrsSharedPtrMessage msg;
-    if ((err = msg.create(&rtmp)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
+    rtmp.to_msg(&msg);
 
     if ((err = bridge_->on_frame(&msg)) != srs_success) {
         srs_warn("fail to pack video frame: %s", srs_error_summary(err).c_str());

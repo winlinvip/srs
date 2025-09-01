@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#include <srs_core_autofree.hpp>
+#include <srs_kernel_buffer.hpp>
+
 class SrsBuffer;
 class SrsBitBuffer;
 class SrsFormat;
@@ -264,6 +267,8 @@ enum SrsFrameType {
     SrsFrameTypeVideo = 9,
     // 18 = script data
     SrsFrameTypeScript = 18,
+    // 20 = command data
+    SrsFrameTypeCommand = 20,
 };
 
 /**
@@ -1246,6 +1251,44 @@ public:
 
 public:
     virtual bool is_avc_codec_ok();
+};
+
+class SrsSharedPtrMessage
+{
+public:
+    int64_t timestamp;
+    int32_t stream_id;
+    SrsFrameType message_type;
+
+public:
+    SrsSharedPtr<SrsMemoryBlock> payload_;
+
+public:
+    SrsSharedPtrMessage();
+    virtual ~SrsSharedPtrMessage();
+
+public:
+    // Backward compatibility accessors
+    char *payload() { return payload_.get() ? payload_->payload() : NULL; }
+    int size() { return payload_.get() ? payload_->size() : 0; }
+
+public:
+    // Create shared ptr message from RAW payload.
+    // @remark Note that the header is set to zero.
+    virtual void wrap(char *payload, int size);
+    // check prefer cid and stream id.
+    // @return whether stream id already set.
+    virtual bool check(int stream_id);
+
+public:
+    virtual bool is_av();
+    virtual bool is_audio();
+    virtual bool is_video();
+
+public:
+    // copy current shared ptr message, use ref-count.
+    // @remark, assert object is created.
+    virtual SrsSharedPtrMessage *copy();
 };
 
 // A frame, consists of a codec and a group of samples.

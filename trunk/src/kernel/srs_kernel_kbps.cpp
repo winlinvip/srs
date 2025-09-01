@@ -154,6 +154,8 @@ SrsPps *_srs_pps_rrtcps = NULL;
 // NACK and loss statistics (only _srs_pps_aloss2 was originally in srs_app_server.cpp)
 SrsPps *_srs_pps_aloss2 = NULL;
 
+SrsPps *_srs_pps_objs_msgs = NULL;
+
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
 // Debug thread statistics
 SrsPps *_srs_pps_thread_run = NULL;

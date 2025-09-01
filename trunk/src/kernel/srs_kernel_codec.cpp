@@ -14,6 +14,7 @@ using namespace std;
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
@@ -793,6 +794,71 @@ SrsVideoCodecConfig::~SrsVideoCodecConfig()
 bool SrsVideoCodecConfig::is_avc_codec_ok()
 {
     return !avc_extra_data.empty();
+}
+
+SrsSharedPtrMessage::SrsSharedPtrMessage()
+{
+    timestamp = 0;
+    stream_id = 0;
+    message_type = SrsFrameTypeForbidden;
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
+
+    ++_srs_pps_objs_msgs->sugar;
+}
+
+SrsSharedPtrMessage::~SrsSharedPtrMessage()
+{
+    // payload_ automatically cleaned up by SrsSharedPtr
+}
+
+void SrsSharedPtrMessage::wrap(char *payload, int size)
+{
+    // Create new memory block and wrap the payload
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
+    payload_->attach(payload, size);
+}
+
+bool SrsSharedPtrMessage::check(int stream_id)
+{
+    // Ignore error when message has no payload.
+    if (!payload_.get()) {
+        return true;
+    }
+
+    // we assume that the stream_id in a group must be the same.
+    if (this->stream_id == stream_id) {
+        return true;
+    }
+    this->stream_id = stream_id;
+
+    return false;
+}
+
+bool SrsSharedPtrMessage::is_av()
+{
+    return message_type == SrsFrameTypeAudio || message_type == SrsFrameTypeVideo;
+}
+
+bool SrsSharedPtrMessage::is_audio()
+{
+    return message_type == SrsFrameTypeAudio;
+}
+
+bool SrsSharedPtrMessage::is_video()
+{
+    return message_type == SrsFrameTypeVideo;
+}
+
+SrsSharedPtrMessage *SrsSharedPtrMessage::copy()
+{
+    SrsSharedPtrMessage *copy = new SrsSharedPtrMessage();
+
+    copy->timestamp = timestamp;
+    copy->stream_id = stream_id;
+    copy->message_type = message_type;
+    copy->payload_ = payload_;
+
+    return copy;
 }
 
 SrsFrame::SrsFrame()

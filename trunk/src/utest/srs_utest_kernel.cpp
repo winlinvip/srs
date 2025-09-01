@@ -967,7 +967,9 @@ VOID TEST(KernelFLVTest, CoverWriterErrorCase)
         SrsMessageHeader h;
         h.initialize_video(10, 30, 20);
         SrsSharedPtrMessage msg;
-        HELPER_EXPECT_SUCCESS(msg.create(&h, new char[1], 1));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
+        common_msg.to_msg(&msg);
 
         SrsSharedPtrMessage *msgs = &msg;
         HELPER_EXPECT_FAILED(m.write_tags(&msgs, 1));
@@ -984,7 +986,9 @@ VOID TEST(KernelFLVTest, CoverWriterErrorCase)
         SrsMessageHeader h;
         h.initialize_audio(10, 30, 20);
         SrsSharedPtrMessage msg;
-        HELPER_EXPECT_SUCCESS(msg.create(&h, new char[1], 1));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
+        common_msg.to_msg(&msg);
 
         SrsSharedPtrMessage *msgs = &msg;
         HELPER_EXPECT_FAILED(m.write_tags(&msgs, 1));
@@ -1001,7 +1005,9 @@ VOID TEST(KernelFLVTest, CoverWriterErrorCase)
         SrsMessageHeader h;
         h.initialize_amf0_script(10, 20);
         SrsSharedPtrMessage msg;
-        HELPER_EXPECT_SUCCESS(msg.create(&h, new char[1], 1));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
+        common_msg.to_msg(&msg);
 
         SrsSharedPtrMessage *msgs = &msg;
         HELPER_EXPECT_FAILED(m.write_tags(&msgs, 1));
@@ -5290,7 +5296,7 @@ VOID TEST(KernelFLVTest, CoverAll)
         EXPECT_EQ(30, m.header.timestamp);
 
         SrsSharedPtrMessage s;
-        HELPER_EXPECT_SUCCESS(s.create(&m));
+        m.to_msg(&s);
         EXPECT_TRUE(s.is_av());
         EXPECT_TRUE(!s.is_audio());
         EXPECT_TRUE(s.is_video());
@@ -5305,7 +5311,9 @@ VOID TEST(KernelFLVTest, CoverAll)
         h.initialize_video(10, 30, 20);
 
         SrsSharedPtrMessage m;
-        HELPER_EXPECT_SUCCESS(m.create(&h, new char[1], 1));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
+        common_msg.to_msg(&m);
 
         SrsSharedPtrMessage *msgs = &m;
         HELPER_EXPECT_SUCCESS(mux.write_tags(&msgs, 1));
@@ -5321,26 +5329,33 @@ VOID TEST(KernelFLVTest, CoverSharedPtrMessage)
     if (true) {
         SrsMessageHeader h;
         SrsSharedPtrMessage m;
-        HELPER_EXPECT_SUCCESS(m.create(&h, new char[1], 1));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
+        common_msg.to_msg(&m);
     }
 
     if (true) {
         SrsMessageHeader h;
         SrsSharedPtrMessage m;
-        HELPER_EXPECT_SUCCESS(m.create(&h, NULL, 0));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, NULL, 0));
+        common_msg.to_msg(&m);
     }
 
     if (true) {
         SrsMessageHeader h;
         SrsSharedPtrMessage m;
-        HELPER_EXPECT_FAILED(m.create(&h, NULL, -1));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_FAILED(common_msg.create(&h, NULL, -1));
     }
 
     if (true) {
         SrsMessageHeader h;
 
         SrsSharedPtrMessage m;
-        HELPER_EXPECT_SUCCESS(m.create(&h, NULL, 0));
+        SrsCommonMessage common_msg;
+        HELPER_EXPECT_SUCCESS(common_msg.create(&h, NULL, 0));
+        common_msg.to_msg(&m);
 
         EXPECT_FALSE(m.check(1));
         EXPECT_TRUE(m.check(1));

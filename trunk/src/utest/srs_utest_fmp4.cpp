@@ -67,9 +67,9 @@ public:
         SrsSharedPtrMessage::wrap(payload, 1024);
 
         if (is_video_msg) {
-            message_type = RTMP_MSG_VideoMessage;
+            message_type = SrsFrameTypeVideo;
         } else {
-            message_type = RTMP_MSG_AudioMessage;
+            message_type = SrsFrameTypeAudio;
         }
     }
     virtual ~MockSrsSharedPtrMessage() {}

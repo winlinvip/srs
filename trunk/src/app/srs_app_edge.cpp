@@ -929,9 +929,7 @@ srs_error_t SrsEdgeForwarder::proxy(SrsCommonMessage *msg)
     }
 
     SrsSharedPtrMessage copy;
-    if ((err = copy.create(msg)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
+    msg->to_msg(&copy);
 
     copy.stream_id = sdk->sid();
     if ((err = queue->enqueue(copy.copy())) != srs_success) {

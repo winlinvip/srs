@@ -251,7 +251,7 @@ VOID TEST(ProtocolRTMPTest, SendPacketsError)
         pkt.create_payload(256);
 
         SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
-        msg->create(&pkt);
+        pkt.to_msg(msg);
         SrsUniquePtr<SrsSharedPtrMessage> msg_uptr(msg);
 
         SrsSharedPtrMessage *msgs[10240];
@@ -346,7 +346,7 @@ VOID TEST(ProtocolRTMPTest, HugeMessages)
         pkt.create_payload(256);
 
         SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
-        msg->create(&pkt);
+        pkt.to_msg(msg);
 
         HELPER_EXPECT_SUCCESS(p.send_and_free_message(msg, 1));
         EXPECT_EQ(269, io.out_buffer.length());
@@ -361,7 +361,7 @@ VOID TEST(ProtocolRTMPTest, HugeMessages)
         pkt.create_payload(256);
 
         SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
-        msg->create(&pkt);
+        pkt.to_msg(msg);
         SrsUniquePtr<SrsSharedPtrMessage> msg_uptr(msg);
 
         SrsSharedPtrMessage *msgs[1024];
@@ -382,7 +382,7 @@ VOID TEST(ProtocolRTMPTest, HugeMessages)
         pkt.create_payload(256);
 
         SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
-        msg->create(&pkt);
+        pkt.to_msg(msg);
         SrsUniquePtr<SrsSharedPtrMessage> msg_uptr(msg);
 
         SrsSharedPtrMessage *msgs[10240];
@@ -2738,9 +2738,7 @@ srs_error_t _mock_packet_to_shared_msg(SrsPacket *packet, int stream_id, SrsShar
         return err;
     }
 
-    if ((err = shared_msg->create(msg)) != srs_success) {
-        return err;
-    }
+    msg->to_msg(shared_msg);
 
     return err;
 }
@@ -2928,7 +2926,7 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
 
     // Invalid message type.
     if (true) {
-        SrsSharedPtrMessage *msg = NULL;
+        SrsCommonMessage *msg = NULL;
         HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsFrameTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_TRUE(NULL == msg);
     }
@@ -2940,7 +2938,7 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
 
     // Normal script message.
     if (true) {
-        SrsSharedPtrMessage *msg = NULL;
+        SrsCommonMessage *msg = NULL;
         HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeScript, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
@@ -2948,7 +2946,7 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
 
     // Normal video message.
     if (true) {
-        SrsSharedPtrMessage *msg = NULL;
+        SrsCommonMessage *msg = NULL;
         HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeVideo, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
@@ -2956,7 +2954,7 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
 
     // Normal audio message.
     if (true) {
-        SrsSharedPtrMessage *msg = NULL;
+        SrsCommonMessage *msg = NULL;
         HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);

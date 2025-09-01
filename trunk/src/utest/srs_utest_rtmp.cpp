@@ -3091,6 +3091,72 @@ VOID TEST(ProtocolRTMPTest, ParseRTMPURL)
     }
 }
 
+VOID TEST(ProtocolRTMPTest, ConvertLegacyRtmpUrl)
+{
+    // Test legacy format conversion: rtmp://ip/app?vhost=xxx/stream -> rtmp://ip/app/stream?vhost=xxx
+    if (true) {
+        string legacy_url = "rtmp://127.0.0.1:1935/live?vhost=demo.com/livestream";
+        string standard_url = srs_net_url_convert_legacy_rtmp_url(legacy_url);
+        EXPECT_STREQ("rtmp://127.0.0.1:1935/live/livestream?vhost=demo.com", standard_url.c_str());
+    }
+
+    // Test with multiple query parameters
+    if (true) {
+        string legacy_url = "rtmp://192.168.1.100/app?vhost=test.com&token=abc/stream";
+        string standard_url = srs_net_url_convert_legacy_rtmp_url(legacy_url);
+        EXPECT_STREQ("rtmp://192.168.1.100/app/stream?vhost=test.com&token=abc", standard_url.c_str());
+    }
+
+    // Test with complex stream name
+    if (true) {
+        string legacy_url = "rtmp://host.com/myapp?vhost=vhost.com/stream_name_123";
+        string standard_url = srs_net_url_convert_legacy_rtmp_url(legacy_url);
+        EXPECT_STREQ("rtmp://host.com/myapp/stream_name_123?vhost=vhost.com", standard_url.c_str());
+    }
+
+    // Test with multiple app levels: rtmp://ip/app/app2?vhost=xxx/stream
+    if (true) {
+        string legacy_url = "rtmp://127.0.0.1:1935/live/sub?vhost=demo.com/livestream";
+        string standard_url = srs_net_url_convert_legacy_rtmp_url(legacy_url);
+        EXPECT_STREQ("rtmp://127.0.0.1:1935/live/sub/livestream?vhost=demo.com", standard_url.c_str());
+    }
+
+    // Test with three app levels: rtmp://ip/app/app2/app3?vhost=xxx/stream
+    if (true) {
+        string legacy_url = "rtmp://192.168.1.100/app1/app2/app3?vhost=test.com&token=abc/stream";
+        string standard_url = srs_net_url_convert_legacy_rtmp_url(legacy_url);
+        EXPECT_STREQ("rtmp://192.168.1.100/app1/app2/app3/stream?vhost=test.com&token=abc", standard_url.c_str());
+    }
+
+    // Test with multiple app levels and complex parameters
+    if (true) {
+        string legacy_url = "rtmp://host.com:8080/live/hls/dash?vhost=cdn.com&key=value&auth=token/my_stream_123";
+        string standard_url = srs_net_url_convert_legacy_rtmp_url(legacy_url);
+        EXPECT_STREQ("rtmp://host.com:8080/live/hls/dash/my_stream_123?vhost=cdn.com&key=value&auth=token", standard_url.c_str());
+    }
+
+    // Test standard format (should remain unchanged)
+    if (true) {
+        string standard_url = "rtmp://127.0.0.1:1935/live/livestream?vhost=demo.com";
+        string result_url = srs_net_url_convert_legacy_rtmp_url(standard_url);
+        EXPECT_STREQ("rtmp://127.0.0.1:1935/live/livestream?vhost=demo.com", result_url.c_str());
+    }
+
+    // Test URL without query string (should remain unchanged)
+    if (true) {
+        string simple_url = "rtmp://127.0.0.1:1935/live/livestream";
+        string result_url = srs_net_url_convert_legacy_rtmp_url(simple_url);
+        EXPECT_STREQ("rtmp://127.0.0.1:1935/live/livestream", result_url.c_str());
+    }
+
+    // Test URL with query but no slash after query (should remain unchanged)
+    if (true) {
+        string url_no_slash = "rtmp://127.0.0.1:1935/live?vhost=demo.com";
+        string result_url = srs_net_url_convert_legacy_rtmp_url(url_no_slash);
+        EXPECT_STREQ("rtmp://127.0.0.1:1935/live?vhost=demo.com", result_url.c_str());
+    }
+}
+
 VOID TEST(ProtocolRTMPTest, GenerateURL)
 {
     if (true) {

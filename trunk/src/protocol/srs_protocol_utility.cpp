@@ -109,6 +109,34 @@ void srs_net_url_parse_tcurl(string tcUrl, string &schema, string &host, string 
     }
 }
 
+string srs_net_url_convert_legacy_rtmp_url(const string &url)
+{
+    // Check if this is a legacy RTMP URL format: rtmp://ip/app/app2?vhost=xxx/stream
+    // We need to convert it to standard format: rtmp://ip/app/app2/stream?vhost=xxx
+
+    // Find the query part starting with ?
+    size_t query_pos = url.find('?');
+    if (query_pos == string::npos) {
+        // No query string, return as is
+        return url;
+    }
+
+    // Find the last slash after the query part
+    size_t last_slash_pos = url.rfind('/');
+    if (last_slash_pos == string::npos || last_slash_pos <= query_pos) {
+        // No slash after query, or slash is before query, return as is
+        return url;
+    }
+
+    // Extract parts
+    string base_url = url.substr(0, query_pos);           // rtmp://ip/app/app2
+    string query_part = url.substr(query_pos, last_slash_pos - query_pos); // ?vhost=xxx
+    string stream_part = url.substr(last_slash_pos);      // /stream
+
+    // Reconstruct as standard format: base_url + stream_part + query_part
+    return base_url + stream_part + query_part;
+}
+
 void srs_net_url_guess_stream(string &app, string &param, string &stream)
 {
     size_t pos = std::string::npos;

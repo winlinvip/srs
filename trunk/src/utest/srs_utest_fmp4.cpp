@@ -67,9 +67,9 @@ public:
         SrsMediaPacket::wrap(payload, 1024);
 
         if (is_video_msg) {
-            message_type = SrsParsedPacketTypeVideo;
+            message_type = SrsFrameTypeVideo;
         } else {
-            message_type = SrsParsedPacketTypeAudio;
+            message_type = SrsFrameTypeAudio;
         }
     }
     virtual ~MockSrsMediaPacket() {}

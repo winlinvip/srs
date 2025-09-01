@@ -343,7 +343,7 @@ public:
     // The first byte as nalu type, for video decoder only.
     uint8_t nalu_type;
     // The frame type, for RTMP bridge or SFU source.
-    SrsParsedPacketType frame_type;
+    SrsFrameType frame_type;
     // Fast cache for performance.
 private:
     // The cached payload size for packet.

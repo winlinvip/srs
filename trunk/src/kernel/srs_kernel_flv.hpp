@@ -258,7 +258,7 @@ public:
     virtual srs_error_t write_header(char flv_header[9]);
     // Write flv metadata.
     // @param type, the type of data, or other message type.
-    //       @see SrsParsedPacketType
+    //       @see SrsFrameType
     // @param data, the amf0 metadata which serialize from:
     //   AMF0 string: onMetaData,
     //   AMF0 object: the metadata object.
@@ -365,7 +365,7 @@ public:
 };
 
 // Get the prefer cid for message type.
-extern int srs_rtmp_prefer_cid(SrsParsedPacketType message_type);
+extern int srs_rtmp_prefer_cid(SrsFrameType message_type);
 
 // Generate the RTMP chunk header for shared ptr message.
 // @param msg, the shared ptr message to generate header for.

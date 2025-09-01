@@ -2927,19 +2927,19 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
     // Invalid message type.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsParsedPacketTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsFrameTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_TRUE(NULL == msg);
     }
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsParsedPacketTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsFrameTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_TRUE(NULL == msg);
     }
 
     // Normal script message.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeScript, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeScript, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
@@ -2947,7 +2947,7 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
     // Normal video message.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeVideo, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeVideo, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
@@ -2955,13 +2955,13 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
     // Normal audio message.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }

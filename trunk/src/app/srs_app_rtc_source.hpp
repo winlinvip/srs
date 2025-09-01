@@ -28,7 +28,7 @@ class SrsMediaPacket;
 class SrsCommonMessage;
 class SrsMessageArray;
 class SrsRtcSource;
-class SrsParsedPacketToRtcBridge;
+class SrsFrameToRtcBridge;
 class SrsAudioTranscoder;
 class SrsRtpPacket;
 class SrsNaluSample;
@@ -307,7 +307,7 @@ class SrsRtcRtpBuilder
 {
 private:
     ISrsRequest *req;
-    SrsParsedPacketToRtcBridge *bridge_;
+    SrsFrameToRtcBridge *bridge_;
     // The format, codec information.
     SrsRtmpFormat *format;
     // The metadata cache.
@@ -334,7 +334,7 @@ private:
     bool video_initialized_;
 
 public:
-    SrsRtcRtpBuilder(SrsParsedPacketToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source);
+    SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source);
     virtual ~SrsRtcRtpBuilder();
 
 private:

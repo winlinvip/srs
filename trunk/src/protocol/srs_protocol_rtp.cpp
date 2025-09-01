@@ -47,7 +47,7 @@ srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsMediaPacket *msg, SrsRtpPacket
 
     pkt->header.set_payload_type(video_payload_type_);
     pkt->header.set_ssrc(video_ssrc_);
-    pkt->frame_type = SrsParsedPacketTypeVideo;
+    pkt->frame_type = SrsFrameTypeVideo;
     pkt->header.set_marker(false);
     pkt->header.set_sequence(video_sequence_++);
     pkt->header.set_timestamp(msg->timestamp * 90);
@@ -143,7 +143,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsMediaPacket *msg, const vector<
 
         pkt->header.set_payload_type(video_payload_type_);
         pkt->header.set_ssrc(video_ssrc_);
-        pkt->frame_type = SrsParsedPacketTypeVideo;
+        pkt->frame_type = SrsFrameTypeVideo;
         pkt->nalu_type = first_nalu_type;
         pkt->header.set_sequence(video_sequence_++);
         pkt->header.set_timestamp(msg->timestamp * 90);
@@ -173,7 +173,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsMediaPacket *msg, const vector<
 
             pkt->header.set_payload_type(video_payload_type_);
             pkt->header.set_ssrc(video_ssrc_);
-            pkt->frame_type = SrsParsedPacketTypeVideo;
+            pkt->frame_type = SrsFrameTypeVideo;
             pkt->nalu_type = kFuA;
             pkt->header.set_sequence(video_sequence_++);
             pkt->header.set_timestamp(msg->timestamp * 90);
@@ -221,7 +221,7 @@ srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsMediaPacket *msg, SrsNalu
 
     pkt->header.set_payload_type(video_payload_type_);
     pkt->header.set_ssrc(video_ssrc_);
-    pkt->frame_type = SrsParsedPacketTypeVideo;
+    pkt->frame_type = SrsFrameTypeVideo;
     pkt->header.set_sequence(video_sequence_++);
     pkt->header.set_timestamp(msg->timestamp * 90);
 
@@ -262,7 +262,7 @@ srs_error_t SrsRtpVideoBuilder::package_fu_a(SrsMediaPacket *msg, SrsNaluSample 
 
         pkt->header.set_payload_type(video_payload_type_);
         pkt->header.set_ssrc(video_ssrc_);
-        pkt->frame_type = SrsParsedPacketTypeVideo;
+        pkt->frame_type = SrsFrameTypeVideo;
         pkt->header.set_sequence(video_sequence_++);
         pkt->header.set_timestamp(msg->timestamp * 90);
         pkt->nalu_type = is_hevc ? kFuHevc : kFuA;

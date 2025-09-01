@@ -41,7 +41,7 @@ SrsMediaPacket::SrsMediaPacket()
 {
     timestamp = 0;
     stream_id = 0;
-    message_type = SrsParsedPacketTypeForbidden;
+    message_type = SrsFrameTypeForbidden;
     payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
 
     ++_srs_pps_objs_msgs->sugar;
@@ -77,17 +77,17 @@ bool SrsMediaPacket::check(int stream_id)
 
 bool SrsMediaPacket::is_av()
 {
-    return message_type == SrsParsedPacketTypeAudio || message_type == SrsParsedPacketTypeVideo;
+    return message_type == SrsFrameTypeAudio || message_type == SrsFrameTypeVideo;
 }
 
 bool SrsMediaPacket::is_audio()
 {
-    return message_type == SrsParsedPacketTypeAudio;
+    return message_type == SrsFrameTypeAudio;
 }
 
 bool SrsMediaPacket::is_video()
 {
-    return message_type == SrsParsedPacketTypeVideo;
+    return message_type == SrsFrameTypeVideo;
 }
 
 SrsMediaPacket *SrsMediaPacket::copy()

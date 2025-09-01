@@ -42,14 +42,14 @@ public:
 };
 
 // A bridge to feed AV frame to RTMP stream.
-class SrsParsedPacketToRtmpBridge : public ISrsStreamBridge
+class SrsFrameToRtmpBridge : public ISrsStreamBridge
 {
 private:
     SrsSharedPtr<SrsLiveSource> source_;
 
 public:
-    SrsParsedPacketToRtmpBridge(SrsSharedPtr<SrsLiveSource> source);
-    virtual ~SrsParsedPacketToRtmpBridge();
+    SrsFrameToRtmpBridge(SrsSharedPtr<SrsLiveSource> source);
+    virtual ~SrsFrameToRtmpBridge();
 
 public:
     srs_error_t initialize(ISrsRequest *r);
@@ -63,7 +63,7 @@ public:
 };
 
 // A bridge to covert AV frame to WebRTC stream.
-class SrsParsedPacketToRtcBridge : public ISrsStreamBridge
+class SrsFrameToRtcBridge : public ISrsStreamBridge
 {
 private:
     SrsSharedPtr<SrsRtcSource> source_;
@@ -73,8 +73,8 @@ private:
     SrsRtcRtpBuilder *rtp_builder_;
 #endif
 public:
-    SrsParsedPacketToRtcBridge(SrsSharedPtr<SrsRtcSource> source);
-    virtual ~SrsParsedPacketToRtcBridge();
+    SrsFrameToRtcBridge(SrsSharedPtr<SrsRtcSource> source);
+    virtual ~SrsFrameToRtcBridge();
 
 public:
     virtual srs_error_t initialize(ISrsRequest *r);
@@ -86,7 +86,7 @@ public:
 
 #ifdef SRS_RTSP
 // A bridge to covert AV frame to RTSP stream.
-class SrsParsedPacketToRtspBridge : public ISrsStreamBridge
+class SrsFrameToRtspBridge : public ISrsStreamBridge
 {
 private:
     SrsSharedPtr<SrsRtspSource> source_;
@@ -95,8 +95,8 @@ private:
     SrsRtspRtpBuilder *rtp_builder_;
 
 public:
-    SrsParsedPacketToRtspBridge(SrsSharedPtr<SrsRtspSource> source);
-    virtual ~SrsParsedPacketToRtspBridge();
+    SrsFrameToRtspBridge(SrsSharedPtr<SrsRtspSource> source);
+    virtual ~SrsFrameToRtspBridge();
 
 public:
     virtual srs_error_t initialize(ISrsRequest *r);

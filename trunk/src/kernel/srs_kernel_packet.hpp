@@ -44,7 +44,7 @@ public:
     // Timestamp of the media packet. The timebase is defined by context.
     int64_t timestamp;
     // Type of the media packet (audio, video, or script).
-    SrsParsedPacketType message_type;
+    SrsFrameType message_type;
 
 public:
     // Stream identifier for the packet. It's optional, so only used for some

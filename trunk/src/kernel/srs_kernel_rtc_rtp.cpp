@@ -765,7 +765,7 @@ SrsRtpPacket::SrsRtpPacket()
     actual_buffer_size_ = 0;
 
     nalu_type = 0;
-    frame_type = SrsParsedPacketTypeReserved;
+    frame_type = SrsFrameTypeReserved;
     cached_payload_size = 0;
     decode_handler = NULL;
     avsync_time_ = -1;
@@ -865,7 +865,7 @@ void SrsRtpPacket::set_decode_handler(ISrsRtpPacketDecodeHandler *h)
 
 bool SrsRtpPacket::is_audio()
 {
-    return frame_type == SrsParsedPacketTypeAudio;
+    return frame_type == SrsFrameTypeAudio;
 }
 
 void SrsRtpPacket::set_extension_types(SrsRtpExtensionTypes *v)
@@ -985,7 +985,7 @@ bool srs_rtp_packet_h265_is_keyframe(uint8_t nalu_type, ISrsRtpPayloader *payloa
 bool SrsRtpPacket::is_keyframe(SrsVideoCodecId codec_id)
 {
     // False if audio packet
-    if (SrsParsedPacketTypeAudio == frame_type) {
+    if (SrsFrameTypeAudio == frame_type) {
         return false;
     }
 

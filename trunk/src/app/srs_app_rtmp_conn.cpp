@@ -1063,13 +1063,13 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
 
 #if defined(SRS_FFMPEG_FIT)
     if (rtc.get() && _srs_config->get_rtc_from_rtmp(req->vhost)) {
-        bridge->append(new SrsParsedPacketToRtcBridge(rtc));
+        bridge->append(new SrsFrameToRtcBridge(rtc));
     }
 #endif
 
 #ifdef SRS_RTSP
     if (rtsp.get() && _srs_config->get_rtsp_from_rtmp(req->vhost)) {
-        bridge->append(new SrsParsedPacketToRtspBridge(rtsp));
+        bridge->append(new SrsFrameToRtspBridge(rtsp));
     }
 #endif
 

@@ -26,7 +26,7 @@ class SrsRtcSourceDescription;
 class SrsResourceManager;
 class SrsRtspConnection;
 class SrsRtpVideoBuilder;
-class SrsParsedPacketToRtspBridge;
+class SrsFrameToRtspBridge;
 
 // The RTSP stream consumer, consume packets from RTSP stream source.
 class SrsRtspConsumer
@@ -190,7 +190,7 @@ class SrsRtspRtpBuilder
 {
 private:
     ISrsRequest *req;
-    SrsParsedPacketToRtspBridge *bridge_;
+    SrsFrameToRtspBridge *bridge_;
     // The format, codec information.
     SrsRtmpFormat *format;
     // The metadata cache.
@@ -211,7 +211,7 @@ private:
     bool video_initialized_;
 
 public:
-    SrsRtspRtpBuilder(SrsParsedPacketToRtspBridge *bridge, SrsSharedPtr<SrsRtspSource> source);
+    SrsRtspRtpBuilder(SrsFrameToRtspBridge *bridge, SrsSharedPtr<SrsRtspSource> source);
     virtual ~SrsRtspRtpBuilder();
 
 private:

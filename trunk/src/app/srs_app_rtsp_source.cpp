@@ -503,7 +503,7 @@ void SrsRtspSource::set_video_desc(SrsRtcTrackDescription *video_desc)
     video_desc_ = video_desc->copy();
 }
 
-SrsRtspRtpBuilder::SrsRtspRtpBuilder(SrsParsedPacketToRtspBridge *bridge, SrsSharedPtr<SrsRtspSource> source)
+SrsRtspRtpBuilder::SrsRtspRtpBuilder(SrsFrameToRtspBridge *bridge, SrsSharedPtr<SrsRtspSource> source)
 {
     bridge_ = bridge;
     source_ = source;
@@ -767,7 +767,7 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
 
     pkt->header.set_payload_type(audio_payload_type_);
     pkt->header.set_ssrc(audio_ssrc_);
-    pkt->frame_type = SrsParsedPacketTypeAudio;
+    pkt->frame_type = SrsFrameTypeAudio;
     pkt->header.set_marker(true);
     pkt->header.set_sequence(audio_sequence++);
     pkt->header.set_timestamp(dts);

@@ -1807,7 +1807,7 @@ srs_error_t SrsGbMuxer::write_h264_sps_pps(uint32_t dts, uint32_t pts)
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    if ((err = rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
+    if ((err = rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "write packet");
     }
 
@@ -1853,7 +1853,7 @@ srs_error_t SrsGbMuxer::write_h264_ipb_frame(char *frame, int frame_size, uint32
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    return rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv);
+    return rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv);
 }
 
 srs_error_t SrsGbMuxer::mux_h265(SrsTsMessage *msg, SrsBuffer *avs)
@@ -1982,7 +1982,7 @@ srs_error_t SrsGbMuxer::write_h265_vps_sps_pps(uint32_t dts, uint32_t pts)
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    if ((err = rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
+    if ((err = rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "hevc write packet");
     }
 
@@ -2026,7 +2026,7 @@ srs_error_t SrsGbMuxer::write_h265_ipb_frame(char *frame, int frame_size, uint32
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    if ((err = rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
+    if ((err = rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "hevc write packet");
     }
 
@@ -2096,7 +2096,7 @@ srs_error_t SrsGbMuxer::write_audio_raw_frame(char *frame, int frame_size, SrsRa
         return srs_error_wrap(err, "mux aac to flv");
     }
 
-    return rtmp_write_packet(SrsParsedPacketTypeAudio, dts, data, size);
+    return rtmp_write_packet(SrsFrameTypeAudio, dts, data, size);
 }
 
 srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *data, int size)

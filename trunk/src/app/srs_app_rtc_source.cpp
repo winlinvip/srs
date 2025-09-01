@@ -877,7 +877,7 @@ srs_error_t SrsRtcSource::on_timer(srs_utime_t interval)
 
 #ifdef SRS_FFMPEG_FIT
 
-SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsParsedPacketToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source)
+SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source)
 {
     bridge_ = bridge;
     source_ = source;
@@ -1155,7 +1155,7 @@ srs_error_t SrsRtcRtpBuilder::package_opus(SrsParsedAudioPacket *audio, SrsRtpPa
 
     pkt->header.set_payload_type(audio_payload_type_);
     pkt->header.set_ssrc(audio_ssrc_);
-    pkt->frame_type = SrsParsedPacketTypeAudio;
+    pkt->frame_type = SrsFrameTypeAudio;
     pkt->header.set_marker(true);
     pkt->header.set_sequence(audio_sequence++);
     pkt->header.set_timestamp(audio->dts * 48);

@@ -2531,7 +2531,7 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
     // Test RTP packet keyframe detection for HEVC
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsParsedPacketTypeVideo;
+        pkt.frame_type = SrsFrameTypeVideo;
 
         // Test VPS NALU (should be keyframe)
         pkt.nalu_type = SrsHevcNaluType_VPS;
@@ -2569,7 +2569,7 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
     // Test HEVC STAP payload keyframe detection
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsParsedPacketTypeVideo;
+        pkt.frame_type = SrsFrameTypeVideo;
         pkt.nalu_type = kStapHevc;
 
         SrsRtpSTAPPayloadHevc *stap_payload = new SrsRtpSTAPPayloadHevc();
@@ -2589,7 +2589,7 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
     // Test HEVC FU-A payload keyframe detection
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsParsedPacketTypeVideo;
+        pkt.frame_type = SrsFrameTypeVideo;
         pkt.nalu_type = kFuHevc;
 
         SrsRtpFUAPayloadHevc2 *fua_payload = new SrsRtpFUAPayloadHevc2();
@@ -2607,7 +2607,7 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
     // Test audio packet (should not be keyframe regardless of NALU type)
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsParsedPacketTypeAudio;
+        pkt.frame_type = SrsFrameTypeAudio;
         pkt.nalu_type = SrsHevcNaluType_VPS;
         EXPECT_FALSE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
     }

@@ -256,19 +256,19 @@ std::string srs_audio_sample_rate2str(SrsAudioSampleRate v);
  * The frame type, for example, audio, video or data.
  * @doc video_file_format_spec_v10_1.pdf, page 75, E.4.1 FLV Tag
  */
-enum SrsParsedPacketType {
+enum SrsFrameType {
     // set to the zero to reserved, for array map.
-    SrsParsedPacketTypeReserved = 0,
-    SrsParsedPacketTypeForbidden = 0,
+    SrsFrameTypeReserved = 0,
+    SrsFrameTypeForbidden = 0,
 
     // 8 = audio
-    SrsParsedPacketTypeAudio = 8,
+    SrsFrameTypeAudio = 8,
     // 9 = video
-    SrsParsedPacketTypeVideo = 9,
+    SrsFrameTypeVideo = 9,
     // 18 = script data
-    SrsParsedPacketTypeScript = 18,
+    SrsFrameTypeScript = 18,
     // 20 = command data
-    SrsParsedPacketTypeCommand = 20,
+    SrsFrameTypeCommand = 20,
 };
 
 /**

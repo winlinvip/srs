@@ -2403,7 +2403,7 @@ class SrsMp4Sample
 {
 public:
     // The type of sample, audio or video.
-    SrsParsedPacketType type;
+    SrsFrameType type;
     // The offset of sample in file.
     off_t offset;
     // The index of sample with a track, start from 0.
@@ -2453,7 +2453,7 @@ public:
     virtual void on_sample(SrsMp4Sample *sample);
     // Calculate the initial STTS delta for the first sample of a track
     // to maintain A/V synchronization in MP4 files
-    virtual uint32_t get_first_sample_delta(SrsParsedPacketType track);
+    virtual uint32_t get_first_sample_delta(SrsFrameType track);
 
 private:
     // Reset the jitter state (useful for new recording sessions)
@@ -2498,7 +2498,7 @@ public:
     virtual srs_error_t write(SrsMp4TrackFragmentBox *traf, uint64_t dts);
 
 private:
-    virtual srs_error_t write_track(SrsParsedPacketType track,
+    virtual srs_error_t write_track(SrsFrameType track,
                                     SrsMp4DecodingTime2SampleBox *stts, SrsMp4SyncSampleBox *stss, SrsMp4CompositionTime2SampleBox *ctts,
                                     SrsMp4Sample2ChunkBox *stsc, SrsMp4SampleSizeBox *stsz, SrsMp4FullBox *co);
     virtual srs_error_t do_load(std::map<uint64_t, SrsMp4Sample *> &tses, SrsMp4MovieBox *moov);
@@ -2508,7 +2508,7 @@ private:
     // @param tses The temporary samples, key is offset, value is sample.
     // @param tt The type of sample, convert to flv tag type.
     // TODO: Support co64 for stco.
-    virtual srs_error_t load_trak(std::map<uint64_t, SrsMp4Sample *> &tses, SrsParsedPacketType tt,
+    virtual srs_error_t load_trak(std::map<uint64_t, SrsMp4Sample *> &tses, SrsFrameType tt,
                                   SrsMp4MediaHeaderBox *mdhd, SrsMp4ChunkOffsetBox *stco, SrsMp4SampleSizeBox *stsz, SrsMp4Sample2ChunkBox *stsc,
                                   SrsMp4DecodingTime2SampleBox *stts, SrsMp4CompositionTime2SampleBox *ctts, SrsMp4SyncSampleBox *stss);
 };

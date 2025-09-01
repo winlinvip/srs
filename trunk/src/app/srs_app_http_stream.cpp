@@ -334,7 +334,7 @@ srs_error_t SrsFlvStreamEncoder::write_metadata(int64_t timestamp, char *data, i
         return srs_error_wrap(err, "write header");
     }
 
-    return enc->write_metadata(SrsParsedPacketTypeScript, data, size);
+    return enc->write_metadata(SrsFrameTypeScript, data, size);
 }
 
 void SrsFlvStreamEncoder::set_drop_if_not_match(bool v)

@@ -25,17 +25,17 @@ using namespace std;
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
 
-int srs_rtmp_prefer_cid(SrsParsedPacketType message_type)
+int srs_rtmp_prefer_cid(SrsFrameType message_type)
 {
-    if (message_type == SrsParsedPacketTypeVideo) {
+    if (message_type == SrsFrameTypeVideo) {
         return RTMP_CID_Video;
-    } else if (message_type == SrsParsedPacketTypeAudio) {
+    } else if (message_type == SrsFrameTypeAudio) {
         return RTMP_CID_Audio;
-    } else if (message_type == SrsParsedPacketTypeCommand || message_type == SrsParsedPacketTypeScript) {
+    } else if (message_type == SrsFrameTypeCommand || message_type == SrsFrameTypeScript) {
         return RTMP_CID_OverStream;
-    } else if (message_type == (SrsParsedPacketType)RTMP_MSG_AMF0CommandMessage) {
+    } else if (message_type == (SrsFrameType)RTMP_MSG_AMF0CommandMessage) {
         return RTMP_CID_OverStream;
-    } else if (message_type == (SrsParsedPacketType)RTMP_MSG_AMF3DataMessage) {
+    } else if (message_type == (SrsFrameType)RTMP_MSG_AMF3DataMessage) {
         return RTMP_CID_OverStream;
     } else {
         return RTMP_CID_OverConnection;
@@ -328,7 +328,7 @@ void SrsCommonMessage::to_msg(SrsMediaPacket *msg)
     msg->payload_ = payload_;
     msg->timestamp = header.timestamp;
     msg->stream_id = header.stream_id;
-    msg->message_type = (SrsParsedPacketType)header.message_type;
+    msg->message_type = (SrsFrameType)header.message_type;
 }
 
 SrsFlvTransmuxer::SrsFlvTransmuxer()
@@ -526,7 +526,7 @@ srs_error_t SrsFlvTransmuxer::write_tags(SrsMediaPacket **msgs, int count)
                 continue; // Ignore video packets if no video stream.
             cache_video(msg->timestamp, msg->payload(), msg->size(), cache);
         } else {
-            cache_metadata(SrsParsedPacketTypeScript, msg->payload(), msg->size(), cache);
+            cache_metadata(SrsFrameTypeScript, msg->payload(), msg->size(), cache);
         }
 
         // Cache FLV pts.
@@ -586,7 +586,7 @@ void SrsFlvTransmuxer::cache_audio(int64_t timestamp, char *data, int size, char
 
     // 11bytes tag header
     /*char tag_header[] = {
-     (char)SrsParsedPacketTypeAudio, // TagType UB [5], 8 = audio
+     (char)SrsFrameTypeAudio, // TagType UB [5], 8 = audio
      (char)0x00, (char)0x00, (char)0x00, // DataSize UI24 Length of the message.
      (char)0x00, (char)0x00, (char)0x00, // Timestamp UI24 Time in milliseconds at which the data in this tag applies.
      (char)0x00, // TimestampExtended UI8
@@ -596,7 +596,7 @@ void SrsFlvTransmuxer::cache_audio(int64_t timestamp, char *data, int size, char
     SrsUniquePtr<SrsBuffer> tag_stream(new SrsBuffer(cache, 11));
 
     // write data size.
-    tag_stream->write_1bytes(SrsParsedPacketTypeAudio);
+    tag_stream->write_1bytes(SrsFrameTypeAudio);
     tag_stream->write_3bytes(size);
     tag_stream->write_3bytes((int32_t)timestamp);
     // default to little-endian
@@ -612,7 +612,7 @@ void SrsFlvTransmuxer::cache_video(int64_t timestamp, char *data, int size, char
 
     // 11bytes tag header
     /*char tag_header[] = {
-     (char)SrsParsedPacketTypeVideo, // TagType UB [5], 9 = video
+     (char)SrsFrameTypeVideo, // TagType UB [5], 9 = video
      (char)0x00, (char)0x00, (char)0x00, // DataSize UI24 Length of the message.
      (char)0x00, (char)0x00, (char)0x00, // Timestamp UI24 Time in milliseconds at which the data in this tag applies.
      (char)0x00, // TimestampExtended UI8
@@ -622,7 +622,7 @@ void SrsFlvTransmuxer::cache_video(int64_t timestamp, char *data, int size, char
     SrsUniquePtr<SrsBuffer> tag_stream(new SrsBuffer(cache, 11));
 
     // write data size.
-    tag_stream->write_1bytes(SrsParsedPacketTypeVideo);
+    tag_stream->write_1bytes(SrsFrameTypeVideo);
     tag_stream->write_3bytes(size);
     tag_stream->write_3bytes((int32_t)timestamp);
     // default to little-endian

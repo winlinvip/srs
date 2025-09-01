@@ -130,7 +130,7 @@ srs_error_t SrsEdgeRtmpUpstream::recv_message(SrsCommonMessage **pmsg)
     return sdk->recv_message(pmsg);
 }
 
-srs_error_t SrsEdgeRtmpUpstream::decode_message(SrsCommonMessage *msg, SrsPacket **ppacket)
+srs_error_t SrsEdgeRtmpUpstream::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     return sdk->decode_message(msg, ppacket);
 }
@@ -333,11 +333,11 @@ srs_error_t SrsEdgeFlvUpstream::recv_message(SrsCommonMessage **pmsg)
     return err;
 }
 
-srs_error_t SrsEdgeFlvUpstream::decode_message(SrsCommonMessage *msg, SrsPacket **ppacket)
+srs_error_t SrsEdgeFlvUpstream::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     srs_error_t err = srs_success;
 
-    SrsPacket *packet = NULL;
+    SrsRtmpCommand *packet = NULL;
     SrsBuffer stream(msg->payload(), msg->size());
     SrsMessageHeader &header = msg->header;
 
@@ -647,11 +647,11 @@ srs_error_t SrsEdgeIngester::process_publish_message(SrsCommonMessage *msg, stri
 
     // process onMetaData
     if (msg->header.is_amf0_data() || msg->header.is_amf3_data()) {
-        SrsPacket *pkt_raw = NULL;
+        SrsRtmpCommand *pkt_raw = NULL;
         if ((err = upstream->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "decode message");
         }
-        SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+        SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
         if (dynamic_cast<SrsOnMetaDataPacket *>(pkt.get())) {
             SrsOnMetaDataPacket *metadata = dynamic_cast<SrsOnMetaDataPacket *>(pkt.get());
@@ -666,11 +666,11 @@ srs_error_t SrsEdgeIngester::process_publish_message(SrsCommonMessage *msg, stri
 
     // call messages, for example, reject, redirect.
     if (msg->header.is_amf0_command() || msg->header.is_amf3_command()) {
-        SrsPacket *pkt_raw = NULL;
+        SrsRtmpCommand *pkt_raw = NULL;
         if ((err = upstream->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "decode message");
         }
-        SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+        SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
         // RTMP 302 redirect
         if (dynamic_cast<SrsCallPacket *>(pkt.get())) {

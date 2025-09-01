@@ -28,7 +28,7 @@ class SrsKbps;
 class SrsLbRoundRobin;
 class SrsTcpClient;
 class SrsSimpleRtmpClient;
-class SrsPacket;
+class SrsRtmpCommand;
 class SrsHttpClient;
 class ISrsHttpMessage;
 class SrsHttpFileReader;
@@ -66,7 +66,7 @@ public:
 public:
     virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb) = 0;
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg) = 0;
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket) = 0;
+    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket) = 0;
     virtual void close() = 0;
 
 public:
@@ -96,7 +96,7 @@ public:
 public:
     virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb);
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
+    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
     virtual void close();
 
 public:
@@ -135,7 +135,7 @@ private:
 
 public:
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
+    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
     virtual void close();
 
 public:

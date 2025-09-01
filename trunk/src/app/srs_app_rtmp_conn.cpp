@@ -1109,11 +1109,11 @@ srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &sou
 
     // process publish event.
     if (msg->header.is_amf0_command() || msg->header.is_amf3_command()) {
-        SrsPacket *pkt_raw = NULL;
+        SrsRtmpCommand *pkt_raw = NULL;
         if ((err = rtmp->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "rtmp: decode message");
         }
-        SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+        SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
         // for flash, any packet is republish.
         if (info->type == SrsRtmpConnFlashPublish) {
@@ -1181,11 +1181,11 @@ srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &so
 
     // process onMetaData
     if (msg->header.is_amf0_data() || msg->header.is_amf3_data()) {
-        SrsPacket *pkt_raw = NULL;
+        SrsRtmpCommand *pkt_raw = NULL;
         if ((err = rtmp->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "rtmp: decode message");
         }
-        SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+        SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
         if (dynamic_cast<SrsOnMetaDataPacket *>(pkt.get())) {
             SrsOnMetaDataPacket *metadata = dynamic_cast<SrsOnMetaDataPacket *>(pkt.get());
@@ -1213,11 +1213,11 @@ srs_error_t SrsRtmpConn::process_play_control_msg(SrsLiveConsumer *consumer, Srs
         return err;
     }
 
-    SrsPacket *pkt_raw = NULL;
+    SrsRtmpCommand *pkt_raw = NULL;
     if ((err = rtmp->decode_message(msg.get(), &pkt_raw)) != srs_success) {
         return srs_error_wrap(err, "rtmp: decode message");
     }
-    SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+    SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
     // for jwplayer/flowplayer, which send close as pause message.
     SrsCloseStreamPacket *close = dynamic_cast<SrsCloseStreamPacket *>(pkt.get());

@@ -26,7 +26,7 @@ class SrsBuffer;
 class ISrsWriter;
 class ISrsReader;
 class SrsFileReader;
-class SrsPacket;
+class SrsRtmpCommand;
 class SrsNaluSample;
 
 #define SRS_FLV_TAG_HEADER_SIZE 11

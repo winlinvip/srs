@@ -79,15 +79,15 @@ using namespace std;
  *****************************************************************************
  ****************************************************************************/
 
-SrsPacket::SrsPacket()
+SrsRtmpCommand::SrsRtmpCommand()
 {
 }
 
-SrsPacket::~SrsPacket()
+SrsRtmpCommand::~SrsRtmpCommand()
 {
 }
 
-srs_error_t SrsPacket::to_msg(SrsCommonMessage *msg, int stream_id)
+srs_error_t SrsRtmpCommand::to_msg(SrsCommonMessage *msg, int stream_id)
 {
     srs_error_t err = srs_success;
 
@@ -116,7 +116,7 @@ srs_error_t SrsPacket::to_msg(SrsCommonMessage *msg, int stream_id)
     return err;
 }
 
-srs_error_t SrsPacket::encode(int &psize, char *&ppayload)
+srs_error_t SrsRtmpCommand::encode(int &psize, char *&ppayload)
 {
     srs_error_t err = srs_success;
 
@@ -139,22 +139,22 @@ srs_error_t SrsPacket::encode(int &psize, char *&ppayload)
     return err;
 }
 
-srs_error_t SrsPacket::decode(SrsBuffer *stream)
+srs_error_t SrsRtmpCommand::decode(SrsBuffer *stream)
 {
     return srs_error_new(ERROR_SYSTEM_PACKET_INVALID, "decode");
 }
 
-int SrsPacket::get_message_type()
+int SrsRtmpCommand::get_message_type()
 {
     return 0;
 }
 
-int SrsPacket::get_size()
+int SrsRtmpCommand::get_size()
 {
     return 0;
 }
 
-srs_error_t SrsPacket::encode_packet(SrsBuffer *stream)
+srs_error_t SrsRtmpCommand::encode_packet(SrsBuffer *stream)
 {
     return srs_error_new(ERROR_SYSTEM_PACKET_INVALID, "encode");
 }
@@ -210,9 +210,9 @@ SrsProtocol::~SrsProtocol()
     }
 
     if (true) {
-        std::vector<SrsPacket *>::iterator it;
+        std::vector<SrsRtmpCommand *>::iterator it;
         for (it = manual_response_queue.begin(); it != manual_response_queue.end(); ++it) {
-            SrsPacket *pkt = *it;
+            SrsRtmpCommand *pkt = *it;
             srs_freep(pkt);
         }
         manual_response_queue.clear();
@@ -249,9 +249,9 @@ srs_error_t SrsProtocol::manual_response_flush()
         return err;
     }
 
-    std::vector<SrsPacket *>::iterator it;
+    std::vector<SrsRtmpCommand *>::iterator it;
     for (it = manual_response_queue.begin(); it != manual_response_queue.end();) {
-        SrsPacket *pkt = *it;
+        SrsRtmpCommand *pkt = *it;
 
         // erase this packet, the send api always free it.
         it = manual_response_queue.erase(it);
@@ -351,7 +351,7 @@ srs_error_t SrsProtocol::recv_message(SrsCommonMessage **pmsg)
     return err;
 }
 
-srs_error_t SrsProtocol::decode_message(SrsCommonMessage *msg, SrsPacket **ppacket)
+srs_error_t SrsProtocol::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     *ppacket = NULL;
 
@@ -364,7 +364,7 @@ srs_error_t SrsProtocol::decode_message(SrsCommonMessage *msg, SrsPacket **ppack
     SrsBuffer stream(msg->payload(), msg->size());
 
     // decode the packet.
-    SrsPacket *packet = NULL;
+    SrsRtmpCommand *packet = NULL;
     if ((err = do_decode_message(msg->header, &stream, &packet)) != srs_success) {
         srs_freep(packet);
         return srs_error_wrap(err, "decode message");
@@ -542,12 +542,12 @@ srs_error_t SrsProtocol::do_iovs_send(iovec *iovs, int size)
     return srs_write_large_iovs(skt, iovs, size);
 }
 
-srs_error_t SrsProtocol::do_send_and_free_packet(SrsPacket *packet_raw, int stream_id)
+srs_error_t SrsProtocol::do_send_and_free_packet(SrsRtmpCommand *packet_raw, int stream_id)
 {
     srs_error_t err = srs_success;
 
     srs_assert(packet_raw);
-    SrsUniquePtr<SrsPacket> packet(packet_raw);
+    SrsUniquePtr<SrsRtmpCommand> packet(packet_raw);
     SrsUniquePtr<SrsCommonMessage> msg(new SrsCommonMessage());
 
     if ((err = packet->to_msg(msg.get(), stream_id)) != srs_success) {
@@ -568,11 +568,11 @@ srs_error_t SrsProtocol::do_send_and_free_packet(SrsPacket *packet_raw, int stre
     return err;
 }
 
-srs_error_t SrsProtocol::do_decode_message(SrsMessageHeader &header, SrsBuffer *stream, SrsPacket **ppacket)
+srs_error_t SrsProtocol::do_decode_message(SrsMessageHeader &header, SrsBuffer *stream, SrsRtmpCommand **ppacket)
 {
     srs_error_t err = srs_success;
 
-    SrsPacket *packet = NULL;
+    SrsRtmpCommand *packet = NULL;
 
     // decode specified packet type
     if (header.is_amf0_command() || header.is_amf3_command() || header.is_amf0_data() || header.is_amf3_data()) {
@@ -679,7 +679,7 @@ srs_error_t SrsProtocol::do_decode_message(SrsMessageHeader &header, SrsBuffer *
         }
 
         // default packet to drop message.
-        *ppacket = packet = new SrsPacket();
+        *ppacket = packet = new SrsRtmpCommand();
         return err;
     } else if (header.is_user_control_message()) {
         *ppacket = packet = new SrsUserControlPacket();
@@ -752,7 +752,7 @@ srs_error_t SrsProtocol::send_and_free_messages(SrsMediaPacket **msgs, int nb_ms
     return err;
 }
 
-srs_error_t SrsProtocol::send_and_free_packet(SrsPacket *packet, int stream_id)
+srs_error_t SrsProtocol::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
 {
     srs_error_t err = srs_success;
 
@@ -1234,7 +1234,7 @@ srs_error_t SrsProtocol::on_recv_message(SrsCommonMessage *msg)
         return srs_error_wrap(err, "response ack");
     }
 
-    SrsPacket *packet_raw = NULL;
+    SrsRtmpCommand *packet_raw = NULL;
     switch (msg->header.message_type) {
     case RTMP_MSG_SetChunkSize:
     case RTMP_MSG_UserControlMessage:
@@ -1252,7 +1252,7 @@ srs_error_t SrsProtocol::on_recv_message(SrsCommonMessage *msg)
 
     // always free the packet.
     srs_assert(packet_raw);
-    SrsUniquePtr<SrsPacket> packet(packet_raw);
+    SrsUniquePtr<SrsRtmpCommand> packet(packet_raw);
 
     switch (msg->header.message_type) {
     case RTMP_MSG_WindowAcknowledgementSize: {
@@ -1308,7 +1308,7 @@ srs_error_t SrsProtocol::on_recv_message(SrsCommonMessage *msg)
     return err;
 }
 
-srs_error_t SrsProtocol::on_send_packet(SrsMessageHeader *mh, SrsPacket *packet)
+srs_error_t SrsProtocol::on_send_packet(SrsMessageHeader *mh, SrsRtmpCommand *packet)
 {
     srs_error_t err = srs_success;
 
@@ -1815,7 +1815,7 @@ srs_error_t SrsRtmpClient::recv_message(SrsCommonMessage **pmsg)
     return protocol->recv_message(pmsg);
 }
 
-srs_error_t SrsRtmpClient::decode_message(SrsCommonMessage *msg, SrsPacket **ppacket)
+srs_error_t SrsRtmpClient::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     return protocol->decode_message(msg, ppacket);
 }
@@ -1830,7 +1830,7 @@ srs_error_t SrsRtmpClient::send_and_free_messages(SrsMediaPacket **msgs, int nb_
     return protocol->send_and_free_messages(msgs, nb_msgs, stream_id);
 }
 
-srs_error_t SrsRtmpClient::send_and_free_packet(SrsPacket *packet, int stream_id)
+srs_error_t SrsRtmpClient::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
 {
     return protocol->send_and_free_packet(packet, stream_id);
 }
@@ -2216,7 +2216,7 @@ srs_error_t SrsRtmpServer::recv_message(SrsCommonMessage **pmsg)
     return protocol->recv_message(pmsg);
 }
 
-srs_error_t SrsRtmpServer::decode_message(SrsCommonMessage *msg, SrsPacket **ppacket)
+srs_error_t SrsRtmpServer::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     return protocol->decode_message(msg, ppacket);
 }
@@ -2231,7 +2231,7 @@ srs_error_t SrsRtmpServer::send_and_free_messages(SrsMediaPacket **msgs, int nb_
     return protocol->send_and_free_messages(msgs, nb_msgs, stream_id);
 }
 
-srs_error_t SrsRtmpServer::send_and_free_packet(SrsPacket *packet, int stream_id)
+srs_error_t SrsRtmpServer::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
 {
     return protocol->send_and_free_packet(packet, stream_id);
 }
@@ -2480,11 +2480,11 @@ srs_error_t SrsRtmpServer::identify_client(int stream_id, SrsRtmpConnType &type,
             continue;
         }
 
-        SrsPacket *pkt_raw = NULL;
+        SrsRtmpCommand *pkt_raw = NULL;
         if ((err = protocol->decode_message(msg.get(), &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "decode identify");
         }
-        SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+        SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
         if (dynamic_cast<SrsCreateStreamPacket *>(pkt.get())) {
             return identify_create_stream_client(dynamic_cast<SrsCreateStreamPacket *>(pkt.get()), stream_id, 3, type, stream_name, duration);
@@ -2871,11 +2871,11 @@ srs_error_t SrsRtmpServer::identify_create_stream_client(SrsCreateStreamPacket *
             continue;
         }
 
-        SrsPacket *pkt_raw = NULL;
+        SrsRtmpCommand *pkt_raw = NULL;
         if ((err = protocol->decode_message(msg.get(), &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "decode identify");
         }
-        SrsUniquePtr<SrsPacket> pkt(pkt_raw);
+        SrsUniquePtr<SrsRtmpCommand> pkt(pkt_raw);
 
         if (dynamic_cast<SrsPlayPacket *>(pkt.get())) {
             return identify_play_client(dynamic_cast<SrsPlayPacket *>(pkt.get()), type, stream_name, duration);

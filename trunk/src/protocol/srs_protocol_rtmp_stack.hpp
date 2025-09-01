@@ -39,7 +39,7 @@ class SrsPublishPacket;
 class SrsOnMetaDataPacket;
 class SrsPlayPacket;
 class SrsCommonMessage;
-class SrsPacket;
+class SrsRtmpCommand;
 class SrsAmf0Object;
 class IMergeReadHandler;
 class SrsCallPacket;
@@ -86,17 +86,17 @@ class SrsCallPacket;
 #define StatusCodeDataStart "NetStream.Data.Start"
 #define StatusCodeUnpublishSuccess "NetStream.Unpublish.Success"
 
-// The decoded message payload.
+// The message payload is decoded as RTMP packet.
 // @remark we seperate the packet from message,
 //        for the packet focus on logic and domain data,
 //        the message bind to the protocol and focus on protocol, such as header.
 //         we can merge the message and packet, using OOAD hierachy, packet extends from message,
 //         it's better for me to use components -- the message use the packet as payload.
-class SrsPacket
+class SrsRtmpCommand
 {
 public:
-    SrsPacket();
-    virtual ~SrsPacket();
+    SrsRtmpCommand();
+    virtual ~SrsRtmpCommand();
 
 public:
     // Covert packet to common message.
@@ -177,7 +177,7 @@ private:
     // default to true for it's very easy to use the protocol stack.
     bool auto_response_when_recv;
     // When not auto response message, manual flush the messages in queue.
-    std::vector<SrsPacket *> manual_response_queue;
+    std::vector<SrsRtmpCommand *> manual_response_queue;
     // For peer out
 private:
     // Cache for multiple messages send,
@@ -261,7 +261,7 @@ public:
     // @param ppacket, output decoded packet,
     //       always NULL if error, never NULL if success.
     // @return error when unknown packet, error when decode failed.
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
+    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
     // Send the RTMP message and always free it.
     // user must never free or use the msg after this method,
     // For it will always free the msg.
@@ -280,7 +280,7 @@ public:
     // For it will always free the packet.
     // @param packet, the packet to send out, never be NULL.
     // @param stream_id, the stream id of packet to send over, 0 for control message.
-    virtual srs_error_t send_and_free_packet(SrsPacket *packet, int stream_id);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
 
 public:
     // Expect a specified message, drop others util got specified one.
@@ -312,7 +312,7 @@ public:
                 return srs_error_wrap(err, "recv message");
             }
 
-            SrsPacket *packet = NULL;
+            SrsRtmpCommand *packet = NULL;
             if ((err = decode_message(msg, &packet)) != srs_success) {
                 srs_freep(msg);
                 srs_freep(packet);
@@ -341,9 +341,9 @@ private:
     // Send iovs. send multiple times if exceed limits.
     virtual srs_error_t do_iovs_send(iovec *iovs, int size);
     // The underlayer api for send and free packet.
-    virtual srs_error_t do_send_and_free_packet(SrsPacket *packet, int stream_id);
+    virtual srs_error_t do_send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
     // The imp for decode_message
-    virtual srs_error_t do_decode_message(SrsMessageHeader &header, SrsBuffer *stream, SrsPacket **ppacket);
+    virtual srs_error_t do_decode_message(SrsMessageHeader &header, SrsBuffer *stream, SrsRtmpCommand **ppacket);
     // Recv bytes oriented RTMP message from protocol stack.
     // return error if error occur and nerver set the pmsg,
     // return success and pmsg set to NULL if no entire message got,
@@ -361,7 +361,7 @@ private:
     // When recv message, update the context.
     virtual srs_error_t on_recv_message(SrsCommonMessage *msg);
     // When message sentout, update the context.
-    virtual srs_error_t on_send_packet(SrsMessageHeader *mh, SrsPacket *packet);
+    virtual srs_error_t on_send_packet(SrsMessageHeader *mh, SrsRtmpCommand *packet);
 
 private:
     // Auto response the ack message.
@@ -599,10 +599,10 @@ public:
     virtual int64_t get_recv_bytes();
     virtual int64_t get_send_bytes();
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
+    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
     virtual srs_error_t send_and_free_message(SrsMediaPacket *msg, int stream_id);
     virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
-    virtual srs_error_t send_and_free_packet(SrsPacket *packet, int stream_id);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
 
 public:
     // handshake with server, try complex, then simple handshake.
@@ -712,7 +712,7 @@ public:
     // @param ppacket, output decoded packet,
     //       always NULL if error, never NULL if success.
     // @return error when unknown packet, error when decode failed.
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
+    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
     // Send the RTMP message and always free it.
     // user must never free or use the msg after this method,
     // For it will always free the msg.
@@ -733,7 +733,7 @@ public:
     // For it will always free the packet.
     // @param packet, the packet to send out, never be NULL.
     // @param stream_id, the stream id of packet to send over, 0 for control message.
-    virtual srs_error_t send_and_free_packet(SrsPacket *packet, int stream_id);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
 
 public:
     // Do handshake with client, try complex then simple.
@@ -837,7 +837,7 @@ private:
 // 4.1.1. connect
 // The client sends the connect command to the server to request
 // connection to a server application instance.
-class SrsConnectAppPacket : public SrsPacket
+class SrsConnectAppPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command. Set to "connect".
@@ -868,7 +868,7 @@ protected:
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
 // Response  for SrsConnectAppPacket.
-class SrsConnectAppResPacket : public SrsPacket
+class SrsConnectAppResPacket : public SrsRtmpCommand
 {
 public:
     // The _result or _error; indicates whether the response is result or error.
@@ -902,7 +902,7 @@ protected:
 // The call method of the NetConnection object runs remote procedure
 // calls (RPC) at the receiving end. The called RPC name is passed as a
 // parameter to the call command.
-class SrsCallPacket : public SrsPacket
+class SrsCallPacket : public SrsRtmpCommand
 {
 public:
     // Name of the remote procedure that is called.
@@ -932,7 +932,7 @@ protected:
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
 // Response  for SrsCallPacket.
-class SrsCallResPacket : public SrsPacket
+class SrsCallResPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command.
@@ -963,7 +963,7 @@ protected:
 // channel for message communication The publishing of audio, video, and
 // metadata is carried out over stream channel created using the
 // createStream command.
-class SrsCreateStreamPacket : public SrsPacket
+class SrsCreateStreamPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command. Set to "createStream".
@@ -991,7 +991,7 @@ protected:
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
 // Response  for SrsCreateStreamPacket.
-class SrsCreateStreamResPacket : public SrsPacket
+class SrsCreateStreamResPacket : public SrsRtmpCommand
 {
 public:
     // The _result or _error; indicates whether the response is result or error.
@@ -1020,7 +1020,7 @@ protected:
 };
 
 // client close stream packet.
-class SrsCloseStreamPacket : public SrsPacket
+class SrsCloseStreamPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command, set to "closeStream".
@@ -1039,7 +1039,7 @@ public:
 };
 
 // FMLE start publish: ReleaseStream/PublishStream/FCPublish/FCUnpublish
-class SrsFMLEStartPacket : public SrsPacket
+class SrsFMLEStartPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command
@@ -1074,7 +1074,7 @@ public:
     static SrsFMLEStartPacket *create_FC_publish(std::string stream);
 };
 // Response  for SrsFMLEStartPacket.
-class SrsFMLEStartResPacket : public SrsPacket
+class SrsFMLEStartResPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command
@@ -1111,7 +1111,7 @@ protected:
 // The client sends the publish command to publish a named stream to the
 // server. Using this name, any client can play this stream and receive
 // The published audio, video, and data messages.
-class SrsPublishPacket : public SrsPacket
+class SrsPublishPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command, set to "publish".
@@ -1156,7 +1156,7 @@ protected:
 // 4.2.8. pause
 // The client sends the pause command to tell the server to pause or
 // start playing.
-class SrsPausePacket : public SrsPacket
+class SrsPausePacket : public SrsRtmpCommand
 {
 public:
     // Name of the command, set to "pause".
@@ -1184,7 +1184,7 @@ public:
 
 // 4.2.1. play
 // The client sends this command to the server to play a stream.
-class SrsPlayPacket : public SrsPacket
+class SrsPlayPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command. Set to "play".
@@ -1248,7 +1248,7 @@ protected:
 
 // Response  for SrsPlayPacket.
 // @remark, user must set the stream_id in header.
-class SrsPlayResPacket : public SrsPacket
+class SrsPlayResPacket : public SrsRtmpCommand
 {
 public:
     // Name of the command. If the play command is successful, the command
@@ -1282,7 +1282,7 @@ protected:
 };
 
 // When bandwidth test done, notice client.
-class SrsOnBWDonePacket : public SrsPacket
+class SrsOnBWDonePacket : public SrsRtmpCommand
 {
 public:
     // Name of command. Set to "onBWDone"
@@ -1309,7 +1309,7 @@ protected:
 
 // onStatus command, AMF0 Call
 // @remark, user must set the stream_id by SrsCommonMessage.set_packet().
-class SrsOnStatusCallPacket : public SrsPacket
+class SrsOnStatusCallPacket : public SrsRtmpCommand
 {
 public:
     // Name of command. Set to "onStatus"
@@ -1342,7 +1342,7 @@ protected:
 
 // onStatus data, AMF0 Data
 // @remark, user must set the stream_id by SrsCommonMessage.set_packet().
-class SrsOnStatusDataPacket : public SrsPacket
+class SrsOnStatusDataPacket : public SrsRtmpCommand
 {
 public:
     // Name of command. Set to "onStatus"
@@ -1370,7 +1370,7 @@ protected:
 
 // AMF0Data RtmpSampleAccess
 // @remark, user must set the stream_id by SrsCommonMessage.set_packet().
-class SrsNaluSampleAccessPacket : public SrsPacket
+class SrsNaluSampleAccessPacket : public SrsRtmpCommand
 {
 public:
     // Name of command. Set to "|RtmpSampleAccess".
@@ -1397,7 +1397,7 @@ protected:
 // The stream metadata.
 // FMLE: @setDataFrame
 // others: onMetaData
-class SrsOnMetaDataPacket : public SrsPacket
+class SrsOnMetaDataPacket : public SrsRtmpCommand
 {
 public:
     // Name of metadata. Set to "onMetaData"
@@ -1427,7 +1427,7 @@ protected:
 // 5.5. Window Acknowledgement Size (5)
 // The client or the server sends this message to inform the peer which
 // window size to use when sending acknowledgment.
-class SrsSetWindowAckSizePacket : public SrsPacket
+class SrsSetWindowAckSizePacket : public SrsRtmpCommand
 {
 public:
     int32_t ackowledgement_window_size;
@@ -1450,7 +1450,7 @@ protected:
 // 5.3. Acknowledgement (3)
 // The client or the server sends the acknowledgment to the peer after
 // receiving bytes equal to the window size.
-class SrsAcknowledgementPacket : public SrsPacket
+class SrsAcknowledgementPacket : public SrsRtmpCommand
 {
 public:
     uint32_t sequence_number;
@@ -1473,7 +1473,7 @@ protected:
 // 7.1. Set Chunk Size
 // Protocol control message 1, Set Chunk Size, is used to notify the
 // peer about the new maximum chunk size.
-class SrsSetChunkSizePacket : public SrsPacket
+class SrsSetChunkSizePacket : public SrsRtmpCommand
 {
 public:
     // The maximum chunk size can be 65536 bytes. The chunk size is
@@ -1507,7 +1507,7 @@ enum SrsPeerBandwidthType {
 // 5.6. Set Peer Bandwidth (6)
 // The client or the server sends this message to update the output
 // bandwidth of the peer.
-class SrsSetPeerBandwidthPacket : public SrsPacket
+class SrsSetPeerBandwidthPacket : public SrsRtmpCommand
 {
 public:
     int32_t bandwidth;
@@ -1609,7 +1609,7 @@ enum SrcPCUCEventType {
 // | Event Type ( 2- bytes ) | Event Data
 // +------------------------------+-------------------------
 // Figure 5 Pay load for the 'User Control Message'.
-class SrsUserControlPacket : public SrsPacket
+class SrsUserControlPacket : public SrsRtmpCommand
 {
 public:
     // Event type is followed by Event data.

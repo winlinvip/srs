@@ -206,7 +206,7 @@ srs_error_t SrsBasicRtmpClient::recv_message(SrsCommonMessage **pmsg)
     return client->recv_message(pmsg);
 }
 
-srs_error_t SrsBasicRtmpClient::decode_message(SrsCommonMessage *msg, SrsPacket **ppacket)
+srs_error_t SrsBasicRtmpClient::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     return client->decode_message(msg, ppacket);
 }

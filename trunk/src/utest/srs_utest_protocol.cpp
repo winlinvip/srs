@@ -1014,9 +1014,9 @@ VOID TEST(ProtocolStackTest, ProtocolRecvMessage)
     HELPER_ASSERT_SUCCESS(proto.recv_message(&msg));
     SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
 
-    SrsPacket *pkt = NULL;
+    SrsRtmpCommand *pkt = NULL;
     HELPER_EXPECT_SUCCESS(proto.decode_message(msg, &pkt));
-    SrsUniquePtr<SrsPacket> pkt_uptr(pkt);
+    SrsUniquePtr<SrsRtmpCommand> pkt_uptr(pkt);
 
     SrsConnectAppPacket *spkt = dynamic_cast<SrsConnectAppPacket *>(pkt);
     ASSERT_TRUE(NULL != spkt);
@@ -1051,9 +1051,9 @@ VOID TEST(ProtocolStackTest, ProtocolRecvMessageBug98)
     HELPER_ASSERT_SUCCESS(proto.recv_message(&msg));
     SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
 
-    SrsPacket *pkt = NULL;
+    SrsRtmpCommand *pkt = NULL;
     HELPER_EXPECT_SUCCESS(proto.decode_message(msg, &pkt));
-    SrsUniquePtr<SrsPacket> pkt_uptr(pkt);
+    SrsUniquePtr<SrsRtmpCommand> pkt_uptr(pkt);
 
     SrsUserControlPacket *spkt = dynamic_cast<SrsUserControlPacket *>(pkt);
     ASSERT_TRUE(NULL != spkt);
@@ -1087,9 +1087,9 @@ VOID TEST(ProtocolStackTest, ProtocolRecvAckSizeMessage)
     HELPER_ASSERT_SUCCESS(proto.recv_message(&msg));
     SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
 
-    SrsPacket *pkt = NULL;
+    SrsRtmpCommand *pkt = NULL;
     HELPER_EXPECT_SUCCESS(proto.decode_message(msg, &pkt));
-    SrsUniquePtr<SrsPacket> pkt_uptr(pkt);
+    SrsUniquePtr<SrsRtmpCommand> pkt_uptr(pkt);
 
     SrsSetWindowAckSizePacket *spkt = dynamic_cast<SrsSetWindowAckSizePacket *>(pkt);
     ASSERT_TRUE(NULL != spkt);
@@ -5064,9 +5064,9 @@ VOID TEST(ProtocolStackTest, ProtocolPingFlow)
         SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
         ASSERT_TRUE(msg->header.is_user_control_message());
 
-        SrsPacket *pkt = NULL;
+        SrsRtmpCommand *pkt = NULL;
         HELPER_ASSERT_SUCCESS(proto.decode_message(msg, &pkt));
-        SrsUniquePtr<SrsPacket> pkt_uptr(pkt);
+        SrsUniquePtr<SrsRtmpCommand> pkt_uptr(pkt);
 
         SrsUserControlPacket *spkt = dynamic_cast<SrsUserControlPacket *>(pkt);
         ASSERT_TRUE(spkt != NULL);

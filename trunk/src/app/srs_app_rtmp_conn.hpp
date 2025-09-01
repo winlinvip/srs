@@ -37,7 +37,7 @@ class SrsPublishRecvThread;
 class SrsSecurity;
 class ISrsWakable;
 class SrsCommonMessage;
-class SrsPacket;
+class SrsRtmpCommand;
 class SrsNetworkDelta;
 
 class SrsSslConnection;

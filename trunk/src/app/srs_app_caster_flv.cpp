@@ -284,7 +284,7 @@ srs_error_t SrsDynamicHttpConn::do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecod
             return srs_error_wrap(err, "create message");
         }
 
-        SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+        SrsMediaPacket *msg = new SrsMediaPacket();
         cmsg->to_msg(msg);
         srs_freep(cmsg);
 

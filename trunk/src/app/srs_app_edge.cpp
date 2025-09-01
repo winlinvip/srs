@@ -928,7 +928,7 @@ srs_error_t SrsEdgeForwarder::proxy(SrsCommonMessage *msg)
         return err;
     }
 
-    SrsSharedPtrMessage copy;
+    SrsMediaPacket copy;
     msg->to_msg(&copy);
 
     copy.stream_id = sdk->sid();

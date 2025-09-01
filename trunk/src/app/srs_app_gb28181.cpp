@@ -1547,15 +1547,15 @@ SrsMpegpsQueue::SrsMpegpsQueue()
 
 SrsMpegpsQueue::~SrsMpegpsQueue()
 {
-    std::map<int64_t, SrsSharedPtrMessage *>::iterator it;
+    std::map<int64_t, SrsMediaPacket *>::iterator it;
     for (it = msgs.begin(); it != msgs.end(); ++it) {
-        SrsSharedPtrMessage *msg = it->second;
+        SrsMediaPacket *msg = it->second;
         srs_freep(msg);
     }
     msgs.clear();
 }
 
-srs_error_t SrsMpegpsQueue::push(SrsSharedPtrMessage *msg)
+srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
@@ -1588,7 +1588,7 @@ srs_error_t SrsMpegpsQueue::push(SrsSharedPtrMessage *msg)
     return err;
 }
 
-SrsSharedPtrMessage *SrsMpegpsQueue::dequeue()
+SrsMediaPacket *SrsMpegpsQueue::dequeue()
 {
     // got 2+ videos and audios, ok to dequeue.
     bool av_ok = nb_videos >= 2 && nb_audios >= 2;
@@ -1596,8 +1596,8 @@ SrsSharedPtrMessage *SrsMpegpsQueue::dequeue()
     bool av_overflow = nb_videos > 100 || nb_audios > 300;
 
     if (av_ok || av_overflow) {
-        std::map<int64_t, SrsSharedPtrMessage *>::iterator it = msgs.begin();
-        SrsSharedPtrMessage *msg = it->second;
+        std::map<int64_t, SrsMediaPacket *>::iterator it = msgs.begin();
+        SrsMediaPacket *msg = it->second;
         msgs.erase(it);
 
         if (msg->is_audio()) {
@@ -1807,7 +1807,7 @@ srs_error_t SrsGbMuxer::write_h264_sps_pps(uint32_t dts, uint32_t pts)
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    if ((err = rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
+    if ((err = rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "write packet");
     }
 
@@ -1853,7 +1853,7 @@ srs_error_t SrsGbMuxer::write_h264_ipb_frame(char *frame, int frame_size, uint32
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    return rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv);
+    return rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv);
 }
 
 srs_error_t SrsGbMuxer::mux_h265(SrsTsMessage *msg, SrsBuffer *avs)
@@ -1982,7 +1982,7 @@ srs_error_t SrsGbMuxer::write_h265_vps_sps_pps(uint32_t dts, uint32_t pts)
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    if ((err = rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
+    if ((err = rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "hevc write packet");
     }
 
@@ -2026,7 +2026,7 @@ srs_error_t SrsGbMuxer::write_h265_ipb_frame(char *frame, int frame_size, uint32
 
     // the timestamp in rtmp message header is dts.
     uint32_t timestamp = dts;
-    if ((err = rtmp_write_packet(SrsFrameTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
+    if ((err = rtmp_write_packet(SrsParsedPacketTypeVideo, timestamp, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "hevc write packet");
     }
 
@@ -2096,7 +2096,7 @@ srs_error_t SrsGbMuxer::write_audio_raw_frame(char *frame, int frame_size, SrsRa
         return srs_error_wrap(err, "mux aac to flv");
     }
 
-    return rtmp_write_packet(SrsFrameTypeAudio, dts, data, size);
+    return rtmp_write_packet(SrsParsedPacketTypeAudio, dts, data, size);
 }
 
 srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *data, int size)
@@ -2112,7 +2112,7 @@ srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *d
         return srs_error_wrap(err, "create message");
     }
 
-    SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+    SrsMediaPacket *msg = new SrsMediaPacket();
     cmsg->to_msg(msg);
     srs_freep(cmsg);
 

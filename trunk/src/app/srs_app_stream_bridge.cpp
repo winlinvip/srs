@@ -28,21 +28,21 @@ ISrsStreamBridge::~ISrsStreamBridge()
 {
 }
 
-SrsFrameToRtmpBridge::SrsFrameToRtmpBridge(SrsSharedPtr<SrsLiveSource> source)
+SrsParsedPacketToRtmpBridge::SrsParsedPacketToRtmpBridge(SrsSharedPtr<SrsLiveSource> source)
 {
     source_ = source;
 }
 
-SrsFrameToRtmpBridge::~SrsFrameToRtmpBridge()
+SrsParsedPacketToRtmpBridge::~SrsParsedPacketToRtmpBridge()
 {
 }
 
-srs_error_t SrsFrameToRtmpBridge::initialize(ISrsRequest *r)
+srs_error_t SrsParsedPacketToRtmpBridge::initialize(ISrsRequest *r)
 {
     return srs_success;
 }
 
-srs_error_t SrsFrameToRtmpBridge::on_publish()
+srs_error_t SrsParsedPacketToRtmpBridge::on_publish()
 {
     srs_error_t err = srs_success;
 
@@ -54,18 +54,18 @@ srs_error_t SrsFrameToRtmpBridge::on_publish()
     return err;
 }
 
-void SrsFrameToRtmpBridge::on_unpublish()
+void SrsParsedPacketToRtmpBridge::on_unpublish()
 {
     // TODO: FIXME: Should sync with bridge?
     source_->on_unpublish();
 }
 
-srs_error_t SrsFrameToRtmpBridge::on_frame(SrsSharedPtrMessage *frame)
+srs_error_t SrsParsedPacketToRtmpBridge::on_frame(SrsMediaPacket *frame)
 {
     return source_->on_frame(frame);
 }
 
-SrsFrameToRtcBridge::SrsFrameToRtcBridge(SrsSharedPtr<SrsRtcSource> source)
+SrsParsedPacketToRtcBridge::SrsParsedPacketToRtcBridge(SrsSharedPtr<SrsRtcSource> source)
 {
     source_ = source;
 
@@ -75,14 +75,14 @@ SrsFrameToRtcBridge::SrsFrameToRtcBridge(SrsSharedPtr<SrsRtcSource> source)
 #endif
 }
 
-SrsFrameToRtcBridge::~SrsFrameToRtcBridge()
+SrsParsedPacketToRtcBridge::~SrsParsedPacketToRtcBridge()
 {
 #ifdef SRS_FFMPEG_FIT
     srs_freep(rtp_builder_);
 #endif
 }
 
-srs_error_t SrsFrameToRtcBridge::initialize(ISrsRequest *r)
+srs_error_t SrsParsedPacketToRtcBridge::initialize(ISrsRequest *r)
 {
 #ifdef SRS_FFMPEG_FIT
     return rtp_builder_->initialize(r);
@@ -91,7 +91,7 @@ srs_error_t SrsFrameToRtcBridge::initialize(ISrsRequest *r)
 #endif
 }
 
-srs_error_t SrsFrameToRtcBridge::on_publish()
+srs_error_t SrsParsedPacketToRtcBridge::on_publish()
 {
     srs_error_t err = srs_success;
 
@@ -109,7 +109,7 @@ srs_error_t SrsFrameToRtcBridge::on_publish()
     return err;
 }
 
-void SrsFrameToRtcBridge::on_unpublish()
+void SrsParsedPacketToRtcBridge::on_unpublish()
 {
 #ifdef SRS_FFMPEG_FIT
     rtp_builder_->on_unpublish();
@@ -120,7 +120,7 @@ void SrsFrameToRtcBridge::on_unpublish()
     source_->on_unpublish();
 }
 
-srs_error_t SrsFrameToRtcBridge::on_frame(SrsSharedPtrMessage *frame)
+srs_error_t SrsParsedPacketToRtcBridge::on_frame(SrsMediaPacket *frame)
 {
 #ifdef SRS_FFMPEG_FIT
     return rtp_builder_->on_frame(frame);
@@ -129,13 +129,13 @@ srs_error_t SrsFrameToRtcBridge::on_frame(SrsSharedPtrMessage *frame)
 #endif
 }
 
-srs_error_t SrsFrameToRtcBridge::on_rtp(SrsRtpPacket *pkt)
+srs_error_t SrsParsedPacketToRtcBridge::on_rtp(SrsRtpPacket *pkt)
 {
     return source_->on_rtp(pkt);
 }
 
 #ifdef SRS_RTSP
-SrsFrameToRtspBridge::SrsFrameToRtspBridge(SrsSharedPtr<SrsRtspSource> source)
+SrsParsedPacketToRtspBridge::SrsParsedPacketToRtspBridge(SrsSharedPtr<SrsRtspSource> source)
 {
     source_ = source;
 
@@ -143,17 +143,17 @@ SrsFrameToRtspBridge::SrsFrameToRtspBridge(SrsSharedPtr<SrsRtspSource> source)
     rtp_builder_ = new SrsRtspRtpBuilder(this, source);
 }
 
-SrsFrameToRtspBridge::~SrsFrameToRtspBridge()
+SrsParsedPacketToRtspBridge::~SrsParsedPacketToRtspBridge()
 {
     srs_freep(rtp_builder_);
 }
 
-srs_error_t SrsFrameToRtspBridge::initialize(ISrsRequest *r)
+srs_error_t SrsParsedPacketToRtspBridge::initialize(ISrsRequest *r)
 {
     return rtp_builder_->initialize(r);
 }
 
-srs_error_t SrsFrameToRtspBridge::on_publish()
+srs_error_t SrsParsedPacketToRtspBridge::on_publish()
 {
     srs_error_t err = srs_success;
 
@@ -169,7 +169,7 @@ srs_error_t SrsFrameToRtspBridge::on_publish()
     return err;
 }
 
-void SrsFrameToRtspBridge::on_unpublish()
+void SrsParsedPacketToRtspBridge::on_unpublish()
 {
     rtp_builder_->on_unpublish();
 
@@ -178,12 +178,12 @@ void SrsFrameToRtspBridge::on_unpublish()
     source_->on_unpublish();
 }
 
-srs_error_t SrsFrameToRtspBridge::on_frame(SrsSharedPtrMessage *frame)
+srs_error_t SrsParsedPacketToRtspBridge::on_frame(SrsMediaPacket *frame)
 {
     return rtp_builder_->on_frame(frame);
 }
 
-srs_error_t SrsFrameToRtspBridge::on_rtp(SrsRtpPacket *pkt)
+srs_error_t SrsParsedPacketToRtspBridge::on_rtp(SrsRtpPacket *pkt)
 {
     return source_->on_rtp(pkt);
 }
@@ -237,7 +237,7 @@ void SrsCompositeBridge::on_unpublish()
     }
 }
 
-srs_error_t SrsCompositeBridge::on_frame(SrsSharedPtrMessage *frame)
+srs_error_t SrsCompositeBridge::on_frame(SrsMediaPacket *frame)
 {
     srs_error_t err = srs_success;
 

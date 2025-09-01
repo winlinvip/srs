@@ -290,7 +290,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
     *ppmsg = NULL;
     SrsCommonMessage *msg = NULL;
 
-    if (type == SrsFrameTypeAudio) {
+    if (type == SrsParsedPacketTypeAudio) {
         SrsMessageHeader header;
         header.initialize_audio(size, timestamp, stream_id);
 
@@ -299,7 +299,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
         }
-    } else if (type == SrsFrameTypeVideo) {
+    } else if (type == SrsParsedPacketTypeVideo) {
         SrsMessageHeader header;
         header.initialize_video(size, timestamp, stream_id);
 
@@ -308,7 +308,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
         }
-    } else if (type == SrsFrameTypeScript) {
+    } else if (type == SrsParsedPacketTypeScript) {
         SrsMessageHeader header;
         header.initialize_amf0_script(size, stream_id);
 

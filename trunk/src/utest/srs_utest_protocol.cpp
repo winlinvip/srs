@@ -896,7 +896,7 @@ VOID TEST(ProtocolMsgArrayTest, MessageArray)
     srs_error_t err = srs_success;
 
     SrsMessageHeader header;
-    SrsSharedPtrMessage msg;
+    SrsMediaPacket msg;
     char *payload = new char[1024];
     SrsCommonMessage common_msg;
     HELPER_EXPECT_SUCCESS(common_msg.create(&header, payload, 1024));
@@ -4375,7 +4375,7 @@ VOID TEST(ProtocolStackTest, ProtocolSendVMessage)
     msg->create_payload(sizeof(data));
     memcpy(msg->payload(), data, sizeof(data));
 
-    SrsSharedPtrMessage m;
+    SrsMediaPacket m;
     msg->to_msg(&m);
 
     HELPER_EXPECT_SUCCESS(proto.send_and_free_message(m.copy(), 0));
@@ -4702,16 +4702,16 @@ VOID TEST(ProtocolStackTest, ProtocolSendSrsOnStatusDataPacket)
 }
 
 /**
- * send a SrsSampleAccessPacket packet
+ * send a SrsNaluSampleAccessPacket packet
  */
-VOID TEST(ProtocolStackTest, ProtocolSendSrsSampleAccessPacket)
+VOID TEST(ProtocolStackTest, ProtocolSendSrsNaluSampleAccessPacket)
 {
     srs_error_t err = srs_success;
 
     MockBufferIO bio;
     SrsProtocol proto(&bio);
 
-    SrsSampleAccessPacket *pkt = new SrsSampleAccessPacket();
+    SrsNaluSampleAccessPacket *pkt = new SrsNaluSampleAccessPacket();
     pkt->command_name = "|RtmpSampleAccess";
     pkt->video_sample_access = true;
     pkt->audio_sample_access = true;
@@ -4939,7 +4939,7 @@ VOID TEST(ProtocolStackTest, ProtocolAckSizeFlow)
         msg->header.message_type = 9;
         EXPECT_TRUE(msg->header.is_video());
 
-        SrsSharedPtrMessage m;
+        SrsMediaPacket m;
         msg->to_msg(&m);
 
         HELPER_EXPECT_SUCCESS(proto.send_and_free_message(m.copy(), 1));
@@ -4989,7 +4989,7 @@ VOID TEST(ProtocolStackTest, ProtocolAckSizeFlow)
         msg->header.message_type = 9;
         EXPECT_TRUE(msg->header.is_video());
 
-        SrsSharedPtrMessage m;
+        SrsMediaPacket m;
         msg->to_msg(&m);
 
         HELPER_EXPECT_SUCCESS(proto.send_and_free_message(m.copy(), 1));

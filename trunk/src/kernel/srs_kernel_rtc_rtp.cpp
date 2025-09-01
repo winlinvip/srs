@@ -765,7 +765,7 @@ SrsRtpPacket::SrsRtpPacket()
     actual_buffer_size_ = 0;
 
     nalu_type = 0;
-    frame_type = SrsFrameTypeReserved;
+    frame_type = SrsParsedPacketTypeReserved;
     cached_payload_size = 0;
     decode_handler = NULL;
     avsync_time_ = -1;
@@ -865,7 +865,7 @@ void SrsRtpPacket::set_decode_handler(ISrsRtpPacketDecodeHandler *h)
 
 bool SrsRtpPacket::is_audio()
 {
-    return frame_type == SrsFrameTypeAudio;
+    return frame_type == SrsParsedPacketTypeAudio;
 }
 
 void SrsRtpPacket::set_extension_types(SrsRtpExtensionTypes *v)
@@ -985,7 +985,7 @@ bool srs_rtp_packet_h265_is_keyframe(uint8_t nalu_type, ISrsRtpPayloader *payloa
 bool SrsRtpPacket::is_keyframe(SrsVideoCodecId codec_id)
 {
     // False if audio packet
-    if (SrsFrameTypeAudio == frame_type) {
+    if (SrsParsedPacketTypeAudio == frame_type) {
         return false;
     }
 
@@ -1006,7 +1006,7 @@ SrsRtpRawPayload::SrsRtpRawPayload()
 {
     payload = NULL;
     nn_payload = 0;
-    sample_ = new SrsSample();
+    sample_ = new SrsNaluSample();
 
     ++_srs_pps_objs_rraw->sugar;
 }
@@ -1077,19 +1077,19 @@ SrsRtpRawNALUs::~SrsRtpRawNALUs()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         srs_freep(p);
     }
 }
 
-void SrsRtpRawNALUs::push_back(SrsSample *sample)
+void SrsRtpRawNALUs::push_back(SrsNaluSample *sample)
 {
     if (sample->size <= 0) {
         return;
     }
 
     if (!nalus.empty()) {
-        SrsSample *p = new SrsSample();
+        SrsNaluSample *p = new SrsNaluSample();
         p->bytes = (char *)"\0\0\1";
         p->size = 3;
         nn_bytes += 3;
@@ -1107,7 +1107,7 @@ uint8_t SrsRtpRawNALUs::skip_bytes(int count)
     return uint8_t(nalus[0]->bytes[0]);
 }
 
-srs_error_t SrsRtpRawNALUs::read_samples(vector<SrsSample *> &samples, int packet_size)
+srs_error_t SrsRtpRawNALUs::read_samples(vector<SrsNaluSample *> &samples, int packet_size)
 {
     if (cursor + packet_size < 0 || cursor + packet_size > nn_bytes) {
         return srs_error_new(ERROR_RTC_RTP_MUXER, "cursor=%d, max=%d, size=%d", cursor, nn_bytes, packet_size);
@@ -1119,7 +1119,7 @@ srs_error_t SrsRtpRawNALUs::read_samples(vector<SrsSample *> &samples, int packe
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; left > 0 && i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
 
         // Ignore previous consumed samples.
         if (pos && pos - p->size >= 0) {
@@ -1131,7 +1131,7 @@ srs_error_t SrsRtpRawNALUs::read_samples(vector<SrsSample *> &samples, int packe
         int nn = srs_min(left, p->size - pos);
         srs_assert(nn > 0);
 
-        SrsSample *sample = new SrsSample();
+        SrsNaluSample *sample = new SrsNaluSample();
         samples.push_back(sample);
 
         sample->bytes = p->bytes + pos;
@@ -1150,7 +1150,7 @@ uint64_t SrsRtpRawNALUs::nb_bytes()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         size += p->size;
     }
 
@@ -1161,7 +1161,7 @@ srs_error_t SrsRtpRawNALUs::encode(SrsBuffer *buf)
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
 
         if (!buf->require(p->size)) {
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", p->size);
@@ -1179,7 +1179,7 @@ srs_error_t SrsRtpRawNALUs::decode(SrsBuffer *buf)
         return srs_success;
     }
 
-    SrsSample *sample = new SrsSample();
+    SrsNaluSample *sample = new SrsNaluSample();
     sample->bytes = buf->head();
     sample->size = buf->left();
     buf->skip(sample->size);
@@ -1198,7 +1198,7 @@ ISrsRtpPayloader *SrsRtpRawNALUs::copy()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         cp->nalus.push_back(p->copy());
     }
 
@@ -1216,16 +1216,16 @@ SrsRtpSTAPPayload::~SrsRtpSTAPPayload()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         srs_freep(p);
     }
 }
 
-SrsSample *SrsRtpSTAPPayload::get_sps()
+SrsNaluSample *SrsRtpSTAPPayload::get_sps()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         if (!p || !p->size) {
             continue;
         }
@@ -1239,11 +1239,11 @@ SrsSample *SrsRtpSTAPPayload::get_sps()
     return NULL;
 }
 
-SrsSample *SrsRtpSTAPPayload::get_pps()
+SrsNaluSample *SrsRtpSTAPPayload::get_pps()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         if (!p || !p->size) {
             continue;
         }
@@ -1263,7 +1263,7 @@ uint64_t SrsRtpSTAPPayload::nb_bytes()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         size += 2 + p->size;
     }
 
@@ -1285,7 +1285,7 @@ srs_error_t SrsRtpSTAPPayload::encode(SrsBuffer *buf)
     // NALUs.
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
 
         if (!buf->require(2 + p->size)) {
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", 2 + p->size);
@@ -1328,7 +1328,7 @@ srs_error_t SrsRtpSTAPPayload::decode(SrsBuffer *buf)
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", size);
         }
 
-        SrsSample *sample = new SrsSample();
+        SrsNaluSample *sample = new SrsNaluSample();
         sample->bytes = buf->head();
         sample->size = size;
         buf->skip(size);
@@ -1347,7 +1347,7 @@ ISrsRtpPayloader *SrsRtpSTAPPayload::copy()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         cp->nalus.push_back(p->copy());
     }
 
@@ -1366,7 +1366,7 @@ SrsRtpFUAPayload::~SrsRtpFUAPayload()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         srs_freep(p);
     }
 }
@@ -1377,7 +1377,7 @@ uint64_t SrsRtpFUAPayload::nb_bytes()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         size += p->size;
     }
 
@@ -1408,7 +1408,7 @@ srs_error_t SrsRtpFUAPayload::encode(SrsBuffer *buf)
     // FU payload, @see https://tools.ietf.org/html/rfc6184#section-5.8
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
 
         if (!buf->require(p->size)) {
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", p->size);
@@ -1440,7 +1440,7 @@ srs_error_t SrsRtpFUAPayload::decode(SrsBuffer *buf)
         return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", 1);
     }
 
-    SrsSample *sample = new SrsSample();
+    SrsNaluSample *sample = new SrsNaluSample();
     sample->bytes = buf->head();
     sample->size = buf->left();
     buf->skip(sample->size);
@@ -1461,7 +1461,7 @@ ISrsRtpPayloader *SrsRtpFUAPayload::copy()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         cp->nalus.push_back(p->copy());
     }
 
@@ -1571,16 +1571,16 @@ SrsRtpSTAPPayloadHevc::~SrsRtpSTAPPayloadHevc()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         srs_freep(p);
     }
 }
 
-SrsSample *SrsRtpSTAPPayloadHevc::get_vps()
+SrsNaluSample *SrsRtpSTAPPayloadHevc::get_vps()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         if (!p || !p->size) {
             continue;
         }
@@ -1594,11 +1594,11 @@ SrsSample *SrsRtpSTAPPayloadHevc::get_vps()
     return NULL;
 }
 
-SrsSample *SrsRtpSTAPPayloadHevc::get_sps()
+SrsNaluSample *SrsRtpSTAPPayloadHevc::get_sps()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         if (!p || !p->size) {
             continue;
         }
@@ -1612,11 +1612,11 @@ SrsSample *SrsRtpSTAPPayloadHevc::get_sps()
     return NULL;
 }
 
-SrsSample *SrsRtpSTAPPayloadHevc::get_pps()
+SrsNaluSample *SrsRtpSTAPPayloadHevc::get_pps()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         if (!p || !p->size) {
             continue;
         }
@@ -1636,7 +1636,7 @@ uint64_t SrsRtpSTAPPayloadHevc::nb_bytes()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         size += 2 + p->size;
     }
 
@@ -1657,7 +1657,7 @@ srs_error_t SrsRtpSTAPPayloadHevc::encode(SrsBuffer *buf)
     // NALUs.
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
 
         if (!buf->require(2 + p->size)) {
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", 2 + p->size);
@@ -1699,7 +1699,7 @@ srs_error_t SrsRtpSTAPPayloadHevc::decode(SrsBuffer *buf)
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", size);
         }
 
-        SrsSample *sample = new SrsSample();
+        SrsNaluSample *sample = new SrsNaluSample();
         sample->bytes = buf->head();
         sample->size = size;
         buf->skip(size);
@@ -1716,7 +1716,7 @@ ISrsRtpPayloader *SrsRtpSTAPPayloadHevc::copy()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         cp->nalus.push_back(p->copy());
     }
 
@@ -1735,7 +1735,7 @@ SrsRtpFUAPayloadHevc::~SrsRtpFUAPayloadHevc()
 {
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         srs_freep(p);
     }
 }
@@ -1746,7 +1746,7 @@ uint64_t SrsRtpFUAPayloadHevc::nb_bytes()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         size += p->size;
     }
 
@@ -1770,7 +1770,7 @@ srs_error_t SrsRtpFUAPayloadHevc::encode(SrsBuffer *buf)
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
 
         if (!buf->require(p->size)) {
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", p->size);
@@ -1799,7 +1799,7 @@ srs_error_t SrsRtpFUAPayloadHevc::decode(SrsBuffer *buf)
         return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", 1);
     }
 
-    SrsSample *sample = new SrsSample();
+    SrsNaluSample *sample = new SrsNaluSample();
     sample->bytes = buf->head();
     sample->size = buf->left();
     buf->skip(sample->size);
@@ -1819,7 +1819,7 @@ ISrsRtpPayloader *SrsRtpFUAPayloadHevc::copy()
 
     int nn_nalus = (int)nalus.size();
     for (int i = 0; i < nn_nalus; i++) {
-        SrsSample *p = nalus[i];
+        SrsNaluSample *p = nalus[i];
         cp->nalus.push_back(p->copy());
     }
 

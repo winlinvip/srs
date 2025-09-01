@@ -14,6 +14,7 @@
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_stream.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_kernel_packet.hpp>
 
 #include <iomanip>
 #include <openssl/aes.h>
@@ -5523,7 +5524,7 @@ std::stringstream &SrsMp4TrackEncryptionBox::dumps_detail(std::stringstream &ss,
 
 SrsMp4Sample::SrsMp4Sample()
 {
-    type = SrsFrameTypeForbidden;
+    type = SrsParsedPacketTypeForbidden;
     offset = 0;
     index = 0;
     dts = pts = 0;
@@ -5560,22 +5561,22 @@ SrsMp4DvrJitter::~SrsMp4DvrJitter()
 
 void SrsMp4DvrJitter::on_sample(SrsMp4Sample *sample)
 {
-    if (!has_first_audio_ && sample->type == SrsFrameTypeAudio) {
+    if (!has_first_audio_ && sample->type == SrsParsedPacketTypeAudio) {
         has_first_audio_ = true;
         audio_start_dts_ = sample->dts;
     }
 
-    if (!has_first_video_ && sample->type == SrsFrameTypeVideo) {
+    if (!has_first_video_ && sample->type == SrsParsedPacketTypeVideo) {
         has_first_video_ = true;
         video_start_dts_ = sample->dts;
     }
 }
 
-uint32_t SrsMp4DvrJitter::get_first_sample_delta(SrsFrameType track)
+uint32_t SrsMp4DvrJitter::get_first_sample_delta(SrsParsedPacketType track)
 {
-    if (track == SrsFrameTypeVideo) {
+    if (track == SrsParsedPacketTypeVideo) {
         return video_start_dts_ > audio_start_dts_ ? video_start_dts_ - audio_start_dts_ : 0;
-    } else if (track == SrsFrameTypeAudio) {
+    } else if (track == SrsParsedPacketTypeAudio) {
         return audio_start_dts_ > video_start_dts_ ? audio_start_dts_ - video_start_dts_ : 0;
     }
     return 0;
@@ -5639,7 +5640,7 @@ srs_error_t SrsMp4SampleManager::load(SrsMp4MovieBox *moov)
             SrsMp4Sample *sample = it->second;
             samples.push_back(sample);
 
-            if (sample->type == SrsFrameTypeVideo) {
+            if (sample->type == SrsParsedPacketTypeVideo) {
                 pvideo = sample;
             } else if (pvideo) {
                 int32_t diff = sample->dts_ms() - pvideo->dts_ms();
@@ -5660,7 +5661,7 @@ srs_error_t SrsMp4SampleManager::load(SrsMp4MovieBox *moov)
         map<uint64_t, SrsMp4Sample *>::iterator it;
         for (it = tses.begin(); it != tses.end(); ++it) {
             SrsMp4Sample *sample = it->second;
-            if (sample->type == SrsFrameTypeAudio) {
+            if (sample->type == SrsParsedPacketTypeAudio) {
                 sample->adjust = 0 - maxp - maxn;
             }
         }
@@ -5693,7 +5694,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieBox *moov)
         vector<SrsMp4Sample *>::iterator it;
         for (it = samples.begin(); it != samples.end(); ++it) {
             SrsMp4Sample *sample = *it;
-            if (sample->dts != sample->pts && sample->type == SrsFrameTypeVideo) {
+            if (sample->dts != sample->pts && sample->type == SrsParsedPacketTypeVideo) {
                 has_cts = true;
                 break;
             }
@@ -5731,7 +5732,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieBox *moov)
             stbl->set_co64(static_cast<SrsMp4ChunkLargeOffsetBox *>(co));
         }
 
-        if ((err = write_track(SrsFrameTypeVideo, stts, stss, ctts, stsc, stsz, co)) != srs_success) {
+        if ((err = write_track(SrsParsedPacketTypeVideo, stts, stss, ctts, stsc, stsz, co)) != srs_success) {
             return srs_error_wrap(err, "write vide track");
         }
     }
@@ -5761,7 +5762,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieBox *moov)
             stbl->set_co64(static_cast<SrsMp4ChunkLargeOffsetBox *>(co));
         }
 
-        if ((err = write_track(SrsFrameTypeAudio, stts, stss, ctts, stsc, stsz, co)) != srs_success) {
+        if ((err = write_track(SrsParsedPacketTypeAudio, stts, stss, ctts, stsc, stsz, co)) != srs_success) {
             return srs_error_wrap(err, "write soun track");
         }
     }
@@ -5809,7 +5810,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4TrackFragmentBox *traf, uint64_t dt
     return err;
 }
 
-srs_error_t SrsMp4SampleManager::write_track(SrsFrameType track,
+srs_error_t SrsMp4SampleManager::write_track(SrsParsedPacketType track,
                                              SrsMp4DecodingTime2SampleBox *stts, SrsMp4SyncSampleBox *stss, SrsMp4CompositionTime2SampleBox *ctts,
                                              SrsMp4Sample2ChunkBox *stsc, SrsMp4SampleSizeBox *stsz, SrsMp4FullBox *co)
 {
@@ -5959,7 +5960,7 @@ srs_error_t SrsMp4SampleManager::do_load(map<uint64_t, SrsMp4Sample *> &tses, Sr
             return srs_error_new(ERROR_MP4_ILLEGAL_TRACK, "illegal track, empty mdhd/stco/stsz/stsc/stts, type=%d", tt);
         }
 
-        if ((err = load_trak(tses, SrsFrameTypeVideo, mdhd, stco, stsz, stsc, stts, ctts, stss)) != srs_success) {
+        if ((err = load_trak(tses, SrsParsedPacketTypeVideo, mdhd, stco, stsz, stsc, stts, ctts, stss)) != srs_success) {
             return srs_error_wrap(err, "load vide track");
         }
     }
@@ -5977,7 +5978,7 @@ srs_error_t SrsMp4SampleManager::do_load(map<uint64_t, SrsMp4Sample *> &tses, Sr
             return srs_error_new(ERROR_MP4_ILLEGAL_TRACK, "illegal track, empty mdhd/stco/stsz/stsc/stts, type=%d", tt);
         }
 
-        if ((err = load_trak(tses, SrsFrameTypeAudio, mdhd, stco, stsz, stsc, stts, NULL, NULL)) != srs_success) {
+        if ((err = load_trak(tses, SrsParsedPacketTypeAudio, mdhd, stco, stsz, stsc, stts, NULL, NULL)) != srs_success) {
             return srs_error_wrap(err, "load soun track");
         }
     }
@@ -5985,7 +5986,7 @@ srs_error_t SrsMp4SampleManager::do_load(map<uint64_t, SrsMp4Sample *> &tses, Sr
     return err;
 }
 
-srs_error_t SrsMp4SampleManager::load_trak(map<uint64_t, SrsMp4Sample *> &tses, SrsFrameType tt,
+srs_error_t SrsMp4SampleManager::load_trak(map<uint64_t, SrsMp4Sample *> &tses, SrsParsedPacketType tt,
                                            SrsMp4MediaHeaderBox *mdhd, SrsMp4ChunkOffsetBox *stco, SrsMp4SampleSizeBox *stsz, SrsMp4Sample2ChunkBox *stsc,
                                            SrsMp4DecodingTime2SampleBox *stts, SrsMp4CompositionTime2SampleBox *ctts, SrsMp4SyncSampleBox *stss)
 {
@@ -6045,7 +6046,7 @@ srs_error_t SrsMp4SampleManager::load_trak(map<uint64_t, SrsMp4Sample *> &tses, 
                 sample->pts = sample->dts + ctts_entry->sample_offset;
             }
 
-            if (tt == SrsFrameTypeVideo) {
+            if (tt == SrsParsedPacketTypeVideo) {
                 if (!stss || stss->is_sync(sample->index)) {
                     sample->frame_type = SrsVideoAvcFrameTypeKeyFrame;
                 } else {
@@ -6294,7 +6295,7 @@ srs_error_t SrsMp4Decoder::read_sample(SrsMp4HandlerType *pht, uint16_t *pft, ui
         return srs_error_new(ERROR_SYSTEM_FILE_EOF, "EOF");
     }
 
-    if (ps->type == SrsFrameTypeVideo) {
+    if (ps->type == SrsParsedPacketTypeVideo) {
         *pht = SrsMp4HandlerTypeVIDE;
         *pct = SrsVideoAvcFrameTraitNALU;
     } else {
@@ -6608,12 +6609,12 @@ srs_error_t SrsMp4Encoder::write_sample(
     }
 
     if (ht == SrsMp4HandlerTypeVIDE) {
-        ps->type = SrsFrameTypeVideo;
+        ps->type = SrsParsedPacketTypeVideo;
         ps->frame_type = (SrsVideoAvcFrameType)ft;
         ps->index = nb_videos++;
         vduration = dts;
     } else if (ht == SrsMp4HandlerTypeSOUN) {
-        ps->type = SrsFrameTypeAudio;
+        ps->type = SrsParsedPacketTypeAudio;
         ps->index = nb_audios++;
         aduration = dts;
     } else {
@@ -7616,11 +7617,11 @@ srs_error_t SrsMp4M2tsSegmentEncoder::write_sample(SrsMp4HandlerType ht,
     SrsMp4Sample *ps = new SrsMp4Sample();
 
     if (ht == SrsMp4HandlerTypeVIDE) {
-        ps->type = SrsFrameTypeVideo;
+        ps->type = SrsParsedPacketTypeVideo;
         ps->frame_type = (SrsVideoAvcFrameType)ft;
         ps->index = nb_videos++;
     } else if (ht == SrsMp4HandlerTypeSOUN) {
-        ps->type = SrsFrameTypeAudio;
+        ps->type = SrsParsedPacketTypeAudio;
         ps->index = nb_audios++;
     } else {
         srs_freep(ps);
@@ -7821,13 +7822,13 @@ srs_error_t SrsFmp4SegmentEncoder::write_sample(SrsMp4HandlerType ht, uint16_t f
     SrsMp4Sample *ps = new SrsMp4Sample();
 
     if (ht == SrsMp4HandlerTypeVIDE) {
-        ps->type = SrsFrameTypeVideo;
+        ps->type = SrsParsedPacketTypeVideo;
         ps->frame_type = (SrsVideoAvcFrameType)ft;
         ps->index = nb_videos_++;
         video_samples_->append(ps);
         mdat_video_bytes_ += nb_sample;
     } else if (ht == SrsMp4HandlerTypeSOUN) {
-        ps->type = SrsFrameTypeAudio;
+        ps->type = SrsParsedPacketTypeAudio;
         ps->index = nb_audios_++;
         audio_samples_->append(ps);
         mdat_audio_bytes_ += nb_sample;

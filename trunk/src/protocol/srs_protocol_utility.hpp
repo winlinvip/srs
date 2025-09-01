@@ -32,7 +32,7 @@
 class ISrsHttpMessage;
 
 class SrsMessageHeader;
-class SrsSharedPtrMessage;
+class SrsMediaPacket;
 class SrsCommonMessage;
 class ISrsProtocolReadWriter;
 class ISrsReader;

@@ -15,6 +15,7 @@
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_codec.hpp>
+#include <srs_kernel_packet.hpp>
 
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
 #ifndef _WIN32
@@ -26,7 +27,7 @@ class ISrsWriter;
 class ISrsReader;
 class SrsFileReader;
 class SrsPacket;
-class SrsSample;
+class SrsNaluSample;
 
 #define SRS_FLV_TAG_HEADER_SIZE 11
 #define SRS_FLV_PREVIOUS_TAG_SIZE 4
@@ -219,7 +220,7 @@ public:
     virtual srs_error_t create(SrsMessageHeader *pheader, char *body, int size);
 
     // Convert to shared ptr message.
-    void to_msg(SrsSharedPtrMessage *msg);
+    void to_msg(SrsMediaPacket *msg);
 };
 
 // Transmux RTMP packets to FLV stream.
@@ -257,7 +258,7 @@ public:
     virtual srs_error_t write_header(char flv_header[9]);
     // Write flv metadata.
     // @param type, the type of data, or other message type.
-    //       @see SrsFrameType
+    //       @see SrsParsedPacketType
     // @param data, the amf0 metadata which serialize from:
     //   AMF0 string: onMetaData,
     //   AMF0 object: the metadata object.
@@ -287,7 +288,7 @@ private:
 
 public:
     // Write the tags in a time.
-    virtual srs_error_t write_tags(SrsSharedPtrMessage **msgs, int count);
+    virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
 
 private:
     virtual void cache_metadata(char type, char *data, int size, char *cache);
@@ -364,7 +365,7 @@ public:
 };
 
 // Get the prefer cid for message type.
-extern int srs_rtmp_prefer_cid(SrsFrameType message_type);
+extern int srs_rtmp_prefer_cid(SrsParsedPacketType message_type);
 
 // Generate the RTMP chunk header for shared ptr message.
 // @param msg, the shared ptr message to generate header for.
@@ -372,7 +373,7 @@ extern int srs_rtmp_prefer_cid(SrsFrameType message_type);
 // @param nb_cache, the size of cache.
 // @param c0, whether to use c0 format (true) or c3 format (false).
 // @return the size of header. 0 if cache not enough.
-extern int srs_rtmp_write_chunk_header(SrsSharedPtrMessage *msg, char *cache, int nb_cache, bool c0);
+extern int srs_rtmp_write_chunk_header(SrsMediaPacket *msg, char *cache, int nb_cache, bool c0);
 
 // Generate the c0 chunk header for msg.
 // @param cache, the cache to write header.

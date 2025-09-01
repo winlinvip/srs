@@ -28,7 +28,7 @@ class SrsBuffer;
 class SrsAmf0Any;
 class SrsMessageHeader;
 class SrsChunkStream;
-class SrsSharedPtrMessage;
+class SrsMediaPacket;
 
 class SrsProtocol;
 class ISrsProtocolReader;
@@ -267,14 +267,14 @@ public:
     // For it will always free the msg.
     // @param msg, the msg to send out, never be NULL.
     // @param stream_id, the stream id of packet to send over, 0 for control message.
-    virtual srs_error_t send_and_free_message(SrsSharedPtrMessage *msg, int stream_id);
+    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg, int stream_id);
     // Send the RTMP message and always free it.
     // user must never free or use the msg after this method,
     // For it will always free the msg.
     // @param msgs, the msgs to send out, never be NULL.
     // @param nb_msgs, the size of msgs to send out.
     // @param stream_id, the stream id of packet to send over, 0 for control message.
-    virtual srs_error_t send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
     // Send the RTMP packet and always free it.
     // user must never free or use the packet after this method,
     // For it will always free the packet.
@@ -337,7 +337,7 @@ public:
 private:
     // Send out the messages, donot free it,
     // The caller must free the param msgs.
-    virtual srs_error_t do_send_messages(SrsSharedPtrMessage **msgs, int nb_msgs);
+    virtual srs_error_t do_send_messages(SrsMediaPacket **msgs, int nb_msgs);
     // Send iovs. send multiple times if exceed limits.
     virtual srs_error_t do_iovs_send(iovec *iovs, int size);
     // The underlayer api for send and free packet.
@@ -600,8 +600,8 @@ public:
     virtual int64_t get_send_bytes();
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
     virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
-    virtual srs_error_t send_and_free_message(SrsSharedPtrMessage *msg, int stream_id);
-    virtual srs_error_t send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg, int stream_id);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
     virtual srs_error_t send_and_free_packet(SrsPacket *packet, int stream_id);
 
 public:
@@ -718,7 +718,7 @@ public:
     // For it will always free the msg.
     // @param msg, the msg to send out, never be NULL.
     // @param stream_id, the stream id of packet to send over, 0 for control message.
-    virtual srs_error_t send_and_free_message(SrsSharedPtrMessage *msg, int stream_id);
+    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg, int stream_id);
     // Send the RTMP message and always free it.
     // user must never free or use the msg after this method,
     // For it will always free the msg.
@@ -727,7 +727,7 @@ public:
     // @param stream_id, the stream id of packet to send over, 0 for control message.
     //
     // @remark performance issue, to support 6k+ 250kbps client,
-    virtual srs_error_t send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
     // Send the RTMP packet and always free it.
     // user must never free or use the packet after this method,
     // For it will always free the packet.
@@ -1370,7 +1370,7 @@ protected:
 
 // AMF0Data RtmpSampleAccess
 // @remark, user must set the stream_id by SrsCommonMessage.set_packet().
-class SrsSampleAccessPacket : public SrsPacket
+class SrsNaluSampleAccessPacket : public SrsPacket
 {
 public:
     // Name of command. Set to "|RtmpSampleAccess".
@@ -1383,8 +1383,8 @@ public:
     bool audio_sample_access;
 
 public:
-    SrsSampleAccessPacket();
-    virtual ~SrsSampleAccessPacket();
+    SrsNaluSampleAccessPacket();
+    virtual ~SrsNaluSampleAccessPacket();
     // Encode functions for concrete packet to override.
 public:
     virtual int get_message_type();

@@ -105,7 +105,7 @@ public:
 
 public:
     // Write the tags in a time.
-    virtual srs_error_t write_tags(SrsSharedPtrMessage **msgs, int count);
+    virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
 
 private:
     virtual srs_error_t write_header(bool has_video, bool has_audio);
@@ -239,7 +239,7 @@ private:
     virtual srs_error_t do_serve_http(SrsLiveSource *source, SrsLiveConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
     virtual srs_error_t http_hooks_on_play(ISrsHttpMessage *r);
     virtual void http_hooks_on_stop(ISrsHttpMessage *r);
-    virtual srs_error_t streaming_send_messages(ISrsBufferEncoder *enc, SrsSharedPtrMessage **msgs, int nb_msgs);
+    virtual srs_error_t streaming_send_messages(ISrsBufferEncoder *enc, SrsMediaPacket **msgs, int nb_msgs);
 };
 
 // The Live Entry, to handle HTTP Live Streaming.

@@ -825,7 +825,7 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
         // we start to collect the durations for each message.
         if (user_specified_duration_to_stop) {
             for (int i = 0; i < count; i++) {
-                SrsSharedPtrMessage *msg = msgs.msgs[i];
+                SrsMediaPacket *msg = msgs.msgs[i];
 
                 // foreach msg, collect the duration.
                 // @remark: never use msg when sent it, for the protocol sdk will free it.
@@ -1063,13 +1063,13 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
 
 #if defined(SRS_FFMPEG_FIT)
     if (rtc.get() && _srs_config->get_rtc_from_rtmp(req->vhost)) {
-        bridge->append(new SrsFrameToRtcBridge(rtc));
+        bridge->append(new SrsParsedPacketToRtcBridge(rtc));
     }
 #endif
 
 #ifdef SRS_RTSP
     if (rtsp.get() && _srs_config->get_rtsp_from_rtmp(req->vhost)) {
-        bridge->append(new SrsFrameToRtspBridge(rtsp));
+        bridge->append(new SrsParsedPacketToRtspBridge(rtsp));
     }
 #endif
 

@@ -2465,8 +2465,8 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
         EXPECT_FALSE(jitter.is_initialized());
 
         // Delta should be 0 for uninitialized jitter
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeVideo));
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeAudio));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeVideo));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeAudio));
     }
 
     // Test audio first scenario
@@ -2475,12 +2475,12 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create audio sample that arrives first
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
+        audio_sample.type = SrsParsedPacketTypeAudio;
         audio_sample.dts = 1000; // Audio starts at 1000us
 
         // Create video sample that arrives later
         SrsMp4Sample video_sample;
-        video_sample.type = SrsFrameTypeVideo;
+        video_sample.type = SrsParsedPacketTypeVideo;
         video_sample.dts = 2000; // Video starts at 2000us
 
         // Process samples
@@ -2491,10 +2491,10 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
         EXPECT_TRUE(jitter.is_initialized());
 
         // Video should have delta = video_start - audio_start = 2000 - 1000 = 1000
-        EXPECT_EQ(1000, jitter.get_first_sample_delta(SrsFrameTypeVideo));
+        EXPECT_EQ(1000, jitter.get_first_sample_delta(SrsParsedPacketTypeVideo));
 
         // Audio should have delta = 0 (since audio started first)
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeAudio));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeAudio));
     }
 
     // Test video first scenario
@@ -2503,12 +2503,12 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create video sample that arrives first
         SrsMp4Sample video_sample;
-        video_sample.type = SrsFrameTypeVideo;
+        video_sample.type = SrsParsedPacketTypeVideo;
         video_sample.dts = 500; // Video starts at 500us
 
         // Create audio sample that arrives later
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
+        audio_sample.type = SrsParsedPacketTypeAudio;
         audio_sample.dts = 1500; // Audio starts at 1500us
 
         // Process samples
@@ -2519,10 +2519,10 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
         EXPECT_TRUE(jitter.is_initialized());
 
         // Audio should have delta = audio_start - video_start = 1500 - 500 = 1000
-        EXPECT_EQ(1000, jitter.get_first_sample_delta(SrsFrameTypeAudio));
+        EXPECT_EQ(1000, jitter.get_first_sample_delta(SrsParsedPacketTypeAudio));
 
         // Video should have delta = 0 (since video started first)
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeVideo));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeVideo));
     }
 
     // Test same start time scenario
@@ -2531,11 +2531,11 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create samples with same start time
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
+        audio_sample.type = SrsParsedPacketTypeAudio;
         audio_sample.dts = 1000;
 
         SrsMp4Sample video_sample;
-        video_sample.type = SrsFrameTypeVideo;
+        video_sample.type = SrsParsedPacketTypeVideo;
         video_sample.dts = 1000;
 
         // Process samples
@@ -2546,8 +2546,8 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
         EXPECT_TRUE(jitter.is_initialized());
 
         // Both should have delta = 0 (same start time)
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeVideo));
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeAudio));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeVideo));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeAudio));
     }
 
     // Test reset functionality
@@ -2556,7 +2556,7 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Initialize with samples
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
+        audio_sample.type = SrsParsedPacketTypeAudio;
         audio_sample.dts = 1000;
 
         jitter.on_sample(&audio_sample);
@@ -2564,8 +2564,8 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
         // Reset and verify
         jitter.reset();
         EXPECT_FALSE(jitter.is_initialized());
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeVideo));
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeAudio));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeVideo));
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeAudio));
     }
 
     // Test multiple samples of same type (should only record first)
@@ -2574,15 +2574,15 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create multiple audio samples
         SrsMp4Sample audio1;
-        audio1.type = SrsFrameTypeAudio;
+        audio1.type = SrsParsedPacketTypeAudio;
         audio1.dts = 1000;
 
         SrsMp4Sample audio2;
-        audio2.type = SrsFrameTypeAudio;
+        audio2.type = SrsParsedPacketTypeAudio;
         audio2.dts = 2000; // This should be ignored
 
         SrsMp4Sample video1;
-        video1.type = SrsFrameTypeVideo;
+        video1.type = SrsParsedPacketTypeVideo;
         video1.dts = 1500;
 
         // Process samples
@@ -2591,7 +2591,7 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
         jitter.on_sample(&video1);
 
         // Should use first audio sample (1000) not second (2000)
-        EXPECT_EQ(500, jitter.get_first_sample_delta(SrsFrameTypeVideo)); // 1500 - 1000 = 500
-        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsFrameTypeAudio));
+        EXPECT_EQ(500, jitter.get_first_sample_delta(SrsParsedPacketTypeVideo)); // 1500 - 1000 = 500
+        EXPECT_EQ(0, jitter.get_first_sample_delta(SrsParsedPacketTypeAudio));
     }
 }

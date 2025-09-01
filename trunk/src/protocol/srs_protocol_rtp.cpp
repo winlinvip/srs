@@ -36,7 +36,7 @@ srs_error_t SrsRtpVideoBuilder::initialize(SrsFormat *format, uint32_t ssrc, uin
     return srs_success;
 }
 
-srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsSharedPtrMessage *msg, SrsRtpPacket *pkt)
+srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsMediaPacket *msg, SrsRtpPacket *pkt)
 {
     srs_error_t err = srs_success;
 
@@ -47,7 +47,7 @@ srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsSharedPtrMessage *msg, SrsRtpP
 
     pkt->header.set_payload_type(video_payload_type_);
     pkt->header.set_ssrc(video_ssrc_);
-    pkt->frame_type = SrsFrameTypeVideo;
+    pkt->frame_type = SrsParsedPacketTypeVideo;
     pkt->header.set_marker(false);
     pkt->header.set_sequence(video_sequence_++);
     pkt->header.set_timestamp(msg->timestamp * 90);
@@ -86,7 +86,7 @@ srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsSharedPtrMessage *msg, SrsRtpP
 
     for (vector<vector<char> *>::iterator it = params.begin(); it != params.end(); ++it) {
         vector<char> *param = *it;
-        SrsSample *sample = new SrsSample();
+        SrsNaluSample *sample = new SrsNaluSample();
         sample->bytes = payload;
         sample->size = param->size();
         if (format->vcodec->id == SrsVideoCodecIdHEVC) {
@@ -102,7 +102,7 @@ srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsSharedPtrMessage *msg, SrsRtpP
     return err;
 }
 
-srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const vector<SrsSample *> &samples, vector<SrsRtpPacket *> &pkts)
+srs_error_t SrsRtpVideoBuilder::package_nalus(SrsMediaPacket *msg, const vector<SrsNaluSample *> &samples, vector<SrsRtpPacket *> &pkts)
 {
     srs_error_t err = srs_success;
 
@@ -116,7 +116,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const ve
     uint8_t first_nalu_type = 0;
 
     for (int i = 0; i < (int)samples.size(); i++) {
-        SrsSample *sample = samples[i];
+        SrsNaluSample *sample = samples[i];
 
         if (!sample->size) {
             continue;
@@ -143,7 +143,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const ve
 
         pkt->header.set_payload_type(video_payload_type_);
         pkt->header.set_ssrc(video_ssrc_);
-        pkt->frame_type = SrsFrameTypeVideo;
+        pkt->frame_type = SrsParsedPacketTypeVideo;
         pkt->nalu_type = first_nalu_type;
         pkt->header.set_sequence(video_sequence_++);
         pkt->header.set_timestamp(msg->timestamp * 90);
@@ -173,7 +173,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const ve
 
             pkt->header.set_payload_type(video_payload_type_);
             pkt->header.set_ssrc(video_ssrc_);
-            pkt->frame_type = SrsFrameTypeVideo;
+            pkt->frame_type = SrsParsedPacketTypeVideo;
             pkt->nalu_type = kFuA;
             pkt->header.set_sequence(video_sequence_++);
             pkt->header.set_timestamp(msg->timestamp * 90);
@@ -212,7 +212,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const ve
 }
 
 // Single NAL Unit Packet @see https://tools.ietf.org/html/rfc6184#section-5.6
-srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsSharedPtrMessage *msg, SrsSample *sample, vector<SrsRtpPacket *> &pkts)
+srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsMediaPacket *msg, SrsNaluSample *sample, vector<SrsRtpPacket *> &pkts)
 {
     srs_error_t err = srs_success;
 
@@ -221,7 +221,7 @@ srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsSharedPtrMessage *msg, Sr
 
     pkt->header.set_payload_type(video_payload_type_);
     pkt->header.set_ssrc(video_ssrc_);
-    pkt->frame_type = SrsFrameTypeVideo;
+    pkt->frame_type = SrsParsedPacketTypeVideo;
     pkt->header.set_sequence(video_sequence_++);
     pkt->header.set_timestamp(msg->timestamp * 90);
 
@@ -236,7 +236,7 @@ srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsSharedPtrMessage *msg, Sr
     return err;
 }
 
-srs_error_t SrsRtpVideoBuilder::package_fu_a(SrsSharedPtrMessage *msg, SrsSample *sample, int fu_payload_size, vector<SrsRtpPacket *> &pkts)
+srs_error_t SrsRtpVideoBuilder::package_fu_a(SrsMediaPacket *msg, SrsNaluSample *sample, int fu_payload_size, vector<SrsRtpPacket *> &pkts)
 {
     srs_error_t err = srs_success;
 
@@ -262,7 +262,7 @@ srs_error_t SrsRtpVideoBuilder::package_fu_a(SrsSharedPtrMessage *msg, SrsSample
 
         pkt->header.set_payload_type(video_payload_type_);
         pkt->header.set_ssrc(video_ssrc_);
-        pkt->frame_type = SrsFrameTypeVideo;
+        pkt->frame_type = SrsParsedPacketTypeVideo;
         pkt->header.set_sequence(video_sequence_++);
         pkt->header.set_timestamp(msg->timestamp * 90);
         pkt->nalu_type = is_hevc ? kFuHevc : kFuA;

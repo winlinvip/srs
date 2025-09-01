@@ -12,6 +12,7 @@
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_codec.hpp>
+#include <srs_kernel_packet.hpp>
 
 #include <list>
 #include <string>
@@ -342,7 +343,7 @@ public:
     // The first byte as nalu type, for video decoder only.
     uint8_t nalu_type;
     // The frame type, for RTMP bridge or SFU source.
-    SrsFrameType frame_type;
+    SrsParsedPacketType frame_type;
     // Fast cache for performance.
 private:
     // The cached payload size for packet.
@@ -411,7 +412,7 @@ public:
 
 public:
     // Use the whole RAW RTP payload as a sample.
-    SrsSample *sample_;
+    SrsNaluSample *sample_;
 
 public:
     SrsRtpRawPayload();
@@ -429,7 +430,7 @@ class SrsRtpRawNALUs : public ISrsRtpPayloader
 {
 private:
     // We will manage the samples, but the sample itself point to the shared memory.
-    std::vector<SrsSample *> nalus;
+    std::vector<SrsNaluSample *> nalus;
     int nn_bytes;
     int cursor;
 
@@ -438,12 +439,12 @@ public:
     virtual ~SrsRtpRawNALUs();
 
 public:
-    void push_back(SrsSample *sample);
+    void push_back(SrsNaluSample *sample);
 
 public:
     uint8_t skip_bytes(int count);
     // We will manage the returned samples, if user want to manage it, please copy it.
-    srs_error_t read_samples(std::vector<SrsSample *> &samples, int packet_size);
+    srs_error_t read_samples(std::vector<SrsNaluSample *> &samples, int packet_size);
     // interface ISrsRtpPayloader
 public:
     virtual uint64_t nb_bytes();
@@ -460,15 +461,15 @@ public:
     SrsAvcNaluType nri;
     // The NALU samples, we will manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsSample *> nalus;
+    std::vector<SrsNaluSample *> nalus;
 
 public:
     SrsRtpSTAPPayload();
     virtual ~SrsRtpSTAPPayload();
 
 public:
-    SrsSample *get_sps();
-    SrsSample *get_pps();
+    SrsNaluSample *get_sps();
+    SrsNaluSample *get_pps();
     // interface ISrsRtpPayloader
 public:
     virtual uint64_t nb_bytes();
@@ -490,7 +491,7 @@ public:
     SrsAvcNaluType nalu_type;
     // The NALU samples, we manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsSample *> nalus;
+    std::vector<SrsNaluSample *> nalus;
 
 public:
     SrsRtpFUAPayload();
@@ -534,16 +535,16 @@ class SrsRtpSTAPPayloadHevc : public ISrsRtpPayloader
 public:
     // The NALU samples, we will manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsSample *> nalus;
+    std::vector<SrsNaluSample *> nalus;
 
 public:
     SrsRtpSTAPPayloadHevc();
     virtual ~SrsRtpSTAPPayloadHevc();
 
 public:
-    SrsSample *get_vps();
-    SrsSample *get_sps();
-    SrsSample *get_pps();
+    SrsNaluSample *get_vps();
+    SrsNaluSample *get_sps();
+    SrsNaluSample *get_pps();
     // interface ISrsRtpPayloader
 public:
     virtual uint64_t nb_bytes();
@@ -563,7 +564,7 @@ public:
     SrsHevcNaluType nalu_type;
     // The NALU samples, we manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsSample *> nalus;
+    std::vector<SrsNaluSample *> nalus;
 
 public:
     SrsRtpFUAPayloadHevc();

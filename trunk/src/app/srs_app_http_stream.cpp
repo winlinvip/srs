@@ -188,7 +188,7 @@ srs_error_t SrsBufferCache::cycle()
 
         // free the messages.
         for (int i = 0; i < count; i++) {
-            SrsSharedPtrMessage *msg = msgs.msgs[i];
+            SrsMediaPacket *msg = msgs.msgs[i];
             queue->enqueue(msg);
         }
     }
@@ -334,7 +334,7 @@ srs_error_t SrsFlvStreamEncoder::write_metadata(int64_t timestamp, char *data, i
         return srs_error_wrap(err, "write header");
     }
 
-    return enc->write_metadata(SrsFrameTypeScript, data, size);
+    return enc->write_metadata(SrsParsedPacketTypeScript, data, size);
 }
 
 void SrsFlvStreamEncoder::set_drop_if_not_match(bool v)
@@ -369,7 +369,7 @@ srs_error_t SrsFlvStreamEncoder::dump_cache(SrsLiveConsumer * /*consumer*/, SrsR
     return srs_success;
 }
 
-srs_error_t SrsFlvStreamEncoder::write_tags(SrsSharedPtrMessage **msgs, int count)
+srs_error_t SrsFlvStreamEncoder::write_tags(SrsMediaPacket **msgs, int count)
 {
     srs_error_t err = srs_success;
 
@@ -390,7 +390,7 @@ srs_error_t SrsFlvStreamEncoder::write_tags(SrsSharedPtrMessage **msgs, int coun
 
             // Note that we must iterate all messages to count the audio and video frames.
             for (int i = 0; i < count; i++) {
-                SrsSharedPtrMessage *msg = msgs[i];
+                SrsMediaPacket *msg = msgs[i];
                 if (msg->is_video()) {
                     if (!SrsFlvVideo::sh(msg->payload(), msg->size()))
                         nn_video_frames++;
@@ -862,7 +862,7 @@ srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer 
 
         // free the messages.
         for (int i = 0; i < count; i++) {
-            SrsSharedPtrMessage *msg = msgs.msgs[i];
+            SrsMediaPacket *msg = msgs.msgs[i];
             srs_freep(msg);
         }
 
@@ -948,14 +948,14 @@ void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
     return;
 }
 
-srs_error_t SrsLiveStream::streaming_send_messages(ISrsBufferEncoder *enc, SrsSharedPtrMessage **msgs, int nb_msgs)
+srs_error_t SrsLiveStream::streaming_send_messages(ISrsBufferEncoder *enc, SrsMediaPacket **msgs, int nb_msgs)
 {
     srs_error_t err = srs_success;
 
     // TODO: In gop cache, we know both the audio and video codec, so we should notice the encoder, which might depends
     // on setting the correct codec information, for example, HTTP-TS or HLS will write PMT.
     for (int i = 0; i < nb_msgs; i++) {
-        SrsSharedPtrMessage *msg = msgs[i];
+        SrsMediaPacket *msg = msgs[i];
 
         if (msg->is_audio()) {
             err = enc->write_audio(msg->timestamp, msg->payload(), msg->size());

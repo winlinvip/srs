@@ -416,11 +416,11 @@ srs_error_t SrsMpegtsSrtConn::acquire_publish()
     if (_srs_config->get_srt_to_rtmp(req_->vhost)) {
         // Bridge to RTMP and RTC streaming.
         SrsCompositeBridge *bridge = new SrsCompositeBridge();
-        bridge->append(new SrsFrameToRtmpBridge(live_source));
+        bridge->append(new SrsParsedPacketToRtmpBridge(live_source));
 
 #if defined(SRS_FFMPEG_FIT)
         if (rtc.get() && _srs_config->get_rtc_from_rtmp(req_->vhost)) {
-            bridge->append(new SrsFrameToRtcBridge(rtc));
+            bridge->append(new SrsParsedPacketToRtcBridge(rtc));
         }
 #endif
 

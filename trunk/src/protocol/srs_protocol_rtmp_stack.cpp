@@ -376,7 +376,7 @@ srs_error_t SrsProtocol::decode_message(SrsCommonMessage *msg, SrsPacket **ppack
     return err;
 }
 
-srs_error_t SrsProtocol::do_send_messages(SrsSharedPtrMessage **msgs, int nb_msgs)
+srs_error_t SrsProtocol::do_send_messages(SrsMediaPacket **msgs, int nb_msgs)
 {
     srs_error_t err = srs_success;
 
@@ -390,7 +390,7 @@ srs_error_t SrsProtocol::do_send_messages(SrsSharedPtrMessage **msgs, int nb_msg
     // try to send use the c0c3 header cache,
     // if cache is consumed, try another loop.
     for (int i = 0; i < nb_msgs; i++) {
-        SrsSharedPtrMessage *msg = msgs[i];
+        SrsMediaPacket *msg = msgs[i];
 
         if (!msg) {
             continue;
@@ -488,7 +488,7 @@ srs_error_t SrsProtocol::do_send_messages(SrsSharedPtrMessage **msgs, int nb_msg
     // try to send use the c0c3 header cache,
     // if cache is consumed, try another loop.
     for (int i = 0; i < nb_msgs; i++) {
-        SrsSharedPtrMessage *msg = msgs[i];
+        SrsMediaPacket *msg = msgs[i];
 
         if (!msg) {
             continue;
@@ -554,7 +554,7 @@ srs_error_t SrsProtocol::do_send_and_free_packet(SrsPacket *packet_raw, int stre
         return srs_error_wrap(err, "to message");
     }
 
-    SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+    SrsMediaPacket *shared_msg = new SrsMediaPacket();
     msg->to_msg(shared_msg);
 
     if ((err = send_and_free_message(shared_msg, stream_id)) != srs_success) {
@@ -702,12 +702,12 @@ srs_error_t SrsProtocol::do_decode_message(SrsMessageHeader &header, SrsBuffer *
     return err;
 }
 
-srs_error_t SrsProtocol::send_and_free_message(SrsSharedPtrMessage *msg, int stream_id)
+srs_error_t SrsProtocol::send_and_free_message(SrsMediaPacket *msg, int stream_id)
 {
     return send_and_free_messages(&msg, 1, stream_id);
 }
 
-srs_error_t SrsProtocol::send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs, int stream_id)
+srs_error_t SrsProtocol::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
 {
     // always not NULL msg.
     srs_assert(msgs);
@@ -715,7 +715,7 @@ srs_error_t SrsProtocol::send_and_free_messages(SrsSharedPtrMessage **msgs, int 
 
     // update the stream id in header.
     for (int i = 0; i < nb_msgs; i++) {
-        SrsSharedPtrMessage *msg = msgs[i];
+        SrsMediaPacket *msg = msgs[i];
 
         if (!msg) {
             continue;
@@ -733,7 +733,7 @@ srs_error_t SrsProtocol::send_and_free_messages(SrsSharedPtrMessage **msgs, int 
     srs_error_t err = do_send_messages(msgs, nb_msgs);
 
     for (int i = 0; i < nb_msgs; i++) {
-        SrsSharedPtrMessage *msg = msgs[i];
+        SrsMediaPacket *msg = msgs[i];
         srs_freep(msg);
     }
 
@@ -1820,12 +1820,12 @@ srs_error_t SrsRtmpClient::decode_message(SrsCommonMessage *msg, SrsPacket **ppa
     return protocol->decode_message(msg, ppacket);
 }
 
-srs_error_t SrsRtmpClient::send_and_free_message(SrsSharedPtrMessage *msg, int stream_id)
+srs_error_t SrsRtmpClient::send_and_free_message(SrsMediaPacket *msg, int stream_id)
 {
     return protocol->send_and_free_message(msg, stream_id);
 }
 
-srs_error_t SrsRtmpClient::send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs, int stream_id)
+srs_error_t SrsRtmpClient::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
 {
     return protocol->send_and_free_messages(msgs, nb_msgs, stream_id);
 }
@@ -2221,12 +2221,12 @@ srs_error_t SrsRtmpServer::decode_message(SrsCommonMessage *msg, SrsPacket **ppa
     return protocol->decode_message(msg, ppacket);
 }
 
-srs_error_t SrsRtmpServer::send_and_free_message(SrsSharedPtrMessage *msg, int stream_id)
+srs_error_t SrsRtmpServer::send_and_free_message(SrsMediaPacket *msg, int stream_id)
 {
     return protocol->send_and_free_message(msg, stream_id);
 }
 
-srs_error_t SrsRtmpServer::send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs, int stream_id)
+srs_error_t SrsRtmpServer::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
 {
     return protocol->send_and_free_messages(msgs, nb_msgs, stream_id);
 }
@@ -2582,7 +2582,7 @@ srs_error_t SrsRtmpServer::start_play(int stream_id)
 
     // |RtmpSampleAccess(false, false)
     if (true) {
-        SrsSampleAccessPacket *pkt = new SrsSampleAccessPacket();
+        SrsNaluSampleAccessPacket *pkt = new SrsNaluSampleAccessPacket();
 
         // allow audio/video sample.
         // @see: https://github.com/ossrs/srs/issues/49
@@ -4132,28 +4132,28 @@ srs_error_t SrsOnStatusDataPacket::encode_packet(SrsBuffer *stream)
     return err;
 }
 
-SrsSampleAccessPacket::SrsSampleAccessPacket()
+SrsNaluSampleAccessPacket::SrsNaluSampleAccessPacket()
 {
     command_name = RTMP_AMF0_DATA_SAMPLE_ACCESS;
     video_sample_access = false;
     audio_sample_access = false;
 }
 
-SrsSampleAccessPacket::~SrsSampleAccessPacket()
+SrsNaluSampleAccessPacket::~SrsNaluSampleAccessPacket()
 {
 }
 
-int SrsSampleAccessPacket::get_message_type()
+int SrsNaluSampleAccessPacket::get_message_type()
 {
     return RTMP_MSG_AMF0DataMessage;
 }
 
-int SrsSampleAccessPacket::get_size()
+int SrsNaluSampleAccessPacket::get_size()
 {
     return SrsAmf0Size::str(command_name) + SrsAmf0Size::boolean() + SrsAmf0Size::boolean();
 }
 
-srs_error_t SrsSampleAccessPacket::encode_packet(SrsBuffer *stream)
+srs_error_t SrsNaluSampleAccessPacket::encode_packet(SrsBuffer *stream)
 {
     srs_error_t err = srs_success;
 

@@ -15,7 +15,7 @@ class ISrsRequest;
 class SrsTcpClient;
 class SrsRtmpClient;
 class SrsCommonMessage;
-class SrsSharedPtrMessage;
+class SrsMediaPacket;
 class SrsPacket;
 class SrsNetworkKbps;
 class SrsWallClock;
@@ -76,8 +76,8 @@ public:
 public:
     virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
     virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsPacket **ppacket);
-    virtual srs_error_t send_and_free_messages(SrsSharedPtrMessage **msgs, int nb_msgs);
-    virtual srs_error_t send_and_free_message(SrsSharedPtrMessage *msg);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs);
+    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg);
 
 public:
     virtual void set_recv_timeout(srs_utime_t timeout);

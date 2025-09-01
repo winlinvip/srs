@@ -1216,7 +1216,7 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
         live_source->set_cache(false);
 
         SrsCompositeBridge *bridge = new SrsCompositeBridge();
-        bridge->append(new SrsFrameToRtmpBridge(live_source));
+        bridge->append(new SrsParsedPacketToRtmpBridge(live_source));
 
         if ((err = bridge->initialize(r)) != srs_success) {
             srs_freep(bridge);
@@ -1423,12 +1423,12 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
     SrsRtcAudioRecvTrack *audio_track = get_audio_track(ssrc);
     SrsRtcVideoRecvTrack *video_track = get_video_track(ssrc);
     if (audio_track) {
-        pkt->frame_type = SrsFrameTypeAudio;
+        pkt->frame_type = SrsParsedPacketTypeAudio;
         if ((err = audio_track->on_rtp(source_, pkt)) != srs_success) {
             return srs_error_wrap(err, "on audio");
         }
     } else if (video_track) {
-        pkt->frame_type = SrsFrameTypeVideo;
+        pkt->frame_type = SrsParsedPacketTypeVideo;
         if ((err = video_track->on_rtp(source_, pkt)) != srs_success) {
             return srs_error_wrap(err, "on video");
         }

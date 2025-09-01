@@ -250,11 +250,11 @@ VOID TEST(ProtocolRTMPTest, SendPacketsError)
         pkt.header.initialize_audio(200, 1000, 1);
         pkt.create_payload(256);
 
-        SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+        SrsMediaPacket *msg = new SrsMediaPacket();
         pkt.to_msg(msg);
-        SrsUniquePtr<SrsSharedPtrMessage> msg_uptr(msg);
+        SrsUniquePtr<SrsMediaPacket> msg_uptr(msg);
 
-        SrsSharedPtrMessage *msgs[10240];
+        SrsMediaPacket *msgs[10240];
         for (int i = 0; i < 10240; i++) {
             msgs[i] = msg->copy();
         }
@@ -319,16 +319,16 @@ VOID TEST(ProtocolRTMPTest, SendZeroMessages)
     if (true) {
         MockBufferIO io;
         SrsProtocol p(&io);
-        SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+        SrsMediaPacket *msg = new SrsMediaPacket();
         HELPER_EXPECT_SUCCESS(p.send_and_free_message(msg, 1));
     }
 
     if (true) {
         MockBufferIO io;
         SrsProtocol p(&io);
-        SrsSharedPtrMessage *msgs[1024];
+        SrsMediaPacket *msgs[1024];
         for (int i = 0; i < 1024; i++) {
-            msgs[i] = new SrsSharedPtrMessage();
+            msgs[i] = new SrsMediaPacket();
         }
         HELPER_EXPECT_SUCCESS(p.send_and_free_messages(msgs, 1024, 0));
     }
@@ -345,7 +345,7 @@ VOID TEST(ProtocolRTMPTest, HugeMessages)
         pkt.header.initialize_audio(200, 1000, 1);
         pkt.create_payload(256);
 
-        SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+        SrsMediaPacket *msg = new SrsMediaPacket();
         pkt.to_msg(msg);
 
         HELPER_EXPECT_SUCCESS(p.send_and_free_message(msg, 1));
@@ -360,11 +360,11 @@ VOID TEST(ProtocolRTMPTest, HugeMessages)
         pkt.header.initialize_audio(200, 1000, 1);
         pkt.create_payload(256);
 
-        SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+        SrsMediaPacket *msg = new SrsMediaPacket();
         pkt.to_msg(msg);
-        SrsUniquePtr<SrsSharedPtrMessage> msg_uptr(msg);
+        SrsUniquePtr<SrsMediaPacket> msg_uptr(msg);
 
-        SrsSharedPtrMessage *msgs[1024];
+        SrsMediaPacket *msgs[1024];
         for (int i = 0; i < 1024; i++) {
             msgs[i] = msg->copy();
         }
@@ -381,11 +381,11 @@ VOID TEST(ProtocolRTMPTest, HugeMessages)
         pkt.header.initialize_audio(200, 1000, 1);
         pkt.create_payload(256);
 
-        SrsSharedPtrMessage *msg = new SrsSharedPtrMessage();
+        SrsMediaPacket *msg = new SrsMediaPacket();
         pkt.to_msg(msg);
-        SrsUniquePtr<SrsSharedPtrMessage> msg_uptr(msg);
+        SrsUniquePtr<SrsMediaPacket> msg_uptr(msg);
 
-        SrsSharedPtrMessage *msgs[10240];
+        SrsMediaPacket *msgs[10240];
         for (int i = 0; i < 10240; i++) {
             msgs[i] = msg->copy();
         }
@@ -2726,7 +2726,7 @@ VOID TEST(ProtocolRTMPTest, AgentMessageCodec)
     }
 }
 
-srs_error_t _mock_packet_to_shared_msg(SrsPacket *packet, int stream_id, SrsSharedPtrMessage *shared_msg)
+srs_error_t _mock_packet_to_shared_msg(SrsPacket *packet, int stream_id, SrsMediaPacket *shared_msg)
 {
     srs_error_t err = srs_success;
 
@@ -2752,18 +2752,18 @@ VOID TEST(ProtocolRTMPTest, CheckStreamID)
         SrsRtmpClient p(&io);
 
         if (true) {
-            SrsSharedPtrMessage *shared_msgs[2];
+            SrsMediaPacket *shared_msgs[2];
             SrsConnectAppPacket *res = new SrsConnectAppPacket();
             SrsUniquePtr<SrsConnectAppPacket> res_uptr(res);
 
             if (true) {
-                SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+                SrsMediaPacket *shared_msg = new SrsMediaPacket();
                 HELPER_ASSERT_SUCCESS(_mock_packet_to_shared_msg(res, 1, shared_msg));
                 shared_msgs[0] = shared_msg;
             }
 
             if (true) {
-                SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+                SrsMediaPacket *shared_msg = new SrsMediaPacket();
                 HELPER_ASSERT_SUCCESS(_mock_packet_to_shared_msg(res, 2, shared_msg));
                 shared_msgs[1] = shared_msg;
             }
@@ -2797,7 +2797,7 @@ VOID TEST(ProtocolRTMPTest, AgentMessageTransform)
         SrsRtmpClient p(&io);
 
         if (true) {
-            SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+            SrsMediaPacket *shared_msg = new SrsMediaPacket();
             SrsConnectAppPacket *res = new SrsConnectAppPacket();
             HELPER_ASSERT_SUCCESS(_mock_packet_to_shared_msg(res, 1, shared_msg));
             srs_freep(res);
@@ -2818,7 +2818,7 @@ VOID TEST(ProtocolRTMPTest, AgentMessageTransform)
         SrsRtmpClient p(&io);
 
         if (true) {
-            SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+            SrsMediaPacket *shared_msg = new SrsMediaPacket();
             SrsConnectAppPacket *res = new SrsConnectAppPacket();
             HELPER_ASSERT_SUCCESS(_mock_packet_to_shared_msg(res, 1, shared_msg));
             srs_freep(res);
@@ -2839,7 +2839,7 @@ VOID TEST(ProtocolRTMPTest, AgentMessageTransform)
         SrsRtmpServer p(&io);
 
         if (true) {
-            SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+            SrsMediaPacket *shared_msg = new SrsMediaPacket();
             SrsConnectAppPacket *res = new SrsConnectAppPacket();
             HELPER_ASSERT_SUCCESS(_mock_packet_to_shared_msg(res, 1, shared_msg));
             srs_freep(res);
@@ -2860,7 +2860,7 @@ VOID TEST(ProtocolRTMPTest, AgentMessageTransform)
         SrsRtmpServer p(&io);
 
         if (true) {
-            SrsSharedPtrMessage *shared_msg = new SrsSharedPtrMessage();
+            SrsMediaPacket *shared_msg = new SrsMediaPacket();
             SrsConnectAppPacket *res = new SrsConnectAppPacket();
             HELPER_ASSERT_SUCCESS(_mock_packet_to_shared_msg(res, 1, shared_msg));
             srs_freep(res);
@@ -2927,19 +2927,19 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
     // Invalid message type.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsFrameTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsParsedPacketTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_TRUE(NULL == msg);
     }
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsFrameTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_FAILED(srs_rtmp_create_msg(SrsParsedPacketTypeForbidden, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_TRUE(NULL == msg);
     }
 
     // Normal script message.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeScript, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeScript, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
@@ -2947,7 +2947,7 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
     // Normal video message.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeVideo, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeVideo, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
@@ -2955,13 +2955,13 @@ VOID TEST(ProtocolRTMPTest, CreateRTMPMessage)
     // Normal audio message.
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
     if (true) {
         SrsCommonMessage *msg = NULL;
-        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsFrameTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
+        HELPER_EXPECT_SUCCESS(srs_rtmp_create_msg(SrsParsedPacketTypeAudio, 0, _strcpy("Hello"), 5, 0, &msg));
         EXPECT_STREQ("Hello", msg->payload());
         srs_freep(msg);
     }
@@ -3043,8 +3043,8 @@ VOID TEST(ProtocolRTMPTest, OthersAll)
         SrsMessageArray *parr = &h;
         SrsUniquePtr<SrsMessageArray> parr2(parr, srs_utest_free_message_array);
 
-        h.msgs[0] = new SrsSharedPtrMessage();
-        h.msgs[1] = new SrsSharedPtrMessage();
+        h.msgs[0] = new SrsMediaPacket();
+        h.msgs[1] = new SrsMediaPacket();
         EXPECT_TRUE(NULL != h.msgs[0]);
         EXPECT_TRUE(NULL != h.msgs[1]);
 

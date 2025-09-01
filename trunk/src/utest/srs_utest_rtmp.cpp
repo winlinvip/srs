@@ -3155,6 +3155,28 @@ VOID TEST(ProtocolRTMPTest, ConvertLegacyRtmpUrl)
         string result_url = srs_net_url_convert_legacy_rtmp_url(url_no_slash);
         EXPECT_STREQ("rtmp://127.0.0.1:1935/live?vhost=demo.com", result_url.c_str());
     }
+
+    // Test special case: malformed URL with stream appended after fragments
+    // This happens when URL building process appends stream to URLs that already have fragments
+    if (true) {
+        string malformed_url = "rtmp://std.ossrs.net/live#b=2/livestream";
+        string fixed_url = srs_net_url_convert_legacy_rtmp_url(malformed_url);
+        EXPECT_STREQ("rtmp://std.ossrs.net/live#b=2/livestream", fixed_url.c_str());
+    }
+
+    // Test special case: malformed URL with query and fragment, stream appended after
+    if (true) {
+        string malformed_url = "rtmp://host.com/app?a=1#b=2/stream";
+        string fixed_url = srs_net_url_convert_legacy_rtmp_url(malformed_url);
+        EXPECT_STREQ("rtmp://host.com/app/stream?a=1#b=2", fixed_url.c_str());
+    }
+
+    // Test special case: malformed URL with complex fragments, stream appended after
+    if (true) {
+        string malformed_url = "rtmp://test.com/live?vhost=demo&token=abc#fragment1#fragment2/mystream";
+        string fixed_url = srs_net_url_convert_legacy_rtmp_url(malformed_url);
+        EXPECT_STREQ("rtmp://test.com/live/mystream?vhost=demo&token=abc#fragment1#fragment2", fixed_url.c_str());
+    }
 }
 
 VOID TEST(ProtocolRTMPTest, GenerateURL)

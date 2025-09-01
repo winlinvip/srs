@@ -60,7 +60,6 @@ class SrsPidFileLocker;
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
 
-// SRS RTMP server, initialize and listen, start connection service thread, destroy client.
 class SrsServer : public ISrsReloadHandler, // Reload framework for permormance optimization.
                   public ISrsLiveSourceHandler,
                   public ISrsTcpHandler,

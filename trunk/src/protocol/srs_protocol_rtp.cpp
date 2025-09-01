@@ -148,7 +148,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const ve
         pkt->header.set_sequence(video_sequence_++);
         pkt->header.set_timestamp(msg->timestamp * 90);
         pkt->set_payload(raw_raw, SrsRtpPacketPayloadTypeNALU);
-        pkt->wrap(msg);
+        pkt->wrap(msg->payload_);
     } else {
         // We must free it, should never use RTP packets to free it,
         // because more than one RTP packet will refer to it.
@@ -202,7 +202,7 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsSharedPtrMessage *msg, const ve
                 pkt->set_payload(fua, SrsRtpPacketPayloadTypeFUA);
             }
 
-            pkt->wrap(msg);
+            pkt->wrap(msg->payload_);
 
             nb_left -= packet_size;
         }
@@ -231,7 +231,7 @@ srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsSharedPtrMessage *msg, Sr
     raw->payload = sample->bytes;
     raw->nn_payload = sample->size;
 
-    pkt->wrap(msg);
+    pkt->wrap(msg->payload_);
 
     return err;
 }
@@ -292,7 +292,7 @@ srs_error_t SrsRtpVideoBuilder::package_fu_a(SrsSharedPtrMessage *msg, SrsSample
             fua->size = packet_size;
         }
 
-        pkt->wrap(msg);
+        pkt->wrap(msg->payload_);
 
         p += packet_size;
         nb_left -= packet_size;

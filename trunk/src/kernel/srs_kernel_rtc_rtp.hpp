@@ -11,6 +11,7 @@
 
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_codec.hpp>
+#include <srs_core_autofree.hpp>
 
 #include <list>
 #include <string>
@@ -27,6 +28,7 @@
 #define SRS_NACK_DEBUG_DROP_PACKET_N 3
 
 class SrsRtpPacket;
+class SrsMemoryBlock;
 
 // The RTP packet max size, should never exceed this size.
 const int kRtpPacketSize = 1500;
@@ -64,7 +66,6 @@ const uint8_t kEnd = 0x40;   // Fu-header end bit
 class SrsBuffer;
 class SrsRtpRawPayload;
 class SrsRtpFUAPayload2;
-class SrsSharedPtrMessage;
 class SrsRtpExtensionTypes;
 
 // Fast parse the SSRC from RTP packet. Return 0 if invalid.
@@ -329,11 +330,11 @@ private:
     SrsRtpPacketPayloadType payload_type_;
 
 private:
-    // The original shared message, all RTP packets can refer to its data.
-    // Note that the size of shared msg, is not the packet size, it's a larger aligned buffer.
+    // The original shared memory block, all RTP packets can refer to its data.
+    // Note that the size of shared memory block, is not the packet size, it's a larger aligned buffer.
     // @remark Note that it may point to the whole RTP packet(for RTP parser, which decode RTP packet from buffer),
     //      and it may point to the RTP payload(for RTMP to RTP, which build RTP header and payload).
-    SrsSharedPtrMessage *shared_buffer_;
+    SrsSharedPtr<SrsMemoryBlock> shared_buffer_;
     // The size of RTP packet or RTP payload.
     int actual_buffer_size_;
     // Helper fields.
@@ -360,8 +361,8 @@ public:
     // Wrap buffer to shared_message, which is managed by us.
     char *wrap(int size);
     char *wrap(char *data, int size);
-    // Wrap the shared message, we copy it.
-    char *wrap(SrsSharedPtrMessage *msg);
+    // Wrap the shared memory block, we copy it.
+    char *wrap(SrsSharedPtr<SrsMemoryBlock> block);
     // Copy the RTP packet.
     virtual SrsRtpPacket *copy();
 

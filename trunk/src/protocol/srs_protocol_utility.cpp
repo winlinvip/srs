@@ -121,9 +121,9 @@ string srs_net_url_convert_legacy_rtmp_url(const string &url)
     // Check for normal legacy case: query exists and slash is after query
     if (query_pos != string::npos && last_slash_pos > query_pos) {
         // Normal legacy case: rtmp://ip/app/app2?vhost=xxx/stream
-        string base_url = url.substr(0, query_pos);           // rtmp://ip/app/app2
+        string base_url = url.substr(0, query_pos);                            // rtmp://ip/app/app2
         string query_part = url.substr(query_pos, last_slash_pos - query_pos); // ?vhost=xxx
-        string stream_part = url.substr(last_slash_pos);      // /stream
+        string stream_part = url.substr(last_slash_pos);                       // /stream
 
         // Reconstruct as standard format: base_url + stream_part + query_part
         return base_url + stream_part + query_part;

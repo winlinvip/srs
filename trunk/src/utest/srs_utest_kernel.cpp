@@ -6934,7 +6934,7 @@ VOID TEST(KernelMemoryBlockTest, MemoryBlockBasic)
         SrsMemoryBlock block;
         block.create(1024);
         EXPECT_EQ(1024, block.size());
-        EXPECT_NE((char*)NULL, block.payload());
+        EXPECT_NE((char *)NULL, block.payload());
     }
 
     // Test create with data
@@ -6945,7 +6945,7 @@ VOID TEST(KernelMemoryBlockTest, MemoryBlockBasic)
 
         block.create(test_data, test_size);
         EXPECT_EQ(test_size, block.size());
-        EXPECT_NE((char*)NULL, block.payload());
+        EXPECT_NE((char *)NULL, block.payload());
         EXPECT_EQ(0, memcmp(block.payload(), test_data, test_size));
     }
 
@@ -6972,7 +6972,7 @@ VOID TEST(KernelMemoryBlockTest, SharedMemoryBlock)
         shared_block->create(1024);
 
         EXPECT_EQ(1024, shared_block->size());
-        EXPECT_NE((char*)NULL, shared_block->payload());
+        EXPECT_NE((char *)NULL, shared_block->payload());
 
         // Test sharing
         SrsSharedPtr<SrsMemoryBlock> shared_copy = shared_block;

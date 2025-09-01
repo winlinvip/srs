@@ -209,7 +209,7 @@ public:
 
 public:
     // Backward compatibility accessors
-    char* payload() { return payload_.get() ? payload_->payload() : NULL; }
+    char *payload() { return payload_.get() ? payload_->payload() : NULL; }
     int size() { return payload_.get() ? payload_->size() : 0; }
 
 public:
@@ -284,7 +284,7 @@ public:
 
 public:
     // Backward compatibility accessors
-    char* payload() { return payload_.get() ? payload_->payload() : NULL; }
+    char *payload() { return payload_.get() ? payload_->payload() : NULL; }
     int size() { return payload_.get() ? payload_->size() : 0; }
 
 public:

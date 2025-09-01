@@ -396,7 +396,7 @@ public:
     // The partially read message.
     SrsCommonMessage *msg;
     // Current writing position of message.
-    char* writing_pos_;
+    char *writing_pos_;
     // Decoded msg count, to identify whether the chunk stream is fresh.
     int64_t msg_count;
     // Because the extended timestamp may be a delta timestamp, it can differ

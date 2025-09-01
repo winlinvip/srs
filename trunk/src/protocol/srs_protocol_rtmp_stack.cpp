@@ -1211,7 +1211,7 @@ srs_error_t SrsProtocol::read_message_payload(SrsChunkStream *chunk, SrsCommonMe
     // the chunk payload size.
     int nn_written = (int)(chunk->writing_pos_ - chunk->msg->payload());
     int payload_size = chunk->header.payload_length - nn_written; // Left bytes to read.
-    payload_size = srs_min(payload_size, in_chunk_size); // Restrict to chunk size.
+    payload_size = srs_min(payload_size, in_chunk_size);          // Restrict to chunk size.
 
     // create msg payload if not initialized
     if (!chunk->msg->payload()) {

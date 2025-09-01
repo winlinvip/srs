@@ -9,9 +9,9 @@
 
 #include <srs_core.hpp>
 
+#include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_codec.hpp>
-#include <srs_core_autofree.hpp>
 
 #include <list>
 #include <string>

@@ -5,9 +5,9 @@
 //
 #include <srs_kernel_packet.hpp>
 
+#include <srs_kernel_codec.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_kbps.hpp>
-#include <srs_kernel_codec.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 

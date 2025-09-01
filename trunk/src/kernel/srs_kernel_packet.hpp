@@ -35,14 +35,24 @@ public:
     SrsNaluSample *copy();
 };
 
+// A media packet containing raw, undecoded media data.
+// This represents a single media frame or packet with timing information
+// and payload data, but without codec-specific parsing or decoding.
 class SrsMediaPacket
 {
 public:
+    // Timestamp of the media packet. The timebase is defined by context.
     int64_t timestamp;
-    int32_t stream_id;
+    // Type of the media packet (audio, video, or script).
     SrsParsedPacketType message_type;
 
 public:
+    // Stream identifier for the packet. It's optional, so only used for some
+    // protocols, for example, RTMP.
+    int32_t stream_id;
+
+public:
+    // Raw payload data of the media packet.
     SrsSharedPtr<SrsMemoryBlock> payload_;
 
 public:

@@ -12,9 +12,9 @@
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_io.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_packet.hpp>
 #include <srs_kernel_stream.hpp>
 #include <srs_kernel_utility.hpp>
-#include <srs_kernel_packet.hpp>
 
 #include <iomanip>
 #include <openssl/aes.h>

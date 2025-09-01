@@ -43,15 +43,10 @@ using namespace std;
 
 void srs_net_url_parse_tcurl(string tcUrl, string &schema, string &host, string &vhost, string &app, string &stream, int &port, string &param)
 {
-    // Check if tcUrl already has fragments - if so, don't append stream/param
-    bool tcurl_has_fragment = (tcUrl.find('#') != string::npos);
-
     // Build the full URL with stream and param if provided
     string fullUrl = tcUrl;
-    if (!tcurl_has_fragment) {
-        fullUrl += stream.empty() ? "/" : (stream.at(0) == '/' ? stream : "/" + stream);
-        fullUrl += param.empty() ? "" : (param.at(0) == '?' ? param : "?" + param);
-    }
+    fullUrl += stream.empty() ? "/" : (stream.at(0) == '/' ? stream : "/" + stream);
+    fullUrl += param.empty() ? "" : (param.at(0) == '?' ? param : "?" + param);
 
     // For compatibility, transform legacy ...vhost... format
     //      rtmp://ip/app...vhost...VHOST/stream

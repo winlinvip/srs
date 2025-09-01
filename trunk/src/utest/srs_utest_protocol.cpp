@@ -5218,7 +5218,7 @@ VOID TEST(ProtocolRTMPTest, RTMPRequest)
     req.stream = "livestream";
     srs_net_url_parse_tcurl("rtmp://std.ossrs.net/live#b=2",
                             req.schema, req.host, req.vhost, req.app, req.stream, req.port, param);
-    EXPECT_STREQ("#b=2", param.c_str());
+    EXPECT_STREQ("#b=2/livestream", param.c_str());
 
     param = "";
     req.stream = "livestream";

@@ -785,8 +785,8 @@ char *SrsRtpPacket::wrap(int size)
     actual_buffer_size_ = size;
 
     // If the buffer is large enough, reuse it.
-    if (shared_buffer_ && shared_buffer_->size >= size) {
-        return shared_buffer_->payload;
+    if (shared_buffer_ && shared_buffer_->size() >= size) {
+        return shared_buffer_->payload();
     }
 
     // Create a large enough message, with under-layer buffer.
@@ -801,7 +801,7 @@ char *SrsRtpPacket::wrap(int size)
 
     ++_srs_pps_objs_rbuf->sugar;
 
-    return shared_buffer_->payload;
+    return shared_buffer_->payload();
 }
 
 char *SrsRtpPacket::wrap(char *data, int size)
@@ -820,9 +820,9 @@ char *SrsRtpPacket::wrap(SrsSharedPtrMessage *msg)
     // Copy from the new message.
     shared_buffer_ = msg->copy();
     // If we wrap a message, the size of packet equals to the message size.
-    actual_buffer_size_ = shared_buffer_->size;
+    actual_buffer_size_ = shared_buffer_->size();
 
-    return msg->payload;
+    return msg->payload();
 }
 
 SrsRtpPacket *SrsRtpPacket::copy()

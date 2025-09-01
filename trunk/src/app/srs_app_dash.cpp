@@ -645,7 +645,7 @@ srs_error_t SrsDashController::refresh_init_mp4(SrsSharedPtrMessage *msg, SrsFor
 {
     srs_error_t err = srs_success;
 
-    if (msg->size <= 0 || (msg->is_video() && !format->vcodec->is_avc_codec_ok()) || (msg->is_audio() && !format->acodec->is_aac_codec_ok())) {
+    if (msg->size() <= 0 || (msg->is_video() && !format->vcodec->is_avc_codec_ok()) || (msg->is_audio() && !format->acodec->is_aac_codec_ok())) {
         srs_warn("DASH: Ignore empty sequence header.");
         return err;
     }

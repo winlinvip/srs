@@ -30,8 +30,8 @@ srs_error_t SrsRtmpFormat::on_metadata(SrsOnMetaDataPacket *meta)
 srs_error_t SrsRtmpFormat::on_audio(SrsSharedPtrMessage *shared_audio)
 {
     SrsSharedPtrMessage *msg = shared_audio;
-    char *data = msg->payload;
-    int size = msg->size;
+    char *data = msg->payload();
+    int size = msg->size();
 
     return SrsFormat::on_audio(msg->timestamp, data, size);
 }
@@ -44,8 +44,8 @@ srs_error_t SrsRtmpFormat::on_audio(int64_t timestamp, char *data, int size)
 srs_error_t SrsRtmpFormat::on_video(SrsSharedPtrMessage *shared_video)
 {
     SrsSharedPtrMessage *msg = shared_video;
-    char *data = msg->payload;
-    int size = msg->size;
+    char *data = msg->payload();
+    int size = msg->size();
 
     return SrsFormat::on_video(msg->timestamp, data, size);
 }

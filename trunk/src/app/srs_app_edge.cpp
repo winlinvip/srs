@@ -338,7 +338,7 @@ srs_error_t SrsEdgeFlvUpstream::decode_message(SrsCommonMessage *msg, SrsPacket 
     srs_error_t err = srs_success;
 
     SrsPacket *packet = NULL;
-    SrsBuffer stream(msg->payload, msg->size);
+    SrsBuffer stream(msg->payload(), msg->size());
     SrsMessageHeader &header = msg->header;
 
     if (header.is_amf0_data() || header.is_amf3_data()) {
@@ -924,7 +924,7 @@ srs_error_t SrsEdgeForwarder::proxy(SrsCommonMessage *msg)
 
     // the msg is auto free by source,
     // so we just ignore, or copy then send it.
-    if (msg->size <= 0 || msg->header.is_set_chunk_size() || msg->header.is_window_ackledgement_size() || msg->header.is_ackledgement()) {
+    if (msg->size() <= 0 || msg->header.is_set_chunk_size() || msg->header.is_window_ackledgement_size() || msg->header.is_ackledgement()) {
         return err;
     }
 

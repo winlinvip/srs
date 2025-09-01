@@ -345,11 +345,11 @@ void SrsMessageQueue::shrink()
     for (int i = 0; i < (int)msgs.size(); i++) {
         SrsSharedPtrMessage *msg = msgs.at(i);
 
-        if (msg->is_video() && SrsFlvVideo::sh(msg->payload, msg->size)) {
+        if (msg->is_video() && SrsFlvVideo::sh(msg->payload(), msg->size())) {
             srs_freep(video_sh);
             video_sh = msg;
             continue;
-        } else if (msg->is_audio() && SrsFlvAudio::sh(msg->payload, msg->size)) {
+        } else if (msg->is_audio() && SrsFlvAudio::sh(msg->payload(), msg->size())) {
             srs_freep(audio_sh);
             audio_sh = msg;
             continue;
@@ -620,8 +620,8 @@ srs_error_t SrsGopCache::cache(SrsSharedPtrMessage *shared_msg)
     // got video, update the video count if acceptable
     if (msg->is_video()) {
         // Drop video when not h.264 or h.265.
-        bool codec_ok = SrsFlvVideo::h264(msg->payload, msg->size);
-        codec_ok = codec_ok ? true : SrsFlvVideo::hevc(msg->payload, msg->size);
+        bool codec_ok = SrsFlvVideo::h264(msg->payload(), msg->size());
+        codec_ok = codec_ok ? true : SrsFlvVideo::hevc(msg->payload(), msg->size());
         if (!codec_ok)
             return err;
 
@@ -647,7 +647,7 @@ srs_error_t SrsGopCache::cache(SrsSharedPtrMessage *shared_msg)
     }
 
     // clear gop cache when got key frame
-    if (msg->is_video() && SrsFlvVideo::keyframe(msg->payload, msg->size)) {
+    if (msg->is_video() && SrsFlvVideo::keyframe(msg->payload(), msg->size())) {
         clear();
 
         // curent msg is video frame, so we set to 1.
@@ -737,7 +737,7 @@ bool srs_hls_can_continue(int ret, SrsSharedPtrMessage *sh, SrsSharedPtrMessage 
     // when video size equals to sequence header,
     // the video actually maybe a sequence header,
     // continue to make ffmpeg happy.
-    if (sh && sh->size == msg->size) {
+    if (sh && sh->size() == msg->size()) {
         srs_warn("the msg is actually a sequence header, ignore this packet.");
         return true;
     }
@@ -965,11 +965,11 @@ srs_error_t SrsOriginHub::on_audio(SrsSharedPtrMessage *shared_audio)
 
         if (format->acodec->id == SrsAudioCodecIdMP3) {
             srs_trace("%dB audio sh, codec(%d, %dbits, %dchannels, %dHZ)",
-                      msg->size, c->id, flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
+                      msg->size(), c->id, flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
                       srs_flv_srates[c->sound_rate]);
         } else {
             srs_trace("%dB audio sh, codec(%d, profile=%s, %dchannels, %dkbps, %dHZ), flv(%dbits, %dchannels, %dHZ)",
-                      msg->size, c->id, srs_aac_object2str(c->aac_object).c_str(), c->aac_channels,
+                      msg->size(), c->id, srs_aac_object2str(c->aac_object).c_str(), c->aac_channels,
                       c->audio_data_rate / 1000, srs_aac_srates[c->aac_sample_rate],
                       flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
                       srs_flv_srates[c->sound_rate]);
@@ -1047,12 +1047,12 @@ srs_error_t SrsOriginHub::on_video(SrsSharedPtrMessage *shared_video, bool is_se
         if (c->id == SrsVideoCodecIdAVC) {
             err = stat->on_video_info(req_, c->id, c->avc_profile, c->avc_level, c->width, c->height);
             srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
-                      msg->size, c->id, srs_avc_profile2str(c->avc_profile).c_str(), srs_avc_level2str(c->avc_level).c_str(),
+                      msg->size(), c->id, srs_avc_profile2str(c->avc_profile).c_str(), srs_avc_level2str(c->avc_level).c_str(),
                       c->width, c->height, c->video_data_rate / 1000, c->frame_rate, c->duration);
         } else if (c->id == SrsVideoCodecIdHEVC) {
             err = stat->on_video_info(req_, c->id, c->hevc_profile, c->hevc_level, c->width, c->height);
             srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
-                      msg->size, c->id, srs_hevc_profile2str(c->hevc_profile).c_str(), srs_hevc_level2str(c->hevc_level).c_str(),
+                      msg->size(), c->id, srs_hevc_profile2str(c->hevc_profile).c_str(), srs_hevc_level2str(c->hevc_level).c_str(),
                       c->width, c->height, c->video_data_rate / 1000, c->frame_rate, c->duration);
         }
         if (err != srs_success) {
@@ -1942,7 +1942,7 @@ srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage *msg, SrsOnMetaDataPack
     bool drop_for_reduce = false;
     if (meta->data() && _srs_config->get_reduce_sequence_header(req->vhost)) {
         drop_for_reduce = true;
-        srs_warn("drop for reduce sh metadata, size=%d", msg->size);
+        srs_warn("drop for reduce sh metadata, size=%d", msg->size());
     }
 
     // copy to all consumer
@@ -2038,9 +2038,9 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage *msg)
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
     if (is_sequence_header && meta->previous_ash() && _srs_config->get_reduce_sequence_header(req->vhost)) {
-        if (meta->previous_ash()->size == msg->size) {
-            drop_for_reduce = srs_bytes_equal(meta->previous_ash()->payload, msg->payload, msg->size);
-            srs_warn("drop for reduce sh audio, size=%d", msg->size);
+        if (meta->previous_ash()->size() == msg->size()) {
+            drop_for_reduce = srs_bytes_equal(meta->previous_ash()->payload(), msg->payload(), msg->size());
+            srs_warn("drop for reduce sh audio, size=%d", msg->size());
         }
     }
 
@@ -2110,13 +2110,13 @@ srs_error_t SrsLiveSource::on_video(SrsCommonMessage *shared_video)
 
     // drop any unknown header video.
     // @see https://github.com/ossrs/srs/issues/421
-    if (!SrsFlvVideo::acceptable(shared_video->payload, shared_video->size)) {
+    if (!SrsFlvVideo::acceptable(shared_video->payload(), shared_video->size())) {
         char b0 = 0x00;
-        if (shared_video->size > 0) {
-            b0 = shared_video->payload[0];
+        if (shared_video->size() > 0) {
+            b0 = shared_video->payload()[0];
         }
 
-        srs_warn("drop unknown header video, size=%d, bytes[0]=%#x", shared_video->size, b0);
+        srs_warn("drop unknown header video, size=%d, bytes[0]=%#x", shared_video->size(), b0);
         return err;
     }
 
@@ -2134,7 +2134,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsSharedPtrMessage *msg)
 {
     srs_error_t err = srs_success;
 
-    bool is_sequence_header = SrsFlvVideo::sh(msg->payload, msg->size);
+    bool is_sequence_header = SrsFlvVideo::sh(msg->payload(), msg->size());
 
     // user can disable the sps parse to workaround when parse sps failed.
     // @see https://github.com/ossrs/srs/issues/474
@@ -2155,9 +2155,9 @@ srs_error_t SrsLiveSource::on_video_imp(SrsSharedPtrMessage *msg)
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
     if (is_sequence_header && meta->previous_vsh() && _srs_config->get_reduce_sequence_header(req->vhost)) {
-        if (meta->previous_vsh()->size == msg->size) {
-            drop_for_reduce = srs_bytes_equal(meta->previous_vsh()->payload, msg->payload, msg->size);
-            srs_warn("drop for reduce sh video, size=%d", msg->size);
+        if (meta->previous_vsh()->size() == msg->size()) {
+            drop_for_reduce = srs_bytes_equal(meta->previous_vsh()->payload(), msg->payload(), msg->size());
+            srs_warn("drop for reduce sh video, size=%d", msg->size());
         }
     }
 
@@ -2214,7 +2214,7 @@ srs_error_t SrsLiveSource::on_aggregate(SrsCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
-    SrsUniquePtr<SrsBuffer> stream(new SrsBuffer(msg->payload, msg->size));
+    SrsUniquePtr<SrsBuffer> stream(new SrsBuffer(msg->payload(), msg->size()));
 
     // the aggregate message always use abs time.
     int delta = -1;
@@ -2274,9 +2274,8 @@ srs_error_t SrsLiveSource::on_aggregate(SrsCommonMessage *msg)
         o.header.prefer_cid = msg->header.prefer_cid;
 
         if (data_size > 0) {
-            o.size = data_size;
-            o.payload = new char[o.size];
-            stream->read_bytes(o.payload, o.size);
+            o.create_payload(data_size);
+            stream->read_bytes(o.payload(), data_size);
         }
 
         if (!stream->require(4)) {

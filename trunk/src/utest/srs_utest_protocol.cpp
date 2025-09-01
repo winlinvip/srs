@@ -899,7 +899,6 @@ VOID TEST(ProtocolMsgArrayTest, MessageArray)
     SrsSharedPtrMessage msg;
     char *payload = new char[1024];
     HELPER_EXPECT_SUCCESS(msg.create(&header, payload, 1024));
-    EXPECT_EQ(0, msg.count());
 
     if (true) {
         SrsMessageArray arr(3);
@@ -908,15 +907,11 @@ VOID TEST(ProtocolMsgArrayTest, MessageArray)
         SrsUniquePtr<SrsMessageArray> parr2(parr, srs_utest_free_message_array);
 
         arr.msgs[0] = msg.copy();
-        EXPECT_EQ(1, msg.count());
 
         arr.msgs[1] = msg.copy();
-        EXPECT_EQ(2, msg.count());
 
         arr.msgs[2] = msg.copy();
-        EXPECT_EQ(3, msg.count());
     }
-    EXPECT_EQ(0, msg.count());
 
     if (true) {
         SrsMessageArray arr(3);
@@ -925,12 +920,9 @@ VOID TEST(ProtocolMsgArrayTest, MessageArray)
         SrsUniquePtr<SrsMessageArray> parr2(parr, srs_utest_free_message_array);
 
         arr.msgs[0] = msg.copy();
-        EXPECT_EQ(1, msg.count());
 
         arr.msgs[2] = msg.copy();
-        EXPECT_EQ(2, msg.count());
     }
-    EXPECT_EQ(0, msg.count());
 }
 
 /**
@@ -4402,9 +4394,8 @@ VOID TEST(ProtocolStackTest, ProtocolSendVMessage)
 
     SrsCommonMessage *msg = new SrsCommonMessage();
     SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
-    msg->size = sizeof(data);
-    msg->payload = new char[msg->size];
-    memcpy(msg->payload, data, msg->size);
+    msg->create_payload(sizeof(data));
+    memcpy(msg->payload(), data, sizeof(data));
 
     SrsSharedPtrMessage m;
     HELPER_ASSERT_SUCCESS(m.create(msg));
@@ -4964,8 +4955,8 @@ VOID TEST(ProtocolStackTest, ProtocolAckSizeFlow)
     if (true) {
         SrsCommonMessage *msg = new SrsCommonMessage();
         SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
-        msg->header.payload_length = msg->size = 4096;
-        msg->payload = new char[msg->size];
+        msg->create_payload(4096);
+        msg->header.payload_length = 4096;
 
         msg->header.message_type = 9;
         EXPECT_TRUE(msg->header.is_video());
@@ -5014,8 +5005,8 @@ VOID TEST(ProtocolStackTest, ProtocolAckSizeFlow)
     if (true) {
         SrsCommonMessage *msg = new SrsCommonMessage();
         SrsUniquePtr<SrsCommonMessage> msg_uptr(msg);
-        msg->header.payload_length = msg->size = 4096;
-        msg->payload = new char[msg->size];
+        msg->header.payload_length = 4096;
+        msg->create_payload(4096);
 
         msg->header.message_type = 9;
         EXPECT_TRUE(msg->header.is_video());

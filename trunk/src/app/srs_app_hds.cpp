@@ -40,7 +40,7 @@ char flv_header[] = {'F', 'L', 'V',
 
 string serialFlv(SrsSharedPtrMessage *msg)
 {
-    int size = 15 + msg->size;
+    int size = 15 + msg->size();
     char *byte = new char[size];
 
     SrsUniquePtr<SrsBuffer> stream(new SrsBuffer(byte, size));
@@ -50,14 +50,14 @@ string serialFlv(SrsSharedPtrMessage *msg)
     char type = msg->is_video() ? 0x09 : 0x08;
 
     stream->write_1bytes(type);
-    stream->write_3bytes(msg->size);
+    stream->write_3bytes(msg->size());
     stream->write_3bytes((int32_t)dts);
     stream->write_1bytes(dts >> 24 & 0xFF);
     stream->write_3bytes(0);
-    stream->write_bytes(msg->payload, msg->size);
+    stream->write_bytes(msg->payload(), msg->size());
 
     // pre tag size
-    int preTagSize = msg->size + 11;
+    int preTagSize = msg->size() + 11;
     stream->write_4bytes(preTagSize);
 
     string ret(stream->data(), stream->size());
@@ -298,7 +298,7 @@ srs_error_t SrsHds::on_video(SrsSharedPtrMessage *msg)
         return err;
     }
 
-    if (SrsFlvVideo::sh(msg->payload, msg->size)) {
+    if (SrsFlvVideo::sh(msg->payload(), msg->size())) {
         srs_freep(video_sh);
         video_sh = msg->copy();
     }
@@ -348,7 +348,7 @@ srs_error_t SrsHds::on_audio(SrsSharedPtrMessage *msg)
         return err;
     }
 
-    if (SrsFlvAudio::sh(msg->payload, msg->size)) {
+    if (SrsFlvAudio::sh(msg->payload(), msg->size())) {
         srs_freep(audio_sh);
         audio_sh = msg->copy();
     }

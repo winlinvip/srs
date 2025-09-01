@@ -832,7 +832,7 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsSharedPtrMessage *msg)
     srs_error_t err = srs_success;
 
     // cache the sequence header if h264
-    bool is_sequence_header = SrsFlvVideo::sh(msg->payload, msg->size);
+    bool is_sequence_header = SrsFlvVideo::sh(msg->payload(), msg->size());
     if (is_sequence_header && (err = meta->update_vsh(msg)) != srs_success) {
         return srs_error_wrap(err, "meta update video");
     }

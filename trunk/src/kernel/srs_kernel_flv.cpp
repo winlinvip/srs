@@ -263,35 +263,94 @@ void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
     prefer_cid = RTMP_CID_Video;
 }
 
+SrsMemoryBlock::SrsMemoryBlock()
+{
+    payload_ = NULL;
+    size_ = 0;
+}
+
+SrsMemoryBlock::~SrsMemoryBlock()
+{
+    srs_freepa(payload_);
+}
+
+void SrsMemoryBlock::create(int size)
+{
+    srs_assert(size >= 0);
+
+    // Free existing payload
+    srs_freepa(payload_);
+
+    // Allocate new buffer
+    if (size > 0) {
+        payload_ = new char[size];
+        memset(payload_, 0, size);
+        size_ = size;
+    } else {
+        payload_ = NULL;
+        size_ = 0;
+    }
+}
+
+void SrsMemoryBlock::create(char *data, int size)
+{
+    srs_assert(size >= 0);
+
+    create(size);
+
+    // Copy data if provided
+    if (data && size > 0) {
+        memcpy(payload_, data, size);
+        size_ = size;
+    }
+}
+
+void SrsMemoryBlock::attach(char *data, int size)
+{
+    srs_assert(size >= 0);
+
+    // Free existing payload
+    srs_freepa(payload_);
+
+    // Attach new buffer
+    payload_ = data;
+    size_ = size;
+}
+
 SrsCommonMessage::SrsCommonMessage()
 {
-    payload = NULL;
-    size = 0;
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
 }
 
 SrsCommonMessage::~SrsCommonMessage()
 {
-    srs_freepa(payload);
+    // payload_ automatically cleaned up by SrsSharedPtr
 }
 
 void SrsCommonMessage::create_payload(int size)
 {
-    srs_freepa(payload);
-
-    payload = new char[size];
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
+    payload_->create(size);
     srs_verbose("create payload for RTMP message. size=%d", size);
 }
 
 srs_error_t SrsCommonMessage::create(SrsMessageHeader *pheader, char *body, int size)
 {
-    // drop previous payload.
-    srs_freepa(payload);
+    srs_error_t err = srs_success;
 
-    this->header = *pheader;
-    this->payload = body;
-    this->size = size;
+    if (size < 0) {
+        return srs_error_new(ERROR_RTMP_MESSAGE_CREATE, "create message size=%d", size);
+    }
 
-    return srs_success;
+    // Create new memory block and attach the body
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
+    payload_->attach(body, size);
+
+    if (pheader) {
+        this->header = *pheader;
+    }
+
+    return err;
 }
 
 SrsSharedMessageHeader::SrsSharedMessageHeader()
@@ -305,49 +364,28 @@ SrsSharedMessageHeader::~SrsSharedMessageHeader()
 {
 }
 
-SrsSharedPtrMessage::SrsSharedPtrPayload::SrsSharedPtrPayload()
+SrsSharedPtrMessage::SrsSharedPtrMessage() : timestamp(0), stream_id(0), message_type(0), prefer_cid(RTMP_CID_OverConnection)
 {
-    payload = NULL;
-    size = 0;
-    shared_count = 0;
-}
-
-SrsSharedPtrMessage::SrsSharedPtrPayload::~SrsSharedPtrPayload()
-{
-    srs_freepa(payload);
-}
-
-SrsSharedPtrMessage::SrsSharedPtrMessage() : timestamp(0), stream_id(0), size(0), payload(NULL)
-{
-    ptr = NULL;
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
 
     ++_srs_pps_objs_msgs->sugar;
 }
 
 SrsSharedPtrMessage::~SrsSharedPtrMessage()
 {
-    if (ptr) {
-        if (ptr->shared_count == 0) {
-            srs_freep(ptr);
-        } else {
-            ptr->shared_count--;
-        }
-    }
+    // payload_ automatically cleaned up by SrsSharedPtr
 }
 
 srs_error_t SrsSharedPtrMessage::create(SrsCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
-    if ((err = create(&msg->header, msg->payload, msg->size)) != srs_success) {
-        return srs_error_wrap(err, "create message");
-    }
-
-    // to prevent double free of payload:
-    // initialize already attach the payload of msg,
-    // detach the payload to transfer the owner to shared ptr.
-    msg->payload = NULL;
-    msg->size = 0;
+    // Share the memory block from the common message
+    payload_ = msg->payload_;
+    this->timestamp = msg->header.timestamp;
+    this->stream_id = msg->header.stream_id;
+    this->message_type = msg->header.message_type;
+    this->prefer_cid = msg->header.prefer_cid;
 
     return err;
 }
@@ -360,56 +398,33 @@ srs_error_t SrsSharedPtrMessage::create(SrsMessageHeader *pheader, char *payload
         return srs_error_new(ERROR_RTMP_MESSAGE_CREATE, "create message size=%d", size);
     }
 
-    srs_assert(!ptr);
-    ptr = new SrsSharedPtrPayload();
+    // Create new memory block and attach the payload
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
+    payload_->attach(payload, size);
 
-    // direct attach the data.
+    // Set header information
     if (pheader) {
-        ptr->header.message_type = pheader->message_type;
-        ptr->header.payload_length = size;
-        ptr->header.prefer_cid = pheader->prefer_cid;
         this->timestamp = pheader->timestamp;
         this->stream_id = pheader->stream_id;
+        this->message_type = pheader->message_type;
+        this->prefer_cid = pheader->prefer_cid;
     }
-    ptr->payload = payload;
-    ptr->size = size;
-
-    // message can access it.
-    this->payload = ptr->payload;
-    this->size = ptr->size;
 
     return err;
 }
 
 void SrsSharedPtrMessage::wrap(char *payload, int size)
 {
-    srs_assert(!ptr);
-    ptr = new SrsSharedPtrPayload();
-
-    ptr->payload = payload;
-    ptr->size = size;
-
-    this->payload = ptr->payload;
-    this->size = ptr->size;
-}
-
-int SrsSharedPtrMessage::count()
-{
-    return ptr ? ptr->shared_count : 0;
+    // Create new memory block and wrap the payload
+    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
+    payload_->attach(payload, size);
 }
 
 bool SrsSharedPtrMessage::check(int stream_id)
 {
     // Ignore error when message has no payload.
-    if (!ptr) {
+    if (!payload_.get()) {
         return true;
-    }
-
-    // we donot use the complex basic header,
-    // ensure the basic header is 1bytes.
-    if (ptr->header.prefer_cid < 2 || ptr->header.prefer_cid > 63) {
-        srs_info("change the chunk_id=%d to default=%d", ptr->header.prefer_cid, RTMP_CID_ProtocolControl);
-        ptr->header.prefer_cid = RTMP_CID_ProtocolControl;
     }
 
     // we assume that the stream_id in a group must be the same.
@@ -423,38 +438,40 @@ bool SrsSharedPtrMessage::check(int stream_id)
 
 bool SrsSharedPtrMessage::is_av()
 {
-    return ptr->header.message_type == RTMP_MSG_AudioMessage || ptr->header.message_type == RTMP_MSG_VideoMessage;
+    return message_type == RTMP_MSG_AudioMessage || message_type == RTMP_MSG_VideoMessage;
 }
 
 bool SrsSharedPtrMessage::is_audio()
 {
-    return ptr->header.message_type == RTMP_MSG_AudioMessage;
+    return message_type == RTMP_MSG_AudioMessage;
 }
 
 bool SrsSharedPtrMessage::is_video()
 {
-    return ptr->header.message_type == RTMP_MSG_VideoMessage;
+    return message_type == RTMP_MSG_VideoMessage;
 }
 
 int SrsSharedPtrMessage::chunk_header(char *cache, int nb_cache, bool c0)
 {
+    int payload_length = payload_.get() ? payload_->size() : 0;
+
     if (c0) {
-        return srs_chunk_header_c0(ptr->header.prefer_cid, (uint32_t)timestamp,
-                                   ptr->header.payload_length, ptr->header.message_type, stream_id, cache, nb_cache);
+        return srs_chunk_header_c0(prefer_cid, (uint32_t)timestamp,
+                                   payload_length, message_type, stream_id, cache, nb_cache);
     } else {
-        return srs_chunk_header_c3(ptr->header.prefer_cid, (uint32_t)timestamp,
+        return srs_chunk_header_c3(prefer_cid, (uint32_t)timestamp,
                                    cache, nb_cache);
     }
 }
 
 SrsSharedPtrMessage *SrsSharedPtrMessage::copy()
 {
-    srs_assert(ptr);
-
     SrsSharedPtrMessage *copy = copy2();
 
     copy->timestamp = timestamp;
     copy->stream_id = stream_id;
+    copy->message_type = message_type;
+    copy->prefer_cid = prefer_cid;
 
     return copy;
 }
@@ -463,15 +480,8 @@ SrsSharedPtrMessage *SrsSharedPtrMessage::copy2()
 {
     SrsSharedPtrMessage *copy = new SrsSharedPtrMessage();
 
-    // We got an object from cache, the ptr might exists, so unwrap it.
-    // srs_assert(!copy->ptr);
-
-    // Reference to this message instead.
-    copy->ptr = ptr;
-    ptr->shared_count++;
-
-    copy->payload = ptr->payload;
-    copy->size = ptr->size;
+    // Share the memory block
+    copy->payload_ = payload_;
 
     return copy;
 }
@@ -665,23 +675,23 @@ srs_error_t SrsFlvTransmuxer::write_tags(SrsSharedPtrMessage **msgs, int count)
         if (msg->is_audio()) {
             if (drop_if_not_match_ && !has_audio_)
                 continue; // Ignore audio packets if no audio stream.
-            cache_audio(msg->timestamp, msg->payload, msg->size, cache);
+            cache_audio(msg->timestamp, msg->payload(), msg->size(), cache);
         } else if (msg->is_video()) {
             if (drop_if_not_match_ && !has_video_)
                 continue; // Ignore video packets if no video stream.
-            cache_video(msg->timestamp, msg->payload, msg->size, cache);
+            cache_video(msg->timestamp, msg->payload(), msg->size(), cache);
         } else {
-            cache_metadata(SrsFrameTypeScript, msg->payload, msg->size, cache);
+            cache_metadata(SrsFrameTypeScript, msg->payload(), msg->size(), cache);
         }
 
         // Cache FLV pts.
-        cache_pts(SRS_FLV_TAG_HEADER_SIZE + msg->size, pts);
+        cache_pts(SRS_FLV_TAG_HEADER_SIZE + msg->size(), pts);
 
         // Set cache to iovec.
         iovs[0].iov_base = cache;
         iovs[0].iov_len = SRS_FLV_TAG_HEADER_SIZE;
-        iovs[1].iov_base = msg->payload;
-        iovs[1].iov_len = msg->size;
+        iovs[1].iov_base = msg->payload();
+        iovs[1].iov_len = msg->size();
         iovs[2].iov_base = pts;
         iovs[2].iov_len = SRS_FLV_PREVIOUS_TAG_SIZE;
 

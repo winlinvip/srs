@@ -127,7 +127,7 @@ srs_error_t SrsForwarder::on_audio(SrsSharedPtrMessage *shared_audio)
         return srs_error_wrap(err, "jitter");
     }
 
-    if (SrsFlvAudio::sh(msg->payload, msg->size)) {
+    if (SrsFlvAudio::sh(msg->payload(), msg->size())) {
         srs_freep(sh_audio);
         sh_audio = msg->copy();
     }
@@ -150,7 +150,7 @@ srs_error_t SrsForwarder::on_video(SrsSharedPtrMessage *shared_video)
         return srs_error_wrap(err, "jitter");
     }
 
-    if (SrsFlvVideo::sh(msg->payload, msg->size)) {
+    if (SrsFlvVideo::sh(msg->payload(), msg->size())) {
         srs_freep(sh_video);
         sh_video = msg->copy();
     }

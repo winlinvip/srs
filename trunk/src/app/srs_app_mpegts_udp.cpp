@@ -626,7 +626,7 @@ srs_error_t SrsMpegtsOverUdp::rtmp_write_packet(char type, uint32_t timestamp, c
             srs_trace("mpegts: send msg %s age=%d, dts=%" PRId64 ", size=%d",
                       msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                               : "N",
-                      pprint->age(), msg->timestamp, msg->size);
+                      pprint->age(), msg->timestamp, msg->size());
         }
 
         // send out encoded msg.

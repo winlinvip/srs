@@ -392,11 +392,11 @@ srs_error_t SrsFlvStreamEncoder::write_tags(SrsSharedPtrMessage **msgs, int coun
             for (int i = 0; i < count; i++) {
                 SrsSharedPtrMessage *msg = msgs[i];
                 if (msg->is_video()) {
-                    if (!SrsFlvVideo::sh(msg->payload, msg->size))
+                    if (!SrsFlvVideo::sh(msg->payload(), msg->size()))
                         nn_video_frames++;
                     has_video = true;
                 } else if (msg->is_audio()) {
-                    if (!SrsFlvAudio::sh(msg->payload, msg->size))
+                    if (!SrsFlvAudio::sh(msg->payload(), msg->size()))
                         nn_audio_frames++;
                     has_audio = true;
                 }
@@ -958,11 +958,11 @@ srs_error_t SrsLiveStream::streaming_send_messages(ISrsBufferEncoder *enc, SrsSh
         SrsSharedPtrMessage *msg = msgs[i];
 
         if (msg->is_audio()) {
-            err = enc->write_audio(msg->timestamp, msg->payload, msg->size);
+            err = enc->write_audio(msg->timestamp, msg->payload(), msg->size());
         } else if (msg->is_video()) {
-            err = enc->write_video(msg->timestamp, msg->payload, msg->size);
+            err = enc->write_video(msg->timestamp, msg->payload(), msg->size());
         } else {
-            err = enc->write_metadata(msg->timestamp, msg->payload, msg->size);
+            err = enc->write_metadata(msg->timestamp, msg->payload(), msg->size());
         }
 
         if (err != srs_success) {

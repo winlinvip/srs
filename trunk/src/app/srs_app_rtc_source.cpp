@@ -78,7 +78,7 @@ srs_error_t aac_raw_append_adts_header(SrsSharedPtrMessage *shared_audio, SrsFor
 
     // If no audio RAW frame, or not parsed for no sequence header, drop the packet.
     if (format->audio->nb_samples == 0) {
-        srs_warn("RTC: Drop AAC %d bytes for no sample", shared_audio->size);
+        srs_warn("RTC: Drop AAC %d bytes for no sample", shared_audio->size());
         return err;
     }
 
@@ -1186,7 +1186,7 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsSharedPtrMessage *msg)
     srs_error_t err = srs_success;
 
     // cache the sequence header if h264
-    bool is_sequence_header = SrsFlvVideo::sh(msg->payload, msg->size);
+    bool is_sequence_header = SrsFlvVideo::sh(msg->payload(), msg->size());
     if (is_sequence_header && (err = meta->update_vsh(msg)) != srs_success) {
         return srs_error_wrap(err, "meta update video");
     }
@@ -1919,7 +1919,7 @@ void SrsRtcFrameBuilder::packet_aac(SrsCommonMessage *audio, char *data, int len
     int rtmp_len = len + 2;
     audio->header.initialize_audio(rtmp_len, pts, 1);
     audio->create_payload(rtmp_len);
-    SrsBuffer stream(audio->payload, rtmp_len);
+    SrsBuffer stream(audio->payload(), rtmp_len);
     uint8_t aac_flag = (SrsAudioCodecIdAAC << 4) | (SrsAudioSampleRate44100 << 2) | (SrsAudioSampleBits16bit << 1) | SrsAudioChannelsStereo;
     stream.write_1bytes(aac_flag);
     if (is_header) {
@@ -1928,7 +1928,6 @@ void SrsRtcFrameBuilder::packet_aac(SrsCommonMessage *audio, char *data, int len
         stream.write_1bytes(1);
     }
     stream.write_bytes(data, len);
-    audio->size = rtmp_len;
 }
 
 srs_error_t SrsRtcFrameBuilder::packet_video(SrsRtpPacket *pkt)
@@ -2406,8 +2405,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
     SrsCommonMessage rtmp;
     rtmp.header.initialize_video(nb_payload, pkt->get_avsync_time(), 1);
     rtmp.create_payload(nb_payload);
-    rtmp.size = nb_payload;
-    SrsBuffer payload(rtmp.payload, rtmp.size);
+    SrsBuffer payload(rtmp.payload(), rtmp.size());
     if (video_codec_ == SrsVideoCodecIdHEVC) {
         // @see: https://veovera.org/docs/enhanced/enhanced-rtmp-v1.pdf, page 8
         payload.write_1bytes(SRS_FLV_IS_EX_HEADER | (frame_type << 4) | SrsVideoHEVCFrameTraitPacketTypeCodedFramesX);

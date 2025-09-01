@@ -341,7 +341,7 @@ srs_error_t SrsProtocol::recv_message(SrsCommonMessage **pmsg)
             continue;
         }
 
-        if (msg->size <= 0 || msg->header.payload_length <= 0) {
+        if (msg->size() <= 0 || msg->header.payload_length <= 0) {
             srs_trace("ignore empty message(type=%d, size=%d, time=%" PRId64 ", sid=%d).",
                       msg->header.message_type, msg->header.payload_length,
                       msg->header.timestamp, msg->header.stream_id);
@@ -368,10 +368,10 @@ srs_error_t SrsProtocol::decode_message(SrsCommonMessage *msg, SrsPacket **ppack
     srs_error_t err = srs_success;
 
     srs_assert(msg != NULL);
-    srs_assert(msg->payload != NULL);
-    srs_assert(msg->size > 0);
+    srs_assert(msg->payload() != NULL);
+    srs_assert(msg->size() > 0);
 
-    SrsBuffer stream(msg->payload, msg->size);
+    SrsBuffer stream(msg->payload(), msg->size());
 
     // decode the packet.
     SrsPacket *packet = NULL;
@@ -407,20 +407,20 @@ srs_error_t SrsProtocol::do_send_messages(SrsSharedPtrMessage **msgs, int nb_msg
         }
 
         // ignore empty message.
-        if (!msg->payload || msg->size <= 0) {
+        if (!msg->payload() || msg->size() <= 0) {
             continue;
         }
 
         // p set to current write position,
         // it's ok when payload is NULL and size is 0.
-        char *p = msg->payload;
-        char *pend = msg->payload + msg->size;
+        char *p = msg->payload();
+        char *pend = msg->payload() + msg->size();
 
         // always write the header event payload is empty.
         while (p < pend) {
             // always has header
             int nb_cache = SRS_CONSTS_C0C3_HEADERS_MAX - c0c3_cache_index;
-            int nbh = msg->chunk_header(c0c3_cache, nb_cache, p == msg->payload);
+            int nbh = msg->chunk_header(c0c3_cache, nb_cache, p == msg->payload());
             srs_assert(nbh > 0);
 
             // header iov
@@ -985,6 +985,7 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream *chunk, char fmt)
     // create msg when new chunk stream start
     if (!chunk->msg) {
         chunk->msg = new SrsCommonMessage();
+        chunk->writing_pos_ = chunk->msg->payload();
     }
 
     // read message header from socket to buffer.
@@ -1199,32 +1200,38 @@ srs_error_t SrsProtocol::read_message_payload(SrsChunkStream *chunk, SrsCommonMe
                   chunk->header.payload_length, chunk->header.timestamp, chunk->header.stream_id);
 
         *pmsg = chunk->msg;
+
         chunk->msg = NULL;
+        chunk->writing_pos_ = NULL;
 
         return err;
     }
     srs_assert(chunk->header.payload_length > 0);
 
     // the chunk payload size.
-    int payload_size = chunk->header.payload_length - chunk->msg->size;
+    int nn_read = (int)(chunk->writing_pos_ - chunk->msg->payload());
+    int payload_size = chunk->header.payload_length - nn_read;
     payload_size = srs_min(payload_size, in_chunk_size);
 
     // create msg payload if not initialized
-    if (!chunk->msg->payload) {
+    if (!chunk->msg->payload()) {
         chunk->msg->create_payload(chunk->header.payload_length);
+        chunk->writing_pos_ = chunk->msg->payload();
     }
 
     // read payload to buffer
     if ((err = in_buffer->grow(skt, payload_size)) != srs_success) {
         return srs_error_wrap(err, "read %d bytes payload", payload_size);
     }
-    memcpy(chunk->msg->payload + chunk->msg->size, in_buffer->read_slice(payload_size), payload_size);
-    chunk->msg->size += payload_size;
+    memcpy(chunk->writing_pos_, in_buffer->read_slice(payload_size), payload_size);
+    chunk->writing_pos_ += payload_size;
 
     // got entire RTMP message?
-    if (chunk->header.payload_length == chunk->msg->size) {
+    if (chunk->writing_pos_ == chunk->msg->payload() + chunk->header.payload_length) {
         *pmsg = chunk->msg;
+
         chunk->msg = NULL;
+        chunk->writing_pos_ = NULL;
         return err;
     }
 
@@ -1450,6 +1457,7 @@ SrsChunkStream::SrsChunkStream(int _cid)
     cid = _cid;
     has_extended_timestamp = false;
     msg = NULL;
+    writing_pos_ = NULL;
     msg_count = 0;
     extended_timestamp = 0;
 }

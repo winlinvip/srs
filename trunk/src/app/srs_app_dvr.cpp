@@ -319,7 +319,7 @@ srs_error_t SrsDvrFlvSegmenter::encode_metadata(SrsSharedPtrMessage *metadata)
         return err;
     }
 
-    SrsBuffer stream(metadata->payload, metadata->size);
+    SrsBuffer stream(metadata->payload(), metadata->size());
 
     SrsUniquePtr<SrsAmf0Any> name(SrsAmf0Any::str());
     if ((err = name->read(&stream)) != srs_success) {
@@ -370,8 +370,8 @@ srs_error_t SrsDvrFlvSegmenter::encode_audio(SrsSharedPtrMessage *audio, SrsForm
 {
     srs_error_t err = srs_success;
 
-    char *payload = audio->payload;
-    int size = audio->size;
+    char *payload = audio->payload();
+    int size = audio->size();
     if ((err = enc->write_audio(audio->timestamp, payload, size)) != srs_success) {
         return srs_error_wrap(err, "write audio");
     }
@@ -383,8 +383,8 @@ srs_error_t SrsDvrFlvSegmenter::encode_video(SrsSharedPtrMessage *video, SrsForm
 {
     srs_error_t err = srs_success;
 
-    char *payload = video->payload;
-    int size = video->size;
+    char *payload = video->payload();
+    int size = video->size();
     bool sh = (format->video->avc_packet_type == SrsVideoAvcFrameTraitSequenceHeader);
     bool keyframe = (!sh && format->video->frame_type == SrsVideoAvcFrameTypeKeyFrame);
 
@@ -870,8 +870,8 @@ srs_error_t SrsDvrSegmentPlan::update_duration(SrsSharedPtrMessage *msg)
             return err;
         }
 
-        char *payload = msg->payload;
-        int size = msg->size;
+        char *payload = msg->payload();
+        int size = msg->size();
 
         bool codec_ok = SrsFlvVideo::h264(payload, size);
         codec_ok = codec_ok ? true : SrsFlvVideo::hevc(payload, size);

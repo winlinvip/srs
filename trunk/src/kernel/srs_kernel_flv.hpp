@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include <srs_core_autofree.hpp>
+
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
 #ifndef _WIN32
 #include <sys/uio.h>
@@ -186,30 +188,67 @@ public:
     void initialize_video(int size, uint32_t time, int stream);
 };
 
+// Memory block for shared payload data.
+// This class encapsulates a memory buffer with size information,
+// designed to be used with SrsSharedPtr for efficient memory sharing.
+class SrsMemoryBlock
+{
+private:
+    // The current message parsed size,
+    //       size <= allocated buffer size
+    // For the payload maybe sent in multiple chunks.
+    int size_;
+    // The payload of message, the SrsMemoryBlock manages the memory lifecycle.
+    // @remark, not all message payload can be decoded to packet. for example,
+    //       video/audio packet use raw bytes, no video/audio packet.
+    char *payload_;
+
+public:
+    SrsMemoryBlock();
+    virtual ~SrsMemoryBlock();
+
+public:
+    char *payload() { return payload_; }
+    int size() { return size_; }
+
+public:
+    // Create memory block with specified size.
+    // @param size, the size of memory to allocate. Must be non-negative.
+    virtual void create(int size);
+    // Create memory block from existing buffer.
+    // @param data, the buffer to copy from.
+    // @param size, the size of buffer. Must be non-negative.
+    // @remark, this method will copy the data.
+    virtual void create(char *data, int size);
+    // Attach existing buffer to memory block.
+    // @param data, the buffer to attach, memory block takes ownership.
+    // @param size, the size of buffer. Must be non-negative.
+    // @remark, this method takes ownership of data, caller should not free it.
+    virtual void attach(char *data, int size);
+};
+
 // The message is raw data RTMP message, bytes oriented,
 // protcol always recv RTMP message, and can send RTMP message or RTMP packet.
 // The common message is read from underlay protocol sdk.
 // while the shared ptr message used to copy and send.
 class SrsCommonMessage
 {
+public:
     // 4.1. Message Header
-public:
     SrsMessageHeader header;
-    // 4.2. Message Payload
+
 public:
-    // The current message parsed size,
-    //       size <= header.payload_length
-    // For the payload maybe sent in multiple chunks.
-    int size;
-    // The payload of message, the SrsCommonMessage never know about the detail of payload,
-    // user must use SrsProtocol.decode_message to get concrete packet.
-    // @remark, not all message payload can be decoded to packet. for example,
-    //       video/audio packet use raw bytes, no video/audio packet.
-    char *payload;
+    // 4.2. Message Payload
+    SrsSharedPtr<SrsMemoryBlock> payload_;
 
 public:
     SrsCommonMessage();
     virtual ~SrsCommonMessage();
+
+public:
+    // Backward compatibility accessors
+    char* payload() { return payload_.get() ? payload_->payload() : NULL; }
+    int size() { return payload_.get() ? payload_->size() : 0; }
 
 public:
     // Alloc the payload to specified size of bytes.
@@ -268,40 +307,23 @@ public:
     // Four-byte field that identifies the stream of the message. These
     // bytes are set in big-endian format.
     int32_t stream_id;
-    // 4.2. Message Payload
+    // Message type for determining audio/video/data
+    int8_t message_type;
+    // Preferred chunk ID for RTMP chunking
+    int prefer_cid;
+
 public:
-    // The current message parsed size,
-    //       size <= header.payload_length
-    // For the payload maybe sent in multiple chunks.
-    int size;
-    // The payload of message, the SrsCommonMessage never know about the detail of payload,
-    // user must use SrsProtocol.decode_message to get concrete packet.
-    // @remark, not all message payload can be decoded to packet. for example,
-    //       video/audio packet use raw bytes, no video/audio packet.
-    char *payload;
-
-private:
-    class SrsSharedPtrPayload
-    {
-    public:
-        // The shared message header.
-        SrsSharedMessageHeader header;
-        // The actual shared payload.
-        char *payload;
-        // The size of payload.
-        int size;
-        // The reference count
-        int shared_count;
-
-    public:
-        SrsSharedPtrPayload();
-        virtual ~SrsSharedPtrPayload();
-    };
-    SrsSharedPtrPayload *ptr;
+    // 4.2. Message Payload
+    SrsSharedPtr<SrsMemoryBlock> payload_;
 
 public:
     SrsSharedPtrMessage();
     virtual ~SrsSharedPtrMessage();
+
+public:
+    // Backward compatibility accessors
+    char* payload() { return payload_.get() ? payload_->payload() : NULL; }
+    int size() { return payload_.get() ? payload_->size() : 0; }
 
 public:
     // Create shared ptr message,
@@ -318,12 +340,6 @@ public:
     // Create shared ptr message from RAW payload.
     // @remark Note that the header is set to zero.
     virtual void wrap(char *payload, int size);
-    // Get current reference count.
-    // when this object created, count set to 0.
-    // if copy() this object, count increase 1.
-    // if this or copy deleted, free payload when count is 0, or count--.
-    // @remark, assert object is created.
-    virtual int count();
     // check prefer cid and stream id.
     // @return whether stream id already set.
     virtual bool check(int stream_id);

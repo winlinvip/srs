@@ -2129,7 +2129,7 @@ srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *d
             srs_trace("Muxer: send msg %s age=%d, dts=%" PRId64 ", size=%d",
                       msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                               : "N",
-                      pprint_->age(), msg->timestamp, msg->size);
+                      pprint_->age(), msg->timestamp, msg->size());
         }
 
         // send out encoded msg.

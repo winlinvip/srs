@@ -1227,7 +1227,8 @@ srs_error_t SrsProtocol::read_message_payload(SrsChunkStream *chunk, SrsCommonMe
     chunk->writing_pos_ += payload_size;
 
     // got entire RTMP message?
-    if (chunk->writing_pos_ == chunk->msg->payload() + chunk->header.payload_length) {
+    nn_written = (int)(chunk->writing_pos_ - chunk->msg->payload());
+    if (nn_written == chunk->header.payload_length) {
         *pmsg = chunk->msg;
 
         chunk->msg = NULL;

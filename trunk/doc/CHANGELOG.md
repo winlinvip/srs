@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-09-01, Merge [#4463](https://github.com/ossrs/srs/pull/4463): AI: Use SrsHttpUri for URL parsing and add legacy RTMP URL conversion. v7.0.72 (#4463)
 * v7.0, 2025-09-01, Merge [#4462](https://github.com/ossrs/srs/pull/4462): HTTP: Rename HTTP hijack to dynamic match for better clarity. v7.0.71 (#4462)
 * v7.0, 2025-08-31, Merge [#4461](https://github.com/ossrs/srs/pull/4461): AI: Extract shared components and improve SRS server architecture. v7.0.70 (#4461)
 * v7.0, 2025-08-31, Merge [#4460](https://github.com/ossrs/srs/pull/4460): AI: Always enable SRT protocol. v7.0.69 (#4460)

@@ -276,7 +276,7 @@ public:
 
 // The HTTP Live Streaming Server, to serve FLV/TS/MP3/AAC stream.
 // TODO: Support multiple stream.
-class SrsHttpStreamServer : public ISrsReloadHandler, public ISrsHttpMatchHijacker
+class SrsHttpStreamServer : public ISrsReloadHandler, public ISrsHttpDynamicMatcher
 {
 private:
     SrsServer *server;
@@ -300,9 +300,10 @@ public:
     // HTTP flv/ts/mp3/aac stream
     virtual srs_error_t http_mount(ISrsRequest *r);
     virtual void http_unmount(ISrsRequest *r);
-    // Interface ISrsHttpMatchHijacker
+
+    // Interface ISrsHttpDynamicMatcher
 public:
-    virtual srs_error_t hijack(ISrsHttpMessage *request, ISrsHttpHandler **ph);
+    virtual srs_error_t dynamic_match(ISrsHttpMessage *request, ISrsHttpHandler **ph);
 
 private:
     virtual srs_error_t initialize_flv_streaming();

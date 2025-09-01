@@ -2271,7 +2271,6 @@ srs_error_t SrsLiveSource::on_aggregate(SrsCommonMessage *msg)
         o.header.timestamp_delta = timestamp;
         o.header.timestamp = timestamp;
         o.header.stream_id = stream_id;
-        o.header.prefer_cid = msg->header.prefer_cid;
 
         if (data_size > 0) {
             o.create_payload(data_size);

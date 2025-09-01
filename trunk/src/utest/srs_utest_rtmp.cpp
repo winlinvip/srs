@@ -90,7 +90,6 @@ VOID TEST(ProtocolRTMPTest, PacketEncode)
 
     if (true) {
         SrsPacket pkt;
-        EXPECT_EQ(0, pkt.get_prefer_cid());
         EXPECT_EQ(0, pkt.get_message_type());
         EXPECT_EQ(0, pkt.get_size());
     }

@@ -28,6 +28,21 @@ using namespace std;
 
 SrsPps *_srs_pps_objs_msgs = NULL;
 
+int srs_rtmp_prefer_cid(int message_type)
+{
+    if (message_type == RTMP_MSG_VideoMessage) {
+        return RTMP_CID_Video;
+    } else if (message_type == RTMP_MSG_AudioMessage) {
+        return RTMP_CID_Audio;
+    } else if (message_type == RTMP_MSG_AMF0CommandMessage || message_type == RTMP_MSG_AMF3CommandMessage) {
+        return RTMP_CID_OverStream;
+    } else if (message_type == RTMP_MSG_AMF0DataMessage || message_type == RTMP_MSG_AMF3DataMessage) {
+        return RTMP_CID_OverStream;
+    } else {
+        return RTMP_CID_OverConnection;
+    }
+}
+
 int srs_chunk_header_c0(int prefer_cid, uint32_t timestamp, int32_t payload_length, int8_t message_type, int32_t stream_id, char *cache, int nb_cache)
 {
     // to directly set the field.
@@ -159,8 +174,6 @@ SrsMessageHeader::SrsMessageHeader()
     stream_id = 0;
 
     timestamp = 0;
-    // we always use the connection chunk-id
-    prefer_cid = RTMP_CID_OverConnection;
 }
 
 SrsMessageHeader::~SrsMessageHeader()
@@ -234,9 +247,6 @@ void SrsMessageHeader::initialize_amf0_script(int size, int stream)
     timestamp_delta = (int32_t)0;
     timestamp = (int64_t)0;
     stream_id = (int32_t)stream;
-
-    // amf0 script use connection2 chunk-id
-    prefer_cid = RTMP_CID_OverConnection2;
 }
 
 void SrsMessageHeader::initialize_audio(int size, uint32_t time, int stream)
@@ -246,9 +256,6 @@ void SrsMessageHeader::initialize_audio(int size, uint32_t time, int stream)
     timestamp_delta = (int32_t)time;
     timestamp = (int64_t)time;
     stream_id = (int32_t)stream;
-
-    // audio chunk-id
-    prefer_cid = RTMP_CID_Audio;
 }
 
 void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
@@ -258,9 +265,6 @@ void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
     timestamp_delta = (int32_t)time;
     timestamp = (int64_t)time;
     stream_id = (int32_t)stream;
-
-    // video chunk-id
-    prefer_cid = RTMP_CID_Video;
 }
 
 SrsCommonMessage::SrsCommonMessage()
@@ -299,8 +303,11 @@ srs_error_t SrsCommonMessage::create(SrsMessageHeader *pheader, char *body, int 
     return err;
 }
 
-SrsSharedPtrMessage::SrsSharedPtrMessage() : timestamp(0), stream_id(0), message_type(0), prefer_cid(RTMP_CID_OverConnection)
+SrsSharedPtrMessage::SrsSharedPtrMessage()
 {
+    timestamp = 0;
+    stream_id = 0;
+    message_type = 0;
     payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
 
     ++_srs_pps_objs_msgs->sugar;
@@ -320,7 +327,6 @@ srs_error_t SrsSharedPtrMessage::create(SrsCommonMessage *msg)
     this->timestamp = msg->header.timestamp;
     this->stream_id = msg->header.stream_id;
     this->message_type = msg->header.message_type;
-    this->prefer_cid = msg->header.prefer_cid;
 
     return err;
 }
@@ -342,7 +348,6 @@ srs_error_t SrsSharedPtrMessage::create(SrsMessageHeader *pheader, char *payload
         this->timestamp = pheader->timestamp;
         this->stream_id = pheader->stream_id;
         this->message_type = pheader->message_type;
-        this->prefer_cid = pheader->prefer_cid;
     }
 
     return err;
@@ -389,13 +394,21 @@ bool SrsSharedPtrMessage::is_video()
 int SrsSharedPtrMessage::chunk_header(char *cache, int nb_cache, bool c0)
 {
     int payload_length = payload_.get() ? payload_->size() : 0;
+    int chunk_id = srs_rtmp_prefer_cid(message_type);
 
     if (c0) {
-        return srs_chunk_header_c0(prefer_cid, (uint32_t)timestamp,
-                                   payload_length, message_type, stream_id, cache, nb_cache);
+        return srs_chunk_header_c0(chunk_id,
+                                   (uint32_t)timestamp,
+                                   payload_length,
+                                   message_type,
+                                   stream_id,
+                                   cache,
+                                   nb_cache);
     } else {
-        return srs_chunk_header_c3(prefer_cid, (uint32_t)timestamp,
-                                   cache, nb_cache);
+        return srs_chunk_header_c3(chunk_id,
+                                   (uint32_t)timestamp,
+                                   cache,
+                                   nb_cache);
     }
 }
 
@@ -406,7 +419,6 @@ SrsSharedPtrMessage *SrsSharedPtrMessage::copy()
     copy->timestamp = timestamp;
     copy->stream_id = stream_id;
     copy->message_type = message_type;
-    copy->prefer_cid = prefer_cid;
 
     return copy;
 }

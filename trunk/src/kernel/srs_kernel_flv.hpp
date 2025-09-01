@@ -157,12 +157,6 @@ public:
     int64_t timestamp;
 
 public:
-    // Get the prefered cid(chunk stream id) which sendout over.
-    // set at decoding, and canbe used for directly send message,
-    // For example, dispatch to all connections.
-    int prefer_cid;
-
-public:
     SrsMessageHeader();
     virtual ~SrsMessageHeader();
 
@@ -224,29 +218,12 @@ public:
     virtual srs_error_t create(SrsMessageHeader *pheader, char *body, int size);
 };
 
-// The shared ptr message.
-// For audio/video/data message that need less memory copy.
-// and only for output.
-//
-// Create first object by constructor and create(),
-// use copy if need reference count message.
 class SrsSharedPtrMessage
 {
-    // 4.1. Message Header
 public:
-    // Four-byte field that contains a timestamp of the message.
-    // The 4 bytes are packed in the big-endian order.
-    // @remark, used as calc timestamp when decode and encode time.
-    // @remark, we use 64bits for large time for jitter detect and hls.
     int64_t timestamp;
-    // 4bytes.
-    // Four-byte field that identifies the stream of the message. These
-    // bytes are set in big-endian format.
     int32_t stream_id;
-    // Message type for determining audio/video/data
     int8_t message_type;
-    // Preferred chunk ID for RTMP chunking
-    int prefer_cid;
 
 public:
     // 4.2. Message Payload
@@ -438,6 +415,9 @@ public:
     // For start offset, seed to this position and response flv stream.
     virtual srs_error_t seek2(int64_t offset);
 };
+
+// Get the prefer cid for message type.
+extern int srs_rtmp_prefer_cid(int message_type);
 
 // Generate the c0 chunk header for msg.
 // @param cache, the cache to write header.

@@ -115,11 +115,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    // The cid(chunk id) specifies the chunk to send data over.
-    // Generally, each message prefer some cid, for example,
-    // all protocol control messages prefer RTMP_CID_ProtocolControl,
-    // SrsSetWindowAckSizePacket is protocol control message.
-    virtual int get_prefer_cid();
     // The subpacket must override to provide the right message type.
     // The message type set the RTMP message type in header.
     virtual int get_message_type();
@@ -866,7 +861,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -897,7 +891,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -932,7 +925,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -959,7 +951,6 @@ public:
     virtual ~SrsCallResPacket();
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -993,7 +984,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1022,7 +1012,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1074,7 +1063,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1111,7 +1099,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1159,7 +1146,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1253,7 +1239,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1289,7 +1274,6 @@ public:
     void set_desc(SrsAmf0Object *v);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1316,7 +1300,6 @@ public:
     void set_args(SrsAmf0Any *v);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1350,7 +1333,6 @@ public:
     void set_data(SrsAmf0Object *v);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1379,7 +1361,6 @@ public:
     SrsAmf0Object *get_data();
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1406,7 +1387,6 @@ public:
     virtual ~SrsSampleAccessPacket();
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1437,7 +1417,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1461,7 +1440,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1485,7 +1463,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1511,7 +1488,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1543,7 +1519,6 @@ public:
     virtual ~SrsSetPeerBandwidthPacket();
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:
@@ -1655,7 +1630,6 @@ public:
     virtual srs_error_t decode(SrsBuffer *stream);
     // Encode functions for concrete packet to override.
 public:
-    virtual int get_prefer_cid();
     virtual int get_message_type();
 
 protected:

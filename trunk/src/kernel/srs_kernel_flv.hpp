@@ -224,30 +224,6 @@ public:
     virtual srs_error_t create(SrsMessageHeader *pheader, char *body, int size);
 };
 
-// The message header for shared ptr message.
-// only the message for all msgs are same.
-class SrsSharedMessageHeader
-{
-public:
-    // 3bytes.
-    // Three-byte field that represents the size of the payload in bytes.
-    // It is set in big-endian format.
-    int32_t payload_length;
-    // 1byte.
-    // One byte field to represent the message type. A range of type IDs
-    // (1-7) are reserved for protocol control messages.
-    // For example, RTMP_MSG_AudioMessage or RTMP_MSG_VideoMessage.
-    int8_t message_type;
-    // Get the prefered cid(chunk stream id) which sendout over.
-    // set at decoding, and canbe used for directly send message,
-    // For example, dispatch to all connections.
-    int prefer_cid;
-
-public:
-    SrsSharedMessageHeader();
-    virtual ~SrsSharedMessageHeader();
-};
-
 // The shared ptr message.
 // For audio/video/data message that need less memory copy.
 // and only for output.
@@ -258,8 +234,6 @@ class SrsSharedPtrMessage
 {
     // 4.1. Message Header
 public:
-    // The header can shared, only set the timestamp and stream id.
-    // SrsSharedMessageHeader header;
     // Four-byte field that contains a timestamp of the message.
     // The 4 bytes are packed in the big-endian order.
     // @remark, used as calc timestamp when decode and encode time.

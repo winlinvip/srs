@@ -299,17 +299,6 @@ srs_error_t SrsCommonMessage::create(SrsMessageHeader *pheader, char *body, int 
     return err;
 }
 
-SrsSharedMessageHeader::SrsSharedMessageHeader()
-{
-    payload_length = 0;
-    message_type = 0;
-    prefer_cid = 0;
-}
-
-SrsSharedMessageHeader::~SrsSharedMessageHeader()
-{
-}
-
 SrsSharedPtrMessage::SrsSharedPtrMessage() : timestamp(0), stream_id(0), message_type(0), prefer_cid(RTMP_CID_OverConnection)
 {
     payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);

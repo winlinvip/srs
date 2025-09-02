@@ -3188,15 +3188,6 @@ int SrsConfig::get_stream_caster_listen(SrsConfDirective *conf)
     return ::atoi(conf->arg0().c_str());
 }
 
-// Because SIP depends on HTTP parser library, which is not mainained, so we need
-// to upgraded to llhttp. But llhttp doesn't support SIP, as a result, SRS cannot
-// support SIP server for GB28181. This is why this config is always disabled. You
-// should always use the external SIP server instead.
-bool SrsConfig::get_stream_caster_sip_enable(SrsConfDirective *conf)
-{
-    return false;
-}
-
 bool SrsConfig::get_rtsp_server_enabled()
 {
     SrsConfDirective *conf = root->get("rtsp_server");

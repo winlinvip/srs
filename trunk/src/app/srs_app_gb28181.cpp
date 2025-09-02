@@ -29,8 +29,6 @@
 #include <sstream>
 using namespace std;
 
-// See https://www.ietf.org/rfc/rfc3261.html#section-8.1.1.7
-#define SRS_GB_BRANCH_MAGIC "z9hG4bK"
 #define SRS_GB_MAX_RECOVER 16
 #define SRS_GB_MAX_TIMEOUT 3
 #define SRS_GB_LARGE_PACKET 1500
@@ -326,11 +324,6 @@ srs_error_t SrsGbListener::initialize(SrsConfDirective *conf)
     if (true) {
         int port = _srs_config->get_stream_caster_listen(conf);
         media_listener_->set_endpoint(ip, port)->set_label("GB-TCP");
-    }
-
-    bool sip_enabled = _srs_config->get_stream_caster_sip_enable(conf);
-    if (!sip_enabled) {
-        srs_warn("GB SIP is disabled.");
     }
 
     return err;

@@ -484,8 +484,6 @@ public:
     virtual std::string get_stream_caster_output(SrsConfDirective *conf);
     // Get the listen port of stream caster.
     virtual int get_stream_caster_listen(SrsConfDirective *conf);
-    // Get the sip.enabled configuration.
-    virtual bool get_stream_caster_sip_enable(SrsConfDirective *conf);
     // rtsp section
 public:
     virtual bool get_rtsp_server_enabled();

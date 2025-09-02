@@ -3133,40 +3133,6 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
         EXPECT_EQ(8080, conf.get_stream_caster_listen(arr.at(0)));
     }
-
-    // Test SIP configuration defaults
-    if (true) {
-        MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster;"));
-
-        vector<SrsConfDirective *> arr = conf.get_stream_casters();
-        ASSERT_EQ(1, (int)arr.size());
-
-        // SIP should be disabled by default
-        EXPECT_FALSE(conf.get_stream_caster_sip_enable(arr.at(0)));
-    }
-
-    if (true) {
-        MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster {sip {enabled on;}}"));
-
-        vector<SrsConfDirective *> arr = conf.get_stream_casters();
-        ASSERT_EQ(1, (int)arr.size());
-
-        // SIP cannot be explicitly enabled
-        EXPECT_FALSE(conf.get_stream_caster_sip_enable(arr.at(0)));
-    }
-
-    if (true) {
-        MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster {sip {enabled off;}}"));
-
-        vector<SrsConfDirective *> arr = conf.get_stream_casters();
-        ASSERT_EQ(1, (int)arr.size());
-
-        // SIP can be explicitly disabled
-        EXPECT_FALSE(conf.get_stream_caster_sip_enable(arr.at(0)));
-    }
 }
 
 VOID TEST(ConfigMainTest, CheckVhostConfig2)

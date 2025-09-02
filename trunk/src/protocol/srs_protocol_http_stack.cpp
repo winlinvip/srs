@@ -1979,12 +1979,6 @@ enum state { s_dead = 1 /* important that this is > 0 */
              s_res_HT,
              s_res_HTT,
              s_res_HTTP,
-             s_res_S /* SIP https://www.ietf.org/rfc/rfc3261.html */
-             ,
-             s_res_SI /* SIP https://www.ietf.org/rfc/rfc3261.html */
-             ,
-             s_res_SIP /* SIP https://www.ietf.org/rfc/rfc3261.html */
-             ,
              s_res_http_major,
              s_res_http_dot,
              s_res_http_minor,
@@ -2019,12 +2013,6 @@ enum state { s_dead = 1 /* important that this is > 0 */
              s_req_http_HTTP,
              s_req_http_I,
              s_req_http_IC,
-             s_req_http_S /* SIP https://www.ietf.org/rfc/rfc3261.html */
-             ,
-             s_req_http_SI /* SIP https://www.ietf.org/rfc/rfc3261.html */
-             ,
-             s_req_http_SIP /* SIP https://www.ietf.org/rfc/rfc3261.html */
-             ,
              s_req_http_major,
              s_req_http_dot,
              s_req_http_minor,
@@ -2443,11 +2431,6 @@ size_t http_parser_execute(http_parser *parser,
                 UPDATE_STATE(s_res_or_resp_H);
 
                 CALLBACK_NOTIFY(message_begin);
-            } else if (ch == 'S') { /* SIP https://www.ietf.org/rfc/rfc3261.html */
-                parser->type = HTTP_RESPONSE;
-                UPDATE_STATE(s_res_S);
-
-                CALLBACK_NOTIFY(message_begin);
             } else {
                 parser->type = HTTP_REQUEST;
                 UPDATE_STATE(s_start_req);
@@ -2482,8 +2465,6 @@ size_t http_parser_execute(http_parser *parser,
 
             if (ch == 'H') {
                 UPDATE_STATE(s_res_H);
-            } else if (ch == 'S') { /* SIP https://www.ietf.org/rfc/rfc3261.html */
-                UPDATE_STATE(s_res_S);
             } else {
                 SET_ERRNO(HPE_INVALID_CONSTANT);
                 goto error;
@@ -2509,24 +2490,6 @@ size_t http_parser_execute(http_parser *parser,
             break;
 
         case s_res_HTTP:
-            STRICT_CHECK(ch != '/');
-            UPDATE_STATE(s_res_http_major);
-            break;
-
-        /* SIP https://www.ietf.org/rfc/rfc3261.html */
-        case s_res_S:
-            STRICT_CHECK(ch != 'I');
-            UPDATE_STATE(s_res_SI);
-            break;
-
-        /* SIP https://www.ietf.org/rfc/rfc3261.html */
-        case s_res_SI:
-            STRICT_CHECK(ch != 'P');
-            UPDATE_STATE(s_res_SIP);
-            break;
-
-        /* SIP https://www.ietf.org/rfc/rfc3261.html */
-        case s_res_SIP:
             STRICT_CHECK(ch != '/');
             UPDATE_STATE(s_res_http_major);
             break;
@@ -2677,9 +2640,6 @@ size_t http_parser_execute(http_parser *parser,
             case 'H':
                 parser->method = HTTP_HEAD;
                 break;
-            case 'I':
-                parser->method = HTTP_INVITE;
-                break; /* SIP https://www.ietf.org/rfc/rfc3261.html */
             case 'L':
                 parser->method = HTTP_LOCK; /* or LINK */
                 break;
@@ -2743,8 +2703,6 @@ size_t http_parser_execute(http_parser *parser,
                     XX(POST, 1, 'A', PATCH)
                     XX(POST, 1, 'R', PROPFIND)
                     XX(PUT, 2, 'R', PURGE)
-                    XX(ACL, 2, 'K', ACK)  /* SIP https://www.ietf.org/rfc/rfc3261.html */
-                    XX(BIND, 1, 'Y', BYE) /* SIP https://www.ietf.org/rfc/rfc3261.html */
                     XX(CONNECT, 1, 'H', CHECKOUT)
                     XX(CONNECT, 2, 'P', COPY)
                     XX(MKCOL, 1, 'O', MOVE)
@@ -2752,11 +2710,9 @@ size_t http_parser_execute(http_parser *parser,
                     XX(MKCOL, 1, '-', MSEARCH)
                     XX(MKCOL, 2, 'A', MKACTIVITY)
                     XX(MKCOL, 3, 'A', MKCALENDAR)
-                    XX(MERGE, 2, 'S', MESSAGE) /* SIP https://www.ietf.org/rfc/rfc3261.html */
                     XX(SUBSCRIBE, 1, 'E', SEARCH)
                     XX(SUBSCRIBE, 1, 'O', SOURCE)
                     XX(REPORT, 2, 'B', REBIND)
-                    XX(REPORT, 2, 'G', REGISTER) /* SIP https://www.ietf.org/rfc/rfc3261.html */
                     XX(PROPFIND, 4, 'P', PROPPATCH)
                     XX(LOCK, 1, 'I', LINK)
                     XX(UNLOCK, 2, 'S', UNSUBSCRIBE)
@@ -2783,11 +2739,6 @@ size_t http_parser_execute(http_parser *parser,
             MARK(url);
             if (parser->method == HTTP_CONNECT) {
                 UPDATE_STATE(s_req_server_start);
-            }
-
-            /* SIP https://www.ietf.org/rfc/rfc3261.html */
-            if (parser->method >= HTTP_REGISTER && parser->method <= HTTP_BYE) {
-                UPDATE_STATE(s_req_path);
             }
 
             UPDATE_STATE(parse_url_char(CURRENT_STATE(), ch));
@@ -2857,9 +2808,6 @@ size_t http_parser_execute(http_parser *parser,
             case 'H':
                 UPDATE_STATE(s_req_http_H);
                 break;
-            case 'S':                       /* SIP https://www.ietf.org/rfc/rfc3261.html */
-                UPDATE_STATE(s_req_http_S); /* SIP https://www.ietf.org/rfc/rfc3261.html */
-                break;                      /* SIP https://www.ietf.org/rfc/rfc3261.html */
             case 'I':
                 if (parser->method == HTTP_SOURCE) {
                     UPDATE_STATE(s_req_http_I);
@@ -2898,24 +2846,6 @@ size_t http_parser_execute(http_parser *parser,
             break;
 
         case s_req_http_HTTP:
-            STRICT_CHECK(ch != '/');
-            UPDATE_STATE(s_req_http_major);
-            break;
-
-        /* SIP https://www.ietf.org/rfc/rfc3261.html */
-        case s_req_http_S:
-            STRICT_CHECK(ch != 'I');
-            UPDATE_STATE(s_req_http_SI);
-            break;
-
-        /* SIP https://www.ietf.org/rfc/rfc3261.html */
-        case s_req_http_SI:
-            STRICT_CHECK(ch != 'P');
-            UPDATE_STATE(s_req_http_SIP);
-            break;
-
-        /* SIP https://www.ietf.org/rfc/rfc3261.html */
-        case s_req_http_SIP:
             STRICT_CHECK(ch != '/');
             UPDATE_STATE(s_req_http_major);
             break;

@@ -905,13 +905,7 @@ enum http_status {
     XX(31, LINK, LINK)                              \
     XX(32, UNLINK, UNLINK)                          \
     /* icecast */                                   \
-    XX(33, SOURCE, SOURCE)                          \
-    /* SIP https://www.ietf.org/rfc/rfc3261.html */ \
-    XX(34, REGISTER, REGISTER)                      \
-    XX(35, INVITE, INVITE)                          \
-    XX(36, ACK, ACK)                                \
-    XX(37, MESSAGE, MESSAGE)                        \
-    XX(38, BYE, BYE)
+    XX(33, SOURCE, SOURCE)
 
 enum http_method {
 #define XX(num, name, string) HTTP_##name = num,

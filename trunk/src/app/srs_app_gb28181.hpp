@@ -57,34 +57,6 @@ enum SrsGbSessionState {
 };
 std::string srs_gb_session_state(SrsGbSessionState state);
 
-// The state machine for GB SIP connection.
-// init:
-//      to registered: Got REGISTER SIP message.
-//      to stable: Got MESSAGE SIP message, when SIP TCP connection re-connect.
-// registered:
-//      to inviting: Sent INVITE SIP message.
-// inviting:
-//      to trying: Got TRYING SIP message.
-//      to stable: Got INVITE 200 OK and sent INVITE OK response.
-// trying:
-//      to stable: Got INVITE 200 OK and sent INVITE OK response.
-// stable:
-//      to re-inviting: Sent bye to device before re-inviting.
-//      to bye: Got bye SIP message from device.
-// re-inviting:
-//      to inviting: Got bye OK response from deivce.
-// Please see SrsGbSipTcpConn::drive_state for detail.
-enum SrsGbSipState {
-    SrsGbSipStateInit = 0,
-    SrsGbSipStateRegistered,
-    SrsGbSipStateInviting,
-    SrsGbSipStateTrying,
-    SrsGbSipStateReinviting,
-    SrsGbSipStateStable,
-    SrsGbSipStateBye,
-};
-std::string srs_gb_sip_state(SrsGbSipState state);
-
 // For external SIP server mode, where SRS acts only as a media relay server
 //     1. SIP server POST request via HTTP API with stream ID and SSRC
 //     2. SRS create session using ID and SSRC, return a port for receiving media streams (indicated in conf).
@@ -117,9 +89,9 @@ private:
 };
 
 // The main logic object for GB, the session.
-// Each session contains a SIP object and a media object, that are managed by session. This means session always
-// lives longer than SIP and media, and session will dispose SIP and media when session disposed. In another word,
-// SIP and media objects use directly pointer to session, while session use shared ptr.
+// Each session contains a media object, that are managed by session. This means session always
+// lives longer than media, and session will dispose media when session disposed. In another word,
+// media objects use directly pointer to session, while session use shared ptr.
 class SrsGbSession : public ISrsResource, public ISrsCoroutineHandler, public ISrsExecutorHandler
 {
 private:
@@ -139,7 +111,7 @@ private:
     SrsGbMuxer *muxer_;
 
 private:
-    // When wait for SIP and media connecting, timeout if exceed.
+    // When wait for media connecting, timeout if exceed.
     srs_utime_t connecting_starttime_;
     // The time we enter reinviting state.
     srs_utime_t reinviting_starttime_;
@@ -165,6 +137,8 @@ private:
     uint64_t media_reserved_;
 
 public:
+    // The device ID generated and set by external SIP server, using SRS HTTP API. This
+    // device ID is used to generate the RTMP stream name.
     std::string device_id_;
 
 public:
@@ -186,7 +160,7 @@ public:
 
     // When got available media transport.
     void on_media_transport(SrsSharedResource<SrsGbMediaTcpConn> media);
-    
+
     // Interface ISrsCoroutineHandler
 public:
     virtual srs_error_t cycle();
@@ -203,7 +177,7 @@ public:
     virtual std::string desc();
 };
 
-// The SIP and Media listener for GB.
+// The Media listener for GB.
 class SrsGbListener : public ISrsListener, public ISrsTcpHandler
 {
 private:
@@ -445,16 +419,6 @@ public:
 
 // Find the pack header which starts with bytes (00 00 01 ba).
 extern bool srs_skip_util_pack(SrsBuffer *stream);
-
-// Parse the address from SIP string, for example:
-//      sip:bob@ossrs.io:5060
-//      <sip:bob@ossrs.io:5060>
-//      Bob <sip:bob@ossrs.io:5060>
-// Parsed as:
-//      user: bob
-//      host: ossrs.io:5060
-// Note that the host can be parsed by srs_net_split_hostport as host(ossrs.io) and port(5060).
-extern void srs_sip_parse_address(const std::string &address, std::string &user, std::string &host);
 
 // Manager for GB connections.
 extern SrsResourceManager *_srs_gb_manager;

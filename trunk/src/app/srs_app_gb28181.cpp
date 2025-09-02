@@ -31,7 +31,6 @@ using namespace std;
 
 // See https://www.ietf.org/rfc/rfc3261.html#section-8.1.1.7
 #define SRS_GB_BRANCH_MAGIC "z9hG4bK"
-#define SRS_GB_SIP_PORT 5060
 #define SRS_GB_MAX_RECOVER 16
 #define SRS_GB_MAX_TIMEOUT 3
 #define SRS_GB_LARGE_PACKET 1500
@@ -56,33 +55,6 @@ std::string srs_gb_session_state(SrsGbSessionState state)
 std::string srs_gb_state(SrsGbSessionState ostate, SrsGbSessionState state)
 {
     return srs_fmt_sprintf("%s->%s", srs_gb_session_state(ostate).c_str(), srs_gb_session_state(state).c_str());
-}
-
-std::string srs_gb_sip_state(SrsGbSipState state)
-{
-    switch (state) {
-    case SrsGbSipStateInit:
-        return "Init";
-    case SrsGbSipStateRegistered:
-        return "Registered";
-    case SrsGbSipStateInviting:
-        return "Inviting";
-    case SrsGbSipStateTrying:
-        return "Trying";
-    case SrsGbSipStateStable:
-        return "Stable";
-    case SrsGbSipStateReinviting:
-        return "Re-inviting";
-    case SrsGbSipStateBye:
-        return "Bye";
-    default:
-        return "Invalid";
-    }
-}
-
-std::string srs_sip_state(SrsGbSipState ostate, SrsGbSipState state)
-{
-    return srs_fmt_sprintf("%s->%s", srs_gb_sip_state(ostate).c_str(), srs_gb_sip_state(state).c_str());
 }
 
 SrsGbSession::SrsGbSession() : media_(new SrsGbMediaTcpConn())
@@ -267,10 +239,7 @@ srs_error_t SrsGbSession::do_cycle()
         // Drive the state in a fixed interval.
         srs_usleep(SRS_GB_SESSION_DRIVE_INTERVAL);
 
-        // Client send bye, we should dispose the session.
-        // Note: SIP functionality removed, session management simplified.
-
-        // Regular state, driven by state of SIP and transport.
+        // Regular state, driven by state of transport.
         if ((err = drive_state()) != srs_success) {
             return srs_error_wrap(err, "drive");
         }
@@ -293,15 +262,13 @@ srs_error_t SrsGbSession::drive_state()
 {
     srs_error_t err = srs_success;
 
-#define SRS_GB_CHANGE_STATE_TO(state)                          \
-    {                                                          \
-        SrsGbSessionState ostate = set_state(state);           \
-        srs_trace("Session: Change device=external, state=%s", \
-                  srs_gb_state(ostate, state_).c_str());       \
+#define SRS_GB_CHANGE_STATE_TO(state)                                        \
+    {                                                                        \
+        SrsGbSessionState ostate = set_state(state);                         \
+        srs_trace("Session: Change device=%s, state=%s", device_id_.c_str(), \
+                  srs_gb_state(ostate, state_).c_str());                     \
     }
 
-    // SIP functionality removed - session state management simplified
-    // Note: External SIP server should handle device registration and media negotiation
     if (state_ == SrsGbSessionStateInit) {
         // With external SIP server, we assume media connection is handled externally
         if (media_->is_connected()) {
@@ -1585,29 +1552,6 @@ bool srs_skip_util_pack(SrsBuffer *stream)
     }
 
     return false;
-}
-
-void srs_sip_parse_address(const std::string &address, std::string &user, std::string &host)
-{
-    string v = address;
-
-    size_t pos;
-
-    if ((pos = v.find("<")) != string::npos) {
-        v = v.substr(pos + 1);
-    }
-    if ((pos = v.find(">")) != string::npos) {
-        v = v.substr(0, pos);
-    }
-    if ((pos = v.find("sip:")) != string::npos) {
-        v = v.substr(4);
-    }
-
-    user = v;
-    if ((pos = v.find("@")) != string::npos) {
-        user = v.substr(0, pos);
-        host = v.substr(pos + 1);
-    }
 }
 
 SrsGoApiGbPublish::SrsGoApiGbPublish(SrsConfDirective *conf)

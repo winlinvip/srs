@@ -669,9 +669,10 @@ public:
     virtual std::string password();
 
 private:
-    // Get the parsed url field.
-    // @return return empty string if not set.
-    virtual std::string get_uri_field(const std::string &uri, void *hp_u, int field);
+    // Simple URL parser to replace http-parser URL parsing
+    virtual srs_error_t parse_url_simple(const std::string &url, std::string &schema, std::string &host, int &port,
+                                         std::string &path, std::string &query, std::string &fragment,
+                                         std::string &username, std::string &password);
     srs_error_t parse_query();
 
 public:
@@ -696,14 +697,10 @@ extern srs_error_t srs_av_base64_encode(std::string plaintext, std::string &ciph
 //      git clone https://github.com/nodejs/llhttp.git
 //      cd llhttp
 //      make
-// The header files:
-//      build/llhttp.h
-// The implementation files:
-//      build/llhttp.c
-//      src/native/api.c
-//      src/native/http.c
 // Note that these files are copied to SRS and formated by clang-format:
 //      ./scripts/clang_format.sh
+// Copy the header files to bellow:
+//      build/llhttp.h
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////

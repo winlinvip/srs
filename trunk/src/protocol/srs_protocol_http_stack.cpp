@@ -1224,30 +1224,18 @@ srs_error_t SrsHttpUri::initialize(string url)
         parsing_url = srs_strings_replace(parsing_url, "://__defaultVhost__", "://safe.vhost.default.ossrs.io");
     }
 
-    http_parser_url hp_u;
-    http_parser_url_init(&hp_u);
-
-    int r0;
-    if ((r0 = http_parser_parse_url(parsing_url.c_str(), parsing_url.length(), 0, &hp_u)) != 0) {
-        return srs_error_new(ERROR_HTTP_PARSE_URI, "parse url %s as %s failed, code=%d", url.c_str(), parsing_url.c_str(), r0);
-    }
-
-    std::string field = get_uri_field(parsing_url, &hp_u, UF_SCHEMA);
-    if (!field.empty()) {
-        schema = field;
+    // Simple URL parser to replace http-parser URL parsing
+    srs_error_t err = srs_success;
+    if ((err = parse_url_simple(parsing_url, schema, host, port, path, query, fragment_, username_, password_)) != srs_success) {
+        return srs_error_wrap(err, "parse url %s as %s failed", url.c_str(), parsing_url.c_str());
     }
 
     // Restore the default vhost.
-    if (pos_default_vhost == string::npos) {
-        host = get_uri_field(parsing_url, &hp_u, UF_HOST);
-    } else {
+    if (pos_default_vhost != string::npos) {
         host = SRS_CONSTS_RTMP_DEFAULT_VHOST;
     }
 
-    field = get_uri_field(parsing_url, &hp_u, UF_PORT);
-    if (!field.empty()) {
-        port = ::atoi(field.c_str());
-    }
+    // Set default ports if not specified
     if (port <= 0) {
         if (schema == "https") {
             port = SRS_DEFAULT_HTTPS_PORT;
@@ -1258,17 +1246,6 @@ srs_error_t SrsHttpUri::initialize(string url)
         } else {
             port = SRS_DEFAULT_HTTP_PORT;
         }
-    }
-
-    path = get_uri_field(parsing_url, &hp_u, UF_PATH);
-    query = get_uri_field(parsing_url, &hp_u, UF_QUERY);
-    fragment_ = get_uri_field(parsing_url, &hp_u, UF_FRAGMENT);
-
-    username_ = get_uri_field(parsing_url, &hp_u, UF_USERINFO);
-    size_t pos = username_.find(":");
-    if (pos != string::npos) {
-        password_ = username_.substr(pos + 1);
-        username_ = username_.substr(0, pos);
     }
 
     return parse_query();
@@ -1339,19 +1316,101 @@ std::string SrsHttpUri::password()
     return password_;
 }
 
-string SrsHttpUri::get_uri_field(const string &uri, void *php_u, int ifield)
+srs_error_t SrsHttpUri::parse_url_simple(const string &url, string &schema, string &host, int &port,
+                                         string &path, string &query, string &fragment, string &username, string &password)
 {
-    http_parser_url *hp_u = (http_parser_url *)php_u;
-    http_parser_url_fields field = (http_parser_url_fields)ifield;
+    // Simple URL parser: scheme://[userinfo@]host[:port][/path][?query][#fragment]
+    schema = host = path = query = fragment = username = password = "";
+    port = 0;
 
-    if ((hp_u->field_set & (1 << field)) == 0) {
-        return "";
+    size_t pos = 0;
+
+    // Parse schema
+    size_t schema_end = url.find("://", pos);
+    if (schema_end == string::npos) {
+        return srs_error_new(ERROR_HTTP_PARSE_URI, "invalid url, no schema: %s", url.c_str());
+    }
+    schema = url.substr(pos, schema_end);
+    pos = schema_end + 3;
+
+    // Find the end of authority (host:port or userinfo@host:port)
+    size_t authority_end = url.find_first_of("/?#", pos);
+    if (authority_end == string::npos) {
+        authority_end = url.length();
+    }
+    string authority = url.substr(pos, authority_end - pos);
+    pos = authority_end;
+
+    // Parse userinfo if present
+    size_t at_pos = authority.find('@');
+    if (at_pos != string::npos) {
+        string userinfo = authority.substr(0, at_pos);
+        authority = authority.substr(at_pos + 1);
+
+        size_t colon_pos = userinfo.find(':');
+        if (colon_pos != string::npos) {
+            username = userinfo.substr(0, colon_pos);
+            password = userinfo.substr(colon_pos + 1);
+        } else {
+            username = userinfo;
+        }
     }
 
-    int offset = hp_u->field_data[field].off;
-    int len = hp_u->field_data[field].len;
+    // Parse host and port
+    if (authority.empty()) {
+        return srs_error_new(ERROR_HTTP_PARSE_URI, "invalid url, no host: %s", url.c_str());
+    }
 
-    return uri.substr(offset, len);
+    size_t colon_pos = authority.rfind(':');
+    if (colon_pos != string::npos && colon_pos > 0) {
+        // Check if this is actually a port (all digits after colon)
+        string port_str = authority.substr(colon_pos + 1);
+        bool is_port = !port_str.empty();
+        for (size_t i = 0; i < port_str.length(); i++) {
+            if (!isdigit(port_str[i])) {
+                is_port = false;
+                break;
+            }
+        }
+
+        if (is_port) {
+            host = authority.substr(0, colon_pos);
+            port = atoi(port_str.c_str());
+        } else {
+            host = authority;
+        }
+    } else {
+        host = authority;
+    }
+
+    // Parse path
+    if (pos < url.length() && url[pos] == '/') {
+        size_t path_end = url.find_first_of("?#", pos);
+        if (path_end == string::npos) {
+            path_end = url.length();
+        }
+        path = url.substr(pos, path_end - pos);
+        pos = path_end;
+    }
+
+    // Parse query
+    if (pos < url.length() && url[pos] == '?') {
+        pos++; // skip '?'
+        size_t query_end = url.find('#', pos);
+        if (query_end == string::npos) {
+            query_end = url.length();
+        }
+        query = url.substr(pos, query_end - pos);
+        pos = query_end;
+    }
+
+    // Parse fragment
+    if (pos < url.length() && url[pos] == '#') {
+        pos++; // skip '#'
+        fragment = url.substr(pos);
+    }
+
+    return srs_success;
 }
 
 srs_error_t SrsHttpUri::parse_query()
@@ -1681,6 +1740,12 @@ srs_error_t SrsHttpUri::path_unescape(std::string s, std::string &value)
 
 // LCOV_EXCL_START
 
+// The llhttp is licensed under MIT, see https://github.com/nodejs/llhttp
+// Copy the implementation files to bellow:
+//      build/llhttp.c
+//      src/native/api.c
+//      src/native/http.c
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1734,10 +1799,13 @@ srs_error_t SrsHttpUri::path_unescape(std::string s, std::string &value)
 #define UNREACHABLE __builtin_unreachable()
 #endif /* _MSC_VER */
 
-#include "llhttp.h"
+// #include "llhttp.h"
+//  llhttp implementation is embedded below, no separate include needed
+
+// llhttp implementation is embedded below, no separate include needed
 
 typedef int (*llhttp__internal__span_cb)(
-    llhttp__internal_t *, const char *, const char *);
+    llhttp__internal_t *, const unsigned char *, const unsigned char *);
 
 static const unsigned char llparse_blob0[] = {
     'o', 'n'};
@@ -2257,7 +2325,16 @@ int llhttp__on_url(
 
 int llhttp__on_protocol(
     llhttp__internal_t *s, const unsigned char *p,
-    const unsigned char *endp);
+    const unsigned char *endp)
+{
+    // Bridge to the public API function - cast to llhttp_t and call the public API
+    llhttp_t *llhttp_parser = (llhttp_t *)s;
+    const llhttp_settings_t *settings = (const llhttp_settings_t *)llhttp_parser->settings;
+    if (settings && settings->on_protocol) {
+        return settings->on_protocol(llhttp_parser, (const char *)p, endp - p);
+    }
+    return 0;
+}
 
 int llhttp__on_version(
     llhttp__internal_t *s, const unsigned char *p,
@@ -3042,7 +3119,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_body;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_body;
+        state->_span_cb0 = (void *)llhttp__on_body;
         goto s_n_llhttp__internal__n_consume_content_length;
         UNREACHABLE;
     }
@@ -3352,7 +3429,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_chunk_extension_value;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_chunk_extension_value;
+        state->_span_cb0 = (void *)llhttp__on_chunk_extension_value;
         goto s_n_llhttp__internal__n_invoke_llhttp__on_chunk_extension_name_complete_3;
         UNREACHABLE;
     }
@@ -3416,7 +3493,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_chunk_extension_name;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_chunk_extension_name;
+        state->_span_cb0 = (void *)llhttp__on_chunk_extension_name;
         goto s_n_llhttp__internal__n_chunk_extension_name;
         UNREACHABLE;
     }
@@ -3747,7 +3824,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_body_1;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_body;
+        state->_span_cb0 = (void *)llhttp__on_body;
         goto s_n_llhttp__internal__n_consume_content_length_1;
         UNREACHABLE;
     }
@@ -3766,7 +3843,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_body_2;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_body;
+        state->_span_cb0 = (void *)llhttp__on_body;
         goto s_n_llhttp__internal__n_eof;
         UNREACHABLE;
     }
@@ -3847,7 +3924,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_header_value;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_header_value;
+        state->_span_cb0 = (void *)llhttp__on_header_value;
         goto s_n_llhttp__internal__n_span_end_llhttp__on_header_value;
         UNREACHABLE;
     }
@@ -4495,7 +4572,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_header_value_1;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_header_value;
+        state->_span_cb0 = (void *)llhttp__on_header_value;
         goto s_n_llhttp__internal__n_invoke_load_header_state_3;
         UNREACHABLE;
     }
@@ -4849,7 +4926,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_header_field;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_header_field;
+        state->_span_cb0 = (void *)llhttp__on_header_field;
         goto s_n_llhttp__internal__n_header_field;
         UNREACHABLE;
     }
@@ -5236,7 +5313,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_version;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_version;
+        state->_span_cb0 = (void *)llhttp__on_version;
         goto s_n_llhttp__internal__n_req_http_major;
         UNREACHABLE;
     }
@@ -5526,7 +5603,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_protocol;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_protocol;
+        state->_span_cb0 = (void *)llhttp__on_protocol;
         goto s_n_llhttp__internal__n_req_after_http_start;
         UNREACHABLE;
     }
@@ -6052,7 +6129,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_url_1;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_url;
+        state->_span_cb0 = (void *)llhttp__on_url;
         goto s_n_llhttp__internal__n_url_start;
         UNREACHABLE;
     }
@@ -6082,7 +6159,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_url;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_url;
+        state->_span_cb0 = (void *)llhttp__on_url;
         goto s_n_llhttp__internal__n_url_server;
         UNREACHABLE;
     }
@@ -7806,7 +7883,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_method_1;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_method;
+        state->_span_cb0 = (void *)llhttp__on_method;
         goto s_n_llhttp__internal__n_after_start_req;
         UNREACHABLE;
     }
@@ -7865,7 +7942,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_status;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_status;
+        state->_span_cb0 = (void *)llhttp__on_status;
         goto s_n_llhttp__internal__n_res_status;
         UNREACHABLE;
     }
@@ -8289,7 +8366,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_version_1;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_version;
+        state->_span_cb0 = (void *)llhttp__on_version;
         goto s_n_llhttp__internal__n_res_http_major;
         UNREACHABLE;
     }
@@ -8429,7 +8506,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_protocol_1;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_protocol;
+        state->_span_cb0 = (void *)llhttp__on_protocol;
         goto s_n_llhttp__internal__n_res_after_start;
         UNREACHABLE;
     }
@@ -8542,7 +8619,7 @@ static llparse_state_t llhttp__internal__run(
             return s_n_llhttp__internal__n_span_start_llhttp__on_method;
         }
         state->_span_pos0 = (void *)p;
-        state->_span_cb0 = llhttp__on_method;
+        state->_span_cb0 = (void *)llhttp__on_method;
         goto s_n_llhttp__internal__n_req_or_res_method;
         UNREACHABLE;
     }
@@ -8826,7 +8903,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_body: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_body(state, start, p);
     if (err != 0) {
@@ -8950,7 +9027,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_name: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_name(state, start, p);
     if (err != 0) {
@@ -8982,7 +9059,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_name_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_name(state, start, p);
     if (err != 0) {
@@ -9015,7 +9092,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_name_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_name(state, start, p);
     if (err != 0) {
@@ -9056,7 +9133,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9088,7 +9165,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9146,7 +9223,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9162,7 +9239,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value_3: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9179,7 +9256,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value_4: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9212,7 +9289,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value_5: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9229,7 +9306,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_value_6: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_value(state, start, p);
     if (err != 0) {
@@ -9273,7 +9350,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_name_3: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_name(state, start, p);
     if (err != 0) {
@@ -9290,7 +9367,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_chunk_extension_name_4: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_chunk_extension_name(state, start, p);
     if (err != 0) {
@@ -9332,7 +9409,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_body_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_body(state, start, p);
     if (err != 0) {
@@ -9587,7 +9664,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_field: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_field(state, start, p);
     if (err != 0) {
@@ -9662,7 +9739,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -9870,7 +9947,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -9886,7 +9963,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -9903,7 +9980,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_4: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -9919,7 +9996,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_5: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -9936,7 +10013,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_3: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -10039,7 +10116,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_6: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -10071,7 +10148,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_7: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -10104,7 +10181,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_9: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -10128,7 +10205,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_value_8: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_value(state, start, p);
     if (err != 0) {
@@ -10300,7 +10377,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_field_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_field(state, start, p);
     if (err != 0) {
@@ -10317,7 +10394,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_header_field_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_header_field(state, start, p);
     if (err != 0) {
@@ -10421,7 +10498,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_3: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10445,7 +10522,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_4: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10535,7 +10612,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -10551,7 +10628,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -10625,7 +10702,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -10641,7 +10718,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_3: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -10664,7 +10741,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_4: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -10712,7 +10789,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_protocol: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_protocol(state, start, p);
     if (err != 0) {
@@ -10728,7 +10805,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_protocol_3: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_protocol(state, start, p);
     if (err != 0) {
@@ -10768,7 +10845,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_protocol_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_protocol(state, start, p);
     if (err != 0) {
@@ -10808,7 +10885,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_protocol_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_protocol(state, start, p);
     if (err != 0) {
@@ -10851,7 +10928,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_5: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10867,7 +10944,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_6: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10883,7 +10960,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_7: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10899,7 +10976,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_8: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10923,7 +11000,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_9: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10939,7 +11016,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_10: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10955,7 +11032,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_11: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -10987,7 +11064,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -11003,7 +11080,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -11019,7 +11096,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -11035,7 +11112,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_12: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -11051,7 +11128,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_13: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -11067,7 +11144,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_url_14: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_url(state, start, p);
     if (err != 0) {
@@ -11164,7 +11241,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_method_2: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_method(state, start, p);
     if (err != 0) {
@@ -11288,7 +11365,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_status: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_status(state, start, p);
     if (err != 0) {
@@ -11305,7 +11382,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_status_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_status(state, start, p);
     if (err != 0) {
@@ -11412,7 +11489,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_6: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -11428,7 +11505,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_5: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -11502,7 +11579,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_7: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -11518,7 +11595,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_8: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -11541,7 +11618,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_version_9: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_version(state, start, p);
     if (err != 0) {
@@ -11581,7 +11658,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_protocol_4: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_protocol(state, start, p);
     if (err != 0) {
@@ -11597,7 +11674,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_protocol_5: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_protocol(state, start, p);
     if (err != 0) {
@@ -11629,7 +11706,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_method: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_method(state, start, p);
     if (err != 0) {
@@ -11667,7 +11744,7 @@ s_n_llhttp__internal__n_span_end_llhttp__on_method_1: {
     const unsigned char *start;
     int err;
 
-    start = state->_span_pos0;
+    start = (const unsigned char *)state->_span_pos0;
     state->_span_pos0 = NULL;
     err = llhttp__on_method(state, start, p);
     if (err != 0) {
@@ -11775,7 +11852,7 @@ int llhttp__internal_execute(llhttp__internal_t *state, const char *p, const cha
     if (state->_span_pos0 != NULL) {
         int error;
 
-        error = ((llhttp__internal__span_cb)state->_span_cb0)(state, state->_span_pos0, (const char *)endp);
+        error = ((llhttp__internal__span_cb)state->_span_cb0)(state, (const unsigned char *)state->_span_pos0, (const unsigned char *)endp);
         if (error != 0) {
             state->error = error;
             state->error_pos = endp;
@@ -11904,8 +11981,8 @@ uint8_t llhttp_get_upgrade(llhttp_t *parser)
 
 void llhttp_reset(llhttp_t *parser)
 {
-    llhttp_type_t type = parser->type;
-    const llhttp_settings_t *settings = parser->settings;
+    llhttp_type_t type = (llhttp_type_t)parser->type;
+    const llhttp_settings_t *settings = (const llhttp_settings_t *)parser->settings;
     void *data = parser->data;
     uint16_t lenient_flags = parser->lenient_flags;
 
@@ -11919,7 +11996,7 @@ void llhttp_reset(llhttp_t *parser)
 
 llhttp_errno_t llhttp_execute(llhttp_t *parser, const char *data, size_t len)
 {
-    return llhttp__internal_execute(parser, data, data + len);
+    return (llhttp_errno_t)llhttp__internal_execute(parser, data, data + len);
 }
 
 void llhttp_settings_init(llhttp_settings_t *settings)
@@ -11933,14 +12010,14 @@ llhttp_errno_t llhttp_finish(llhttp_t *parser)
 
     /* We're in an error state. Don't bother doing anything. */
     if (parser->error != 0) {
-        return 0;
+        return (llhttp_errno_t)0;
     }
 
     switch (parser->finish) {
     case HTTP_FINISH_SAFE_WITH_CB:
         CALLBACK_MAYBE(parser, on_message_complete);
         if (err != HPE_OK)
-            return err;
+            return (llhttp_errno_t)err;
 
     /* FALLTHROUGH */
     case HTTP_FINISH_SAFE:
@@ -11983,7 +12060,7 @@ void llhttp_resume_after_upgrade(llhttp_t *parser)
 
 llhttp_errno_t llhttp_get_errno(const llhttp_t *parser)
 {
-    return parser->error;
+    return (llhttp_errno_t)parser->error;
 }
 
 const char *llhttp_get_error_reason(const llhttp_t *parser)
@@ -12472,6 +12549,155 @@ int llhttp_message_needs_eof(const llhttp_t *parser)
     return 1;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+
+// LCOV_EXCL_STOP
+
+// To avoid type mismatch, these functions are used to bridge the APIs.
+// Bridge functions for internal callbacks that call the public API implementations
+// These bridge the internal callback signature to the public API signature
+int llhttp__on_message_begin(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_message_begin((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_url(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_url((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_status(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_status((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_method(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_method((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_version(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_version((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_header_field(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_header_field((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_header_value(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_header_value((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_chunk_extension_name(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_chunk_extension_name((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_chunk_extension_value(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_chunk_extension_value((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_headers_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_headers_complete((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_body(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_body((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_message_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return llhttp__on_message_complete((llhttp_t *)s, (const char *)p, (const char *)endp);
+}
+
+int llhttp__on_url_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_status_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_method_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_version_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_header_field_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_header_value_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_chunk_header(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_chunk_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_chunk_extension_name_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_chunk_extension_value_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_reset(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__on_protocol_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__before_headers_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__after_headers_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
+int llhttp__after_message_complete(llhttp__internal_t *s, const unsigned char *p, const unsigned char *endp)
+{
+    return 0;
+}
+
 int llhttp_should_keep_alive(const llhttp_t *parser)
 {
     if (parser->http_major > 0 && parser->http_minor > 0) {
@@ -12488,14 +12714,3 @@ int llhttp_should_keep_alive(const llhttp_t *parser)
 
     return !llhttp_message_needs_eof(parser);
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-
-// LCOV_EXCL_STOP

@@ -454,6 +454,7 @@ class SrsRtcConnectionNackTimer : public ISrsFastTimer
 {
 private:
     SrsRtcConnection *p_;
+    srs_mutex_t lock_;
 
 public:
     SrsRtcConnectionNackTimer(SrsRtcConnection *p);

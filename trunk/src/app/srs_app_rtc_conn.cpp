@@ -1745,17 +1745,28 @@ void SrsRtcPublishStream::update_send_report_time(uint32_t ssrc, const SrsNtp &n
 
 SrsRtcConnectionNackTimer::SrsRtcConnectionNackTimer(SrsRtcConnection *p) : p_(p)
 {
+    lock_ = srs_mutex_new();
     _srs_shared_timer->timer20ms()->subscribe(this);
 }
 
 SrsRtcConnectionNackTimer::~SrsRtcConnectionNackTimer()
 {
-    _srs_shared_timer->timer20ms()->unsubscribe(this);
+    if (true) {
+        SrsLocker(lock_);
+        _srs_shared_timer->timer20ms()->unsubscribe(this);
+    }
+    srs_mutex_destroy(lock_);
 }
 
 srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
 {
     srs_error_t err = srs_success;
+
+    // This is a very heavy function, and it may potentially cause a coroutine switch.
+    // Therefore, during this function, the 'this' pointer might become invalid because
+    // the object could be freed by another thread. As a result, we must lock the object
+    // to prevent it from being freed.
+    SrsLocker(lock_);
 
     if (!p_->nack_enabled_) {
         return err;

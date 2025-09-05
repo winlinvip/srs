@@ -131,4 +131,147 @@ public:
     int alloc(int size);
 };
 
+// The chan for anonymous coroutine to share variables.
+// The chan never free the args, you must manage the memory.
+class SrsCoroutineChan
+{
+private:
+    std::vector<void *> args_;
+    srs_mutex_t lock_;
+
+public:
+    SrsCoroutineChan();
+    virtual ~SrsCoroutineChan();
+
+public:
+    SrsCoroutineChan &push(void *value);
+    void *pop();
+    SrsCoroutineChan *copy();
+};
+
+// A helper to create a anonymous coroutine like goroutine in Go.
+// * The context is used to share variables between coroutines.
+// * The id is used to identify the coroutine.
+// * The code_block is the code to run in the coroutine.
+//
+// The correct way is to avoid the block, unless you intend to do it,
+// so you should create in the same scope, and use id to distinguish them.
+// For example:
+//        SrsCoroutineChan ctx;
+//
+//        SRS_COROUTINE_GO_IMPL(&ctx, coroutine1, {
+//            srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
+//        });
+//
+//        SRS_COROUTINE_GO_IMPL(&ctx, coroutine2, {
+//            srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
+//        });
+//
+//        // It won't wait for the coroutine to terminate.
+//        // So you will expect to run to here immediately.
+//
+// CAUTION: Note that if use a block to run the coroutine, it will
+// stop and wait for the coroutine to terminate. So it maybe crash
+// for the current thread is interrupted and stopping, such as the
+// ctx.pop() will crash for requiring a lock on a stopping thread.
+// For example:
+//        SrsCoroutineChan ctx;
+//
+//        // Generally we SHOULD NOT do this, unless you intend to.
+//        if (true) {
+//            SRS_COROUTINE_GO_IMPL(&ctx, coroutine, {
+//                srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
+//            });
+//        }
+//        if (true) {
+//            SRS_COROUTINE_GO_IMPL(&ctx, coroutine, {
+//                srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
+//            });
+//        }
+//
+//        // The coroutine will be stopped and wait for it to terminate.
+//        // So maybe it won't execute all your code there.
+//
+// Enjoiy the sugar for coroutines.
+#define SRS_COROUTINE_GO_IMPL(context, id, code_block)                            \
+    class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler             \
+    {                                                                             \
+    private:                                                                      \
+        SrsCoroutineChan *ctx_;                                                   \
+                                                                                  \
+    public:                                                                       \
+        AnonymousCoroutineHandler##id(SrsCoroutineChan *c)                        \
+        {                                                                         \
+            /* Copy the context so that we can pop it in different coroutines. */ \
+            ctx_ = c->copy();                                                     \
+        }                                                                         \
+        ~AnonymousCoroutineHandler##id()                                          \
+        {                                                                         \
+            srs_freep(ctx_);                                                      \
+        }                                                                         \
+                                                                                  \
+    public:                                                                       \
+        virtual srs_error_t cycle()                                               \
+        {                                                                         \
+            SrsCoroutineChan &ctx = *ctx_;                                        \
+            (void)ctx;                                                            \
+            code_block;                                                           \
+            return srs_success;                                                   \
+        }                                                                         \
+    };                                                                            \
+    AnonymousCoroutineHandler##id handler##id(context);                           \
+    SrsSTCoroutine st##id("anonymous", &handler##id);                             \
+    srs_error_t err_coroutine##id = st##id.start();                               \
+    srs_assert(err_coroutine##id == srs_success)
+
+// A helper to create a anonymous coroutine like goroutine in Go.
+// For example:
+//        SRS_COROUTINE_GO({
+//            srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+//        });
+#define SRS_COROUTINE_GO(code_block) \
+    SrsCoroutineChan context##id;    \
+    SRS_COROUTINE_GO_IMPL(&context##id, coroutine0, code_block)
+
+// A helper to create a anonymous coroutine like goroutine in Go.
+// With the id, it allows you to create multiple coroutines.
+// For example:
+//        SRS_COROUTINE_GO2(coroutine1, {
+//            srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+//        });
+//        SRS_COROUTINE_GO2(coroutine2, {
+//            srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+//        });
+#define SRS_COROUTINE_GO2(id, code_block) \
+    SrsCoroutineChan context##id;         \
+    SRS_COROUTINE_GO_IMPL(&context##id, id, code_block)
+
+// A helper to create a anonymous coroutine like goroutine in Go.
+// With the context, it allows you to share variables between coroutines.
+// For example:
+//        SrsCoroutineChan ctx;
+//        ctx.push(1);
+//        SRS_COROUTINE_GO_CTX(ctx, {
+//            int v = (int)ctx.pop();
+//            srs_usleep(v * SRS_UTIME_MILLISECONDS);
+//        });
+#define SRS_COROUTINE_GO_CTX(ctx, code_block) \
+    SRS_COROUTINE_GO_IMPL(ctx, coroutine0, code_block)
+
+// A helper to create a anonymous coroutine like goroutine in Go.
+// With the context and id, it allows you to create multiple coroutines.
+// For example:
+//        SrsCoroutineChan ctx;
+//        ctx.push(1);
+//        SRS_COROUTINE_GO_CTX2(ctx, coroutine1, {
+//            int v = (int)ctx.pop();
+//            srs_usleep(v * SRS_UTIME_MILLISECONDS);
+//        });
+//        SRS_COROUTINE_GO_CTX2(ctx, coroutine2, {
+//            int v = (int)ctx.pop();
+//            srs_usleep(v * SRS_UTIME_MILLISECONDS);
+//        });
+#define SRS_COROUTINE_GO_CTX2(ctx, id, code_block) \
+    SRS_COROUTINE_GO_IMPL(ctx, id, code_block)
+
 #endif

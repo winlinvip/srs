@@ -1579,7 +1579,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
         // Use lock to protect coroutine switch.
         // @bug https://github.com/ossrs/srs/issues/1230
         // TODO: FIXME: Use smaller scope lock.
-        SrsLocker(lock);
+        SrsLocker(&lock);
 
         string stream_url = r->get_stream_url();
         std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool.find(stream_url);
@@ -1620,7 +1620,7 @@ SrsSharedPtr<SrsLiveSource> SrsLiveSourceManager::fetch(ISrsRequest *r)
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
     // TODO: FIXME: Use smaller scope lock.
-    SrsLocker(lock);
+    SrsLocker(&lock);
 
     string stream_url = r->get_stream_url();
     std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool.find(stream_url);

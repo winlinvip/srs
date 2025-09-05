@@ -14,6 +14,26 @@
 
 using namespace std;
 
+VOID TEST(StTest, CondPtrSugar)
+{
+    SrsUniquePtr<SrsCond> cond(new SrsCond());
+    cond->signal();
+}
+
+VOID TEST(StTest, MutexPtrSugar)
+{
+    if (true) {
+        SrsUniquePtr<SrsMutex> mutex(new SrsMutex());
+        SrsLocker(mutex->get());
+    }
+
+    if (true) {
+        SrsUniquePtr<SrsMutex> mutex(new SrsMutex());
+        mutex->lock();
+        mutex->unlock();
+    }
+}
+
 VOID TEST(StTest, StUtimeInMicroseconds)
 {
     st_utime_t st_time_1 = st_utime();

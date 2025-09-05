@@ -10,8 +10,10 @@
 #include <srs_app_log.hpp>
 #include <srs_app_rtc_dtls.hpp>
 #include <srs_app_server.hpp>
+#include <srs_app_st.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_protocol_st.hpp>
 
 #include <string>
 using namespace std;
@@ -252,4 +254,40 @@ int MockProtectedBuffer::alloc(int size)
     }
 
     return 0;
+}
+
+SrsCoroutineChan::SrsCoroutineChan()
+{
+    lock_ = srs_mutex_new();
+}
+
+SrsCoroutineChan::~SrsCoroutineChan()
+{
+    srs_mutex_destroy(lock_);
+}
+
+SrsCoroutineChan &SrsCoroutineChan::push(void *value)
+{
+    SrsLocker(&lock_);
+
+    args_.push_back(value);
+    return *this;
+}
+
+void *SrsCoroutineChan::pop()
+{
+    SrsLocker(&lock_);
+
+    void *arg = *args_.begin();
+    args_.erase(args_.begin());
+    return arg;
+}
+
+SrsCoroutineChan *SrsCoroutineChan::copy()
+{
+    SrsLocker(&lock_);
+
+    SrsCoroutineChan *cp = new SrsCoroutineChan();
+    cp->args_ = args_;
+    return cp;
 }

@@ -84,7 +84,7 @@ srs_error_t SrsStreamPublishTokenManager::acquire_token(ISrsRequest *req, SrsStr
     std::string stream_url = req->get_stream_url();
     SrsContextId current_cid = _srs_context->get_id();
 
-    SrsLocker(mutex_);
+    SrsLocker(&mutex_);
 
     // Get or create token for this stream
     SrsStreamPublishToken *stream_token = NULL;
@@ -116,7 +116,7 @@ srs_error_t SrsStreamPublishTokenManager::acquire_token(ISrsRequest *req, SrsStr
 
 void SrsStreamPublishTokenManager::release_token(const std::string &stream_url)
 {
-    SrsLocker(mutex_);
+    SrsLocker(&mutex_);
 
     // Find and erase the token from the map
     std::map<std::string, SrsStreamPublishToken *>::iterator it = tokens_.find(stream_url);

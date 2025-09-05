@@ -392,7 +392,13 @@ srs_cond_t srs_cond_new()
 
 int srs_cond_destroy(srs_cond_t cond)
 {
-    return st_cond_destroy((st_cond_t)cond);
+    if (!cond) {
+        return 0;
+    }
+
+    int r0 = st_cond_destroy((st_cond_t)cond);
+    srs_assert(r0 == 0);
+    return r0;
 }
 
 int srs_cond_wait(srs_cond_t cond)
@@ -425,7 +431,10 @@ int srs_mutex_destroy(srs_mutex_t mutex)
     if (!mutex) {
         return 0;
     }
-    return st_mutex_destroy((st_mutex_t)mutex);
+
+    int r0 = st_mutex_destroy((st_mutex_t)mutex);
+    srs_assert(r0 == 0);
+    return r0;
 }
 
 int srs_mutex_lock(srs_mutex_t mutex)
@@ -436,6 +445,61 @@ int srs_mutex_lock(srs_mutex_t mutex)
 int srs_mutex_unlock(srs_mutex_t mutex)
 {
     return st_mutex_unlock((st_mutex_t)mutex);
+}
+
+SrsCond::SrsCond()
+{
+    cond_ = srs_cond_new();
+}
+
+SrsCond::~SrsCond()
+{
+    srs_cond_destroy(cond_);
+}
+
+int SrsCond::wait()
+{
+    return srs_cond_wait(cond_);
+}
+
+int SrsCond::timedwait(srs_utime_t timeout)
+{
+    return srs_cond_timedwait(cond_, timeout);
+}
+
+int SrsCond::signal()
+{
+    return srs_cond_signal(cond_);
+}
+
+int SrsCond::broadcast()
+{
+    return srs_cond_broadcast(cond_);
+}
+
+SrsMutex::SrsMutex()
+{
+    mutex_ = srs_mutex_new();
+}
+
+SrsMutex::~SrsMutex()
+{
+    srs_mutex_destroy(mutex_);
+}
+
+int SrsMutex::lock()
+{
+    return srs_mutex_lock(mutex_);
+}
+
+int SrsMutex::unlock()
+{
+    return srs_mutex_unlock(mutex_);
+}
+
+srs_mutex_t *SrsMutex::get()
+{
+    return &mutex_;
 }
 
 int srs_key_create(int *keyp, void (*destructor)(void *))

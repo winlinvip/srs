@@ -103,7 +103,7 @@ void SrsAsyncCallWorker::flush_tasks()
     // Avoid the async call blocking other coroutines.
     std::vector<ISrsAsyncCallTask *> copy;
     if (true) {
-        SrsLocker(lock);
+        SrsLocker(&lock);
 
         if (tasks.empty()) {
             return;

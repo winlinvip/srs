@@ -160,7 +160,7 @@ srs_error_t SrsSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<Sr
     if (true) {
         // Use lock to protect coroutine switch.
         // @bug https://github.com/ossrs/srs/issues/1230
-        SrsLocker(lock);
+        SrsLocker(&lock);
 
         string stream_url = r->get_stream_url();
         std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);
@@ -196,7 +196,7 @@ SrsSharedPtr<SrsSrtSource> SrsSrtSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
-    SrsLocker(lock);
+    SrsLocker(&lock);
 
     string stream_url = r->get_stream_url();
     std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);

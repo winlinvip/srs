@@ -84,6 +84,45 @@ extern int srs_mutex_destroy(srs_mutex_t mutex);
 extern int srs_mutex_lock(srs_mutex_t mutex);
 extern int srs_mutex_unlock(srs_mutex_t mutex);
 
+// Wrap as ptr, so you can use SrsUniquePtr and SrsSharedPtr to manage it.
+// For example:
+//      SrsUniquePtr<SrsCond> cond(new SrsCond());
+//      cond->signal();
+class SrsCond
+{
+private:
+    srs_cond_t cond_;
+
+public:
+    SrsCond();
+    virtual ~SrsCond();
+
+public:
+    int wait();
+    int timedwait(srs_utime_t timeout);
+    int signal();
+    int broadcast();
+};
+
+// Wrap as ptr, so you can use SrsUniquePtr and SrsSharedPtr to manage it.
+// For example:
+//      SrsUniquePtr<SrsMutex> mutex(new SrsMutex());
+//      SrsLocker(mutex->get());
+class SrsMutex
+{
+private:
+    srs_mutex_t mutex_;
+
+public:
+    SrsMutex();
+    virtual ~SrsMutex();
+
+public:
+    int lock();
+    int unlock();
+    srs_mutex_t *get();
+};
+
 extern int srs_key_create(int *keyp, void (*destructor)(void *));
 extern int srs_thread_setspecific(int key, void *value);
 extern int srs_thread_setspecific2(srs_thread_t thread, int key, void *value);
@@ -109,7 +148,7 @@ extern bool srs_is_never_timeout(srs_utime_t tm);
 
 // The mutex locker.
 #define SrsLocker(instance) \
-    impl__SrsLocker _SRS_free_##instance(&instance)
+    impl__SrsLocker _SRS_free_instance(instance)
 
 class impl__SrsLocker
 {

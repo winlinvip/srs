@@ -19,6 +19,68 @@ VOID TEST(CoreAutoFreeTest, Free)
     EXPECT_TRUE(data == NULL);
 }
 
+VOID TEST(CoreAutoFreeTest, FreepPointer)
+{
+    int *ptr = new int(42);
+    EXPECT_TRUE(ptr != NULL);
+    EXPECT_EQ(42, *ptr);
+
+    srs_freep(ptr);
+    EXPECT_TRUE(ptr == NULL);
+}
+
+VOID TEST(CoreAutoFreeTest, FreepObject)
+{
+    MyNormalObject *obj = new MyNormalObject(100);
+    EXPECT_TRUE(obj != NULL);
+    EXPECT_EQ(100, obj->id());
+
+    srs_freep(obj);
+    EXPECT_TRUE(obj == NULL);
+}
+
+VOID TEST(CoreAutoFreeTest, FreepNullPointer)
+{
+    int *ptr = NULL;
+    srs_freep(ptr);  // Should not crash
+    EXPECT_TRUE(ptr == NULL);
+}
+
+VOID TEST(CoreAutoFreeTest, FreepaArray)
+{
+    int *arr = new int[10];
+    for (int i = 0; i < 10; i++) {
+        arr[i] = i * 2;
+    }
+    EXPECT_TRUE(arr != NULL);
+    EXPECT_EQ(0, arr[0]);
+    EXPECT_EQ(18, arr[9]);
+
+    srs_freepa(arr);
+    EXPECT_TRUE(arr == NULL);
+}
+
+VOID TEST(CoreAutoFreeTest, FreepaNullArray)
+{
+    int *arr = NULL;
+    srs_freepa(arr);  // Should not crash
+    EXPECT_TRUE(arr == NULL);
+}
+
+VOID TEST(CoreAutoFreeTest, FreepaCharArray)
+{
+    char *chars = new char[256];
+    for (int i = 0; i < 10; i++) {
+        chars[i] = 'a' + i;
+    }
+    chars[10] = '\0';
+    EXPECT_TRUE(chars != NULL);
+    EXPECT_STREQ("abcdefghij", chars);
+
+    srs_freepa(chars);
+    EXPECT_TRUE(chars == NULL);
+}
+
 VOID TEST(CoreMacroseTest, Check)
 {
 #ifndef SRS_BUILD_TS
@@ -75,11 +137,15 @@ VOID TEST(CoreLogger, CheckVsnprintf)
         EXPECT_EQ(4, snprintf(buf, sizeof(buf), "Hell"));
         EXPECT_STREQ("Hell", buf);
 
+        // Test intentional truncation - suppress warning as this is expected behavior
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-truncation"
         EXPECT_EQ(5, snprintf(buf, sizeof(buf), "Hello"));
         EXPECT_STREQ("Hell", buf);
 
         EXPECT_EQ(10, snprintf(buf, sizeof(buf), "HelloWorld"));
         EXPECT_STREQ("Hell", buf);
+#pragma clang diagnostic pop
     }
 }
 
@@ -342,6 +408,95 @@ VOID TEST(CoreSmartPtr, SharedPtrMove)
     }
 }
 
+VOID TEST(CoreSmartPtr, SharedPtrResetMethod)
+{
+    if (true) {
+        SrsSharedPtr<int> p(new int(100));
+        EXPECT_TRUE(p);
+        EXPECT_EQ(100, *p);
+
+        p.reset();
+        EXPECT_FALSE(p);
+        EXPECT_TRUE(p.get() == NULL);
+    }
+
+    if (true) {
+        SrsSharedPtr<MyNormalObject> p(new MyNormalObject(200));
+        EXPECT_TRUE(p);
+        EXPECT_EQ(200, p->id());
+
+        p.reset();
+        EXPECT_FALSE(p);
+        EXPECT_TRUE(p.get() == NULL);
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedPtrSelfAssignment)
+{
+    if (true) {
+        SrsSharedPtr<int> p(new int(100));
+        int *original_ptr = p.get();
+
+        // Test self assignment - suppress warning as this is intentional
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+        p = p;  // Self assignment
+#pragma clang diagnostic pop
+        EXPECT_EQ(original_ptr, p.get());
+        EXPECT_EQ(100, *p);
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedPtrMultipleReferences)
+{
+    int *ptr = new int(100);
+    SrsUniquePtr<int> ptr_uptr(ptr);
+    EXPECT_EQ(100, *ptr);
+
+    if (true) {
+        SrsSharedPtr<MockWrapper> p1(new MockWrapper(ptr));
+        EXPECT_EQ(101, *ptr);
+
+        SrsSharedPtr<MockWrapper> p2 = p1;
+        EXPECT_EQ(101, *ptr);
+
+        SrsSharedPtr<MockWrapper> p3(p1);
+        EXPECT_EQ(101, *ptr);
+
+        SrsSharedPtr<MockWrapper> p4(NULL);
+        p4 = p1;
+        EXPECT_EQ(101, *ptr);
+
+        // All should point to the same object
+        EXPECT_EQ(p1.get(), p2.get());
+        EXPECT_EQ(p1.get(), p3.get());
+        EXPECT_EQ(p1.get(), p4.get());
+    }
+    EXPECT_EQ(100, *ptr);  // All references gone, object destroyed
+}
+
+VOID TEST(CoreSmartPtr, SharedPtrBoolOperator)
+{
+    if (true) {
+        SrsSharedPtr<int> p(new int(42));
+        EXPECT_TRUE(p);
+        EXPECT_TRUE(static_cast<bool>(p));
+    }
+
+    if (true) {
+        SrsSharedPtr<int> p(NULL);
+        EXPECT_FALSE(p);
+        EXPECT_FALSE(static_cast<bool>(p));
+    }
+
+    if (true) {
+        SrsSharedPtr<int> p(new int(42));
+        EXPECT_TRUE(p);
+        p.reset();
+        EXPECT_FALSE(p);
+    }
+}
+
 class MockIntResource : public ISrsResource
 {
 public:
@@ -447,6 +602,87 @@ VOID TEST(CoreSmartPtr, SharedResourceMove)
         q = mock_shared_resource_move_assign(p);
         EXPECT_EQ(100, q->value_);
         EXPECT_EQ(q.get(), p.get());
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedResourceNullPointer)
+{
+    if (true) {
+        SrsSharedResource<MockIntResource> p(NULL);
+        EXPECT_FALSE(p);
+        EXPECT_TRUE(p.get() == NULL);
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedResourceSelfAssignment)
+{
+    if (true) {
+        SrsSharedResource<MockIntResource> p(new MockIntResource(100));
+        MockIntResource *original_ptr = p.get();
+
+        // Test self assignment - suppress warning as this is intentional
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+        p = p;  // Self assignment
+#pragma clang diagnostic pop
+        EXPECT_EQ(original_ptr, p.get());
+        EXPECT_EQ(100, p->value_);
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedResourceBoolOperator)
+{
+    if (true) {
+        SrsSharedResource<MockIntResource> p(new MockIntResource(42));
+        EXPECT_TRUE(p);
+        EXPECT_TRUE(static_cast<bool>(p));
+    }
+
+    if (true) {
+        SrsSharedResource<MockIntResource> p(NULL);
+        EXPECT_FALSE(p);
+        EXPECT_FALSE(static_cast<bool>(p));
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedResourceISrsResourceInterface)
+{
+    if (true) {
+        SrsSharedResource<MockIntResource> *p = new SrsSharedResource<MockIntResource>(new MockIntResource(100));
+
+        // Test ISrsResource interface
+        const SrsContextId &id = p->get_id();
+        EXPECT_TRUE(id.empty());
+
+        std::string desc = p->desc();
+        EXPECT_TRUE(desc.empty());
+
+        // Test access to wrapped object
+        EXPECT_EQ(100, (*p)->value_);
+        EXPECT_EQ(100, p->get()->value_);
+
+        srs_freep(p);
+    }
+}
+
+VOID TEST(CoreSmartPtr, SharedResourceMultipleReferences)
+{
+    if (true) {
+        SrsSharedResource<MockIntResource> p1(new MockIntResource(200));
+        SrsSharedResource<MockIntResource> p2 = p1;
+        SrsSharedResource<MockIntResource> p3(p1);
+
+        // All should point to the same object
+        EXPECT_EQ(p1.get(), p2.get());
+        EXPECT_EQ(p1.get(), p3.get());
+        EXPECT_EQ(200, p1->value_);
+        EXPECT_EQ(200, p2->value_);
+        EXPECT_EQ(200, p3->value_);
+
+        // Modify through one reference, should be visible through all
+        p1->value_ = 300;
+        EXPECT_EQ(300, p2->value_);
+        EXPECT_EQ(300, p3->value_);
     }
 }
 
@@ -630,4 +866,162 @@ VOID TEST(CoreSmartPtr, UniquePtrDeleterMalloc)
         SrsUniquePtr<MockMalloc> ptr(&p, MockMalloc::deleter);
     }
     EXPECT_TRUE(p.bytes_ == NULL);
+}
+
+VOID TEST(CoreSmartPtr, UniquePtrNullPointer)
+{
+    if (true) {
+        SrsUniquePtr<int> ptr(NULL);
+        EXPECT_TRUE(ptr.get() == NULL);
+    }
+
+    if (true) {
+        SrsUniquePtr<MyNormalObject> ptr(NULL);
+        EXPECT_TRUE(ptr.get() == NULL);
+    }
+}
+
+VOID TEST(CoreSmartPtr, UniquePtrGetMethod)
+{
+    if (true) {
+        int *raw_ptr = new int(42);
+        SrsUniquePtr<int> ptr(raw_ptr);
+        EXPECT_EQ(raw_ptr, ptr.get());
+        EXPECT_EQ(42, *ptr.get());
+    }
+
+    if (true) {
+        MyNormalObject *raw_obj = new MyNormalObject(100);
+        SrsUniquePtr<MyNormalObject> ptr(raw_obj);
+        EXPECT_EQ(raw_obj, ptr.get());
+        EXPECT_EQ(100, ptr.get()->id());
+    }
+}
+
+VOID TEST(CoreSmartPtr, UniquePtrArrowOperator)
+{
+    if (true) {
+        MyNormalObject *raw_obj = new MyNormalObject(200);
+        SrsUniquePtr<MyNormalObject> ptr(raw_obj);
+        EXPECT_EQ(200, ptr->id());
+    }
+}
+
+VOID TEST(CoreSmartPtr, UniquePtrArrayIndexOperator)
+{
+    if (true) {
+        int *arr = new int[5];
+        for (int i = 0; i < 5; i++) {
+            arr[i] = i * 10;
+        }
+
+        SrsUniquePtr<int[]> ptr(arr);
+        EXPECT_EQ(0, ptr[0]);
+        EXPECT_EQ(10, ptr[1]);
+        EXPECT_EQ(40, ptr[4]);
+    }
+}
+
+VOID TEST(CoreSmartPtr, UniquePtrArrayConstIndexOperator)
+{
+    if (true) {
+        int *arr = new int[3];
+        arr[0] = 100;
+        arr[1] = 200;
+        arr[2] = 300;
+
+        const SrsUniquePtr<int[]> ptr(arr);
+        EXPECT_EQ(100, ptr[0]);
+        EXPECT_EQ(200, ptr[1]);
+        EXPECT_EQ(300, ptr[2]);
+    }
+}
+
+VOID TEST(CoreSmartPtr, SmartPointerEdgeCases)
+{
+    // Test SrsUniquePtr with custom deleter and NULL pointer
+    if (true) {
+        SrsUniquePtr<char> ptr(NULL, mock_free_chars);
+        EXPECT_TRUE(ptr.get() == NULL);
+        // Should not crash when destroyed with NULL pointer
+    }
+
+    // Test SrsSharedPtr with NULL pointer in copy constructor
+    if (true) {
+        SrsSharedPtr<int> p1(NULL);
+        SrsSharedPtr<int> p2(p1);
+        EXPECT_FALSE(p1);
+        EXPECT_FALSE(p2);
+        EXPECT_EQ(p1.get(), p2.get());
+    }
+
+    // Test SrsSharedPtr with NULL pointer in assignment
+    if (true) {
+        SrsSharedPtr<int> p1(NULL);
+        SrsSharedPtr<int> p2(new int(42));
+        EXPECT_TRUE(p2);
+
+        p2 = p1;
+        EXPECT_FALSE(p1);
+        EXPECT_FALSE(p2);
+    }
+
+    // Test SrsSharedResource with NULL pointer in copy constructor
+    if (true) {
+        SrsSharedResource<MockIntResource> p1(NULL);
+        SrsSharedResource<MockIntResource> p2(p1);
+        EXPECT_FALSE(p1);
+        EXPECT_FALSE(p2);
+        EXPECT_EQ(p1.get(), p2.get());
+    }
+}
+
+VOID TEST(CoreSmartPtr, SmartPointerMemoryManagement)
+{
+    // Test that SrsUniquePtr properly manages memory
+    int *counter = new int(0);
+    SrsUniquePtr<int> counter_uptr(counter);
+
+    if (true) {
+        SrsUniquePtr<MockWrapper> ptr(new MockWrapper(counter));
+        EXPECT_EQ(1, *counter);
+    }
+    EXPECT_EQ(0, *counter);  // MockWrapper destructor should have decremented
+
+    // Test that SrsSharedPtr properly manages reference counting
+    if (true) {
+        SrsSharedPtr<MockWrapper> p1(new MockWrapper(counter));
+        EXPECT_EQ(1, *counter);
+
+        if (true) {
+            SrsSharedPtr<MockWrapper> p2 = p1;
+            EXPECT_EQ(1, *counter);  // Same object, counter unchanged
+
+            SrsSharedPtr<MockWrapper> p3(new MockWrapper(counter));
+            EXPECT_EQ(2, *counter);  // New object created
+        }
+        EXPECT_EQ(1, *counter);  // p3 destroyed, one object remains
+    }
+    EXPECT_EQ(0, *counter);  // All objects destroyed
+}
+
+VOID TEST(CoreSmartPtr, SmartPointerOperatorOverloads)
+{
+    // Test SrsSharedPtr dereference operator
+    if (true) {
+        SrsSharedPtr<int> ptr(new int(42));
+        EXPECT_EQ(42, *ptr);
+
+        *ptr = 100;
+        EXPECT_EQ(100, *ptr);
+    }
+
+    // Test SrsSharedResource dereference operator
+    if (true) {
+        SrsSharedResource<MockIntResource> ptr(new MockIntResource(200));
+        EXPECT_EQ(200, (*ptr).value_);
+
+        (*ptr).value_ = 300;
+        EXPECT_EQ(300, (*ptr).value_);
+    }
 }

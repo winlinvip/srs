@@ -747,3 +747,778 @@ VOID TEST(KernelCodecTest, HEVCDuplicatedCode)
     EXPECT_NE(ERROR_HEVC_NALU_UEV, ERROR_STREAM_CASTER_HEVC_VPS);
     EXPECT_NE(ERROR_HEVC_NALU_SEV, ERROR_STREAM_CASTER_HEVC_SPS);
 }
+
+VOID TEST(KernelBufferTest, SrsBufferConstructorAndBasics)
+{
+    // Test constructor with valid data
+    char data[10] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
+    SrsBuffer buf(data, 10);
+
+    // Test basic properties
+    EXPECT_EQ(10, buf.size());
+    EXPECT_EQ(0, buf.pos());
+    EXPECT_EQ(10, buf.left());
+    EXPECT_FALSE(buf.empty());
+    EXPECT_EQ(data, buf.data());
+    EXPECT_EQ(data, buf.head());
+
+    // Test constructor with NULL data
+    SrsBuffer null_buf(NULL, 0);
+    EXPECT_EQ(0, null_buf.size());
+    EXPECT_EQ(0, null_buf.pos());
+    EXPECT_EQ(0, null_buf.left());
+    EXPECT_TRUE(null_buf.empty());
+    EXPECT_EQ(NULL, null_buf.data());
+    EXPECT_EQ(NULL, null_buf.head());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferCopy)
+{
+    char data[5] = {0x10, 0x20, 0x30, 0x40, 0x50};
+    SrsBuffer buf(data, 5);
+
+    // Move position forward
+    buf.read_1bytes();
+    buf.read_1bytes();
+    EXPECT_EQ(2, buf.pos());
+
+    // Test copy preserves position
+    SrsBuffer* copy = buf.copy();
+    EXPECT_EQ(5, copy->size());
+    EXPECT_EQ(2, copy->pos());
+    EXPECT_EQ(3, copy->left());
+    EXPECT_EQ(data, copy->data());
+    EXPECT_EQ(data + 2, copy->head());
+
+    // Verify copy is independent
+    copy->read_1bytes();
+    EXPECT_EQ(3, copy->pos());
+    EXPECT_EQ(2, buf.pos()); // Original unchanged
+
+    srs_freep(copy);
+}
+
+VOID TEST(KernelBufferTest, SrsBufferSizeAndSetSize)
+{
+    char data[10];
+    SrsBuffer buf(data, 10);
+
+    EXPECT_EQ(10, buf.size());
+
+    // Test set_size
+    buf.set_size(5);
+    EXPECT_EQ(5, buf.size());
+    EXPECT_EQ(5, buf.left());
+
+    // Test set_size with larger value
+    buf.set_size(15);
+    EXPECT_EQ(15, buf.size());
+    EXPECT_EQ(15, buf.left());
+
+    // Test set_size with zero
+    buf.set_size(0);
+    EXPECT_EQ(0, buf.size());
+    EXPECT_EQ(0, buf.left());
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferPositionAndHead)
+{
+    char data[8] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, (char)0x88};
+    SrsBuffer buf(data, 8);
+
+    // Initial state
+    EXPECT_EQ(0, buf.pos());
+    EXPECT_EQ(data, buf.head());
+
+    // After reading some bytes
+    buf.read_1bytes();
+    EXPECT_EQ(1, buf.pos());
+    EXPECT_EQ(data + 1, buf.head());
+
+    buf.read_2bytes();
+    EXPECT_EQ(3, buf.pos());
+    EXPECT_EQ(data + 3, buf.head());
+
+    // Skip to end
+    buf.skip(5);
+    EXPECT_EQ(8, buf.pos());
+    EXPECT_EQ(data + 8, buf.head());
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferLeftAndEmpty)
+{
+    char data[6];
+    SrsBuffer buf(data, 6);
+
+    // Initial state
+    EXPECT_EQ(6, buf.left());
+    EXPECT_FALSE(buf.empty());
+
+    // After reading
+    buf.read_1bytes();
+    EXPECT_EQ(5, buf.left());
+    EXPECT_FALSE(buf.empty());
+
+    buf.read_4bytes();
+    EXPECT_EQ(1, buf.left());
+    EXPECT_FALSE(buf.empty());
+
+    buf.read_1bytes();
+    EXPECT_EQ(0, buf.left());
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferRequire)
+{
+    char data[10];
+    SrsBuffer buf(data, 10);
+
+    // Test require with available bytes
+    EXPECT_TRUE(buf.require(1));
+    EXPECT_TRUE(buf.require(10));
+    EXPECT_FALSE(buf.require(11));
+
+    // After consuming some bytes
+    buf.read_4bytes();
+    EXPECT_TRUE(buf.require(1));
+    EXPECT_TRUE(buf.require(6));
+    EXPECT_FALSE(buf.require(7));
+
+    // At the end
+    buf.read_4bytes();
+    buf.read_2bytes();
+    EXPECT_FALSE(buf.require(1));
+    EXPECT_TRUE(buf.require(0));
+
+    // Test require with zero and negative values
+    buf.skip(-10); // Reset to beginning
+    EXPECT_TRUE(buf.require(0));
+    // Note: According to header comment, require should assert for negative values
+    // but we won't test that as it would crash the test
+}
+
+VOID TEST(KernelBufferTest, SrsBufferSkipOperations)
+{
+    char data[10] = {0};
+    SrsBuffer buf(data, 10);
+
+    // Test basic properties first
+    EXPECT_EQ(0, buf.pos());
+    EXPECT_EQ(10, buf.size());
+    EXPECT_EQ(data, buf.data());
+
+    // Test simple forward skip
+    buf.skip(1);
+    EXPECT_EQ(1, buf.pos());
+    EXPECT_EQ(9, buf.left());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferRead1Bytes)
+{
+    char data[4] = {0x12, 0x34, 0x56, 0x78};
+    SrsBuffer buf(data, 4);
+
+    // Test reading 1-byte values
+    EXPECT_EQ(0x12, buf.read_1bytes());
+    EXPECT_EQ(1, buf.pos());
+
+    EXPECT_EQ(0x34, buf.read_1bytes());
+    EXPECT_EQ(2, buf.pos());
+
+    EXPECT_EQ(0x56, buf.read_1bytes());
+    EXPECT_EQ(3, buf.pos());
+
+    EXPECT_EQ(0x78, buf.read_1bytes());
+    EXPECT_EQ(4, buf.pos());
+    EXPECT_TRUE(buf.empty());
+
+    // Test with signed values
+    char signed_data[2] = {(char)0xFF, (char)0x80};
+    SrsBuffer signed_buf(signed_data, 2);
+
+    EXPECT_EQ(-1, signed_buf.read_1bytes());
+    EXPECT_EQ(-128, signed_buf.read_1bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferRead2Bytes)
+{
+    char data[8] = {0x12, 0x34, 0x56, 0x78, (char)0x9A, (char)0xBC, (char)0xDE, (char)0xF0};
+    SrsBuffer buf(data, 8);
+
+    // Test big-endian 2-byte reads
+    EXPECT_EQ(0x1234, buf.read_2bytes());
+    EXPECT_EQ(2, buf.pos());
+
+    EXPECT_EQ(0x5678, buf.read_2bytes());
+    EXPECT_EQ(4, buf.pos());
+
+    // Test little-endian 2-byte reads
+    buf.skip(-4); // Reset to beginning
+    EXPECT_EQ(0x3412, buf.read_le2bytes());
+    EXPECT_EQ(2, buf.pos());
+
+    EXPECT_EQ(0x7856, buf.read_le2bytes());
+    EXPECT_EQ(4, buf.pos());
+
+    // Continue with remaining bytes
+    EXPECT_EQ((int16_t)0x9ABC, buf.read_2bytes());
+    EXPECT_EQ((int16_t)0xDEF0, buf.read_2bytes());
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferRead3Bytes)
+{
+    char data[9] = {0x12, 0x34, 0x56, 0x78, (char)0x9A, (char)0xBC, (char)0xDE, (char)0xF0, 0x11};
+    SrsBuffer buf(data, 9);
+
+    // Test big-endian 3-byte reads
+    EXPECT_EQ(0x123456, buf.read_3bytes());
+    EXPECT_EQ(3, buf.pos());
+
+    EXPECT_EQ(0x789ABC, buf.read_3bytes());
+    EXPECT_EQ(6, buf.pos());
+
+    // Test little-endian 3-byte reads
+    buf.skip(-6); // Reset to beginning
+    EXPECT_EQ(0x563412, buf.read_le3bytes());
+    EXPECT_EQ(3, buf.pos());
+
+    EXPECT_EQ(0xBC9A78, buf.read_le3bytes());
+    EXPECT_EQ(6, buf.pos());
+
+    // Read remaining bytes
+    EXPECT_EQ(0xDEF011, buf.read_3bytes());
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferRead4Bytes)
+{
+    char data[12] = {0x12, 0x34, 0x56, 0x78, (char)0x9A, (char)0xBC, (char)0xDE, (char)0xF0,
+                     0x11, 0x22, 0x33, 0x44};
+    SrsBuffer buf(data, 12);
+
+    // Test big-endian 4-byte reads
+    EXPECT_EQ(0x12345678, buf.read_4bytes());
+    EXPECT_EQ(4, buf.pos());
+
+    EXPECT_EQ((int32_t)0x9ABCDEF0, buf.read_4bytes());
+    EXPECT_EQ(8, buf.pos());
+
+    // Test little-endian 4-byte reads
+    buf.skip(-8); // Reset to beginning
+    EXPECT_EQ(0x78563412, buf.read_le4bytes());
+    EXPECT_EQ(4, buf.pos());
+
+    EXPECT_EQ((int32_t)0xF0DEBC9A, buf.read_le4bytes());
+    EXPECT_EQ(8, buf.pos());
+
+    // Read remaining bytes
+    EXPECT_EQ(0x11223344, buf.read_4bytes());
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferRead8Bytes)
+{
+    char data[16] = {0x12, 0x34, 0x56, 0x78, (char)0x9A, (char)0xBC, (char)0xDE, (char)0xF0,
+                     0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, (char)0x88};
+    SrsBuffer buf(data, 16);
+
+    // Test big-endian 8-byte reads
+    EXPECT_EQ(0x123456789ABCDEF0LL, buf.read_8bytes());
+    EXPECT_EQ(8, buf.pos());
+
+    // Test little-endian 8-byte reads
+    buf.skip(-8); // Reset to beginning
+    EXPECT_EQ(0xF0DEBC9A78563412LL, buf.read_le8bytes());
+    EXPECT_EQ(8, buf.pos());
+
+    // Read remaining bytes
+    EXPECT_EQ(0x1122334455667788LL, buf.read_8bytes());
+    EXPECT_TRUE(buf.empty());
+
+    // Test with maximum values
+    char max_data[8] = {(char)0xFF, (char)0xFF, (char)0xFF, (char)0xFF,
+                        (char)0xFF, (char)0xFF, (char)0xFF, (char)0xFF};
+    SrsBuffer max_buf(max_data, 8);
+    EXPECT_EQ(-1LL, max_buf.read_8bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferReadString)
+{
+    char data[] = "Hello, World! This is a test string.";
+    SrsBuffer buf(data, strlen(data));
+
+    // Test reading strings of various lengths
+    std::string str1 = buf.read_string(5);
+    EXPECT_STREQ("Hello", str1.c_str());
+    EXPECT_EQ(5, buf.pos());
+
+    std::string str2 = buf.read_string(2);
+    EXPECT_STREQ(", ", str2.c_str());
+    EXPECT_EQ(7, buf.pos());
+
+    std::string str3 = buf.read_string(6);
+    EXPECT_STREQ("World!", str3.c_str());
+    EXPECT_EQ(13, buf.pos());
+
+    // Test reading zero-length string
+    std::string empty_str = buf.read_string(0);
+    EXPECT_STREQ("", empty_str.c_str());
+    EXPECT_EQ(13, buf.pos()); // Position unchanged
+
+    // Test reading remaining string
+    int remaining = buf.left();
+    std::string remaining_str = buf.read_string(remaining);
+    EXPECT_STREQ(" This is a test string.", remaining_str.c_str());
+    EXPECT_TRUE(buf.empty());
+
+    // Test with binary data containing null bytes
+    char binary_data[6] = {0x41, 0x00, 0x42, 0x00, 0x43, 0x44};
+    SrsBuffer binary_buf(binary_data, 6);
+    std::string binary_str = binary_buf.read_string(6);
+    EXPECT_EQ(6, binary_str.length());
+    EXPECT_EQ(0x41, binary_str[0]);
+    EXPECT_EQ(0x00, binary_str[1]);
+    EXPECT_EQ(0x42, binary_str[2]);
+    EXPECT_EQ(0x00, binary_str[3]);
+    EXPECT_EQ(0x43, binary_str[4]);
+    EXPECT_EQ(0x44, binary_str[5]);
+}
+
+VOID TEST(KernelBufferTest, SrsBufferReadBytes)
+{
+    char data[10] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, (char)0x80, (char)0x90, (char)0xA0};
+    SrsBuffer buf(data, 10);
+
+    // Test reading bytes into buffer
+    char output[4];
+    buf.read_bytes(output, 4);
+    EXPECT_EQ(0x10, output[0]);
+    EXPECT_EQ(0x20, output[1]);
+    EXPECT_EQ(0x30, output[2]);
+    EXPECT_EQ(0x40, output[3]);
+    EXPECT_EQ(4, buf.pos());
+
+    // Test reading more bytes
+    char output2[3];
+    buf.read_bytes(output2, 3);
+    EXPECT_EQ(0x50, output2[0]);
+    EXPECT_EQ(0x60, output2[1]);
+    EXPECT_EQ(0x70, output2[2]);
+    EXPECT_EQ(7, buf.pos());
+
+    // Test reading zero bytes
+    char output3[1] = {(char)0xFF};
+    buf.read_bytes(output3, 0);
+    EXPECT_EQ((char)0xFF, output3[0]); // Should be unchanged
+    EXPECT_EQ(7, buf.pos()); // Position unchanged
+
+    // Test reading remaining bytes
+    char output4[3];
+    buf.read_bytes(output4, 3);
+    EXPECT_EQ((char)0x80, output4[0]);
+    EXPECT_EQ((char)0x90, output4[1]);
+    EXPECT_EQ((char)0xA0, output4[2]);
+    EXPECT_TRUE(buf.empty());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWrite1Bytes)
+{
+    char data[8];
+    SrsBuffer buf(data, 8);
+
+    // Test writing 1-byte values
+    buf.write_1bytes(0x12);
+    EXPECT_EQ(1, buf.pos());
+    EXPECT_EQ(0x12, data[0]);
+
+    buf.write_1bytes(0x34);
+    EXPECT_EQ(2, buf.pos());
+    EXPECT_EQ(0x34, data[1]);
+
+    // Test writing signed values
+    buf.write_1bytes(-1);
+    EXPECT_EQ(3, buf.pos());
+    EXPECT_EQ((char)0xFF, data[2]);
+
+    buf.write_1bytes(-128);
+    EXPECT_EQ(4, buf.pos());
+    EXPECT_EQ((char)0x80, data[3]);
+
+    // Test writing maximum positive value
+    buf.write_1bytes(127);
+    EXPECT_EQ(5, buf.pos());
+    EXPECT_EQ(0x7F, data[4]);
+
+    // Verify we can read back what we wrote
+    buf.skip(-5); // Reset to beginning
+    EXPECT_EQ(0x12, buf.read_1bytes());
+    EXPECT_EQ(0x34, buf.read_1bytes());
+    EXPECT_EQ(-1, buf.read_1bytes());
+    EXPECT_EQ(-128, buf.read_1bytes());
+    EXPECT_EQ(127, buf.read_1bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWrite2Bytes)
+{
+    char data[16];
+    SrsBuffer buf(data, 16);
+
+    // Test big-endian 2-byte writes
+    buf.write_2bytes(0x1234);
+    EXPECT_EQ(2, buf.pos());
+    EXPECT_EQ(0x12, data[0]);
+    EXPECT_EQ(0x34, data[1]);
+
+    buf.write_2bytes(0x5678);
+    EXPECT_EQ(4, buf.pos());
+    EXPECT_EQ(0x56, data[2]);
+    EXPECT_EQ(0x78, data[3]);
+
+    // Test little-endian 2-byte writes
+    buf.write_le2bytes(0x9ABC);
+    EXPECT_EQ(6, buf.pos());
+    EXPECT_EQ((char)0xBC, data[4]);
+    EXPECT_EQ((char)0x9A, data[5]);
+
+    buf.write_le2bytes(0xDEF0);
+    EXPECT_EQ(8, buf.pos());
+    EXPECT_EQ((char)0xF0, data[6]);
+    EXPECT_EQ((char)0xDE, data[7]);
+
+    // Test with negative values
+    buf.write_2bytes(-1);
+    EXPECT_EQ(10, buf.pos());
+    EXPECT_EQ((char)0xFF, data[8]);
+    EXPECT_EQ((char)0xFF, data[9]);
+
+    // Verify we can read back what we wrote
+    buf.skip(-10); // Reset to beginning
+    EXPECT_EQ(0x1234, buf.read_2bytes());
+    EXPECT_EQ(0x5678, buf.read_2bytes());
+    EXPECT_EQ((int16_t)0x9ABC, buf.read_le2bytes());
+    EXPECT_EQ((int16_t)0xDEF0, buf.read_le2bytes());
+    EXPECT_EQ(-1, buf.read_2bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWrite3Bytes)
+{
+    char data[18];
+    SrsBuffer buf(data, 18);
+
+    // Test big-endian 3-byte writes
+    buf.write_3bytes(0x123456);
+    EXPECT_EQ(3, buf.pos());
+    EXPECT_EQ(0x12, data[0]);
+    EXPECT_EQ(0x34, data[1]);
+    EXPECT_EQ(0x56, data[2]);
+
+    buf.write_3bytes(0x789ABC);
+    EXPECT_EQ(6, buf.pos());
+    EXPECT_EQ(0x78, data[3]);
+    EXPECT_EQ((char)0x9A, data[4]);
+    EXPECT_EQ((char)0xBC, data[5]);
+
+    // Test little-endian 3-byte writes
+    buf.write_le3bytes(0xDEF012);
+    EXPECT_EQ(9, buf.pos());
+    EXPECT_EQ(0x12, data[6]);
+    EXPECT_EQ((char)0xF0, data[7]);
+    EXPECT_EQ((char)0xDE, data[8]);
+
+    buf.write_le3bytes(0x345678);
+    EXPECT_EQ(12, buf.pos());
+    EXPECT_EQ(0x78, data[9]);
+    EXPECT_EQ(0x56, data[10]);
+    EXPECT_EQ(0x34, data[11]);
+
+    // Test with maximum 3-byte value
+    buf.write_3bytes(0xFFFFFF);
+    EXPECT_EQ(15, buf.pos());
+    EXPECT_EQ((char)0xFF, data[12]);
+    EXPECT_EQ((char)0xFF, data[13]);
+    EXPECT_EQ((char)0xFF, data[14]);
+
+    // Verify we can read back what we wrote
+    buf.skip(-15); // Reset to beginning
+    EXPECT_EQ(0x123456, buf.read_3bytes());
+    EXPECT_EQ(0x789ABC, buf.read_3bytes());
+    EXPECT_EQ(0xDEF012, buf.read_le3bytes());
+    EXPECT_EQ(0x345678, buf.read_le3bytes());
+    EXPECT_EQ(0xFFFFFF, buf.read_3bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWrite4Bytes)
+{
+    char data[24];
+    SrsBuffer buf(data, 24);
+
+    // Test big-endian 4-byte writes
+    buf.write_4bytes(0x12345678);
+    EXPECT_EQ(4, buf.pos());
+    EXPECT_EQ(0x12, data[0]);
+    EXPECT_EQ(0x34, data[1]);
+    EXPECT_EQ(0x56, data[2]);
+    EXPECT_EQ(0x78, data[3]);
+
+    buf.write_4bytes((int32_t)0x9ABCDEF0);
+    EXPECT_EQ(8, buf.pos());
+    EXPECT_EQ((char)0x9A, data[4]);
+    EXPECT_EQ((char)0xBC, data[5]);
+    EXPECT_EQ((char)0xDE, data[6]);
+    EXPECT_EQ((char)0xF0, data[7]);
+
+    // Test little-endian 4-byte writes
+    buf.write_le4bytes(0x11223344);
+    EXPECT_EQ(12, buf.pos());
+    EXPECT_EQ(0x44, data[8]);
+    EXPECT_EQ(0x33, data[9]);
+    EXPECT_EQ(0x22, data[10]);
+    EXPECT_EQ(0x11, data[11]);
+
+    buf.write_le4bytes(0x55667788);
+    EXPECT_EQ(16, buf.pos());
+    EXPECT_EQ((char)0x88, data[12]);
+    EXPECT_EQ(0x77, data[13]);
+    EXPECT_EQ(0x66, data[14]);
+    EXPECT_EQ(0x55, data[15]);
+
+    // Test with negative values
+    buf.write_4bytes(-1);
+    EXPECT_EQ(20, buf.pos());
+    EXPECT_EQ((char)0xFF, data[16]);
+    EXPECT_EQ((char)0xFF, data[17]);
+    EXPECT_EQ((char)0xFF, data[18]);
+    EXPECT_EQ((char)0xFF, data[19]);
+
+    // Verify we can read back what we wrote
+    buf.skip(-20); // Reset to beginning
+    EXPECT_EQ(0x12345678, buf.read_4bytes());
+    EXPECT_EQ((int32_t)0x9ABCDEF0, buf.read_4bytes());
+    EXPECT_EQ(0x11223344, buf.read_le4bytes());
+    EXPECT_EQ(0x55667788, buf.read_le4bytes());
+    EXPECT_EQ(-1, buf.read_4bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWrite8Bytes)
+{
+    char data[32];
+    SrsBuffer buf(data, 32);
+
+    // Test big-endian 8-byte writes
+    buf.write_8bytes(0x123456789ABCDEF0LL);
+    EXPECT_EQ(8, buf.pos());
+    EXPECT_EQ(0x12, data[0]);
+    EXPECT_EQ(0x34, data[1]);
+    EXPECT_EQ(0x56, data[2]);
+    EXPECT_EQ(0x78, data[3]);
+    EXPECT_EQ((char)0x9A, data[4]);
+    EXPECT_EQ((char)0xBC, data[5]);
+    EXPECT_EQ((char)0xDE, data[6]);
+    EXPECT_EQ((char)0xF0, data[7]);
+
+    buf.write_8bytes(0x1122334455667788LL);
+    EXPECT_EQ(16, buf.pos());
+    EXPECT_EQ(0x11, data[8]);
+    EXPECT_EQ(0x22, data[9]);
+    EXPECT_EQ(0x33, data[10]);
+    EXPECT_EQ(0x44, data[11]);
+    EXPECT_EQ(0x55, data[12]);
+    EXPECT_EQ(0x66, data[13]);
+    EXPECT_EQ(0x77, data[14]);
+    EXPECT_EQ((char)0x88, data[15]);
+
+    // Test little-endian 8-byte writes
+    buf.write_le8bytes(0xAABBCCDDEEFF0011LL);
+    EXPECT_EQ(24, buf.pos());
+    EXPECT_EQ(0x11, data[16]);
+    EXPECT_EQ(0x00, data[17]);
+    EXPECT_EQ((char)0xFF, data[18]);
+    EXPECT_EQ((char)0xEE, data[19]);
+    EXPECT_EQ((char)0xDD, data[20]);
+    EXPECT_EQ((char)0xCC, data[21]);
+    EXPECT_EQ((char)0xBB, data[22]);
+    EXPECT_EQ((char)0xAA, data[23]);
+
+    // Test with negative values
+    buf.write_8bytes(-1LL);
+    EXPECT_EQ(32, buf.pos());
+    for (int i = 24; i < 32; i++) {
+        EXPECT_EQ((char)0xFF, data[i]);
+    }
+
+    // Verify we can read back what we wrote
+    buf.skip(-32); // Reset to beginning
+    EXPECT_EQ(0x123456789ABCDEF0LL, buf.read_8bytes());
+    EXPECT_EQ(0x1122334455667788LL, buf.read_8bytes());
+    EXPECT_EQ((int64_t)0xAABBCCDDEEFF0011LL, buf.read_le8bytes());
+    EXPECT_EQ(-1LL, buf.read_8bytes());
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWriteString)
+{
+    char data[64];
+    SrsBuffer buf(data, 64);
+
+    // Test writing simple string
+    std::string str1 = "Hello";
+    buf.write_string(str1);
+    EXPECT_EQ(5, buf.pos());
+    EXPECT_EQ('H', data[0]);
+    EXPECT_EQ('e', data[1]);
+    EXPECT_EQ('l', data[2]);
+    EXPECT_EQ('l', data[3]);
+    EXPECT_EQ('o', data[4]);
+
+    // Test writing string with special characters
+    std::string str2 = ", World!";
+    buf.write_string(str2);
+    EXPECT_EQ(13, buf.pos());
+    EXPECT_EQ(',', data[5]);
+    EXPECT_EQ(' ', data[6]);
+    EXPECT_EQ('W', data[7]);
+    EXPECT_EQ('!', data[12]);
+
+    // Test writing empty string
+    std::string empty_str = "";
+    buf.write_string(empty_str);
+    EXPECT_EQ(13, buf.pos()); // Position unchanged
+
+    // Test writing string with null bytes
+    std::string binary_str;
+    binary_str.push_back(0x41);
+    binary_str.push_back(0x00);
+    binary_str.push_back(0x42);
+    binary_str.push_back(0x00);
+    binary_str.push_back(0x43);
+    buf.write_string(binary_str);
+    EXPECT_EQ(18, buf.pos());
+    EXPECT_EQ(0x41, data[13]);
+    EXPECT_EQ(0x00, data[14]);
+    EXPECT_EQ(0x42, data[15]);
+    EXPECT_EQ(0x00, data[16]);
+    EXPECT_EQ(0x43, data[17]);
+
+    // Verify we can read back what we wrote
+    buf.skip(-18); // Reset to beginning
+    std::string read_str1 = buf.read_string(5);
+    EXPECT_STREQ("Hello", read_str1.c_str());
+    std::string read_str2 = buf.read_string(8);
+    EXPECT_STREQ(", World!", read_str2.c_str());
+    std::string read_binary = buf.read_string(5);
+    EXPECT_EQ(5, read_binary.length());
+    EXPECT_EQ(0x41, read_binary[0]);
+    EXPECT_EQ(0x00, read_binary[1]);
+    EXPECT_EQ(0x42, read_binary[2]);
+    EXPECT_EQ(0x00, read_binary[3]);
+    EXPECT_EQ(0x43, read_binary[4]);
+}
+
+VOID TEST(KernelBufferTest, SrsBufferWriteBytes)
+{
+    char data[32];
+    SrsBuffer buf(data, 32);
+
+    // Test writing byte array
+    char input1[6] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
+    buf.write_bytes(input1, 6);
+    EXPECT_EQ(6, buf.pos());
+    for (int i = 0; i < 6; i++) {
+        EXPECT_EQ(input1[i], data[i]);
+    }
+
+    // Test writing another byte array
+    char input2[4] = {0x70, (char)0x80, (char)0x90, (char)0xA0};
+    buf.write_bytes(input2, 4);
+    EXPECT_EQ(10, buf.pos());
+    for (int i = 0; i < 4; i++) {
+        EXPECT_EQ(input2[i], data[6 + i]);
+    }
+
+    // Test writing zero bytes
+    char input3[1] = {(char)0xFF};
+    buf.write_bytes(input3, 0);
+    EXPECT_EQ(10, buf.pos()); // Position unchanged
+
+    // Test writing bytes with null values
+    char input4[5] = {(char)0xB0, 0x00, (char)0xC0, 0x00, (char)0xD0};
+    buf.write_bytes(input4, 5);
+    EXPECT_EQ(15, buf.pos());
+    for (int i = 0; i < 5; i++) {
+        EXPECT_EQ(input4[i], data[10 + i]);
+    }
+
+    // Verify we can read back what we wrote
+    buf.skip(-15); // Reset to beginning
+    char output1[6];
+    buf.read_bytes(output1, 6);
+    for (int i = 0; i < 6; i++) {
+        EXPECT_EQ(input1[i], output1[i]);
+    }
+
+    char output2[4];
+    buf.read_bytes(output2, 4);
+    for (int i = 0; i < 4; i++) {
+        EXPECT_EQ(input2[i], output2[i]);
+    }
+
+    char output4[5];
+    buf.read_bytes(output4, 5);
+    for (int i = 0; i < 5; i++) {
+        EXPECT_EQ(input4[i], output4[i]);
+    }
+}
+
+VOID TEST(KernelBufferTest, SrsBufferEdgeCases)
+{
+    // Test with very small buffer
+    char small_data[1];
+    SrsBuffer small_buf(small_data, 1);
+
+    small_buf.write_1bytes(0x42);
+    EXPECT_EQ(1, small_buf.pos());
+    EXPECT_TRUE(small_buf.empty());
+
+    small_buf.skip(-1);
+    EXPECT_EQ(0x42, small_buf.read_1bytes());
+    EXPECT_TRUE(small_buf.empty());
+
+    // Test position tracking with mixed operations
+    char mixed_data[16];
+    SrsBuffer mixed_buf(mixed_data, 16);
+
+    mixed_buf.write_4bytes(0x12345678);
+    EXPECT_EQ(4, mixed_buf.pos());
+
+    mixed_buf.skip(-2);
+    EXPECT_EQ(2, mixed_buf.pos());
+    EXPECT_EQ(0x5678, mixed_buf.read_2bytes());
+    EXPECT_EQ(4, mixed_buf.pos());
+
+    mixed_buf.write_2bytes((int16_t)0x9ABC);
+    EXPECT_EQ(6, mixed_buf.pos());
+
+    // Verify data integrity
+    mixed_buf.skip(-6);
+    EXPECT_EQ(0x12345678, mixed_buf.read_4bytes());
+    EXPECT_EQ((int16_t)0x9ABC, mixed_buf.read_2bytes());
+
+    // Test boundary conditions
+    char boundary_data[8];
+    SrsBuffer boundary_buf(boundary_data, 8);
+
+    // Fill buffer completely
+    boundary_buf.write_8bytes(0x123456789ABCDEF0LL);
+    EXPECT_EQ(8, boundary_buf.pos());
+    EXPECT_TRUE(boundary_buf.empty());
+    EXPECT_EQ(0, boundary_buf.left());
+
+    // Reset and verify
+    boundary_buf.skip(-8);
+    EXPECT_EQ(0, boundary_buf.pos());
+    EXPECT_FALSE(boundary_buf.empty());
+    EXPECT_EQ(8, boundary_buf.left());
+    EXPECT_EQ(0x123456789ABCDEF0LL, boundary_buf.read_8bytes());
+}

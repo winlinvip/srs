@@ -162,6 +162,35 @@ code_patterns:
     - pattern: "srs_freepa"
       description: "Custom macro for freeing arrays - use only when smart pointers are not suitable"
 
+  commenting_style:
+    - pattern: "C++ style comments"
+      description: "MANDATORY - Use C++ style comments (//) instead of C style comments (/* */)"
+      usage: |
+        WRONG: C style comments
+        /* This is a comment */
+        /**
+         * Multi-line comment
+         * with multiple lines
+         */
+
+        CORRECT: C++ style comments
+        // This is a comment
+        // Multi-line comment
+        // with multiple lines
+      rationale: "Consistent with SRS codebase style and better for single-line documentation"
+
+    - pattern: "No thread-safety comments"
+      description: "Do NOT describe thread-safety in comments since SRS is a single-threaded application"
+      usage: |
+        WRONG: Mentioning thread-safety
+        // This implementation is thread-safe for single-threaded usage but may
+        // require external synchronization in multi-threaded environments.
+
+        CORRECT: Focus on functionality without thread-safety mentions
+        // This implementation maintains state between calls for consistent
+        // round-robin behavior across multiple selections.
+      rationale: "SRS uses single-threaded coroutine-based architecture, so thread-safety discussions are irrelevant and confusing"
+
   error_handling:
     - pattern: "srs_error_t"
       description: "Custom error handling system - MANDATORY for all functions that return srs_error_t"

@@ -3572,14 +3572,14 @@ VOID TEST(KernelLBRRTest, SpecialServerNames)
 {
     if (true) {
         vector<string> servers;
-        servers.push_back("");  // Empty string
+        servers.push_back(""); // Empty string
         servers.push_back("server with spaces");
         servers.push_back("server-with-dashes");
         servers.push_back("server_with_underscores");
         servers.push_back("server.with.dots");
         servers.push_back("server:with:colons");
         servers.push_back("192.168.1.1");
-        servers.push_back("::1");  // IPv6 localhost
+        servers.push_back("::1"); // IPv6 localhost
 
         SrsLbRoundRobin lb;
 

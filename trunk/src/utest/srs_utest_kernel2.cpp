@@ -873,7 +873,7 @@ VOID TEST(KernelBufferTest, SrsBufferCopy)
     EXPECT_EQ(2, buf.pos());
 
     // Test copy preserves position
-    SrsBuffer* copy = buf.copy();
+    SrsBuffer *copy = buf.copy();
     EXPECT_EQ(5, copy->size());
     EXPECT_EQ(2, copy->pos());
     EXPECT_EQ(3, copy->left());
@@ -1203,7 +1203,7 @@ VOID TEST(KernelBufferTest, SrsBufferReadBytes)
     char output3[1] = {(char)0xFF};
     buf.read_bytes(output3, 0);
     EXPECT_EQ((char)0xFF, output3[0]); // Should be unchanged
-    EXPECT_EQ(7, buf.pos()); // Position unchanged
+    EXPECT_EQ(7, buf.pos());           // Position unchanged
 
     // Test reading remaining bytes
     char output4[3];
@@ -1640,14 +1640,14 @@ VOID TEST(KernelBitBufferTest, ReadBit)
     SrsBuffer buffer(data, 1);
     SrsBitBuffer bb(&buffer);
 
-    EXPECT_EQ(1, bb.read_bit());  // First bit is 1
-    EXPECT_EQ(0, bb.read_bit());  // Second bit is 0
-    EXPECT_EQ(0, bb.read_bit());  // Third bit is 0
-    EXPECT_EQ(0, bb.read_bit());  // Fourth bit is 0
-    EXPECT_EQ(0, bb.read_bit());  // Fifth bit is 0
-    EXPECT_EQ(0, bb.read_bit());  // Sixth bit is 0
-    EXPECT_EQ(0, bb.read_bit());  // Seventh bit is 0
-    EXPECT_EQ(0, bb.read_bit());  // Eighth bit is 0
+    EXPECT_EQ(1, bb.read_bit()); // First bit is 1
+    EXPECT_EQ(0, bb.read_bit()); // Second bit is 0
+    EXPECT_EQ(0, bb.read_bit()); // Third bit is 0
+    EXPECT_EQ(0, bb.read_bit()); // Fourth bit is 0
+    EXPECT_EQ(0, bb.read_bit()); // Fifth bit is 0
+    EXPECT_EQ(0, bb.read_bit()); // Sixth bit is 0
+    EXPECT_EQ(0, bb.read_bit()); // Seventh bit is 0
+    EXPECT_EQ(0, bb.read_bit()); // Eighth bit is 0
 
     EXPECT_TRUE(bb.empty());
     EXPECT_EQ(0, bb.left_bits());
@@ -1784,7 +1784,7 @@ VOID TEST(KernelBitBufferTest, Read8BitsNonAligned)
 
     // Now read 8 bits (should use slow path)
     int8_t value = bb.read_8bits();
-    EXPECT_EQ(0x23, value);  // 0010 0011 from remaining bits
+    EXPECT_EQ(0x23, value); // 0010 0011 from remaining bits
 
     // Read remaining 4 bits
     int32_t remaining = bb.read_bits(4);
@@ -1820,7 +1820,7 @@ VOID TEST(KernelBitBufferTest, Read16BitsNonAligned)
 
     // Now read 16 bits (should use slow path)
     int16_t value = bb.read_16bits();
-    EXPECT_EQ(0x2345, value);  // From remaining bits
+    EXPECT_EQ(0x2345, value); // From remaining bits
 
     // Read remaining 4 bits
     int32_t remaining = bb.read_bits(4);
@@ -1856,7 +1856,7 @@ VOID TEST(KernelBitBufferTest, Read32BitsNonAligned)
 
     // Now read 32 bits (should use slow path)
     int32_t value = bb.read_32bits();
-    EXPECT_EQ(0x23456789, value);  // From remaining bits
+    EXPECT_EQ(0x23456789, value); // From remaining bits
 
     // Read remaining 4 bits
     int32_t remaining = bb.read_bits(4);
@@ -1871,7 +1871,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_BasicValues)
 
     // Test ue(v) = 0: encoded as "1" (binary)
     if (true) {
-        char data[1] = {(char)0x80};  // 10000000
+        char data[1] = {(char)0x80}; // 10000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1882,7 +1882,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_BasicValues)
 
     // Test ue(v) = 1: encoded as "010" (binary)
     if (true) {
-        char data[1] = {0x40};  // 01000000
+        char data[1] = {0x40}; // 01000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1893,7 +1893,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_BasicValues)
 
     // Test ue(v) = 2: encoded as "011" (binary)
     if (true) {
-        char data[1] = {0x60};  // 01100000
+        char data[1] = {0x60}; // 01100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1904,7 +1904,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_BasicValues)
 
     // Test ue(v) = 3: encoded as "00100" (binary)
     if (true) {
-        char data[1] = {0x20};  // 00100000
+        char data[1] = {0x20}; // 00100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1920,7 +1920,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_LargerValues)
 
     // Test ue(v) = 6: encoded as "00111" (binary) - 0x38 = 00111000
     if (true) {
-        char data[1] = {0x38};  // 00111000
+        char data[1] = {0x38}; // 00111000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1931,7 +1931,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_LargerValues)
 
     // Test ue(v) = 7: encoded as "00100" (binary) - 0x10 = 00010000
     if (true) {
-        char data[1] = {0x10};  // 00010000
+        char data[1] = {0x10}; // 00010000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1942,7 +1942,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_LargerValues)
 
     // Test larger value that spans multiple bytes
     if (true) {
-        char data[2] = {0x01, 0x12};  // 00000001 00010010
+        char data[2] = {0x01, 0x12}; // 00000001 00010010
         SrsBuffer buffer(data, 2);
         SrsBitBuffer bb(&buffer);
 
@@ -1968,7 +1968,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_ErrorCases)
 
     // Test overflow case (too many leading zeros)
     if (true) {
-        char data[4] = {0x00, 0x00, 0x00, 0x01};  // 31+ leading zeros
+        char data[4] = {0x00, 0x00, 0x00, 0x01}; // 31+ leading zeros
         SrsBuffer buffer(data, 4);
         SrsBitBuffer bb(&buffer);
 
@@ -1978,7 +1978,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_ErrorCases)
 
     // Test insufficient data for leadingZeroBits
     if (true) {
-        char data[1] = {0x01};  // 00000001 - needs more data
+        char data[1] = {0x01}; // 00000001 - needs more data
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -1993,7 +1993,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_BasicValues)
 
     // Test se(v) = 0: same as ue(v) = 0, encoded as "1"
     if (true) {
-        char data[1] = {(char)0x80};  // 10000000
+        char data[1] = {(char)0x80}; // 10000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2004,7 +2004,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_BasicValues)
 
     // Test se(v) = 1: ue(v) = 1, encoded as "010"
     if (true) {
-        char data[1] = {0x40};  // 01000000
+        char data[1] = {0x40}; // 01000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2015,7 +2015,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_BasicValues)
 
     // Test se(v) = -1: ue(v) = 2, encoded as "011"
     if (true) {
-        char data[1] = {0x60};  // 01100000
+        char data[1] = {0x60}; // 01100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2026,7 +2026,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_BasicValues)
 
     // Test se(v) = 2: ue(v) = 3, encoded as "00100"
     if (true) {
-        char data[1] = {0x20};  // 00100000
+        char data[1] = {0x20}; // 00100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2037,7 +2037,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_BasicValues)
 
     // Test se(v) = -2: ue(v) = 4, encoded as "00101"
     if (true) {
-        char data[1] = {0x28};  // 00101000
+        char data[1] = {0x28}; // 00101000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2062,7 +2062,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_ErrorCases)
 
     // Test error propagation from read_bits_ue
     if (true) {
-        char data[4] = {0x00, 0x00, 0x00, 0x01};  // Will cause overflow in ue
+        char data[4] = {0x00, 0x00, 0x00, 0x01}; // Will cause overflow in ue
         SrsBuffer buffer(data, 4);
         SrsBitBuffer bb(&buffer);
 
@@ -2075,7 +2075,7 @@ VOID TEST(KernelBitBufferTest, EdgeCases)
 {
     // Test reading from single bit buffer
     if (true) {
-        char data[1] = {(char)0x80};  // 10000000
+        char data[1] = {(char)0x80}; // 10000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2100,7 +2100,7 @@ VOID TEST(KernelBitBufferTest, EdgeCases)
 
         // Read some bits
         int32_t bits = bb.read_bits(4);
-        EXPECT_EQ(1, bits);  // First 4 bits of 0x12
+        EXPECT_EQ(1, bits); // First 4 bits of 0x12
 
         // Skip some bits
         bb.skip_bits(4);
@@ -2168,7 +2168,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 0: leadingZeroBits = 0, codeNum = (2^0) - 1 + 0 = 0
     // Binary: "1"
     if (true) {
-        char data[1] = {(char)0x80};  // 10000000
+        char data[1] = {(char)0x80}; // 10000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2180,7 +2180,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 1: leadingZeroBits = 1, codeNum = (2^1) - 1 + 0 = 1
     // Binary: "010"
     if (true) {
-        char data[1] = {0x40};  // 01000000
+        char data[1] = {0x40}; // 01000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2192,7 +2192,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 2: leadingZeroBits = 1, codeNum = (2^1) - 1 + 1 = 2
     // Binary: "011"
     if (true) {
-        char data[1] = {0x60};  // 01100000
+        char data[1] = {0x60}; // 01100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2204,7 +2204,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 3: leadingZeroBits = 2, codeNum = (2^2) - 1 + 0 = 3
     // Binary: "00100"
     if (true) {
-        char data[1] = {0x20};  // 00100000
+        char data[1] = {0x20}; // 00100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2216,7 +2216,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 4: leadingZeroBits = 2, codeNum = (2^2) - 1 + 1 = 4
     // Binary: "00101"
     if (true) {
-        char data[1] = {0x28};  // 00101000
+        char data[1] = {0x28}; // 00101000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2228,7 +2228,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 5: leadingZeroBits = 2, codeNum = (2^2) - 1 + 2 = 5
     // Binary: "00110"
     if (true) {
-        char data[1] = {0x30};  // 00110000
+        char data[1] = {0x30}; // 00110000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2240,7 +2240,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 6: leadingZeroBits = 2, codeNum = (2^2) - 1 + 3 = 6
     // Binary: "00111"
     if (true) {
-        char data[1] = {0x38};  // 00111000
+        char data[1] = {0x38}; // 00111000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2252,7 +2252,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 7: Use known working pattern from existing tests
     // Binary: "00010000" = 0x10
     if (true) {
-        char data[1] = {0x10};  // 00010000
+        char data[1] = {0x10}; // 00010000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2264,7 +2264,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 8: Use known working pattern from existing tests
     // Binary: "00010010" = 0x12
     if (true) {
-        char data[1] = {0x12};  // 00010010
+        char data[1] = {0x12}; // 00010010
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2276,7 +2276,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_AlgorithmDefinition)
     // Test ue(v) = 9: Use known working pattern from existing tests
     // Binary: "00010100" = 0x14
     if (true) {
-        char data[1] = {0x14};  // 00010100
+        char data[1] = {0x14}; // 00010100
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2296,13 +2296,13 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_LargeValues)
 
     // Test a known working large value from existing tests
     if (true) {
-        char data[2] = {0x01, 0x12};  // From existing tests: gives 136
+        char data[2] = {0x01, 0x12}; // From existing tests: gives 136
         SrsBuffer buffer(data, 2);
         SrsBitBuffer bb(&buffer);
 
         uint32_t value = 999;
         HELPER_EXPECT_SUCCESS(bb.read_bits_ue(value));
-        EXPECT_EQ(136, (int)value);  // Known working value
+        EXPECT_EQ(136, (int)value); // Known working value
     }
 }
 
@@ -2316,7 +2316,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = 0: ue(v) = 0, se_val = -(0/2) = 0
     // Binary: "1"
     if (true) {
-        char data[1] = {(char)0x80};  // 10000000
+        char data[1] = {(char)0x80}; // 10000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2328,7 +2328,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = 1: ue(v) = 1, se_val = (1+1)/2 = 1
     // Binary: "010"
     if (true) {
-        char data[1] = {0x40};  // 01000000
+        char data[1] = {0x40}; // 01000000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2340,7 +2340,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = -1: ue(v) = 2, se_val = -(2/2) = -1
     // Binary: "011"
     if (true) {
-        char data[1] = {0x60};  // 01100000
+        char data[1] = {0x60}; // 01100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2352,7 +2352,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = 2: ue(v) = 3, se_val = (3+1)/2 = 2
     // Binary: "00100"
     if (true) {
-        char data[1] = {0x20};  // 00100000
+        char data[1] = {0x20}; // 00100000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2364,7 +2364,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = -2: ue(v) = 4, se_val = -(4/2) = -2
     // Binary: "00101"
     if (true) {
-        char data[1] = {0x28};  // 00101000
+        char data[1] = {0x28}; // 00101000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2376,7 +2376,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = 3: ue(v) = 5, se_val = (5+1)/2 = 3
     // Binary: "00110"
     if (true) {
-        char data[1] = {0x30};  // 00110000
+        char data[1] = {0x30}; // 00110000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2388,7 +2388,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = -3: ue(v) = 6, se_val = -(6/2) = -3
     // Binary: "00111"
     if (true) {
-        char data[1] = {0x38};  // 00111000
+        char data[1] = {0x38}; // 00111000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2400,7 +2400,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = 4: ue(v) = 7, se_val = (7+1)/2 = 4
     // Use known working pattern: 0x10 gives ue(7)
     if (true) {
-        char data[1] = {0x10};  // 00010000
+        char data[1] = {0x10}; // 00010000
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2412,7 +2412,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_AlgorithmDefinition)
     // Test se(v) = -4: ue(v) = 8, se_val = -(8/2) = -4
     // Use known working pattern: 0x12 gives ue(8)
     if (true) {
-        char data[1] = {0x12};  // 00010010
+        char data[1] = {0x12}; // 00010010
         SrsBuffer buffer(data, 1);
         SrsBitBuffer bb(&buffer);
 
@@ -2432,25 +2432,25 @@ VOID TEST(KernelBitBufferTest, ReadBitsSE_LargeValues)
     // Test a known working large positive value
     // Using ue(136) from existing tests, se_val = (135+1)/2 = 68
     if (true) {
-        char data[2] = {0x01, 0x11};  // Pattern that gives ue(135)
+        char data[2] = {0x01, 0x11}; // Pattern that gives ue(135)
         SrsBuffer buffer(data, 2);
         SrsBitBuffer bb(&buffer);
 
         int32_t value = 999;
         HELPER_EXPECT_SUCCESS(bb.read_bits_se(value));
-        EXPECT_EQ(68, value);  // (135+1)/2 = 68
+        EXPECT_EQ(68, value); // (135+1)/2 = 68
     }
 
     // Test a known working large negative value
     // Using ue(136) from existing tests, se_val = -(136/2) = -68
     if (true) {
-        char data[2] = {0x01, 0x12};  // Pattern that gives ue(136)
+        char data[2] = {0x01, 0x12}; // Pattern that gives ue(136)
         SrsBuffer buffer(data, 2);
         SrsBitBuffer bb(&buffer);
 
         int32_t value = 999;
         HELPER_EXPECT_SUCCESS(bb.read_bits_se(value));
-        EXPECT_EQ(-68, value);  // -(136/2) = -68
+        EXPECT_EQ(-68, value); // -(136/2) = -68
     }
 }
 
@@ -2469,7 +2469,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_SE_ErrorPropagation)
 
     // Test overflow propagation from ue() to se()
     if (true) {
-        char data[4] = {0x00, 0x00, 0x00, 0x01};  // Will cause overflow in ue
+        char data[4] = {0x00, 0x00, 0x00, 0x01}; // Will cause overflow in ue
         SrsBuffer buffer(data, 4);
         SrsBitBuffer bb(&buffer);
 
@@ -2487,7 +2487,7 @@ VOID TEST(KernelBitBufferTest, ReadBitsUE_SE_SequentialReading)
     // Binary: "1" + "010" + "011" + "010" + "011" = "1010011010011"
     // Padded: "1010011010011000" = 0xA6, 0x98
     if (true) {
-        char data[2] = {(char)0xA6, (char)0x98};  // 10100110 10011000
+        char data[2] = {(char)0xA6, (char)0x98}; // 10100110 10011000
         SrsBuffer buffer(data, 2);
         SrsBitBuffer bb(&buffer);
 

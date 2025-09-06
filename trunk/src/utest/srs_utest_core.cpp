@@ -42,7 +42,7 @@ VOID TEST(CoreAutoFreeTest, FreepObject)
 VOID TEST(CoreAutoFreeTest, FreepNullPointer)
 {
     int *ptr = NULL;
-    srs_freep(ptr);  // Should not crash
+    srs_freep(ptr); // Should not crash
     EXPECT_TRUE(ptr == NULL);
 }
 
@@ -63,7 +63,7 @@ VOID TEST(CoreAutoFreeTest, FreepaArray)
 VOID TEST(CoreAutoFreeTest, FreepaNullArray)
 {
     int *arr = NULL;
-    srs_freepa(arr);  // Should not crash
+    srs_freepa(arr); // Should not crash
     EXPECT_TRUE(arr == NULL);
 }
 
@@ -440,7 +440,7 @@ VOID TEST(CoreSmartPtr, SharedPtrSelfAssignment)
         // Test self assignment - suppress warning as this is intentional
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
-        p = p;  // Self assignment
+        p = p; // Self assignment
 #pragma clang diagnostic pop
         EXPECT_EQ(original_ptr, p.get());
         EXPECT_EQ(100, *p);
@@ -472,7 +472,7 @@ VOID TEST(CoreSmartPtr, SharedPtrMultipleReferences)
         EXPECT_EQ(p1.get(), p3.get());
         EXPECT_EQ(p1.get(), p4.get());
     }
-    EXPECT_EQ(100, *ptr);  // All references gone, object destroyed
+    EXPECT_EQ(100, *ptr); // All references gone, object destroyed
 }
 
 VOID TEST(CoreSmartPtr, SharedPtrBoolOperator)
@@ -623,7 +623,7 @@ VOID TEST(CoreSmartPtr, SharedResourceSelfAssignment)
         // Test self assignment - suppress warning as this is intentional
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
-        p = p;  // Self assignment
+        p = p; // Self assignment
 #pragma clang diagnostic pop
         EXPECT_EQ(original_ptr, p.get());
         EXPECT_EQ(100, p->value_);
@@ -986,7 +986,7 @@ VOID TEST(CoreSmartPtr, SmartPointerMemoryManagement)
         SrsUniquePtr<MockWrapper> ptr(new MockWrapper(counter));
         EXPECT_EQ(1, *counter);
     }
-    EXPECT_EQ(0, *counter);  // MockWrapper destructor should have decremented
+    EXPECT_EQ(0, *counter); // MockWrapper destructor should have decremented
 
     // Test that SrsSharedPtr properly manages reference counting
     if (true) {
@@ -995,14 +995,14 @@ VOID TEST(CoreSmartPtr, SmartPointerMemoryManagement)
 
         if (true) {
             SrsSharedPtr<MockWrapper> p2 = p1;
-            EXPECT_EQ(1, *counter);  // Same object, counter unchanged
+            EXPECT_EQ(1, *counter); // Same object, counter unchanged
 
             SrsSharedPtr<MockWrapper> p3(new MockWrapper(counter));
-            EXPECT_EQ(2, *counter);  // New object created
+            EXPECT_EQ(2, *counter); // New object created
         }
-        EXPECT_EQ(1, *counter);  // p3 destroyed, one object remains
+        EXPECT_EQ(1, *counter); // p3 destroyed, one object remains
     }
-    EXPECT_EQ(0, *counter);  // All objects destroyed
+    EXPECT_EQ(0, *counter); // All objects destroyed
 }
 
 VOID TEST(CoreSmartPtr, SmartPointerOperatorOverloads)

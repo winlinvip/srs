@@ -1752,7 +1752,7 @@ SrsRtcConnectionNackTimer::SrsRtcConnectionNackTimer(SrsRtcConnection *p) : p_(p
 SrsRtcConnectionNackTimer::~SrsRtcConnectionNackTimer()
 {
     if (true) {
-        SrsLocker(lock_);
+        SrsLocker(&lock_);
         _srs_shared_timer->timer20ms()->unsubscribe(this);
     }
     srs_mutex_destroy(lock_);
@@ -1766,7 +1766,7 @@ srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
     // Therefore, during this function, the 'this' pointer might become invalid because
     // the object could be freed by another thread. As a result, we must lock the object
     // to prevent it from being freed.
-    SrsLocker(lock_);
+    SrsLocker(&lock_);
 
     if (!p_->nack_enabled_) {
         return err;

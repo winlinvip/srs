@@ -162,6 +162,31 @@ code_patterns:
     - pattern: "srs_freepa"
       description: "Custom macro for freeing arrays - use only when smart pointers are not suitable"
 
+  naming_conventions:
+    - pattern: "field_naming"
+      description: "MANDATORY - All class and struct fields must end with underscore (_)"
+      usage: |
+        WRONG: Fields without underscore
+        class SrsBuffer {
+        private:
+            char *p;
+            int size;
+        public:
+            bool enabled;
+        };
+
+        CORRECT: Fields with underscore
+        class SrsBuffer {
+        private:
+            char *p_;
+            int size_;
+        public:
+            bool enabled_;
+        };
+      scope: "Applies to ALL fields (private, protected, public) in both classes and structs"
+      exceptions: "Only applies to SRS-defined classes/structs - do NOT change 3rd party code like llhttp"
+      rationale: "Consistent naming convention across SRS codebase for better code readability and maintenance"
+
   commenting_style:
     - pattern: "C++ style comments"
       description: "MANDATORY - Use C++ style comments (//) instead of C style comments (/* */)"

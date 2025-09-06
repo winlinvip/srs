@@ -25,7 +25,7 @@ class SrsRtmpCommonMessage;
 class SrsMessageQueue;
 class ISrsProtocolReadWriter;
 class SrsKbps;
-class SrsLbRoundRobin;
+class ISrsLbRoundRobin;
 class SrsTcpClient;
 class SrsSimpleRtmpClient;
 class SrsRtmpCommand;
@@ -64,7 +64,7 @@ public:
     virtual ~SrsEdgeUpstream();
 
 public:
-    virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb) = 0;
+    virtual srs_error_t connect(ISrsRequest *r, ISrsLbRoundRobin *lb) = 0;
     virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg) = 0;
     virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket) = 0;
     virtual void close() = 0;
@@ -94,7 +94,7 @@ public:
     virtual ~SrsEdgeRtmpUpstream();
 
 public:
-    virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb);
+    virtual srs_error_t connect(ISrsRequest *r, ISrsLbRoundRobin *lb);
     virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
     virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
     virtual void close();
@@ -128,10 +128,10 @@ public:
     virtual ~SrsEdgeFlvUpstream();
 
 public:
-    virtual srs_error_t connect(ISrsRequest *r, SrsLbRoundRobin *lb);
+    virtual srs_error_t connect(ISrsRequest *r, ISrsLbRoundRobin *lb);
 
 private:
-    virtual srs_error_t do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, int redirect_depth);
+    virtual srs_error_t do_connect(ISrsRequest *r, ISrsLbRoundRobin *lb, int redirect_depth);
 
 public:
     virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
@@ -155,7 +155,7 @@ private:
     SrsPlayEdge *edge;
     ISrsRequest *req;
     SrsCoroutine *trd;
-    SrsLbRoundRobin *lb;
+    ISrsLbRoundRobin *lb;
     SrsEdgeUpstream *upstream;
 
 public:
@@ -166,7 +166,6 @@ public:
     virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
-    virtual std::string get_curr_origin();
 
     // Interface ISrsReusableThread2Handler
 public:
@@ -192,7 +191,7 @@ private:
     ISrsRequest *req;
     SrsCoroutine *trd;
     SrsSimpleRtmpClient *sdk;
-    SrsLbRoundRobin *lb;
+    ISrsLbRoundRobin *lb;
     // we must ensure one thread one fd principle,
     // that is, a fd must be write/read by the one thread.
     // The publish service thread will proxy(msg), and the edge forward thread
@@ -243,7 +242,6 @@ public:
     virtual srs_error_t on_client_play();
     // When all client stopped play, disconnect to origin.
     virtual void on_all_client_stop();
-    virtual std::string get_curr_origin();
 
 public:
     // When ingester start to play stream.

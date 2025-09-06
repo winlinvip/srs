@@ -2521,8 +2521,3 @@ void SrsLiveSource::on_edge_proxy_unpublish()
 {
     publish_edge->on_proxy_unpublish();
 }
-
-string SrsLiveSource::get_curr_origin()
-{
-    return play_edge->get_curr_origin();
-}

@@ -638,9 +638,6 @@ public:
     virtual srs_error_t on_edge_proxy_publish(SrsRtmpCommonMessage *msg);
     // For edge, proxy stop publish
     virtual void on_edge_proxy_unpublish();
-
-public:
-    virtual std::string get_curr_origin();
 };
 
 #endif

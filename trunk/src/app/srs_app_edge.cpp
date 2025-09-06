@@ -62,7 +62,7 @@ SrsEdgeRtmpUpstream::~SrsEdgeRtmpUpstream()
     close();
 }
 
-srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
+srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, ISrsLbRoundRobin *lb)
 {
     srs_error_t err = srs_success;
 
@@ -173,7 +173,7 @@ SrsEdgeFlvUpstream::~SrsEdgeFlvUpstream()
     close();
 }
 
-srs_error_t SrsEdgeFlvUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
+srs_error_t SrsEdgeFlvUpstream::connect(ISrsRequest *r, ISrsLbRoundRobin *lb)
 {
     // Because we might modify the r, which cause retry fail, so we must copy it.
     ISrsRequest *cp = r->copy();
@@ -185,7 +185,7 @@ srs_error_t SrsEdgeFlvUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
     return do_connect(cp, lb, 0);
 }
 
-srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, int redirect_depth)
+srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, ISrsLbRoundRobin *lb, int redirect_depth)
 {
     srs_error_t err = srs_success;
 
@@ -456,11 +456,6 @@ void SrsEdgeIngester::stop()
     if (source_) {
         source_->on_unpublish();
     }
-}
-
-string SrsEdgeIngester::get_curr_origin()
-{
-    return lb->selected();
 }
 
 #ifdef SRS_APM
@@ -997,11 +992,6 @@ void SrsPlayEdge::on_all_client_stop()
 
         return;
     }
-}
-
-string SrsPlayEdge::get_curr_origin()
-{
-    return ingester->get_curr_origin();
 }
 
 srs_error_t SrsPlayEdge::on_ingest_play()

@@ -10,6 +10,14 @@
 
 using namespace std;
 
+ISrsLbRoundRobin::ISrsLbRoundRobin()
+{
+}
+
+ISrsLbRoundRobin::~ISrsLbRoundRobin()
+{
+}
+
 SrsLbRoundRobin::SrsLbRoundRobin()
 {
     index = -1;

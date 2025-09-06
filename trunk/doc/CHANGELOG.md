@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-09-06, Merge [#4478](https://github.com/ossrs/srs/pull/4478): AI: Add more utests for kernel module. v7.0.81 (#4478)
 * v7.0, 2025-09-06, Merge [#4475](https://github.com/ossrs/srs/pull/4475): AI: Support anonymous coroutine with code block. v7.0.80 (#4475)
 * v7.0, 2025-09-05, Merge [#4474](https://github.com/ossrs/srs/pull/4474): WebRTC: Fix race condition in RTC nack timer callbacks. v7.0.79 (#4474)
 * v7.0, 2025-09-04, Merge [#4467](https://github.com/ossrs/srs/pull/4467): WebRTC: Fix NACK recovered packets not being added to receive queue. v7.0.78 (#4467)

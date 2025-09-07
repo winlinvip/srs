@@ -467,7 +467,7 @@ srs_error_t SrsRtspSource::on_rtp(SrsRtpPacket *pkt)
 
     // If circuit-breaker is dying, drop packet.
     if (_srs_circuit_breaker->hybrid_dying_water_level()) {
-        _srs_pps_aloss2->sugar += (int64_t)consumers.size();
+        _srs_pps_aloss2->sugar_ += (int64_t)consumers.size();
         return err;
     }
 
@@ -548,18 +548,18 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
     audio_ssrc_ = SrsRtcSSRCGenerator::instance()->generate_ssrc();
     audio_desc->ssrc_ = audio_ssrc_;
 
-    int sample_rate = srs_flv_srates[format->acodec->sound_rate];
+    int sample_rate = srs_flv_srates[format->acodec_->sound_rate_];
     audio_sample_rate_ = sample_rate;
 
     // Build payload from actual audio format
     if (codec == SrsAudioCodecIdOpus) {
         // For Opus, use actual format parameters if available
-        int channels = (format->acodec->sound_type == SrsAudioChannelsStereo) ? 2 : 1;
+        int channels = (format->acodec_->sound_type_ == SrsAudioChannelsStereo) ? 2 : 1;
         audio_payload_type_ = kAudioPayloadType;
         audio_desc->media_ = new SrsAudioPayload(audio_payload_type_, "opus", sample_rate, channels);
     } else if (codec == SrsAudioCodecIdAAC) {
         // For AAC, extract parameters from format
-        int channels = format->acodec->aac_channels;
+        int channels = format->acodec_->aac_channels_;
         audio_payload_type_ = kAudioPayloadType;
 
         // Note: Use "MPEG4-GENERIC" instead of "AAC" for RTSP/SDP compliance
@@ -569,7 +569,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
 
         // AAC requires AudioSpecificConfig in SDP fmtp line
         // Build the config string from AAC sequence header
-        const std::vector<char> &asc = format->acodec->aac_extra_data;
+        const std::vector<char> &asc = format->acodec_->aac_extra_data_;
         if (!asc.empty()) {
             int hex_len = asc.size() * 2;
             SrsUniquePtr<char> hex_buf(new char[hex_len + 1]);
@@ -666,9 +666,9 @@ srs_error_t SrsRtspRtpBuilder::initialize(ISrsRequest *r)
     }
 
     // Setup the SPS/PPS parsing strategy.
-    format->try_annexb_first = _srs_config->try_annexb_first(r->vhost);
+    format->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost);
 
-    srs_trace("RTSP bridge from RTMP, try_annexb_first=%d", format->try_annexb_first);
+    srs_trace("RTSP bridge from RTMP, try_annexb_first=%d", format->try_annexb_first_);
 
     return err;
 }
@@ -712,12 +712,12 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
 
     // Ignore if no format->acodec, it means the codec is not parsed, or unknown codec.
     // @issue https://github.com/ossrs/srs/issues/1506#issuecomment-562079474
-    if (!format->acodec) {
+    if (!format->acodec_) {
         return err;
     }
 
     // support audio codec: aac/opus
-    SrsAudioCodecId acodec = format->acodec->id;
+    SrsAudioCodecId acodec = format->acodec_->id_;
     if (acodec != SrsAudioCodecIdAAC && acodec != SrsAudioCodecIdOpus) {
         return err;
     }
@@ -731,7 +731,7 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
     }
 
     // Skip empty audio frames
-    if (format->audio->nb_samples == 0) {
+    if (format->audio_->nb_samples_ == 0) {
         return err;
     }
 
@@ -739,7 +739,7 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
     SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
 
     if (acodec == SrsAudioCodecIdAAC) {
-        if ((err = package_aac(format->audio, pkt.get())) != srs_success) {
+        if ((err = package_aac(format->audio_, pkt.get())) != srs_success) {
             return srs_error_wrap(err, "package aac");
         }
     } else {
@@ -757,17 +757,17 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
 {
     srs_error_t err = srs_success;
 
-    srs_assert(audio->nb_samples);
+    srs_assert(audio->nb_samples_);
 
     // For RTSP, audio TBN is not fixed, but use the sample rate, so we
     // need to convert FLV TBN(1000) to the sample rate TBN.
-    int64_t dts = (int64_t)audio->dts;
+    int64_t dts = (int64_t)audio->dts_;
     dts *= (int64_t)audio_sample_rate_;
     dts /= 1000;
 
     pkt->header.set_payload_type(audio_payload_type_);
     pkt->header.set_ssrc(audio_ssrc_);
-    pkt->frame_type = SrsFrameTypeAudio;
+    pkt->frame_type_ = SrsFrameTypeAudio;
     pkt->header.set_marker(true);
     pkt->header.set_sequence(audio_sequence++);
     pkt->header.set_timestamp(dts);
@@ -779,12 +779,12 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
     // Use AAC-hbr mode with AU-headers
     // Calculate total size for all AU samples
     int total_au_size = 0;
-    for (int i = 0; i < audio->nb_samples; i++) {
-        total_au_size += audio->samples[i].size;
+    for (int i = 0; i < audio->nb_samples_; i++) {
+        total_au_size += audio->samples_[i].size_;
     }
 
     // AU-headers: 16 bits per AU (13 bits for size + 3 bits for index)
-    int au_headers_length = audio->nb_samples * 16;          // bits
+    int au_headers_length = audio->nb_samples_ * 16;          // bits
     int au_headers_bytes = (au_headers_length + 7) / 8;      // convert to bytes
     int payload_size = 2 + au_headers_bytes + total_au_size; // AU-headers-length(2) + AU-headers + AU data
 
@@ -796,22 +796,22 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
     buffer.write_2bytes(au_headers_length);
 
     // Write AU-headers for each sample
-    for (int i = 0; i < audio->nb_samples; i++) {
+    for (int i = 0; i < audio->nb_samples_; i++) {
         // AU-header: AU-size(13 bits) + AU-index(3 bits) = 16 bits
         // According to RFC 3640, AU-size comes first (MSB), then AU-index (LSB)
-        uint16_t au_size = audio->samples[i].size & 0x1FFF; // 13 bits mask
+        uint16_t au_size = audio->samples_[i].size_ & 0x1FFF; // 13 bits mask
         uint16_t au_index = i & 0x07;                       // 3 bits mask
         buffer.write_2bytes((au_size << 3) | au_index);
     }
 
     // Copy all AAC AU data
-    for (int i = 0; i < audio->nb_samples; i++) {
-        buffer.write_bytes(audio->samples[i].bytes, audio->samples[i].size);
+    for (int i = 0; i < audio->nb_samples_; i++) {
+        buffer.write_bytes(audio->samples_[i].bytes_, audio->samples_[i].size_);
     }
 
     // Wrap the payload in the RTP packet
-    raw->payload = pkt->wrap(payload.get(), payload_size);
-    raw->nn_payload = payload_size;
+    raw->payload_ = pkt->wrap(payload.get(), payload_size);
+    raw->nn_payload_ = payload_size;
 
     return err;
 }
@@ -843,12 +843,12 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsMediaPacket *msg)
 
     // Ignore if no format->vcodec, it means the codec is not parsed, or unsupport/unknown codec
     // such as H.263 codec
-    if (!format->vcodec) {
+    if (!format->vcodec_) {
         return err;
     }
 
     // support video codec: h264/h265
-    SrsVideoCodecId vcodec = format->vcodec->id;
+    SrsVideoCodecId vcodec = format->vcodec_->id_;
     if (vcodec != SrsVideoCodecIdAVC && vcodec != SrsVideoCodecIdHEVC) {
         return err;
     }
@@ -890,7 +890,7 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsMediaPacket *msg)
     for (int i = 0; i < nn_samples; i++) {
         SrsNaluSample *sample = samples[i];
 
-        if (sample->size <= kRtpMaxPayloadSize) {
+        if (sample->size_ <= kRtpMaxPayloadSize) {
             if ((err = package_single_nalu(msg, sample, pkts)) != srs_success) {
                 return srs_error_wrap(err, "package single nalu");
             }
@@ -913,13 +913,13 @@ srs_error_t SrsRtspRtpBuilder::filter(SrsMediaPacket *msg, SrsFormat *format, bo
     srs_error_t err = srs_success;
 
     // If IDR, we will insert SPS/PPS before IDR frame.
-    if (format->video && format->video->has_idr) {
+    if (format->video_ && format->video_->has_idr_) {
         has_idr = true;
     }
 
     // Update samples to shared frame.
-    for (int i = 0; i < format->video->nb_samples; ++i) {
-        SrsNaluSample *sample = &format->video->samples[i];
+    for (int i = 0; i < format->video_->nb_samples_; ++i) {
+        SrsNaluSample *sample = &format->video_->samples_[i];
         samples.push_back(sample);
     }
 
@@ -931,7 +931,7 @@ srs_error_t SrsRtspRtpBuilder::package_stap_a(SrsMediaPacket *msg, SrsRtpPacket 
     srs_error_t err = srs_success;
 
     SrsFormat *format = meta->vsh_format();
-    if (!format || !format->vcodec) {
+    if (!format || !format->vcodec_) {
         return err;
     }
 
@@ -943,7 +943,7 @@ srs_error_t SrsRtspRtpBuilder::package_nalus(SrsMediaPacket *msg, const vector<S
     srs_error_t err = srs_success;
 
     SrsFormat *format = meta->vsh_format();
-    if (!format || !format->vcodec) {
+    if (!format || !format->vcodec_) {
         return err;
     }
 
@@ -961,7 +961,7 @@ srs_error_t SrsRtspRtpBuilder::package_fu_a(SrsMediaPacket *msg, SrsNaluSample *
     srs_error_t err = srs_success;
 
     SrsFormat *format = meta->vsh_format();
-    if (!format || !format->vcodec) {
+    if (!format || !format->vcodec_) {
         return err;
     }
 

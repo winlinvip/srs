@@ -378,7 +378,7 @@ if [[ $SRS_UTEST == YES ]]; then
         "srs_utest_mp4" "srs_utest_service" "srs_utest_app" "srs_utest_rtc" "srs_utest_config2"
         "srs_utest_protocol" "srs_utest_protocol2" "srs_utest_kernel2" "srs_utest_protocol3"
         "srs_utest_st" "srs_utest_rtc2" "srs_utest_rtc3" "srs_utest_fmp4" "srs_utest_source_lock"
-        "srs_utest_stream_token" "srs_utest_rtc_recv_track" "srs_utest_st2")
+        "srs_utest_stream_token" "srs_utest_rtc_recv_track" "srs_utest_st2" "srs_utest_hevc_structs")
     # Always include SRT utest
     MODULE_FILES+=("srs_utest_srt")
     if [[ $SRS_GB28181 == YES ]]; then

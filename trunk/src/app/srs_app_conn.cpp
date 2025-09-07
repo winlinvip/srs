@@ -179,7 +179,7 @@ ISrsResource *SrsResourceManager::at(int index)
 
 ISrsResource *SrsResourceManager::find_by_id(std::string id)
 {
-    ++_srs_pps_ids->sugar;
+    ++_srs_pps_ids->sugar_;
     map<string, ISrsResource *>::iterator it = conns_id_.find(id);
     return (it != conns_id_.end()) ? it->second : NULL;
 }
@@ -188,18 +188,18 @@ ISrsResource *SrsResourceManager::find_by_fast_id(uint64_t id)
 {
     SrsResourceFastIdItem *item = &conns_level0_cache_[(id | id >> 32) % nn_level0_cache_];
     if (item->available && item->fast_id == id) {
-        ++_srs_pps_fids_level0->sugar;
+        ++_srs_pps_fids_level0->sugar_;
         return item->impl;
     }
 
-    ++_srs_pps_fids->sugar;
+    ++_srs_pps_fids->sugar_;
     map<uint64_t, ISrsResource *>::iterator it = conns_fast_id_.find(id);
     return (it != conns_fast_id_.end()) ? it->second : NULL;
 }
 
 ISrsResource *SrsResourceManager::find_by_name(std::string name)
 {
-    ++_srs_pps_ids->sugar;
+    ++_srs_pps_ids->sugar_;
     map<string, ISrsResource *>::iterator it = conns_name_.find(name);
     return (it != conns_name_.end()) ? it->second : NULL;
 }
@@ -334,7 +334,7 @@ void SrsResourceManager::do_clear()
                       i, conn->desc().c_str(), conn, (int)conns_.size(), (int)copy.size(), (int)zombies_.size());
         }
 
-        ++_srs_pps_dispose->sugar;
+        ++_srs_pps_dispose->sugar_;
 
         dispose(conn);
     }

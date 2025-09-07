@@ -85,9 +85,9 @@ srs_error_t SrsRtmpJitter::correct(SrsMediaPacket *msg, SrsRtmpJitterAlgorithm a
         if (ag == SrsRtmpJitterAlgorithmZERO) {
             // for the first time, last_pkt_correct_time is -1.
             if (last_pkt_correct_time == -1) {
-                last_pkt_correct_time = msg->timestamp;
+                last_pkt_correct_time = msg->timestamp_;
             }
-            msg->timestamp -= last_pkt_correct_time;
+            msg->timestamp_ -= last_pkt_correct_time;
             return err;
         }
 
@@ -98,7 +98,7 @@ srs_error_t SrsRtmpJitter::correct(SrsMediaPacket *msg, SrsRtmpJitterAlgorithm a
     // full jitter algorithm, do jitter correct.
     // set to 0 for metadata.
     if (!msg->is_av()) {
-        msg->timestamp = 0;
+        msg->timestamp_ = 0;
         return err;
     }
 
@@ -112,7 +112,7 @@ srs_error_t SrsRtmpJitter::correct(SrsMediaPacket *msg, SrsRtmpJitterAlgorithm a
      * 3. last_pkt_correct_time: simply add the positive delta,
      *     and enforce the time monotonically.
      */
-    int64_t time = msg->timestamp;
+    int64_t time = msg->timestamp_;
     int64_t delta = time - last_pkt_time;
 
     // if jitter detected, reset the delta.
@@ -124,7 +124,7 @@ srs_error_t SrsRtmpJitter::correct(SrsMediaPacket *msg, SrsRtmpJitterAlgorithm a
 
     last_pkt_correct_time = srs_max(0, last_pkt_correct_time + delta);
 
-    msg->timestamp = last_pkt_correct_time;
+    msg->timestamp_ = last_pkt_correct_time;
     last_pkt_time = time;
 
     return err;
@@ -259,12 +259,12 @@ srs_error_t SrsMessageQueue::enqueue(SrsMediaPacket *msg, bool *is_overflow)
     // If jitter is off, the timestamp of first sequence header is zero, which wll cause SRS to shrink and drop the
     // keyframes even if there is not overflow packets in queue, so we must ignore the zero timestamps, please
     // @see https://github.com/ossrs/srs/pull/2186#issuecomment-953383063
-    if (msg->is_av() && msg->timestamp != 0) {
+    if (msg->is_av() && msg->timestamp_ != 0) {
         if (av_start_time == -1) {
-            av_start_time = srs_utime_t(msg->timestamp * SRS_UTIME_MILLISECONDS);
+            av_start_time = srs_utime_t(msg->timestamp_ * SRS_UTIME_MILLISECONDS);
         }
 
-        av_end_time = srs_utime_t(msg->timestamp * SRS_UTIME_MILLISECONDS);
+        av_end_time = srs_utime_t(msg->timestamp_ * SRS_UTIME_MILLISECONDS);
     }
 
     if (max_queue_size <= 0) {
@@ -299,7 +299,7 @@ srs_error_t SrsMessageQueue::dump_packets(int max_count, SrsMediaPacket **pmsgs,
     memcpy(pmsgs, omsgs, count * sizeof(SrsMediaPacket *));
 
     SrsMediaPacket *last = omsgs[count - 1];
-    av_start_time = srs_utime_t(last->timestamp * SRS_UTIME_MILLISECONDS);
+    av_start_time = srs_utime_t(last->timestamp_ * SRS_UTIME_MILLISECONDS);
 
     if (count >= nb_msgs) {
         // the pmsgs is big enough and clear msgs at most time.
@@ -364,11 +364,11 @@ void SrsMessageQueue::shrink()
 
     // Push back sequence headers and update their timestamps.
     if (video_sh) {
-        video_sh->timestamp = srsu2ms(av_end_time);
+        video_sh->timestamp_ = srsu2ms(av_end_time);
         msgs.push_back(video_sh);
     }
     if (audio_sh) {
-        audio_sh->timestamp = srsu2ms(av_end_time);
+        audio_sh->timestamp_ = srsu2ms(av_end_time);
         msgs.push_back(audio_sh);
     }
 
@@ -710,7 +710,7 @@ srs_utime_t SrsGopCache::start_time()
     SrsMediaPacket *msg = gop_cache[0];
     srs_assert(msg);
 
-    return srs_utime_t(msg->timestamp * SRS_UTIME_MILLISECONDS);
+    return srs_utime_t(msg->timestamp_ * SRS_UTIME_MILLISECONDS);
 }
 
 bool SrsGopCache::pure_audio()
@@ -771,7 +771,7 @@ void SrsMixQueue::clear()
 
 void SrsMixQueue::push(SrsMediaPacket *msg)
 {
-    msgs.insert(std::make_pair(msg->timestamp, msg));
+    msgs.insert(std::make_pair(msg->timestamp_, msg));
 
     if (msg->is_video()) {
         nb_videos++;
@@ -951,28 +951,28 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
 
     // Handle the metadata when got sequence header.
     if (format->is_aac_sequence_header() || format->is_mp3_sequence_header()) {
-        srs_assert(format->acodec);
-        SrsAudioCodecConfig *c = format->acodec;
+        srs_assert(format->acodec_);
+        SrsAudioCodecConfig *c = format->acodec_;
 
         static int flv_sample_sizes[] = {8, 16, 0};
         static int flv_sound_types[] = {1, 2, 0};
 
         // when got audio stream info.
         SrsStatistic *stat = SrsStatistic::instance();
-        if ((err = stat->on_audio_info(req_, format->acodec->id, c->sound_rate, c->sound_type, c->aac_object)) != srs_success) {
+        if ((err = stat->on_audio_info(req_, format->acodec_->id_, c->sound_rate_, c->sound_type_, c->aac_object_)) != srs_success) {
             return srs_error_wrap(err, "stat audio");
         }
 
-        if (format->acodec->id == SrsAudioCodecIdMP3) {
+        if (format->acodec_->id_ == SrsAudioCodecIdMP3) {
             srs_trace("%dB audio sh, codec(%d, %dbits, %dchannels, %dHZ)",
-                      msg->size(), c->id, flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
-                      srs_flv_srates[c->sound_rate]);
+                      msg->size(), c->id_, flv_sample_sizes[c->sound_size_], flv_sound_types[c->sound_type_],
+                      srs_flv_srates[c->sound_rate_]);
         } else {
             srs_trace("%dB audio sh, codec(%d, profile=%s, %dchannels, %dkbps, %dHZ), flv(%dbits, %dchannels, %dHZ)",
-                      msg->size(), c->id, srs_aac_object2str(c->aac_object).c_str(), c->aac_channels,
-                      c->audio_data_rate / 1000, srs_aac_srates[c->aac_sample_rate],
-                      flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
-                      srs_flv_srates[c->sound_rate]);
+                      msg->size(), c->id_, srs_aac_object2str(c->aac_object_).c_str(), c->aac_channels_,
+                      c->audio_data_rate_ / 1000, srs_aac_srates[c->aac_sample_rate_],
+                      flv_sample_sizes[c->sound_size_], flv_sound_types[c->sound_type_],
+                      srs_flv_srates[c->sound_rate_]);
         }
     }
 
@@ -1038,22 +1038,22 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
     // cache the sequence header if h264
     // donot cache the sequence header to gop_cache, return here.
     if (format->is_avc_sequence_header()) {
-        SrsVideoCodecConfig *c = format->vcodec;
+        SrsVideoCodecConfig *c = format->vcodec_;
         srs_assert(c);
 
         // when got video stream info.
         SrsStatistic *stat = SrsStatistic::instance();
 
-        if (c->id == SrsVideoCodecIdAVC) {
-            err = stat->on_video_info(req_, c->id, c->avc_profile, c->avc_level, c->width, c->height);
+        if (c->id_ == SrsVideoCodecIdAVC) {
+            err = stat->on_video_info(req_, c->id_, c->avc_profile_, c->avc_level_, c->width_, c->height_);
             srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
-                      msg->size(), c->id, srs_avc_profile2str(c->avc_profile).c_str(), srs_avc_level2str(c->avc_level).c_str(),
-                      c->width, c->height, c->video_data_rate / 1000, c->frame_rate, c->duration);
-        } else if (c->id == SrsVideoCodecIdHEVC) {
-            err = stat->on_video_info(req_, c->id, c->hevc_profile, c->hevc_level, c->width, c->height);
+                      msg->size(), c->id_, srs_avc_profile2str(c->avc_profile_).c_str(), srs_avc_level2str(c->avc_level_).c_str(),
+                      c->width_, c->height_, c->video_data_rate_ / 1000, c->frame_rate_, c->duration_);
+        } else if (c->id_ == SrsVideoCodecIdHEVC) {
+            err = stat->on_video_info(req_, c->id_, c->hevc_profile_, c->hevc_level_, c->width_, c->height_);
             srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
-                      msg->size(), c->id, srs_hevc_profile2str(c->hevc_profile).c_str(), srs_hevc_level2str(c->hevc_level).c_str(),
-                      c->width, c->height, c->video_data_rate / 1000, c->frame_rate, c->duration);
+                      msg->size(), c->id_, srs_hevc_profile2str(c->hevc_profile_).c_str(), srs_hevc_level2str(c->hevc_level_).c_str(),
+                      c->width_, c->height_, c->video_data_rate_ / 1000, c->frame_rate_, c->duration_);
         }
         if (err != srs_success) {
             return srs_error_wrap(err, "stat video");
@@ -1062,7 +1062,7 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
 
     // Ignore video data when no sps/pps
     // @bug https://github.com/ossrs/srs/issues/703#issuecomment-578393155
-    if (format->vcodec && !format->vcodec->is_avc_codec_ok()) {
+    if (format->vcodec_ && !format->vcodec_->is_avc_codec_ok()) {
         return err;
     }
 
@@ -1435,7 +1435,7 @@ srs_error_t SrsMetaCache::dumps(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitt
 
     // copy sequence header
     // copy audio sequence first, for hls to fast parse the "right" audio codec.
-    if (aformat && aformat->acodec && aformat->acodec->id != SrsAudioCodecIdMP3) {
+    if (aformat && aformat->acodec_ && aformat->acodec_->id_ != SrsAudioCodecIdMP3) {
         if (ds && audio && (err = consumer->enqueue(audio, atc, ag)) != srs_success) {
             return srs_error_wrap(err, "enqueue audio sh");
         }
@@ -1833,7 +1833,7 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsR
     }
 
     // Setup the SPS/PPS parsing strategy.
-    format_->try_annexb_first = _srs_config->try_annexb_first(r->vhost);
+    format_->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost);
 
     if ((err = play_edge->initialize(wrapper, req)) != srs_success) {
         return srs_error_wrap(err, "edge(play)");
@@ -1933,7 +1933,7 @@ srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
 
     // Update the meta cache.
     bool updated = false;
-    if ((err = meta->update_data(&msg->header, metadata, updated)) != srs_success) {
+    if ((err = meta->update_data(&msg->header_, metadata, updated)) != srs_success) {
         return srs_error_wrap(err, "update metadata");
     }
     if (!updated) {
@@ -1967,13 +1967,13 @@ srs_error_t SrsLiveSource::on_audio(SrsRtmpCommonMessage *shared_audio)
 
     // Detect where stream is monotonically increasing.
     if (!mix_correct && is_monotonically_increase) {
-        if (last_packet_time > 0 && shared_audio->header.timestamp < last_packet_time) {
+        if (last_packet_time > 0 && shared_audio->header_.timestamp_ < last_packet_time) {
             is_monotonically_increase = false;
             srs_warn("AUDIO: Timestamp %" PRId64 "=>%" PRId64 ", may need mix_correct.",
-                     last_packet_time, shared_audio->header.timestamp);
+                     last_packet_time, shared_audio->header_.timestamp_);
         }
     }
-    last_packet_time = shared_audio->header.timestamp;
+    last_packet_time = shared_audio->header_.timestamp_;
 
     // convert shared_audio to msg, user should not use shared_audio again.
     // the payload is transfer to msg, and set to NULL in shared_audio.
@@ -2027,7 +2027,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
 
     // Ignore if no format->acodec, it means the codec is not parsed, or unsupport/unknown codec
     // such as G.711 codec
-    if (!format_->acodec) {
+    if (!format_->acodec_) {
         return err;
     }
 
@@ -2083,10 +2083,10 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
     // if atc, update the sequence header to abs time.
     if (atc) {
         if (meta->ash()) {
-            meta->ash()->timestamp = msg->timestamp;
+            meta->ash()->timestamp_ = msg->timestamp_;
         }
         if (meta->data()) {
-            meta->data()->timestamp = msg->timestamp;
+            meta->data()->timestamp_ = msg->timestamp_;
         }
     }
 
@@ -2099,13 +2099,13 @@ srs_error_t SrsLiveSource::on_video(SrsRtmpCommonMessage *shared_video)
 
     // Detect where stream is monotonically increasing.
     if (!mix_correct && is_monotonically_increase) {
-        if (last_packet_time > 0 && shared_video->header.timestamp < last_packet_time) {
+        if (last_packet_time > 0 && shared_video->header_.timestamp_ < last_packet_time) {
             is_monotonically_increase = false;
             srs_warn("VIDEO: Timestamp %" PRId64 "=>%" PRId64 ", may need mix_correct.",
-                     last_packet_time, shared_video->header.timestamp);
+                     last_packet_time, shared_video->header_.timestamp_);
         }
     }
-    last_packet_time = shared_video->header.timestamp;
+    last_packet_time = shared_video->header_.timestamp_;
 
     // drop any unknown header video.
     // @see https://github.com/ossrs/srs/issues/421
@@ -2136,7 +2136,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
     // user can disable the sps parse to workaround when parse sps failed.
     // @see https://github.com/ossrs/srs/issues/474
     if (is_sequence_header) {
-        format_->avc_parse_sps = _srs_config->get_parse_sps(req->vhost);
+        format_->avc_parse_sps_ = _srs_config->get_parse_sps(req->vhost);
     }
 
     if ((err = format_->on_video(msg)) != srs_success) {
@@ -2145,7 +2145,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
 
     // Ignore if no format->vcodec, it means the codec is not parsed, or unsupport/unknown codec
     // such as H.263 codec
-    if (!format_->vcodec) {
+    if (!format_->vcodec_) {
         return err;
     }
 
@@ -2197,10 +2197,10 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
     // if atc, update the sequence header to abs time.
     if (atc) {
         if (meta->vsh()) {
-            meta->vsh()->timestamp = msg->timestamp;
+            meta->vsh()->timestamp_ = msg->timestamp_;
         }
         if (meta->data()) {
-            meta->data()->timestamp = msg->timestamp;
+            meta->data()->timestamp_ = msg->timestamp_;
         }
     }
 
@@ -2247,7 +2247,7 @@ srs_error_t SrsLiveSource::on_aggregate(SrsRtmpCommonMessage *msg)
         // adjust abs timestamp in aggregate msg.
         // only -1 means uninitialized delta.
         if (delta == -1) {
-            delta = (int)msg->header.timestamp - (int)timestamp;
+            delta = (int)msg->header_.timestamp_ - (int)timestamp;
         }
         timestamp += delta;
 
@@ -2263,11 +2263,11 @@ srs_error_t SrsLiveSource::on_aggregate(SrsRtmpCommonMessage *msg)
         // to common message.
         SrsRtmpCommonMessage o;
 
-        o.header.message_type = type;
-        o.header.payload_length = data_size;
-        o.header.timestamp_delta = timestamp;
-        o.header.timestamp = timestamp;
-        o.header.stream_id = stream_id;
+        o.header_.message_type_ = type;
+        o.header_.payload_length_ = data_size;
+        o.header_.timestamp_delta_ = timestamp;
+        o.header_.timestamp_ = timestamp;
+        o.header_.stream_id_ = stream_id;
 
         if (data_size > 0) {
             o.create_payload(data_size);
@@ -2280,11 +2280,11 @@ srs_error_t SrsLiveSource::on_aggregate(SrsRtmpCommonMessage *msg)
         stream->read_4bytes();
 
         // process parsed message
-        if (o.header.is_audio()) {
+        if (o.header_.is_audio()) {
             if ((err = on_audio(&o)) != srs_success) {
                 return srs_error_wrap(err, "consume audio");
             }
-        } else if (o.header.is_video()) {
+        } else if (o.header_.is_video()) {
             if ((err = on_video(&o)) != srs_success) {
                 return srs_error_wrap(err, "consume video");
             }
@@ -2431,13 +2431,13 @@ srs_error_t SrsLiveSource::consumer_dumps(SrsLiveConsumer *consumer, bool ds, bo
     // if atc, update the sequence header to gop cache time.
     if (atc && !gop_cache->empty()) {
         if (meta->data()) {
-            meta->data()->timestamp = srsu2ms(gop_cache->start_time());
+            meta->data()->timestamp_ = srsu2ms(gop_cache->start_time());
         }
         if (meta->vsh()) {
-            meta->vsh()->timestamp = srsu2ms(gop_cache->start_time());
+            meta->vsh()->timestamp_ = srsu2ms(gop_cache->start_time());
         }
         if (meta->ash()) {
-            meta->ash()->timestamp = srsu2ms(gop_cache->start_time());
+            meta->ash()->timestamp_ = srsu2ms(gop_cache->start_time());
         }
     }
 

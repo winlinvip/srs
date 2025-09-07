@@ -110,13 +110,13 @@ srs_error_t SrsPsContext::decode(SrsBuffer *stream, ISrsPsMessageHandler *handle
         // Reap the last completed PS message.
         SrsUniquePtr<SrsTsMessage> msg(reap());
 
-        if (msg->sid == SrsTsPESStreamIdProgramStreamMap) {
-            if (!msg->payload || !msg->payload->length()) {
+        if (msg->sid_ == SrsTsPESStreamIdProgramStreamMap) {
+            if (!msg->payload_ || !msg->payload_->length()) {
                 return srs_error_new(ERROR_GB_PS_HEADER, "empty PSM payload");
             }
 
             // Decode PSM(Program Stream map) from PES packet payload.
-            SrsBuffer buf(msg->payload->bytes(), msg->payload->length());
+            SrsBuffer buf(msg->payload_->bytes(), msg->payload_->length());
 
             SrsPsPsmPacket psm;
             if ((err = psm.decode(&buf)) != srs_success) {
@@ -277,19 +277,19 @@ srs_error_t SrsPsPacket::decode(SrsBuffer *stream)
         SrsTsMessage *lm = context_->last();
 
         // The stream id should never change for PS stream.
-        if (lm->sid != (SrsTsPESStreamId)0 && lm->sid != (SrsTsPESStreamId)pes.stream_id) {
-            return srs_error_new(ERROR_GB_PS_PSE, "PS stream id change from %#x to %#x", lm->sid, pes.stream_id);
+        if (lm->sid_ != (SrsTsPESStreamId)0 && lm->sid_ != (SrsTsPESStreamId)pes.stream_id_) {
+            return srs_error_new(ERROR_GB_PS_PSE, "PS stream id change from %#x to %#x", lm->sid_, pes.stream_id_);
         }
-        lm->sid = (SrsTsPESStreamId)pes.stream_id;
+        lm->sid_ = (SrsTsPESStreamId)pes.stream_id_;
 
-        if (pes.PTS_DTS_flags == 0x02 || pes.PTS_DTS_flags == 0x03) {
-            lm->dts = pes.dts;
-            lm->pts = pes.pts;
+        if (pes.PTS_DTS_flags_ == 0x02 || pes.PTS_DTS_flags_ == 0x03) {
+            lm->dts_ = pes.dts_;
+            lm->pts_ = pes.pts_;
         }
         if (pes.has_payload_) {
             // The size of PS message, should be always a positive value.
-            lm->PES_packet_length = pes.nb_payload_;
-            if ((err = lm->dump(stream, &pes.nb_bytes)) != srs_success) {
+            lm->PES_packet_length_ = pes.nb_payload_;
+            if ((err = lm->dump(stream, &pes.nb_bytes_)) != srs_success) {
                 return srs_error_wrap(err, "dump pes");
             }
         }

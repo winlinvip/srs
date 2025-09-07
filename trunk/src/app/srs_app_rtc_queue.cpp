@@ -217,7 +217,7 @@ void SrsRtpNackForReceiver::insert(uint16_t first, uint16_t last)
 {
     // If circuit-breaker is enabled, disable nack.
     if (_srs_circuit_breaker->hybrid_high_water_level()) {
-        ++_srs_pps_snack4->sugar;
+        ++_srs_pps_snack4->sugar_;
         return;
     }
 
@@ -255,7 +255,7 @@ void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack &seqs, uint32_t &timeout_n
     // If circuit-breaker is enabled, disable nack.
     if (_srs_circuit_breaker->hybrid_high_water_level()) {
         queue_.clear();
-        ++_srs_pps_snack4->sugar;
+        ++_srs_pps_snack4->sugar_;
         return;
     }
 

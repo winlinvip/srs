@@ -366,40 +366,40 @@ srs_error_t SrsSrtFrameBuilder::on_ts_message(SrsTsMessage *msg)
 
     // When the audio SID is private stream 1, we use common audio.
     // @see https://github.com/ossrs/srs/issues/740
-    if (msg->channel->apply == SrsTsPidApplyAudio && msg->sid == SrsTsPESStreamIdPrivateStream1) {
-        msg->sid = SrsTsPESStreamIdAudioCommon;
+    if (msg->channel_->apply_ == SrsTsPidApplyAudio && msg->sid_ == SrsTsPESStreamIdPrivateStream1) {
+        msg->sid_ = SrsTsPESStreamIdAudioCommon;
     }
 
     // when not audio/video, or not adts/annexb format, donot support.
     if (msg->stream_number() != 0) {
         return srs_error_new(ERROR_STREAM_CASTER_TS_ES, "ts: unsupported stream format, sid=%#x(%s-%d)",
-                             msg->sid, msg->is_audio() ? "A" : msg->is_video() ? "V"
+                             msg->sid_, msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                                                : "N",
                              msg->stream_number());
     }
 
     // check supported codec
-    if (msg->channel->stream != SrsTsStreamVideoH264 && msg->channel->stream != SrsTsStreamVideoHEVC && msg->channel->stream != SrsTsStreamAudioAAC) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_CODEC, "ts: unsupported stream codec=%d", msg->channel->stream);
+    if (msg->channel_->stream_ != SrsTsStreamVideoH264 && msg->channel_->stream_ != SrsTsStreamVideoHEVC && msg->channel_->stream_ != SrsTsStreamAudioAAC) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_CODEC, "ts: unsupported stream codec=%d", msg->channel_->stream_);
     }
 
     // parse the stream.
-    SrsBuffer avs(msg->payload->bytes(), msg->payload->length());
+    SrsBuffer avs(msg->payload_->bytes(), msg->payload_->length());
 
     // publish audio or video.
-    if (msg->channel->stream == SrsTsStreamVideoH264) {
+    if (msg->channel_->stream_ == SrsTsStreamVideoH264) {
         if ((err = on_ts_video_avc(msg, &avs)) != srs_success) {
             return srs_error_wrap(err, "ts: consume video");
         }
     }
-    if (msg->channel->stream == SrsTsStreamAudioAAC) {
+    if (msg->channel_->stream_ == SrsTsStreamAudioAAC) {
         if ((err = on_ts_audio(msg, &avs)) != srs_success) {
             return srs_error_wrap(err, "ts: consume audio");
         }
     }
 
     // TODO: FIXME: implements other codec?
-    if (msg->channel->stream == SrsTsStreamVideoHEVC) {
+    if (msg->channel_->stream_ == SrsTsStreamVideoHEVC) {
         if ((err = on_ts_video_hevc(msg, &avs)) != srs_success) {
             return srs_error_wrap(err, "ts: consume hevc video");
         }
@@ -484,7 +484,7 @@ srs_error_t SrsSrtFrameBuilder::check_sps_pps_change(SrsTsMessage *msg)
     sps_pps_change_ = false;
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
 
     std::string sh;
     SrsUniquePtr<SrsRawH264Stream> avc(new SrsRawH264Stream());
@@ -528,8 +528,8 @@ srs_error_t SrsSrtFrameBuilder::on_h264_frame(SrsTsMessage *msg, vector<pair<cha
     bool is_keyframe = false;
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
-    uint32_t pts = (uint32_t)(msg->pts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
+    uint32_t pts = (uint32_t)(msg->pts_ / 90);
     int32_t cts = pts - dts;
 
     int frame_size = 5; // 5bytes video tag header
@@ -542,7 +542,7 @@ srs_error_t SrsSrtFrameBuilder::on_h264_frame(SrsTsMessage *msg, vector<pair<cha
     }
 
     SrsRtmpCommonMessage rtmp;
-    rtmp.header.initialize_video(frame_size, dts, video_streamid_);
+    rtmp.header_.initialize_video(frame_size, dts, video_streamid_);
     rtmp.create_payload(frame_size);
     SrsBuffer payload(rtmp.payload(), rtmp.size());
     // Write 5bytes video tag header.
@@ -670,7 +670,7 @@ srs_error_t SrsSrtFrameBuilder::check_vps_sps_pps_change(SrsTsMessage *msg)
     vps_sps_pps_change_ = false;
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
 
     std::string sh;
     SrsUniquePtr<SrsRawHEVCStream> hevc(new SrsRawHEVCStream());
@@ -712,8 +712,8 @@ srs_error_t SrsSrtFrameBuilder::on_hevc_frame(SrsTsMessage *msg, vector<pair<cha
     }
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
-    uint32_t pts = (uint32_t)(msg->pts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
+    uint32_t pts = (uint32_t)(msg->pts_ / 90);
     int32_t cts = pts - dts;
 
     // for IDR frame, the frame is keyframe.
@@ -731,7 +731,7 @@ srs_error_t SrsSrtFrameBuilder::on_hevc_frame(SrsTsMessage *msg, vector<pair<cha
     }
 
     SrsRtmpCommonMessage rtmp;
-    rtmp.header.initialize_video(frame_size, dts, video_streamid_);
+    rtmp.header_.initialize_video(frame_size, dts, video_streamid_);
     rtmp.create_payload(frame_size);
     SrsBuffer payload(rtmp.payload(), rtmp.size());
 
@@ -775,7 +775,7 @@ srs_error_t SrsSrtFrameBuilder::on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs)
     SrsUniquePtr<SrsRawAacStream> aac(new SrsRawAacStream());
 
     // ts tbn to flv tbn.
-    uint32_t pts = (uint32_t)(msg->pts / 90);
+    uint32_t pts = (uint32_t)(msg->pts_ / 90);
 
     int frame_idx = 0;
     int duration_ms = 0;
@@ -863,7 +863,7 @@ srs_error_t SrsSrtFrameBuilder::check_audio_sh_change(SrsTsMessage *msg, uint32_
     int rtmp_len = audio_sh_.size() + 2;
 
     SrsRtmpCommonMessage rtmp;
-    rtmp.header.initialize_audio(rtmp_len, pts, audio_streamid_);
+    rtmp.header_.initialize_audio(rtmp_len, pts, audio_streamid_);
     rtmp.create_payload(rtmp_len);
 
     SrsBuffer stream(rtmp.payload(), rtmp_len);
@@ -889,7 +889,7 @@ srs_error_t SrsSrtFrameBuilder::on_aac_frame(SrsTsMessage *msg, uint32_t pts, ch
     int rtmp_len = data_size + 2 /* 2 bytes of flv audio tag header*/;
 
     SrsRtmpCommonMessage rtmp;
-    rtmp.header.initialize_audio(rtmp_len, pts, audio_streamid_);
+    rtmp.header_.initialize_audio(rtmp_len, pts, audio_streamid_);
     rtmp.create_payload(rtmp_len);
 
     SrsBuffer stream(rtmp.payload(), rtmp_len);

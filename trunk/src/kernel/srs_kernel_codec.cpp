@@ -726,16 +726,16 @@ SrsCodecConfig::~SrsCodecConfig()
 
 SrsAudioCodecConfig::SrsAudioCodecConfig()
 {
-    id = SrsAudioCodecIdForbidden;
-    sound_rate = SrsAudioSampleRateForbidden;
-    sound_size = SrsAudioSampleBitsForbidden;
-    sound_type = SrsAudioChannelsForbidden;
+    id_ = SrsAudioCodecIdForbidden;
+    sound_rate_ = SrsAudioSampleRateForbidden;
+    sound_size_ = SrsAudioSampleBitsForbidden;
+    sound_type_ = SrsAudioChannelsForbidden;
 
-    audio_data_rate = 0;
+    audio_data_rate_ = 0;
 
-    aac_object = SrsAacObjectTypeForbidden;
-    aac_sample_rate = SrsAacSampleRateUnset; // sample rate ignored
-    aac_channels = 0;
+    aac_object_ = SrsAacObjectTypeForbidden;
+    aac_sample_rate_ = SrsAacSampleRateUnset; // sample rate ignored
+    aac_channels_ = 0;
 }
 
 SrsAudioCodecConfig::~SrsAudioCodecConfig()
@@ -744,23 +744,23 @@ SrsAudioCodecConfig::~SrsAudioCodecConfig()
 
 bool SrsAudioCodecConfig::is_aac_codec_ok()
 {
-    return !aac_extra_data.empty();
+    return !aac_extra_data_.empty();
 }
 
 SrsVideoCodecConfig::SrsVideoCodecConfig()
 {
-    id = SrsVideoCodecIdForbidden;
-    video_data_rate = 0;
-    frame_rate = duration = 0;
+    id_ = SrsVideoCodecIdForbidden;
+    video_data_rate_ = 0;
+    frame_rate_ = duration_ = 0;
 
-    width = 0;
-    height = 0;
+    width_ = 0;
+    height_ = 0;
 
-    NAL_unit_length = 0;
-    avc_profile = SrsAvcProfileReserved;
-    avc_level = SrsAvcLevelReserved;
+    NAL_unit_length_ = 0;
+    avc_profile_ = SrsAvcProfileReserved;
+    avc_level_ = SrsAvcLevelReserved;
 
-    payload_format = SrsAvcPayloadFormatGuess;
+    payload_format_ = SrsAvcPayloadFormatGuess;
 }
 
 SrsVideoCodecConfig::~SrsVideoCodecConfig()
@@ -769,7 +769,7 @@ SrsVideoCodecConfig::~SrsVideoCodecConfig()
 
 bool SrsVideoCodecConfig::is_avc_codec_ok()
 {
-    return !avc_extra_data.empty();
+    return !avc_extra_data_.empty();
 }
 
 bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code)

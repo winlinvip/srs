@@ -83,8 +83,8 @@ public:
 class SrsFileReader : public ISrsReadSeeker
 {
 private:
-    std::string path;
-    int fd;
+    std::string path_;
+    int fd_;
 
 public:
     SrsFileReader();

@@ -214,21 +214,21 @@ bool srs_is_server_gracefully_close(srs_error_t err)
 
 SrsCplxError::SrsCplxError()
 {
-    code = ERROR_SUCCESS;
-    wrapped = NULL;
-    rerrno = line = 0;
+    code_ = ERROR_SUCCESS;
+    wrapped_ = NULL;
+    rerrno_ = line_ = 0;
 }
 
 SrsCplxError::~SrsCplxError()
 {
-    srs_freep(wrapped);
+    srs_freep(wrapped_);
 }
 
 std::string SrsCplxError::description()
 {
-    if (desc.empty()) {
+    if (desc_.empty()) {
         stringstream ss;
-        ss << "code=" << code;
+        ss << "code=" << code_;
 
         string code_str = srs_error_code_str(this);
         if (!code_str.empty())
@@ -240,36 +240,36 @@ std::string SrsCplxError::description()
 
         SrsCplxError *next = this;
         while (next) {
-            ss << " : " << next->msg;
-            next = next->wrapped;
+            ss << " : " << next->msg_;
+            next = next->wrapped_;
         }
         ss << endl;
 
         next = this;
         while (next) {
-            ss << "thread [" << getpid() << "][" << next->cid.c_str() << "]: "
-               << next->func << "() [" << next->file << ":" << next->line << "]"
-               << "[errno=" << next->rerrno << "]";
+            ss << "thread [" << getpid() << "][" << next->cid_.c_str() << "]: "
+               << next->func_ << "() [" << next->file_ << ":" << next->line_ << "]"
+               << "[errno=" << next->rerrno_ << "]";
 
-            next = next->wrapped;
+            next = next->wrapped_;
 
             if (next) {
                 ss << endl;
             }
         }
 
-        desc = ss.str();
+        desc_ = ss.str();
     }
 
-    return desc;
+    return desc_;
 }
 
 std::string SrsCplxError::summary()
 {
-    if (_summary.empty()) {
+    if (summary_.empty()) {
         stringstream ss;
 
-        ss << "code=" << code;
+        ss << "code=" << code_;
 
         string code_str = srs_error_code_str(this);
         if (!code_str.empty())
@@ -277,14 +277,14 @@ std::string SrsCplxError::summary()
 
         SrsCplxError *next = this;
         while (next) {
-            ss << " : " << next->msg;
-            next = next->wrapped;
+            ss << " : " << next->msg_;
+            next = next->wrapped_;
         }
 
-        _summary = ss.str();
+        summary_ = ss.str();
     }
 
-    return _summary;
+    return summary_;
 }
 
 SrsCplxError *SrsCplxError::create(const char *func, const char *file, int line, int code, const char *fmt, ...)
@@ -299,17 +299,17 @@ SrsCplxError *SrsCplxError::create(const char *func, const char *file, int line,
 
     SrsCplxError *err = new SrsCplxError();
 
-    err->func = func;
-    err->file = file;
-    err->line = line;
-    err->code = code;
-    err->rerrno = rerrno;
+    err->func_ = func;
+    err->file_ = file;
+    err->line_ = line;
+    err->code_ = code;
+    err->rerrno_ = rerrno;
     if (r0 > 0 && r0 < maxLogBuf) {
-        err->msg = string(buffer, r0);
+        err->msg_ = string(buffer, r0);
     }
-    err->wrapped = NULL;
+    err->wrapped_ = NULL;
     if (_srs_context) {
-        err->cid = _srs_context->get_id();
+        err->cid_ = _srs_context->get_id();
     }
 
     return err;
@@ -327,19 +327,19 @@ SrsCplxError *SrsCplxError::wrap(const char *func, const char *file, int line, S
 
     SrsCplxError *err = new SrsCplxError();
 
-    err->func = func;
-    err->file = file;
-    err->line = line;
+    err->func_ = func;
+    err->file_ = file;
+    err->line_ = line;
     if (v) {
-        err->code = v->code;
+        err->code_ = v->code_;
     }
-    err->rerrno = rerrno;
+    err->rerrno_ = rerrno;
     if (r0 > 0 && r0 < maxLogBuf) {
-        err->msg = string(buffer, r0);
+        err->msg_ = string(buffer, r0);
     }
-    err->wrapped = v;
+    err->wrapped_ = v;
     if (_srs_context) {
-        err->cid = _srs_context->get_id();
+        err->cid_ = _srs_context->get_id();
     }
 
     return err;
@@ -358,15 +358,15 @@ SrsCplxError *SrsCplxError::copy(SrsCplxError *from)
 
     SrsCplxError *err = new SrsCplxError();
 
-    err->code = from->code;
-    err->wrapped = srs_error_copy(from->wrapped);
-    err->msg = from->msg;
-    err->func = from->func;
-    err->file = from->file;
-    err->line = from->line;
-    err->cid = from->cid;
-    err->rerrno = from->rerrno;
-    err->desc = from->desc;
+    err->code_ = from->code_;
+    err->wrapped_ = srs_error_copy(from->wrapped_);
+    err->msg_ = from->msg_;
+    err->func_ = from->func_;
+    err->file_ = from->file_;
+    err->line_ = from->line_;
+    err->cid_ = from->cid_;
+    err->rerrno_ = from->rerrno_;
+    err->desc_ = from->desc_;
 
     return err;
 }
@@ -383,7 +383,7 @@ string SrsCplxError::summary(SrsCplxError *err)
 
 int SrsCplxError::error_code(SrsCplxError *err)
 {
-    return err ? err->code : ERROR_SUCCESS;
+    return err ? err->code_ : ERROR_SUCCESS;
 }
 
 #define SRS_STRERRNO_GEN(n, v, m, s) {(SrsErrorCode)v, m, s},

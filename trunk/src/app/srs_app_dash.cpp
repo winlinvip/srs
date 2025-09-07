@@ -117,26 +117,26 @@ srs_error_t SrsFragmentedMp4::write(SrsMediaPacket *shared_msg, SrsFormat *forma
     srs_error_t err = srs_success;
 
     if (shared_msg->is_audio()) {
-        uint8_t *sample = (uint8_t *)format->raw;
-        uint32_t nb_sample = (uint32_t)format->nb_raw;
+        uint8_t *sample = (uint8_t *)format->raw_;
+        uint32_t nb_sample = (uint32_t)format->nb_raw_;
 
-        uint32_t dts = (uint32_t)shared_msg->timestamp;
+        uint32_t dts = (uint32_t)shared_msg->timestamp_;
         err = enc->write_sample(SrsMp4HandlerTypeSOUN, 0x00, dts, dts, sample, nb_sample);
     } else if (shared_msg->is_video()) {
-        SrsVideoAvcFrameType frame_type = format->video->frame_type;
-        uint32_t cts = (uint32_t)format->video->cts;
+        SrsVideoAvcFrameType frame_type = format->video_->frame_type_;
+        uint32_t cts = (uint32_t)format->video_->cts_;
 
-        uint32_t dts = (uint32_t)shared_msg->timestamp;
+        uint32_t dts = (uint32_t)shared_msg->timestamp_;
         uint32_t pts = dts + cts;
 
-        uint8_t *sample = (uint8_t *)format->raw;
-        uint32_t nb_sample = (uint32_t)format->nb_raw;
+        uint8_t *sample = (uint8_t *)format->raw_;
+        uint32_t nb_sample = (uint32_t)format->nb_raw_;
         err = enc->write_sample(SrsMp4HandlerTypeVIDE, frame_type, dts, pts, sample, nb_sample);
     } else {
         return err;
     }
 
-    append(shared_msg->timestamp);
+    append(shared_msg->timestamp_);
 
     return err;
 }
@@ -258,7 +258,7 @@ srs_error_t SrsMpdWriter::write(SrsFormat *format, SrsFragmentWindow *afragments
 
     ss << "    <Period start=\"PT0S\">" << endl;
 
-    if (format->acodec && !afragments->empty()) {
+    if (format->acodec_ && !afragments->empty()) {
         int start_index = srs_max(0, afragments->size() - window_size_);
         ss << "        <AdaptationSet mimeType=\"audio/mp4\" segmentAlignment=\"true\" startWithSAP=\"1\">" << endl;
         ss << "            <Representation id=\"audio\" bandwidth=\"48000\" codecs=\"mp4a.40.2\">" << endl;
@@ -277,10 +277,10 @@ srs_error_t SrsMpdWriter::write(SrsFormat *format, SrsFragmentWindow *afragments
         ss << "        </AdaptationSet>" << endl;
     }
 
-    if (format->vcodec && !vfragments->empty()) {
+    if (format->vcodec_ && !vfragments->empty()) {
         int start_index = srs_max(0, vfragments->size() - window_size_);
-        int w = format->vcodec->width;
-        int h = format->vcodec->height;
+        int w = format->vcodec_->width_;
+        int h = format->vcodec_->height_;
         ss << "        <AdaptationSet mimeType=\"video/mp4\" segmentAlignment=\"true\" startWithSAP=\"1\">" << endl;
         ss << "            <Representation id=\"video\" bandwidth=\"800000\" codecs=\"avc1.64001e\" " << "width=\"" << w << "\" height=\"" << h << "\">" << endl;
         ss << "                <SegmentTemplate initialization=\"$RepresentationID$-init.mp4\" "
@@ -490,7 +490,7 @@ srs_error_t SrsDashController::on_audio(SrsMediaPacket *shared_audio, SrsFormat 
         return refresh_init_mp4(shared_audio, format);
     }
 
-    audio_dts = shared_audio->timestamp;
+    audio_dts = shared_audio->timestamp_;
 
     if (!acurrent) {
         acurrent = new SrsFragmentedMp4();
@@ -510,7 +510,7 @@ srs_error_t SrsDashController::on_audio(SrsMediaPacket *shared_audio, SrsFormat 
         // The video is reaped, audio must be reaped right now to align the timestamp of video.
         video_reaped_ = false;
         // Append current timestamp to calculate right duration.
-        acurrent->append(shared_audio->timestamp);
+        acurrent->append(shared_audio->timestamp_);
         if ((err = acurrent->reap(audio_dts)) != srs_success) {
             return srs_error_wrap(err, "reap current");
         }
@@ -562,7 +562,7 @@ srs_error_t SrsDashController::on_video(SrsMediaPacket *shared_video, SrsFormat 
         return refresh_init_mp4(shared_video, format);
     }
 
-    video_dts = shared_video->timestamp;
+    video_dts = shared_video->timestamp_;
 
     if (!vcurrent) {
         vcurrent = new SrsFragmentedMp4();
@@ -577,10 +577,10 @@ srs_error_t SrsDashController::on_video(SrsMediaPacket *shared_video, SrsFormat 
         mpd->set_availability_start_time(srs_time_now_cached() - first_dts_ * SRS_UTIME_MILLISECONDS);
     }
 
-    bool reopen = format->video->frame_type == SrsVideoAvcFrameTypeKeyFrame && vcurrent->duration() >= fragment;
+    bool reopen = format->video_->frame_type_ == SrsVideoAvcFrameTypeKeyFrame && vcurrent->duration() >= fragment;
     if (reopen) {
         // Append current timestamp to calculate right duration.
-        vcurrent->append(shared_video->timestamp);
+        vcurrent->append(shared_video->timestamp_);
         if ((err = vcurrent->reap(video_dts)) != srs_success) {
             return srs_error_wrap(err, "reap current");
         }
@@ -630,7 +630,7 @@ srs_error_t SrsDashController::refresh_mpd(SrsFormat *format)
     srs_error_t err = srs_success;
 
     // TODO: FIXME: Support pure audio streaming.
-    if (!format || !format->acodec || !format->vcodec) {
+    if (!format || !format->acodec_ || !format->vcodec_) {
         return err;
     }
 
@@ -645,7 +645,7 @@ srs_error_t SrsDashController::refresh_init_mp4(SrsMediaPacket *msg, SrsFormat *
 {
     srs_error_t err = srs_success;
 
-    if (msg->size() <= 0 || (msg->is_video() && !format->vcodec->is_avc_codec_ok()) || (msg->is_audio() && !format->acodec->is_aac_codec_ok())) {
+    if (msg->size() <= 0 || (msg->is_video() && !format->vcodec_->is_avc_codec_ok()) || (msg->is_audio() && !format->acodec_->is_aac_codec_ok())) {
         srs_warn("DASH: Ignore empty sequence header.");
         return err;
     }
@@ -804,7 +804,7 @@ srs_error_t SrsDash::on_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
         return err;
     }
 
-    if (!format->acodec) {
+    if (!format->acodec_) {
         return err;
     }
 
@@ -826,7 +826,7 @@ srs_error_t SrsDash::on_video(SrsMediaPacket *shared_video, SrsFormat *format)
         return err;
     }
 
-    if (!format->vcodec) {
+    if (!format->vcodec_) {
         return err;
     }
 

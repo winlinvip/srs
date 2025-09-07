@@ -435,7 +435,7 @@ srs_error_t SrsRawHEVCStream::mux_sequence_header(std::string vps, std::string s
         return srs_error_wrap(err, "format failed");
     }
     // hevc_dec_conf_record
-    SrsHevcDecoderConfigurationRecord *hevc_info = &format.vcodec->hevc_dec_conf_record_;
+    SrsHevcDecoderConfigurationRecord *hevc_info = &format.vcodec_->hevc_dec_conf_record_;
 
     if (true) {
         // H265 VPS (video_parameter_set_rbsp()) NAL Unit.
@@ -460,31 +460,31 @@ srs_error_t SrsRawHEVCStream::mux_sequence_header(std::string vps, std::string s
 
     uint8_t temp8bits = 0;
     // general_profile_space(2bits), general_tier_flag(1bit), general_profile_idc(5bits)
-    temp8bits |= ((hevc_info->general_profile_space & 0x03) << 6);
-    temp8bits |= ((hevc_info->general_tier_flag & 0x01) << 5);
-    temp8bits |= (hevc_info->general_profile_idc & 0x1f);
+    temp8bits |= ((hevc_info->general_profile_space_ & 0x03) << 6);
+    temp8bits |= ((hevc_info->general_tier_flag_ & 0x01) << 5);
+    temp8bits |= (hevc_info->general_profile_idc_ & 0x1f);
     stream.write_1bytes(temp8bits);
 
-    stream.write_4bytes(hevc_info->general_profile_compatibility_flags);
-    stream.write_2bytes((hevc_info->general_constraint_indicator_flags >> 32) & 0xffff);
-    stream.write_4bytes(hevc_info->general_constraint_indicator_flags & 0xffffffff);
-    stream.write_1bytes(hevc_info->general_level_idc);
-    stream.write_2bytes(0xf000 | (hevc_info->min_spatial_segmentation_idc & 0x0fff));
-    stream.write_1bytes(0xfc | (hevc_info->parallelism_type & 0x03));
-    stream.write_1bytes(0xfc | (hevc_info->chroma_format & 0x03));
-    stream.write_1bytes(0xf8 | (hevc_info->bit_depth_luma_minus8 & 0x07));
-    stream.write_1bytes(0xf8 | (hevc_info->bit_depth_chroma_minus8 & 0x07));
-    stream.write_2bytes(hevc_info->avg_frame_rate);
+    stream.write_4bytes(hevc_info->general_profile_compatibility_flags_);
+    stream.write_2bytes((hevc_info->general_constraint_indicator_flags_ >> 32) & 0xffff);
+    stream.write_4bytes(hevc_info->general_constraint_indicator_flags_ & 0xffffffff);
+    stream.write_1bytes(hevc_info->general_level_idc_);
+    stream.write_2bytes(0xf000 | (hevc_info->min_spatial_segmentation_idc_ & 0x0fff));
+    stream.write_1bytes(0xfc | (hevc_info->parallelism_type_ & 0x03));
+    stream.write_1bytes(0xfc | (hevc_info->chroma_format_ & 0x03));
+    stream.write_1bytes(0xf8 | (hevc_info->bit_depth_luma_minus8_ & 0x07));
+    stream.write_1bytes(0xf8 | (hevc_info->bit_depth_chroma_minus8_ & 0x07));
+    stream.write_2bytes(hevc_info->avg_frame_rate_);
 
-    hevc_info->length_size_minus_one = 3;
+    hevc_info->length_size_minus_one_ = 3;
     temp8bits = 0;
 
     // 8bits: constant_frame_rate(2bits), num_temporal_layers(3bits),
     //        temporal_id_nested(1bit), length_size_minus_one(2bits)
-    temp8bits |= (hevc_info->constant_frame_rate << 6) | 0xc0;
-    temp8bits |= (hevc_info->num_temporal_layers << 3) | 0x38;
-    temp8bits |= (hevc_info->temporal_id_nested << 2) | 0x04;
-    temp8bits |= (hevc_info->length_size_minus_one & 0x03);
+    temp8bits |= (hevc_info->constant_frame_rate_ << 6) | 0xc0;
+    temp8bits |= (hevc_info->num_temporal_layers_ << 3) | 0x38;
+    temp8bits |= (hevc_info->temporal_id_nested_ << 2) | 0x04;
+    temp8bits |= (hevc_info->length_size_minus_one_ & 0x03);
     stream.write_1bytes(temp8bits);
 
     // numOfArrays, default 3

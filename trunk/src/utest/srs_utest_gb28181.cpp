@@ -327,7 +327,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeRegularMessage)
     HELPER_ASSERT_SUCCESS(rtp.decode(&b2));
 
     SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-    SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+    SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
     // Should be success, for recover mode.
     HELPER_ASSERT_SUCCESS(context.decode(&b, &handler));
@@ -335,8 +335,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeRegularMessage)
     EXPECT_EQ(0, context.recover_);
 
     SrsTsMessage *m = handler.msgs_.front();
-    EXPECT_EQ(SrsTsPESStreamIdAudioCommon, m->sid);
-    EXPECT_EQ(100, m->PES_packet_length);
+    EXPECT_EQ(SrsTsPESStreamIdAudioCommon, m->sid_);
+    EXPECT_EQ(100, m->PES_packet_length_);
 }
 
 VOID TEST(KernelPSTest, PsPacketDecodeRegularMessage2)
@@ -366,8 +366,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeRegularMessage2)
     EXPECT_EQ(0, context.recover_);
 
     SrsTsMessage *m = handler.msgs_.front();
-    EXPECT_EQ(SrsTsPESStreamIdAudioCommon, m->sid);
-    EXPECT_EQ(100, m->PES_packet_length);
+    EXPECT_EQ(SrsTsPESStreamIdAudioCommon, m->sid_);
+    EXPECT_EQ(100, m->PES_packet_length_);
 }
 
 VOID TEST(KernelPSTest, PsPacketDecodeRegularMessage3)
@@ -397,8 +397,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeRegularMessage3)
     EXPECT_EQ(0, context.recover_);
 
     SrsTsMessage *m = handler.msgs_.front();
-    EXPECT_EQ(SrsTsPESStreamIdAudioCommon, m->sid);
-    EXPECT_EQ(100, m->PES_packet_length);
+    EXPECT_EQ(SrsTsPESStreamIdAudioCommon, m->sid_);
+    EXPECT_EQ(100, m->PES_packet_length_);
 }
 
 VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
@@ -446,8 +446,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(65472, last->PES_packet_length);
-        ASSERT_EQ(1156, last->payload->length());
+        ASSERT_EQ(65472, last->PES_packet_length_);
+        ASSERT_EQ(1156, last->payload_->length());
     }
 
     // Seq 31814 to 31858, 45*1400=63000, left is 65472-1156-63000=1316 bytes in next packet(seq=31859).
@@ -460,13 +460,13 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(65472, last->PES_packet_length);
-        ASSERT_EQ(1156 + 1400 * (i + 1), last->payload->length());
+        ASSERT_EQ(65472, last->PES_packet_length_);
+        ASSERT_EQ(1156 + 1400 * (i + 1), last->payload_->length());
     }
     if (true) {
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(65472, last->PES_packet_length);
-        ASSERT_EQ(64156, last->payload->length());
+        ASSERT_EQ(65472, last->PES_packet_length_);
+        ASSERT_EQ(64156, last->payload_->length());
     }
 
     // PT=DynamicRTP-Type-96, SSRC=0xBEBD135, Seq=31859, Time=95648400 [TCP segment of a reassembled PDU]
@@ -488,8 +488,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(65472, last->PES_packet_length);
-        ASSERT_EQ(72, last->payload->length());
+        ASSERT_EQ(65472, last->PES_packet_length_);
+        ASSERT_EQ(72, last->payload_->length());
     }
 
     // Seq 31860 to 31905, 46*1400=64400, left is 65472-72-64400=1000 bytes in next packet(seq=31906).
@@ -502,13 +502,13 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(65472, last->PES_packet_length);
-        ASSERT_EQ(72 + 1400 * (i + 1), last->payload->length());
+        ASSERT_EQ(65472, last->PES_packet_length_);
+        ASSERT_EQ(72 + 1400 * (i + 1), last->payload_->length());
     }
     if (true) {
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(65472, last->PES_packet_length);
-        ASSERT_EQ(64472, last->payload->length());
+        ASSERT_EQ(65472, last->PES_packet_length_);
+        ASSERT_EQ(64472, last->payload_->length());
     }
 
     // PT=DynamicRTP-Type-96, SSRC=0xBEBD135, Seq=31906, Time=95648400 [TCP segment of a reassembled PDU]
@@ -527,8 +527,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(10172, last->PES_packet_length);
-        ASSERT_EQ(388, last->payload->length());
+        ASSERT_EQ(10172, last->PES_packet_length_);
+        ASSERT_EQ(388, last->payload_->length());
     }
 
     // Seq 31907 to 31912, 6*1400=8400, left is 10172-388-8400=1384 bytes in next packet(seq=31913).
@@ -541,13 +541,13 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(10172, last->PES_packet_length);
-        ASSERT_EQ(388 + 1400 * (i + 1), last->payload->length());
+        ASSERT_EQ(10172, last->PES_packet_length_);
+        ASSERT_EQ(388 + 1400 * (i + 1), last->payload_->length());
     }
     if (true) {
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(10172, last->PES_packet_length);
-        ASSERT_EQ(8788, last->payload->length());
+        ASSERT_EQ(10172, last->PES_packet_length_);
+        ASSERT_EQ(8788, last->payload_->length());
     }
 
     // PT=DynamicRTP-Type-96, SSRC=0xBEBD135, Seq=31913, Time=95648400
@@ -565,8 +565,8 @@ VOID TEST(KernelPSTest, PsPacketDecodeInvalidStartCode)
         EXPECT_EQ(0, context.recover_);
 
         SrsTsMessage *last = context.ctx_.last_;
-        ASSERT_EQ(96, last->PES_packet_length);
-        ASSERT_EQ(0, last->payload->length());
+        ASSERT_EQ(96, last->PES_packet_length_);
+        ASSERT_EQ(0, last->payload_->length());
     }
 
     // Seq 31914, 96 bytes

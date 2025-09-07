@@ -487,78 +487,78 @@ uint8_t SrsRtcpRR::type() const
 
 uint32_t SrsRtcpRR::get_rb_ssrc() const
 {
-    return rb_.ssrc;
+    return rb_.ssrc_;
 }
 
 float SrsRtcpRR::get_lost_rate() const
 {
-    return rb_.fraction_lost / 256;
+    return rb_.fraction_lost_ / 256;
 }
 
 uint32_t SrsRtcpRR::get_lost_packets() const
 {
-    return rb_.lost_packets;
+    return rb_.lost_packets_;
 }
 
 uint32_t SrsRtcpRR::get_highest_sn() const
 {
-    return rb_.highest_sn;
+    return rb_.highest_sn_;
 }
 
 uint32_t SrsRtcpRR::get_jitter() const
 {
-    return rb_.jitter;
+    return rb_.jitter_;
 }
 
 uint32_t SrsRtcpRR::get_lsr() const
 {
-    return rb_.lsr;
+    return rb_.lsr_;
 }
 
 uint32_t SrsRtcpRR::get_dlsr() const
 {
-    return rb_.dlsr;
+    return rb_.dlsr_;
 }
 
 void SrsRtcpRR::set_rb_ssrc(uint32_t ssrc)
 {
-    rb_.ssrc = ssrc;
+    rb_.ssrc_ = ssrc;
 }
 
 void SrsRtcpRR::set_lost_rate(float rate)
 {
-    rb_.fraction_lost = rate * 256;
+    rb_.fraction_lost_ = rate * 256;
 }
 
 void SrsRtcpRR::set_lost_packets(uint32_t count)
 {
-    rb_.lost_packets = count;
+    rb_.lost_packets_ = count;
 }
 
 void SrsRtcpRR::set_highest_sn(uint32_t sn)
 {
-    rb_.highest_sn = sn;
+    rb_.highest_sn_ = sn;
 }
 
 void SrsRtcpRR::set_jitter(uint32_t jitter)
 {
-    rb_.jitter = jitter;
+    rb_.jitter_ = jitter;
 }
 
 void SrsRtcpRR::set_lsr(uint32_t lsr)
 {
-    rb_.lsr = lsr;
+    rb_.lsr_ = lsr;
 }
 
 void SrsRtcpRR::set_dlsr(uint32_t dlsr)
 {
-    rb_.dlsr = dlsr;
+    rb_.dlsr_ = dlsr;
 }
 
 void SrsRtcpRR::set_sender_ntp(uint64_t ntp)
 {
     uint32_t lsr = (uint32_t)((ntp >> 16) & 0x00000000FFFFFFFF);
-    rb_.lsr = lsr;
+    rb_.lsr_ = lsr;
 }
 
 srs_error_t SrsRtcpRR::decode(SrsBuffer *buffer)
@@ -609,13 +609,13 @@ block  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     }
 
     // TODO: FIXME: Security check for read.
-    rb_.ssrc = buffer->read_4bytes();
-    rb_.fraction_lost = buffer->read_1bytes();
-    rb_.lost_packets = buffer->read_3bytes();
-    rb_.highest_sn = buffer->read_4bytes();
-    rb_.jitter = buffer->read_4bytes();
-    rb_.lsr = buffer->read_4bytes();
-    rb_.dlsr = buffer->read_4bytes();
+    rb_.ssrc_ = buffer->read_4bytes();
+    rb_.fraction_lost_ = buffer->read_1bytes();
+    rb_.lost_packets_ = buffer->read_3bytes();
+    rb_.highest_sn_ = buffer->read_4bytes();
+    rb_.jitter_ = buffer->read_4bytes();
+    rb_.lsr_ = buffer->read_4bytes();
+    rb_.dlsr_ = buffer->read_4bytes();
 
     // TODO: FIXME: Security check for read.
     if (header_.rc > 1) {
@@ -673,23 +673,23 @@ block  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
         return srs_error_wrap(err, "encode header");
     }
 
-    buffer->write_4bytes(rb_.ssrc);
-    buffer->write_1bytes(rb_.fraction_lost);
-    buffer->write_3bytes(rb_.lost_packets);
-    buffer->write_4bytes(rb_.highest_sn);
-    buffer->write_4bytes(rb_.jitter);
-    buffer->write_4bytes(rb_.lsr);
-    buffer->write_4bytes(rb_.dlsr);
+    buffer->write_4bytes(rb_.ssrc_);
+    buffer->write_1bytes(rb_.fraction_lost_);
+    buffer->write_3bytes(rb_.lost_packets_);
+    buffer->write_4bytes(rb_.highest_sn_);
+    buffer->write_4bytes(rb_.jitter_);
+    buffer->write_4bytes(rb_.lsr_);
+    buffer->write_4bytes(rb_.dlsr_);
 
     return err;
 }
 
 SrsRtcpTWCC::SrsRtcpTWCCChunk::SrsRtcpTWCCChunk()
-    : size(0), all_same(true), has_large_delta(false)
+    : size_(0), all_same_(true), has_large_delta_(false)
 {
 }
 
-SrsRtcpTWCC::SrsRtcpTWCC(uint32_t sender_ssrc) : pkt_len(0)
+SrsRtcpTWCC::SrsRtcpTWCC(uint32_t sender_ssrc) : pkt_len_(0)
 {
     header_.padding = 0;
     header_.type = SrsRtcpType_rtpfb;
@@ -850,21 +850,21 @@ srs_utime_t SrsRtcpTWCC::calculate_delta_us(srs_utime_t ts, srs_utime_t last)
 bool SrsRtcpTWCC::can_add_to_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk, int delta_size)
 {
     srs_verbose("can_add %d chunk->size %u delta_sizes %d %d %d %d %d %d %d %d %d %d %d %d %d %d all_same %d has_large_delta %d",
-                delta_size, chunk.size, chunk.delta_sizes[0], chunk.delta_sizes[1], chunk.delta_sizes[2], chunk.delta_sizes[3],
-                chunk.delta_sizes[4], chunk.delta_sizes[5], chunk.delta_sizes[6], chunk.delta_sizes[7], chunk.delta_sizes[8],
-                chunk.delta_sizes[9], chunk.delta_sizes[10], chunk.delta_sizes[11], chunk.delta_sizes[12], chunk.delta_sizes[13],
-                (int)chunk.all_same, (int)chunk.has_large_delta);
+                delta_size, chunk.size_, chunk.delta_sizes_[0], chunk.delta_sizes_[1], chunk.delta_sizes_[2], chunk.delta_sizes_[3],
+                chunk.delta_sizes_[4], chunk.delta_sizes_[5], chunk.delta_sizes_[6], chunk.delta_sizes_[7], chunk.delta_sizes_[8],
+                chunk.delta_sizes_[9], chunk.delta_sizes_[10], chunk.delta_sizes_[11], chunk.delta_sizes_[12], chunk.delta_sizes_[13],
+                (int)chunk.all_same_, (int)chunk.has_large_delta_);
 
-    if (chunk.size < kTwccFbTwoBitElements) {
+    if (chunk.size_ < kTwccFbTwoBitElements) {
         return true;
     }
 
-    if (chunk.size < kTwccFbOneBitElements && !chunk.has_large_delta && delta_size != kTwccFbLargeRecvDeltaBytes) {
+    if (chunk.size_ < kTwccFbOneBitElements && !chunk.has_large_delta_ && delta_size != kTwccFbLargeRecvDeltaBytes) {
         return true;
     }
 
-    if (chunk.size < kTwccFbMaxRunLength && chunk.all_same && chunk.delta_sizes[0] == delta_size) {
-        srs_verbose("< %d && all_same && delta_size[0] %d == %d", kTwccFbMaxRunLength, chunk.delta_sizes[0], delta_size);
+    if (chunk.size_ < kTwccFbMaxRunLength && chunk.all_same_ && chunk.delta_sizes_[0] == delta_size) {
+        srs_verbose("< %d && all_same && delta_size[0] %d == %d", kTwccFbMaxRunLength, chunk.delta_sizes_[0], delta_size);
         return true;
     }
 
@@ -873,25 +873,25 @@ bool SrsRtcpTWCC::can_add_to_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk, int del
 
 void SrsRtcpTWCC::add_to_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk, int delta_size)
 {
-    if (chunk.size < kTwccFbMaxBitElements) {
-        chunk.delta_sizes[chunk.size] = delta_size;
+    if (chunk.size_ < kTwccFbMaxBitElements) {
+        chunk.delta_sizes_[chunk.size_] = delta_size;
     }
 
-    chunk.size += 1;
-    chunk.all_same = chunk.all_same && delta_size == chunk.delta_sizes[0];
-    chunk.has_large_delta = chunk.has_large_delta || delta_size >= kTwccFbLargeRecvDeltaBytes;
+    chunk.size_ += 1;
+    chunk.all_same_ = chunk.all_same_ && delta_size == chunk.delta_sizes_[0];
+    chunk.has_large_delta_ = chunk.has_large_delta_ || delta_size >= kTwccFbLargeRecvDeltaBytes;
 }
 
 srs_error_t SrsRtcpTWCC::encode_chunk_run_length(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
 {
-    if (!chunk.all_same || chunk.size > kTwccFbMaxRunLength) {
-        return srs_error_new(ERROR_RTC_RTCP, "invalid run all_same:%d, size:%d", chunk.all_same, chunk.size);
+    if (!chunk.all_same_ || chunk.size_ > kTwccFbMaxRunLength) {
+        return srs_error_new(ERROR_RTC_RTCP, "invalid run all_same:%d, size:%d", chunk.all_same_, chunk.size_);
     }
 
-    uint16_t encoded_chunk = (chunk.delta_sizes[0] << 13) | chunk.size;
+    uint16_t encoded_chunk = (chunk.delta_sizes_[0] << 13) | chunk.size_;
 
     encoded_chucks_.push_back(encoded_chunk);
-    pkt_len += sizeof(encoded_chunk);
+    pkt_len_ += sizeof(encoded_chunk);
 
     return srs_success;
 }
@@ -899,17 +899,17 @@ srs_error_t SrsRtcpTWCC::encode_chunk_run_length(SrsRtcpTWCC::SrsRtcpTWCCChunk &
 srs_error_t SrsRtcpTWCC::encode_chunk_one_bit(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
 {
     int i = 0;
-    if (chunk.has_large_delta) {
+    if (chunk.has_large_delta_) {
         return srs_error_new(ERROR_RTC_RTCP, "invalid large delta");
     }
 
     uint16_t encoded_chunk = 0x8000;
-    for (i = 0; i < chunk.size; ++i) {
-        encoded_chunk |= (chunk.delta_sizes[i] << (kTwccFbOneBitElements - 1 - i));
+    for (i = 0; i < chunk.size_; ++i) {
+        encoded_chunk |= (chunk.delta_sizes_[i] << (kTwccFbOneBitElements - 1 - i));
     }
 
     encoded_chucks_.push_back(encoded_chunk);
-    pkt_len += sizeof(encoded_chunk);
+    pkt_len_ += sizeof(encoded_chunk);
 
     // 1 0 symbol_list
     return srs_success;
@@ -923,20 +923,20 @@ srs_error_t SrsRtcpTWCC::encode_chunk_two_bit(SrsRtcpTWCC::SrsRtcpTWCCChunk &chu
     uint16_t encoded_chunk = 0xc000;
     // 1 1 symbol_list
     for (i = 0; i < size; ++i) {
-        encoded_chunk |= (chunk.delta_sizes[i] << (2 * (kTwccFbTwoBitElements - 1 - i)));
+        encoded_chunk |= (chunk.delta_sizes_[i] << (2 * (kTwccFbTwoBitElements - 1 - i)));
     }
     encoded_chucks_.push_back(encoded_chunk);
-    pkt_len += sizeof(encoded_chunk);
+    pkt_len_ += sizeof(encoded_chunk);
 
     if (shift) {
-        chunk.size -= size;
-        chunk.all_same = true;
-        chunk.has_large_delta = false;
-        for (i = 0; i < chunk.size; ++i) {
-            delta_size = chunk.delta_sizes[i + size];
-            chunk.delta_sizes[i] = delta_size;
-            chunk.all_same = (chunk.all_same && delta_size == chunk.delta_sizes[0]);
-            chunk.has_large_delta = chunk.has_large_delta || delta_size == kTwccFbLargeRecvDeltaBytes;
+        chunk.size_ -= size;
+        chunk.all_same_ = true;
+        chunk.has_large_delta_ = false;
+        for (i = 0; i < chunk.size_; ++i) {
+            delta_size = chunk.delta_sizes_[i + size];
+            chunk.delta_sizes_[i] = delta_size;
+            chunk.all_same_ = (chunk.all_same_ && delta_size == chunk.delta_sizes_[0]);
+            chunk.has_large_delta_ = chunk.has_large_delta_ || delta_size == kTwccFbLargeRecvDeltaBytes;
         }
     }
 
@@ -945,10 +945,10 @@ srs_error_t SrsRtcpTWCC::encode_chunk_two_bit(SrsRtcpTWCC::SrsRtcpTWCCChunk &chu
 
 void SrsRtcpTWCC::reset_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
 {
-    chunk.size = 0;
+    chunk.size_ = 0;
 
-    chunk.all_same = true;
-    chunk.has_large_delta = false;
+    chunk.all_same_ = true;
+    chunk.has_large_delta_ = false;
 }
 
 srs_error_t SrsRtcpTWCC::encode_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
@@ -959,7 +959,7 @@ srs_error_t SrsRtcpTWCC::encode_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
         return srs_error_new(ERROR_RTC_RTCP, "TWCC chunk");
     }
 
-    if (chunk.all_same) {
+    if (chunk.all_same_) {
         if ((err = encode_chunk_run_length(chunk)) != srs_success) {
             return srs_error_wrap(err, "encode run");
         }
@@ -967,7 +967,7 @@ srs_error_t SrsRtcpTWCC::encode_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
         return err;
     }
 
-    if (chunk.size == kTwccFbOneBitElements) {
+    if (chunk.size_ == kTwccFbOneBitElements) {
         if ((err = encode_chunk_one_bit(chunk)) != srs_success) {
             return srs_error_wrap(err, "encode chunk");
         }
@@ -984,11 +984,11 @@ srs_error_t SrsRtcpTWCC::encode_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
 
 srs_error_t SrsRtcpTWCC::encode_remaining_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk)
 {
-    if (chunk.all_same) {
+    if (chunk.all_same_) {
         return encode_chunk_run_length(chunk);
-    } else if (chunk.size <= kTwccFbTwoBitElements) {
+    } else if (chunk.size_ <= kTwccFbTwoBitElements) {
         // FIXME, TRUE or FALSE
-        return encode_chunk_two_bit(chunk, chunk.size, false);
+        return encode_chunk_two_bit(chunk, chunk.size_, false);
     }
     return encode_chunk_one_bit(chunk);
 }
@@ -997,15 +997,15 @@ srs_error_t SrsRtcpTWCC::process_pkt_chunk(SrsRtcpTWCC::SrsRtcpTWCCChunk &chunk,
 {
     srs_error_t err = srs_success;
 
-    size_t needed_chunk_size = chunk.size == 0 ? kTwccFbChunkBytes : 0;
+    size_t needed_chunk_size = chunk.size_ == 0 ? kTwccFbChunkBytes : 0;
 
-    size_t might_occupied = pkt_len + needed_chunk_size + delta_size;
+    size_t might_occupied = pkt_len_ + needed_chunk_size + delta_size;
     if (might_occupied > (size_t)kRtcpPacketSize) {
         return srs_error_new(ERROR_RTC_RTCP, "might_occupied %zu", might_occupied);
     }
 
     if (can_add_to_chunk(chunk, delta_size)) {
-        // pkt_len += needed_chunk_size;
+        // pkt_len_ += needed_chunk_size;
         add_to_chunk(chunk, delta_size);
         return err;
     }
@@ -1065,7 +1065,7 @@ srs_error_t SrsRtcpTWCC::do_encode(SrsBuffer *buffer)
         return srs_error_new(ERROR_RTC_RTCP, "requires %d bytes", nb_bytes());
     }
 
-    pkt_len = kTwccFbPktHeaderSize;
+    pkt_len_ = kTwccFbPktHeaderSize;
 
     set<uint16_t, SrsSeqCompareLess>::iterator it_sn = recv_sns_.begin();
     if (!next_base_sn_) {
@@ -1089,7 +1089,7 @@ srs_error_t SrsRtcpTWCC::do_encode(SrsBuffer *buffer)
     for (; it_sn != recv_sns_.end(); ++it_sn) {
         // check whether exceed buffer len
         // max recv_delta_size = 2
-        if (pkt_len + 2 >= buffer->left()) {
+        if (pkt_len_ + 2 >= buffer->left()) {
             break;
         }
 
@@ -1123,7 +1123,7 @@ srs_error_t SrsRtcpTWCC::do_encode(SrsBuffer *buffer)
 
         pkt_deltas_.push_back(delta);
         last_ts += delta * kTwccFbDeltaUnit;
-        pkt_len += recv_delta_size;
+        pkt_len_ += recv_delta_size;
         last_sn = current_sn;
 
         recv_packets_.erase(it_ts);
@@ -1134,17 +1134,17 @@ srs_error_t SrsRtcpTWCC::do_encode(SrsBuffer *buffer)
         next_base_sn_ = *it_sn;
     }
 
-    if (0 < chunk.size) {
+    if (0 < chunk.size_) {
         if ((err = encode_remaining_chunk(chunk)) != srs_success) {
             return srs_error_wrap(err, "encode chunk");
         }
     }
 
     // encode rtcp twcc packet
-    if ((pkt_len % 4) == 0) {
-        header_.length = pkt_len / 4;
+    if ((pkt_len_ % 4) == 0) {
+        header_.length = pkt_len_ / 4;
     } else {
-        header_.length = (pkt_len + 4 - (pkt_len % 4)) / 4;
+        header_.length = (pkt_len_ + 4 - (pkt_len_ % 4)) / 4;
     }
     header_.length -= 1;
 
@@ -1183,9 +1183,9 @@ srs_error_t SrsRtcpTWCC::do_encode(SrsBuffer *buffer)
         }
     }
 
-    while ((pkt_len % 4) != 0) {
+    while ((pkt_len_ % 4) != 0) {
         buffer->write_1bytes(0);
-        pkt_len++;
+        pkt_len_++;
     }
 
     encoded_chucks_.clear();
@@ -1312,14 +1312,14 @@ srs_error_t SrsRtcpNack::encode(SrsBuffer *buffer)
     vector<SrsPidBlp> chunks;
     do {
         SrsPidBlp chunk;
-        chunk.in_use = false;
+        chunk.in_use_ = false;
         uint16_t pid = 0;
         for (set<uint16_t, SrsSeqCompareLess>::iterator it = lost_sns_.begin(); it != lost_sns_.end(); ++it) {
             uint16_t sn = *it;
-            if (!chunk.in_use) {
-                chunk.pid = sn;
-                chunk.blp = 0;
-                chunk.in_use = true;
+            if (!chunk.in_use_) {
+                chunk.pid_ = sn;
+                chunk.blp_ = 0;
+                chunk.in_use_ = true;
                 pid = sn;
                 continue;
             }
@@ -1330,15 +1330,15 @@ srs_error_t SrsRtcpNack::encode(SrsBuffer *buffer)
                 chunks.push_back(chunk);
 
                 // start new chunk
-                chunk.pid = sn;
-                chunk.blp = 0;
-                chunk.in_use = true;
+                chunk.pid_ = sn;
+                chunk.blp_ = 0;
+                chunk.in_use_ = true;
                 pid = sn;
             } else {
-                chunk.blp |= 1 << (sn - pid - 1);
+                chunk.blp_ |= 1 << (sn - pid - 1);
             }
         }
-        if (chunk.in_use) {
+        if (chunk.in_use_) {
             chunks.push_back(chunk);
         }
 
@@ -1350,8 +1350,8 @@ srs_error_t SrsRtcpNack::encode(SrsBuffer *buffer)
 
         buffer->write_4bytes(media_ssrc_);
         for (vector<SrsPidBlp>::iterator it_chunk = chunks.begin(); it_chunk != chunks.end(); it_chunk++) {
-            buffer->write_2bytes(it_chunk->pid);
-            buffer->write_2bytes(it_chunk->blp);
+            buffer->write_2bytes(it_chunk->pid_);
+            buffer->write_2bytes(it_chunk->blp_);
         }
     } while (0);
 

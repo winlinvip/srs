@@ -538,8 +538,8 @@ void SrsRtcSessionManager::srs_update_rtc_sessions()
 
     srs_trace("RTC: Server conns=%u%s%s%s%s%s%s%s",
               nn_rtc_conns,
-              stats.rpkts_desc.c_str(), stats.spkts_desc.c_str(), stats.rtcp_desc.c_str(), stats.snk_desc.c_str(),
-              stats.rnk_desc.c_str(), loss_desc.c_str(), stats.fid_desc.c_str());
+              stats.rpkts_desc_.c_str(), stats.spkts_desc_.c_str(), stats.rtcp_desc_.c_str(), stats.snk_desc_.c_str(),
+              stats.rnk_desc_.c_str(), loss_desc.c_str(), stats.fid_desc_.c_str());
 }
 
 srs_error_t SrsRtcSessionManager::exec_rtc_async_work(ISrsAsyncCallTask *t)
@@ -574,7 +574,7 @@ srs_error_t SrsRtcSessionManager::on_udp_packet(SrsUdpMuxSocket *skt)
 
     // For STUN, the peer address may change.
     if (!is_rtp_or_rtcp && srs_is_stun((uint8_t *)data, size)) {
-        ++_srs_pps_rstuns->sugar;
+        ++_srs_pps_rstuns->sugar_;
         string peer_id = skt->peer_id();
 
         // TODO: FIXME: Should support ICE renomination, to switch network between candidates.
@@ -614,7 +614,7 @@ srs_error_t SrsRtcSessionManager::on_udp_packet(SrsUdpMuxSocket *skt)
 
     // Note that we don't(except error) switch to the context of session, for performance issue.
     if (is_rtp_or_rtcp && !is_rtcp) {
-        ++_srs_pps_rrtps->sugar;
+        ++_srs_pps_rrtps->sugar_;
 
         err = session->udp()->on_rtp(data, size);
         if (err != srs_success) {
@@ -625,12 +625,12 @@ srs_error_t SrsRtcSessionManager::on_udp_packet(SrsUdpMuxSocket *skt)
 
     session->switch_to_context();
     if (is_rtp_or_rtcp && is_rtcp) {
-        ++_srs_pps_rrtcps->sugar;
+        ++_srs_pps_rrtcps->sugar_;
 
         return session->udp()->on_rtcp(data, size);
     }
     if (srs_is_dtls((uint8_t *)data, size)) {
-        ++_srs_pps_rstuns->sugar;
+        ++_srs_pps_rstuns->sugar_;
 
         return session->udp()->on_dtls(data, size);
     }

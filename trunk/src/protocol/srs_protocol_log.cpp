@@ -47,7 +47,7 @@ void _srs_context_destructor(void *arg)
 
 const SrsContextId &SrsThreadContext::get_id()
 {
-    ++_srs_pps_cids_get->sugar;
+    ++_srs_pps_cids_get->sugar_;
 
     if (!srs_thread_self()) {
         return _srs_context_default;
@@ -72,7 +72,7 @@ void SrsThreadContext::clear_cid()
 
 const SrsContextId &srs_context_set_cid_of(srs_thread_t trd, const SrsContextId &v)
 {
-    ++_srs_pps_cids_set->sugar;
+    ++_srs_pps_cids_set->sugar_;
 
     if (!trd) {
         _srs_context_default = v;

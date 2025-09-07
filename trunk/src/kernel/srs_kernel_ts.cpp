@@ -183,39 +183,39 @@ string srs_ts_stream2string(SrsTsStream stream)
 
 SrsTsChannel::SrsTsChannel()
 {
-    pid = 0;
-    apply = SrsTsPidApplyReserved;
-    stream = SrsTsStreamReserved;
-    msg = NULL;
-    continuity_counter = 0;
-    context = NULL;
+    pid_ = 0;
+    apply_ = SrsTsPidApplyReserved;
+    stream_ = SrsTsStreamReserved;
+    msg_ = NULL;
+    continuity_counter_ = 0;
+    context_ = NULL;
 }
 
 SrsTsChannel::~SrsTsChannel()
 {
-    srs_freep(msg);
+    srs_freep(msg_);
 }
 
 SrsTsMessage::SrsTsMessage(SrsTsChannel *c, SrsTsPacket *p)
 {
-    channel = c;
-    packet = p;
+    channel_ = c;
+    packet_ = p;
     ps_helper_ = NULL;
 
-    dts = pts = 0;
-    sid = (SrsTsPESStreamId)0x00;
-    continuity_counter = 0;
-    PES_packet_length = 0;
-    payload = new SrsSimpleStream();
-    is_discontinuity = false;
+    dts_ = pts_ = 0;
+    sid_ = (SrsTsPESStreamId)0x00;
+    continuity_counter_ = 0;
+    PES_packet_length_ = 0;
+    payload_ = new SrsSimpleStream();
+    is_discontinuity_ = false;
 
-    start_pts = 0;
-    write_pcr = false;
+    start_pts_ = 0;
+    write_pcr_ = false;
 }
 
 SrsTsMessage::~SrsTsMessage()
 {
-    srs_freep(payload);
+    srs_freep(payload_);
 }
 
 srs_error_t SrsTsMessage::dump(SrsBuffer *stream, int *pnb_bytes)
@@ -228,8 +228,8 @@ srs_error_t SrsTsMessage::dump(SrsBuffer *stream, int *pnb_bytes)
 
     // xB
     int nb_bytes = stream->size() - stream->pos();
-    if (PES_packet_length > 0) {
-        nb_bytes = srs_min(nb_bytes, PES_packet_length - payload->length());
+    if (PES_packet_length_ > 0) {
+        nb_bytes = srs_min(nb_bytes, PES_packet_length_ - payload_->length());
     }
 
     if (nb_bytes > 0) {
@@ -237,7 +237,7 @@ srs_error_t SrsTsMessage::dump(SrsBuffer *stream, int *pnb_bytes)
             return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: dump PSE bytes failed, requires=%dB", nb_bytes);
         }
 
-        payload->append(stream->data() + stream->pos(), nb_bytes);
+        payload_->append(stream->data() + stream->pos(), nb_bytes);
         stream->skip(nb_bytes);
     }
 
@@ -249,35 +249,35 @@ srs_error_t SrsTsMessage::dump(SrsBuffer *stream, int *pnb_bytes)
 
 bool SrsTsMessage::completed(int8_t payload_unit_start_indicator)
 {
-    if (PES_packet_length == 0) {
+    if (PES_packet_length_ == 0) {
         return payload_unit_start_indicator;
     }
-    return payload->length() >= PES_packet_length;
+    return payload_->length() >= PES_packet_length_;
 }
 
 bool SrsTsMessage::fresh()
 {
     // Note that both must be 0. For PS stream, the payload might be empty but PES_packet_length is not, see
     // PsPacketDecodePrivateStream of KernelPSTest. For TS stream, both should be 0 in the same time.
-    return PES_packet_length == 0 && payload->length() == 0;
+    return PES_packet_length_ == 0 && payload_->length() == 0;
 }
 
 bool SrsTsMessage::is_audio()
 {
-    return ((sid >> 5) & 0x07) == SrsTsPESStreamIdAudioChecker;
+    return ((sid_ >> 5) & 0x07) == SrsTsPESStreamIdAudioChecker;
 }
 
 bool SrsTsMessage::is_video()
 {
-    return ((sid >> 4) & 0x0f) == SrsTsPESStreamIdVideoChecker;
+    return ((sid_ >> 4) & 0x0f) == SrsTsPESStreamIdVideoChecker;
 }
 
 int SrsTsMessage::stream_number()
 {
     if (is_audio()) {
-        return sid & 0x1f;
+        return sid_ & 0x1f;
     } else if (is_video()) {
-        return sid & 0x0f;
+        return sid_ & 0x0f;
     }
     return -1;
 }
@@ -285,20 +285,20 @@ int SrsTsMessage::stream_number()
 SrsTsMessage *SrsTsMessage::detach()
 {
     // @remark the packet cannot be used, but channel is ok.
-    SrsTsMessage *cp = new SrsTsMessage(channel, NULL);
+    SrsTsMessage *cp = new SrsTsMessage(channel_, NULL);
     cp->ps_helper_ = ps_helper_;
-    cp->start_pts = start_pts;
-    cp->write_pcr = write_pcr;
-    cp->is_discontinuity = is_discontinuity;
-    cp->dts = dts;
-    cp->pts = pts;
-    cp->sid = sid;
-    cp->PES_packet_length = PES_packet_length;
-    cp->continuity_counter = continuity_counter;
+    cp->start_pts_ = start_pts_;
+    cp->write_pcr_ = write_pcr_;
+    cp->is_discontinuity_ = is_discontinuity_;
+    cp->dts_ = dts_;
+    cp->pts_ = pts_;
+    cp->sid_ = sid_;
+    cp->PES_packet_length_ = PES_packet_length_;
+    cp->continuity_counter_ = continuity_counter_;
 
-    srs_freep(cp->payload);
-    cp->payload = payload;
-    payload = NULL;
+    srs_freep(cp->payload_);
+    cp->payload_ = payload_;
+    payload_ = NULL;
 
     return cp;
 }
@@ -313,71 +313,71 @@ ISrsTsHandler::~ISrsTsHandler()
 
 SrsTsContext::SrsTsContext()
 {
-    ready = false;
-    pure_audio = false;
-    sync_byte = 0x47; // ts default sync byte.
-    vcodec = SrsVideoCodecIdReserved;
-    acodec = SrsAudioCodecIdReserved1;
+    ready_ = false;
+    pure_audio_ = false;
+    sync_byte_ = 0x47; // ts default sync byte.
+    vcodec_ = SrsVideoCodecIdReserved;
+    acodec_ = SrsAudioCodecIdReserved1;
 }
 
 SrsTsContext::~SrsTsContext()
 {
     std::map<int, SrsTsChannel *>::iterator it;
-    for (it = pids.begin(); it != pids.end(); ++it) {
+    for (it = pids_.begin(); it != pids_.end(); ++it) {
         SrsTsChannel *channel = it->second;
         srs_freep(channel);
     }
-    pids.clear();
+    pids_.clear();
 }
 
 bool SrsTsContext::is_pure_audio()
 {
-    return pure_audio;
+    return pure_audio_;
 }
 
 void SrsTsContext::on_pmt_parsed()
 {
-    pure_audio = true;
+    pure_audio_ = true;
 
     std::map<int, SrsTsChannel *>::iterator it;
-    for (it = pids.begin(); it != pids.end(); ++it) {
+    for (it = pids_.begin(); it != pids_.end(); ++it) {
         SrsTsChannel *channel = it->second;
-        if (channel->apply == SrsTsPidApplyVideo) {
-            pure_audio = false;
+        if (channel->apply_ == SrsTsPidApplyVideo) {
+            pure_audio_ = false;
         }
     }
 }
 
 void SrsTsContext::reset()
 {
-    ready = false;
-    vcodec = SrsVideoCodecIdReserved;
-    acodec = SrsAudioCodecIdReserved1;
+    ready_ = false;
+    vcodec_ = SrsVideoCodecIdReserved;
+    acodec_ = SrsAudioCodecIdReserved1;
 }
 
 SrsTsChannel *SrsTsContext::get(int pid)
 {
-    if (pids.find(pid) == pids.end()) {
+    if (pids_.find(pid) == pids_.end()) {
         return NULL;
     }
-    return pids[pid];
+    return pids_[pid];
 }
 
 void SrsTsContext::set(int pid, SrsTsPidApply apply_pid, SrsTsStream stream)
 {
     SrsTsChannel *channel = NULL;
 
-    if (pids.find(pid) == pids.end()) {
+    if (pids_.find(pid) == pids_.end()) {
         channel = new SrsTsChannel();
-        channel->context = this;
-        pids[pid] = channel;
+        channel->context_ = this;
+        pids_[pid] = channel;
     } else {
-        channel = pids[pid];
+        channel = pids_[pid];
     }
 
-    channel->pid = pid;
-    channel->apply = apply_pid;
-    channel->stream = stream;
+    channel->pid_ = pid;
+    channel->apply_ = apply_pid;
+    channel->stream_ = stream;
 }
 
 srs_error_t SrsTsContext::decode(SrsBuffer *stream, ISrsTsHandler *handler)
@@ -473,12 +473,12 @@ srs_error_t SrsTsContext::encode(ISrsStreamWriter *writer, SrsTsMessage *msg, Sr
     }
 
     // When any codec changed, write PAT/PMT table.
-    if (vcodec != vc || acodec != ac) {
-        if (vcodec != SrsVideoCodecIdReserved || acodec != SrsAudioCodecIdReserved1) {
-            srs_trace("TS: Refresh PMT when vcodec=%d=>%d, acodec=%d=>%d", vcodec, vc, acodec, ac);
+    if (vcodec_ != vc || acodec_ != ac) {
+        if (vcodec_ != SrsVideoCodecIdReserved || acodec_ != SrsAudioCodecIdReserved1) {
+            srs_trace("TS: Refresh PMT when vcodec=%d=>%d, acodec=%d=>%d", vcodec_, vc, acodec_, ac);
         }
-        vcodec = vc;
-        acodec = ac;
+        vcodec_ = vc;
+        acodec_ = ac;
 
         if ((err = encode_pat_pmt(writer, video_pid, vs, audio_pid, as)) != srs_success) {
             return srs_error_wrap(err, "ts: encode PAT/PMT");
@@ -508,7 +508,7 @@ srs_error_t SrsTsContext::encode_pat_pmt(ISrsStreamWriter *writer, int16_t vpid,
     if (true) {
         SrsUniquePtr<SrsTsPacket> pkt(SrsTsPacket::create_pat(this, pmt_number, pmt_pid));
 
-        pkt->sync_byte = sync_byte;
+        pkt->sync_byte_ = sync_byte_;
 
         SrsUniquePtr<char[]> buf(new char[SRS_TS_PACKET_SIZE]);
 
@@ -528,7 +528,7 @@ srs_error_t SrsTsContext::encode_pat_pmt(ISrsStreamWriter *writer, int16_t vpid,
     if (true) {
         SrsUniquePtr<SrsTsPacket> pkt(SrsTsPacket::create_pmt(this, pmt_number, pmt_pid, vpid, vs, apid, as));
 
-        pkt->sync_byte = sync_byte;
+        pkt->sync_byte_ = sync_byte_;
 
         SrsUniquePtr<char[]> buf(new char[SRS_TS_PACKET_SIZE]);
 
@@ -547,7 +547,7 @@ srs_error_t SrsTsContext::encode_pat_pmt(ISrsStreamWriter *writer, int16_t vpid,
     }
 
     // When PAT and PMT are writen, the context is ready now.
-    ready = true;
+    ready_ = true;
 
     return err;
 }
@@ -557,11 +557,11 @@ srs_error_t SrsTsContext::encode_pes(ISrsStreamWriter *writer, SrsTsMessage *msg
     srs_error_t err = srs_success;
 
     // Sometimes, the context is not ready(PAT/PMT write failed), error in this situation.
-    if (!ready) {
+    if (!ready_) {
         return srs_error_new(ERROR_TS_CONTEXT_NOT_READY, "ts: not ready");
     }
 
-    if (msg->payload->length() == 0) {
+    if (msg->payload_->length() == 0) {
         return err;
     }
 
@@ -575,15 +575,15 @@ srs_error_t SrsTsContext::encode_pes(ISrsStreamWriter *writer, SrsTsMessage *msg
     SrsTsChannel *channel = get(pid);
     srs_assert(channel);
 
-    char *start = msg->payload->bytes();
-    char *end = start + msg->payload->length();
+    char *start = msg->payload_->bytes();
+    char *end = start + msg->payload_->length();
     char *p = start;
 
     while (p < end) {
         SrsTsPacket *pkt_raw = NULL;
         if (p == start) {
             // write pcr according to message.
-            bool write_pcr = msg->write_pcr;
+            bool write_pcr = msg->write_pcr_;
 
             // for pure audio, always write pcr.
             // TODO: FIXME: maybe only need to write at begin and end of ts.
@@ -601,18 +601,18 @@ srs_error_t SrsTsContext::encode_pes(ISrsStreamWriter *writer, SrsTsMessage *msg
             // time. To do this, the receiver, i.e. the MPEG decoder, must read out the
             // "clock time", namely the PCR values, and compare them with its own internal
             // system clock, that is to say its own 42 bit counter.
-            int64_t pcr = write_pcr ? msg->dts : -1;
+            int64_t pcr = write_pcr ? msg->dts_ : -1;
 
             // TODO: FIXME: finger it why use discontinuity of msg.
             pkt_raw = SrsTsPacket::create_pes_first(this,
-                                                    pid, msg->sid, channel->continuity_counter++, msg->is_discontinuity,
-                                                    pcr, msg->dts, msg->pts, msg->payload->length());
+                                                    pid, msg->sid_, channel->continuity_counter_++, msg->is_discontinuity_,
+                                                    pcr, msg->dts_, msg->pts_, msg->payload_->length());
         } else {
-            pkt_raw = SrsTsPacket::create_pes_continue(this, pid, msg->sid, channel->continuity_counter++);
+            pkt_raw = SrsTsPacket::create_pes_continue(this, pid, msg->sid_, channel->continuity_counter_++);
         }
         SrsUniquePtr<SrsTsPacket> pkt(pkt_raw);
 
-        pkt->sync_byte = sync_byte;
+        pkt->sync_byte_ = sync_byte_;
 
         SrsUniquePtr<char[]> buf(new char[SRS_TS_PACKET_SIZE]);
 
@@ -654,24 +654,24 @@ srs_error_t SrsTsContext::encode_pes(ISrsStreamWriter *writer, SrsTsMessage *msg
 
 SrsTsPacket::SrsTsPacket(SrsTsContext *c)
 {
-    context = c;
+    context_ = c;
 
-    sync_byte = 0;
-    transport_error_indicator = 0;
-    payload_unit_start_indicator = 0;
-    transport_priority = 0;
-    pid = SrsTsPidPAT;
-    transport_scrambling_control = SrsTsScrambledDisabled;
-    adaption_field_control = SrsTsAdaptationFieldTypeReserved;
-    continuity_counter = 0;
-    adaptation_field = NULL;
-    payload = NULL;
+    sync_byte_ = 0;
+    transport_error_indicator_ = 0;
+    payload_unit_start_indicator_ = 0;
+    transport_priority_ = 0;
+    pid_ = SrsTsPidPAT;
+    transport_scrambling_control_ = SrsTsScrambledDisabled;
+    adaption_field_control_ = SrsTsAdaptationFieldTypeReserved;
+    continuity_counter_ = 0;
+    adaptation_field_ = NULL;
+    payload_ = NULL;
 }
 
 SrsTsPacket::~SrsTsPacket()
 {
-    srs_freep(adaptation_field);
-    srs_freep(payload);
+    srs_freep(adaptation_field_);
+    srs_freep(payload_);
 }
 
 srs_error_t SrsTsPacket::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
@@ -685,21 +685,21 @@ srs_error_t SrsTsPacket::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
         return srs_error_new(ERROR_STREAM_CASTER_TS_HEADER, "ts: decode packet");
     }
 
-    sync_byte = stream->read_1bytes();
-    if (sync_byte != 0x47) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_SYNC_BYTE, "ts: sync_bytes must be 0x47, actual=%#x", sync_byte);
+    sync_byte_ = stream->read_1bytes();
+    if (sync_byte_ != 0x47) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_SYNC_BYTE, "ts: sync_bytes must be 0x47, actual=%#x", sync_byte_);
     }
 
     int16_t pidv = stream->read_2bytes();
-    transport_error_indicator = (pidv >> 15) & 0x01;
-    payload_unit_start_indicator = (pidv >> 14) & 0x01;
-    transport_priority = (pidv >> 13) & 0x01;
-    pid = (SrsTsPid)(pidv & 0x1FFF);
+    transport_error_indicator_ = (pidv >> 15) & 0x01;
+    payload_unit_start_indicator_ = (pidv >> 14) & 0x01;
+    transport_priority_ = (pidv >> 13) & 0x01;
+    pid_ = (SrsTsPid)(pidv & 0x1FFF);
 
     int8_t ccv = stream->read_1bytes();
-    transport_scrambling_control = (SrsTsScrambled)((ccv >> 6) & 0x03);
-    adaption_field_control = (SrsTsAdaptationFieldType)((ccv >> 4) & 0x03);
-    continuity_counter = ccv & 0x0F;
+    transport_scrambling_control_ = (SrsTsScrambled)((ccv >> 6) & 0x03);
+    adaption_field_control_ = (SrsTsAdaptationFieldType)((ccv >> 4) & 0x03);
+    continuity_counter_ = ccv & 0x0F;
 
     // TODO: FIXME: create pids map when got new pid.
 
@@ -708,11 +708,11 @@ srs_error_t SrsTsPacket::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
              transport_scrambling_control, adaption_field_control, continuity_counter);
 
     // optional: adaptation field
-    if (adaption_field_control == SrsTsAdaptationFieldTypeAdaptionOnly || adaption_field_control == SrsTsAdaptationFieldTypeBoth) {
-        srs_freep(adaptation_field);
-        adaptation_field = new SrsTsAdaptationField(this);
+    if (adaption_field_control_ == SrsTsAdaptationFieldTypeAdaptionOnly || adaption_field_control_ == SrsTsAdaptationFieldTypeBoth) {
+        srs_freep(adaptation_field_);
+        adaptation_field_ = new SrsTsAdaptationField(this);
 
-        if ((err = adaptation_field->decode(stream)) != srs_success) {
+        if ((err = adaptation_field_->decode(stream)) != srs_success) {
             return srs_error_wrap(err, "ts: demux af field");
         }
         srs_verbose("ts: demux af ok.");
@@ -722,28 +722,28 @@ srs_error_t SrsTsPacket::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
     int nb_payload = SRS_TS_PACKET_SIZE - (stream->pos() - pos);
 
     // optional: payload.
-    if (adaption_field_control == SrsTsAdaptationFieldTypePayloadOnly || adaption_field_control == SrsTsAdaptationFieldTypeBoth) {
-        if (pid == SrsTsPidPAT) {
+    if (adaption_field_control_ == SrsTsAdaptationFieldTypePayloadOnly || adaption_field_control_ == SrsTsAdaptationFieldTypeBoth) {
+        if (pid_ == SrsTsPidPAT) {
             // 2.4.4.3 Program association Table
-            srs_freep(payload);
-            payload = new SrsTsPayloadPAT(this);
+            srs_freep(payload_);
+            payload_ = new SrsTsPayloadPAT(this);
         } else {
-            SrsTsChannel *channel = context->get(pid);
-            if (channel && channel->apply == SrsTsPidApplyPMT) {
+            SrsTsChannel *channel = context_->get(pid_);
+            if (channel && channel->apply_ == SrsTsPidApplyPMT) {
                 // 2.4.4.8 Program Map Table
-                srs_freep(payload);
-                payload = new SrsTsPayloadPMT(this);
-            } else if (channel && (channel->apply == SrsTsPidApplyVideo || channel->apply == SrsTsPidApplyAudio)) {
+                srs_freep(payload_);
+                payload_ = new SrsTsPayloadPMT(this);
+            } else if (channel && (channel->apply_ == SrsTsPidApplyVideo || channel->apply_ == SrsTsPidApplyAudio)) {
                 // 2.4.3.6 PES packet
-                srs_freep(payload);
-                payload = new SrsTsPayloadPES(this);
+                srs_freep(payload_);
+                payload_ = new SrsTsPayloadPES(this);
             } else {
                 // left bytes as reserved.
                 stream->skip(srs_min(stream->left(), nb_payload));
             }
         }
 
-        if (payload && (err = payload->decode(stream, ppmsg)) != srs_success) {
+        if (payload_ && (err = payload_->decode(stream, ppmsg)) != srs_success) {
             return srs_error_wrap(err, "ts: demux payload");
         }
     }
@@ -755,8 +755,8 @@ int SrsTsPacket::size()
 {
     int sz = 4;
 
-    sz += adaptation_field ? adaptation_field->size() : 0;
-    sz += payload ? payload->size() : 0;
+    sz += adaptation_field_ ? adaptation_field_->size() : 0;
+    sz += payload_ ? payload_->size() : 0;
 
     return sz;
 }
@@ -770,17 +770,17 @@ srs_error_t SrsTsPacket::encode(SrsBuffer *stream)
         return srs_error_new(ERROR_STREAM_CASTER_TS_HEADER, "ts: requires 4+ bytes");
     }
 
-    stream->write_1bytes(sync_byte);
+    stream->write_1bytes(sync_byte_);
 
-    int16_t pidv = pid & 0x1FFF;
-    pidv |= (transport_priority << 13) & 0x2000;
-    pidv |= (transport_error_indicator << 15) & 0x8000;
-    pidv |= (payload_unit_start_indicator << 14) & 0x4000;
+    int16_t pidv = pid_ & 0x1FFF;
+    pidv |= (transport_priority_ << 13) & 0x2000;
+    pidv |= (transport_error_indicator_ << 15) & 0x8000;
+    pidv |= (payload_unit_start_indicator_ << 14) & 0x4000;
     stream->write_2bytes(pidv);
 
-    int8_t ccv = continuity_counter & 0x0F;
-    ccv |= (transport_scrambling_control << 6) & 0xC0;
-    ccv |= (adaption_field_control << 4) & 0x30;
+    int8_t ccv = continuity_counter_ & 0x0F;
+    ccv |= (transport_scrambling_control_ << 6) & 0xC0;
+    ccv |= (adaption_field_control_ << 4) & 0x30;
     stream->write_1bytes(ccv);
 
     srs_info("ts: header sync=%#x error=%d unit_start=%d priotiry=%d pid=%d scrambling=%d adaption=%d counter=%d",
@@ -788,16 +788,16 @@ srs_error_t SrsTsPacket::encode(SrsBuffer *stream)
              transport_scrambling_control, adaption_field_control, continuity_counter);
 
     // optional: adaptation field
-    if (adaptation_field) {
-        if ((err = adaptation_field->encode(stream)) != srs_success) {
+    if (adaptation_field_) {
+        if ((err = adaptation_field_->encode(stream)) != srs_success) {
             return srs_error_wrap(err, "ts: mux af field");
         }
         srs_verbose("ts: mux af ok.");
     }
 
     // optional: payload.
-    if (payload) {
-        if ((err = payload->encode(stream)) != srs_success) {
+    if (payload_) {
+        if ((err = payload_->encode(stream)) != srs_success) {
             return srs_error_wrap(err, "ts: mux payload");
         }
         srs_verbose("ts: mux payload ok.");
@@ -808,46 +808,46 @@ srs_error_t SrsTsPacket::encode(SrsBuffer *stream)
 
 void SrsTsPacket::padding(int nb_stuffings)
 {
-    if (!adaptation_field) {
+    if (!adaptation_field_) {
         SrsTsAdaptationField *af = new SrsTsAdaptationField(this);
-        adaptation_field = af;
+        adaptation_field_ = af;
 
-        af->adaption_field_length = 0; // calc in size.
-        af->discontinuity_indicator = 0;
-        af->random_access_indicator = 0;
-        af->elementary_stream_priority_indicator = 0;
-        af->PCR_flag = 0;
-        af->OPCR_flag = 0;
-        af->splicing_point_flag = 0;
-        af->transport_private_data_flag = 0;
-        af->adaptation_field_extension_flag = 0;
+        af->adaption_field_length_ = 0; // calc in size.
+        af->discontinuity_indicator_ = 0;
+        af->random_access_indicator_ = 0;
+        af->elementary_stream_priority_indicator_ = 0;
+        af->PCR_flag_ = 0;
+        af->OPCR_flag_ = 0;
+        af->splicing_point_flag_ = 0;
+        af->transport_private_data_flag_ = 0;
+        af->adaptation_field_extension_flag_ = 0;
 
         // consume the af size if possible.
         nb_stuffings = srs_max(0, nb_stuffings - af->size());
     }
 
-    adaptation_field->nb_af_reserved = nb_stuffings;
+    adaptation_field_->nb_af_reserved_ = nb_stuffings;
 
     // set payload with af.
-    if (adaption_field_control == SrsTsAdaptationFieldTypePayloadOnly) {
-        adaption_field_control = SrsTsAdaptationFieldTypeBoth;
+    if (adaption_field_control_ == SrsTsAdaptationFieldTypePayloadOnly) {
+        adaption_field_control_ = SrsTsAdaptationFieldTypeBoth;
     }
 }
 
 SrsTsPacket *SrsTsPacket::create_pat(SrsTsContext *context, int16_t pmt_number, int16_t pmt_pid)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
-    pkt->sync_byte = 0x47;
-    pkt->transport_error_indicator = 0;
-    pkt->payload_unit_start_indicator = 1;
-    pkt->transport_priority = 0;
-    pkt->pid = SrsTsPidPAT;
-    pkt->transport_scrambling_control = SrsTsScrambledDisabled;
-    pkt->adaption_field_control = SrsTsAdaptationFieldTypePayloadOnly;
-    pkt->continuity_counter = 0;
-    pkt->adaptation_field = NULL;
+    pkt->sync_byte_ = 0x47;
+    pkt->transport_error_indicator_ = 0;
+    pkt->payload_unit_start_indicator_ = 1;
+    pkt->transport_priority_ = 0;
+    pkt->pid_ = SrsTsPidPAT;
+    pkt->transport_scrambling_control_ = SrsTsScrambledDisabled;
+    pkt->adaption_field_control_ = SrsTsAdaptationFieldTypePayloadOnly;
+    pkt->continuity_counter_ = 0;
+    pkt->adaptation_field_ = NULL;
     SrsTsPayloadPAT *pat = new SrsTsPayloadPAT(pkt);
-    pkt->payload = pat;
+    pkt->payload_ = pat;
 
     pat->pointer_field = 0;
     pat->table_id = SrsTsPsiIdPas;
@@ -867,18 +867,18 @@ SrsTsPacket *SrsTsPacket::create_pmt(SrsTsContext *context,
                                      int16_t pmt_number, int16_t pmt_pid, int16_t vpid, SrsTsStream vs, int16_t apid, SrsTsStream as)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
-    pkt->sync_byte = 0x47;
-    pkt->transport_error_indicator = 0;
-    pkt->payload_unit_start_indicator = 1;
-    pkt->transport_priority = 0;
-    pkt->pid = (SrsTsPid)pmt_pid;
-    pkt->transport_scrambling_control = SrsTsScrambledDisabled;
-    pkt->adaption_field_control = SrsTsAdaptationFieldTypePayloadOnly;
+    pkt->sync_byte_ = 0x47;
+    pkt->transport_error_indicator_ = 0;
+    pkt->payload_unit_start_indicator_ = 1;
+    pkt->transport_priority_ = 0;
+    pkt->pid_ = (SrsTsPid)pmt_pid;
+    pkt->transport_scrambling_control_ = SrsTsScrambledDisabled;
+    pkt->adaption_field_control_ = SrsTsAdaptationFieldTypePayloadOnly;
     // TODO: FIXME: maybe should continuous in channel.
-    pkt->continuity_counter = 0;
-    pkt->adaptation_field = NULL;
+    pkt->continuity_counter_ = 0;
+    pkt->adaptation_field_ = NULL;
     SrsTsPayloadPMT *pmt = new SrsTsPayloadPMT(pkt);
-    pkt->payload = pmt;
+    pkt->payload_ = pmt;
 
     pmt->pointer_field = 0;
     pmt->table_id = SrsTsPsiIdPms;
@@ -920,115 +920,115 @@ SrsTsPacket *SrsTsPacket::create_pes_first(SrsTsContext *context,
                                            int64_t pcr, int64_t dts, int64_t pts, int size)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
-    pkt->sync_byte = 0x47;
-    pkt->transport_error_indicator = 0;
-    pkt->payload_unit_start_indicator = 1;
-    pkt->transport_priority = 0;
-    pkt->pid = (SrsTsPid)pid;
-    pkt->transport_scrambling_control = SrsTsScrambledDisabled;
-    pkt->adaption_field_control = SrsTsAdaptationFieldTypePayloadOnly;
-    pkt->continuity_counter = continuity_counter;
-    pkt->adaptation_field = NULL;
+    pkt->sync_byte_ = 0x47;
+    pkt->transport_error_indicator_ = 0;
+    pkt->payload_unit_start_indicator_ = 1;
+    pkt->transport_priority_ = 0;
+    pkt->pid_ = (SrsTsPid)pid;
+    pkt->transport_scrambling_control_ = SrsTsScrambledDisabled;
+    pkt->adaption_field_control_ = SrsTsAdaptationFieldTypePayloadOnly;
+    pkt->continuity_counter_ = continuity_counter;
+    pkt->adaptation_field_ = NULL;
     SrsTsPayloadPES *pes = new SrsTsPayloadPES(pkt);
-    pkt->payload = pes;
+    pkt->payload_ = pes;
 
     if (pcr >= 0) {
         // Ignore coverage for PCR, we don't use it in HLS.
         // LCOV_EXCL_START
         SrsTsAdaptationField *af = new SrsTsAdaptationField(pkt);
-        pkt->adaptation_field = af;
-        pkt->adaption_field_control = SrsTsAdaptationFieldTypeBoth;
+        pkt->adaptation_field_ = af;
+        pkt->adaption_field_control_ = SrsTsAdaptationFieldTypeBoth;
 
-        af->adaption_field_length = 0; // calc in size.
-        af->discontinuity_indicator = discontinuity;
-        af->random_access_indicator = 0;
-        af->elementary_stream_priority_indicator = 0;
-        af->PCR_flag = 1;
-        af->OPCR_flag = 0;
-        af->splicing_point_flag = 0;
-        af->transport_private_data_flag = 0;
-        af->adaptation_field_extension_flag = 0;
-        af->program_clock_reference_base = pcr;
-        af->program_clock_reference_extension = 0;
+        af->adaption_field_length_ = 0; // calc in size.
+        af->discontinuity_indicator_ = discontinuity;
+        af->random_access_indicator_ = 0;
+        af->elementary_stream_priority_indicator_ = 0;
+        af->PCR_flag_ = 1;
+        af->OPCR_flag_ = 0;
+        af->splicing_point_flag_ = 0;
+        af->transport_private_data_flag_ = 0;
+        af->adaptation_field_extension_flag_ = 0;
+        af->program_clock_reference_base_ = pcr;
+        af->program_clock_reference_extension_ = 0;
         // LCOV_EXCL_STOP
     }
 
-    pes->pes.packet_start_code_prefix = 0x01;
-    pes->pes.stream_id = (uint8_t)sid;
-    pes->pes.PES_packet_length = (size > 0xFFFF) ? 0 : size;
-    pes->pes.PES_scrambling_control = 0;
-    pes->pes.PES_priority = 0;
-    pes->pes.data_alignment_indicator = 0;
-    pes->pes.copyright = 0;
-    pes->pes.original_or_copy = 0;
-    pes->pes.PTS_DTS_flags = (dts == pts) ? 0x02 : 0x03;
-    pes->pes.ESCR_flag = 0;
-    pes->pes.ES_rate_flag = 0;
-    pes->pes.DSM_trick_mode_flag = 0;
-    pes->pes.additional_copy_info_flag = 0;
-    pes->pes.PES_CRC_flag = 0;
-    pes->pes.PES_extension_flag = 0;
-    pes->pes.PES_header_data_length = 0; // calc in size.
-    pes->pes.pts = pts;
-    pes->pes.dts = dts;
+    pes->pes_.packet_start_code_prefix_ = 0x01;
+    pes->pes_.stream_id_ = (uint8_t)sid;
+    pes->pes_.PES_packet_length_ = (size > 0xFFFF) ? 0 : size;
+    pes->pes_.PES_scrambling_control_ = 0;
+    pes->pes_.PES_priority_ = 0;
+    pes->pes_.data_alignment_indicator_ = 0;
+    pes->pes_.copyright_ = 0;
+    pes->pes_.original_or_copy_ = 0;
+    pes->pes_.PTS_DTS_flags_ = (dts == pts) ? 0x02 : 0x03;
+    pes->pes_.ESCR_flag_ = 0;
+    pes->pes_.ES_rate_flag_ = 0;
+    pes->pes_.DSM_trick_mode_flag_ = 0;
+    pes->pes_.additional_copy_info_flag_ = 0;
+    pes->pes_.PES_CRC_flag_ = 0;
+    pes->pes_.PES_extension_flag_ = 0;
+    pes->pes_.PES_header_data_length_ = 0; // calc in size.
+    pes->pes_.pts_ = pts;
+    pes->pes_.dts_ = dts;
     return pkt;
 }
 
 SrsTsPacket *SrsTsPacket::create_pes_continue(SrsTsContext *context, int16_t pid, SrsTsPESStreamId sid, uint8_t continuity_counter)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
-    pkt->sync_byte = 0x47;
-    pkt->transport_error_indicator = 0;
-    pkt->payload_unit_start_indicator = 0;
-    pkt->transport_priority = 0;
-    pkt->pid = (SrsTsPid)pid;
-    pkt->transport_scrambling_control = SrsTsScrambledDisabled;
-    pkt->adaption_field_control = SrsTsAdaptationFieldTypePayloadOnly;
-    pkt->continuity_counter = continuity_counter;
-    pkt->adaptation_field = NULL;
-    pkt->payload = NULL;
+    pkt->sync_byte_ = 0x47;
+    pkt->transport_error_indicator_ = 0;
+    pkt->payload_unit_start_indicator_ = 0;
+    pkt->transport_priority_ = 0;
+    pkt->pid_ = (SrsTsPid)pid;
+    pkt->transport_scrambling_control_ = SrsTsScrambledDisabled;
+    pkt->adaption_field_control_ = SrsTsAdaptationFieldTypePayloadOnly;
+    pkt->continuity_counter_ = continuity_counter;
+    pkt->adaptation_field_ = NULL;
+    pkt->payload_ = NULL;
 
     return pkt;
 }
 
 SrsTsAdaptationField::SrsTsAdaptationField(SrsTsPacket *pkt)
 {
-    packet = pkt;
+    packet_ = pkt;
 
-    adaption_field_length = 0;
-    discontinuity_indicator = 0;
-    random_access_indicator = 0;
-    elementary_stream_priority_indicator = 0;
-    PCR_flag = 0;
-    OPCR_flag = 0;
-    splicing_point_flag = 0;
-    transport_private_data_flag = 0;
-    adaptation_field_extension_flag = 0;
-    program_clock_reference_base = 0;
-    program_clock_reference_extension = 0;
-    original_program_clock_reference_base = 0;
-    original_program_clock_reference_extension = 0;
-    splice_countdown = 0;
-    adaptation_field_extension_length = 0;
-    ltw_flag = 0;
-    piecewise_rate_flag = 0;
-    seamless_splice_flag = 0;
-    ltw_valid_flag = 0;
-    ltw_offset = 0;
-    piecewise_rate = 0;
-    splice_type = 0;
-    DTS_next_AU0 = 0;
-    marker_bit0 = 0;
-    DTS_next_AU1 = 0;
-    marker_bit1 = 0;
-    DTS_next_AU2 = 0;
-    marker_bit2 = 0;
-    nb_af_ext_reserved = 0;
-    nb_af_reserved = 0;
+    adaption_field_length_ = 0;
+    discontinuity_indicator_ = 0;
+    random_access_indicator_ = 0;
+    elementary_stream_priority_indicator_ = 0;
+    PCR_flag_ = 0;
+    OPCR_flag_ = 0;
+    splicing_point_flag_ = 0;
+    transport_private_data_flag_ = 0;
+    adaptation_field_extension_flag_ = 0;
+    program_clock_reference_base_ = 0;
+    program_clock_reference_extension_ = 0;
+    original_program_clock_reference_base_ = 0;
+    original_program_clock_reference_extension_ = 0;
+    splice_countdown_ = 0;
+    adaptation_field_extension_length_ = 0;
+    ltw_flag_ = 0;
+    piecewise_rate_flag_ = 0;
+    seamless_splice_flag_ = 0;
+    ltw_valid_flag_ = 0;
+    ltw_offset_ = 0;
+    piecewise_rate_ = 0;
+    splice_type_ = 0;
+    DTS_next_AU0_ = 0;
+    marker_bit0_ = 0;
+    DTS_next_AU1_ = 0;
+    marker_bit1_ = 0;
+    DTS_next_AU2_ = 0;
+    marker_bit2_ = 0;
+    nb_af_ext_reserved_ = 0;
+    nb_af_reserved_ = 0;
 
-    const1_value0 = 0x3F;
-    const1_value1 = 0x1F;
-    const1_value2 = 0x3F;
+    const1_value0_ = 0x3F;
+    const1_value1_ = 0x1F;
+    const1_value2_ = 0x3F;
 }
 
 SrsTsAdaptationField::~SrsTsAdaptationField()
@@ -1042,21 +1042,21 @@ srs_error_t SrsTsAdaptationField::decode(SrsBuffer *stream)
     if (!stream->require(2)) {
         return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: decode af");
     }
-    adaption_field_length = stream->read_1bytes();
+    adaption_field_length_ = stream->read_1bytes();
 
     // When the adaptation_field_control value is '11', the value of the adaptation_field_length shall
     // be in the range 0 to 182.
-    if (packet->adaption_field_control == SrsTsAdaptationFieldTypeBoth && adaption_field_length > 182) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af length failed, must in [0, 182], actual=%d", adaption_field_length);
+    if (packet_->adaption_field_control_ == SrsTsAdaptationFieldTypeBoth && adaption_field_length_ > 182) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af length failed, must in [0, 182], actual=%d", adaption_field_length_);
     }
     // When the adaptation_field_control value is '10', the value of the adaptation_field_length shall
     // be 183.
-    if (packet->adaption_field_control == SrsTsAdaptationFieldTypeAdaptionOnly && adaption_field_length != 183) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af length failed, must be 183, actual=%d", adaption_field_length);
+    if (packet_->adaption_field_control_ == SrsTsAdaptationFieldTypeAdaptionOnly && adaption_field_length_ != 183) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af length failed, must be 183, actual=%d", adaption_field_length_);
     }
 
     // no adaptation field.
-    if (adaption_field_length == 0) {
+    if (adaption_field_length_ == 0) {
         srs_info("ts: demux af empty.");
         return err;
     }
@@ -1065,16 +1065,16 @@ srs_error_t SrsTsAdaptationField::decode(SrsBuffer *stream)
     int pos_af = stream->pos();
     int8_t tmpv = stream->read_1bytes();
 
-    discontinuity_indicator = (tmpv >> 7) & 0x01;
-    random_access_indicator = (tmpv >> 6) & 0x01;
-    elementary_stream_priority_indicator = (tmpv >> 5) & 0x01;
-    PCR_flag = (tmpv >> 4) & 0x01;
-    OPCR_flag = (tmpv >> 3) & 0x01;
-    splicing_point_flag = (tmpv >> 2) & 0x01;
-    transport_private_data_flag = (tmpv >> 1) & 0x01;
-    adaptation_field_extension_flag = tmpv & 0x01;
+    discontinuity_indicator_ = (tmpv >> 7) & 0x01;
+    random_access_indicator_ = (tmpv >> 6) & 0x01;
+    elementary_stream_priority_indicator_ = (tmpv >> 5) & 0x01;
+    PCR_flag_ = (tmpv >> 4) & 0x01;
+    OPCR_flag_ = (tmpv >> 3) & 0x01;
+    splicing_point_flag_ = (tmpv >> 2) & 0x01;
+    transport_private_data_flag_ = (tmpv >> 1) & 0x01;
+    adaptation_field_extension_flag_ = tmpv & 0x01;
 
-    if (PCR_flag) {
+    if (PCR_flag_) {
         if (!stream->require(6)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af PCR_flag");
         }
@@ -1094,14 +1094,14 @@ srs_error_t SrsTsAdaptationField::decode(SrsBuffer *stream)
 
         // @remark, use pcr base and ignore the extension
         // @see https://github.com/ossrs/srs/issues/250#issuecomment-71349370
-        program_clock_reference_extension = pcrv & 0x1ff;
-        const1_value0 = (pcrv >> 9) & 0x3F;
-        program_clock_reference_base = (pcrv >> 15) & 0x1ffffffffLL;
+        program_clock_reference_extension_ = pcrv & 0x1ff;
+        const1_value0_ = (pcrv >> 9) & 0x3F;
+        program_clock_reference_base_ = (pcrv >> 15) & 0x1ffffffffLL;
     }
 
     // Ignore coverage for bellow, we don't use it in HLS.
     // LCOV_EXCL_START
-    if (OPCR_flag) {
+    if (OPCR_flag_) {
         if (!stream->require(6)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af OPCR_flag");
         }
@@ -1121,19 +1121,19 @@ srs_error_t SrsTsAdaptationField::decode(SrsBuffer *stream)
 
         // @remark, use pcr base and ignore the extension
         // @see https://github.com/ossrs/srs/issues/250#issuecomment-71349370
-        original_program_clock_reference_extension = opcrv & 0x1ff;
-        const1_value2 = (opcrv >> 9) & 0x3F;
-        original_program_clock_reference_base = (opcrv >> 15) & 0x1ffffffffLL;
+        original_program_clock_reference_extension_ = opcrv & 0x1ff;
+        const1_value2_ = (opcrv >> 9) & 0x3F;
+        original_program_clock_reference_base_ = (opcrv >> 15) & 0x1ffffffffLL;
     }
 
-    if (splicing_point_flag) {
+    if (splicing_point_flag_) {
         if (!stream->require(1)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af splicing_point_flag");
         }
-        splice_countdown = stream->read_1bytes();
+        splice_countdown_ = stream->read_1bytes();
     }
 
-    if (transport_private_data_flag) {
+    if (transport_private_data_flag_) {
         if (!stream->require(1)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af transport_private_data_flag");
         }
@@ -1148,70 +1148,70 @@ srs_error_t SrsTsAdaptationField::decode(SrsBuffer *stream)
             if (!stream->require(transport_private_data_length)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af transport_private_data");
             }
-            transport_private_data.resize(transport_private_data_length);
-            stream->read_bytes(&transport_private_data[0], transport_private_data_length);
+            transport_private_data_.resize(transport_private_data_length);
+            stream->read_bytes(&transport_private_data_[0], transport_private_data_length);
         }
     }
 
-    if (adaptation_field_extension_flag) {
+    if (adaptation_field_extension_flag_) {
         int pos_af_ext = stream->pos();
 
         if (!stream->require(2)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af adaptation_field_extension_flag");
         }
-        adaptation_field_extension_length = (uint8_t)stream->read_1bytes();
+        adaptation_field_extension_length_ = (uint8_t)stream->read_1bytes();
         int8_t ltwfv = stream->read_1bytes();
 
-        piecewise_rate_flag = (ltwfv >> 6) & 0x01;
-        seamless_splice_flag = (ltwfv >> 5) & 0x01;
-        ltw_flag = (ltwfv >> 7) & 0x01;
-        const1_value1 = ltwfv & 0x1F;
+        piecewise_rate_flag_ = (ltwfv >> 6) & 0x01;
+        seamless_splice_flag_ = (ltwfv >> 5) & 0x01;
+        ltw_flag_ = (ltwfv >> 7) & 0x01;
+        const1_value1_ = ltwfv & 0x1F;
 
-        if (ltw_flag) {
+        if (ltw_flag_) {
             if (!stream->require(2)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af ltw_flag");
             }
-            ltw_offset = stream->read_2bytes();
+            ltw_offset_ = stream->read_2bytes();
 
-            ltw_valid_flag = (ltw_offset >> 15) & 0x01;
-            ltw_offset &= 0x7FFF;
+            ltw_valid_flag_ = (ltw_offset_ >> 15) & 0x01;
+            ltw_offset_ &= 0x7FFF;
         }
 
-        if (piecewise_rate_flag) {
+        if (piecewise_rate_flag_) {
             if (!stream->require(3)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af piecewise_rate_flag");
             }
-            piecewise_rate = stream->read_3bytes();
+            piecewise_rate_ = stream->read_3bytes();
 
-            piecewise_rate &= 0x3FFFFF;
+            piecewise_rate_ &= 0x3FFFFF;
         }
 
-        if (seamless_splice_flag) {
+        if (seamless_splice_flag_) {
             if (!stream->require(5)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: demux af seamless_splice_flag");
             }
-            marker_bit0 = stream->read_1bytes();
-            DTS_next_AU1 = stream->read_2bytes();
-            DTS_next_AU2 = stream->read_2bytes();
+            marker_bit0_ = stream->read_1bytes();
+            DTS_next_AU1_ = stream->read_2bytes();
+            DTS_next_AU2_ = stream->read_2bytes();
 
-            splice_type = (marker_bit0 >> 4) & 0x0F;
-            DTS_next_AU0 = (marker_bit0 >> 1) & 0x07;
-            marker_bit0 &= 0x01;
+            splice_type_ = (marker_bit0_ >> 4) & 0x0F;
+            DTS_next_AU0_ = (marker_bit0_ >> 1) & 0x07;
+            marker_bit0_ &= 0x01;
 
-            marker_bit1 = DTS_next_AU1 & 0x01;
-            DTS_next_AU1 = (DTS_next_AU1 >> 1) & 0x7FFF;
+            marker_bit1_ = DTS_next_AU1_ & 0x01;
+            DTS_next_AU1_ = (DTS_next_AU1_ >> 1) & 0x7FFF;
 
-            marker_bit2 = DTS_next_AU2 & 0x01;
-            DTS_next_AU2 = (DTS_next_AU2 >> 1) & 0x7FFF;
+            marker_bit2_ = DTS_next_AU2_ & 0x01;
+            DTS_next_AU2_ = (DTS_next_AU2_ >> 1) & 0x7FFF;
         }
 
-        nb_af_ext_reserved = adaptation_field_extension_length - (stream->pos() - pos_af_ext);
-        stream->skip(nb_af_ext_reserved);
+        nb_af_ext_reserved_ = adaptation_field_extension_length_ - (stream->pos() - pos_af_ext);
+        stream->skip(nb_af_ext_reserved_);
     }
     // LCOV_EXCL_STOP
 
-    nb_af_reserved = adaption_field_length - (stream->pos() - pos_af);
-    stream->skip(nb_af_reserved);
+    nb_af_reserved_ = adaption_field_length_ - (stream->pos() - pos_af);
+    stream->skip(nb_af_reserved_);
 
     srs_info("ts: af parsed, discontinuity=%d random=%d priority=%d PCR=%d OPCR=%d slicing=%d private=%d extension=%d/%d pcr=%" PRId64 "/%d opcr=%" PRId64 "/%d",
              discontinuity_indicator, random_access_indicator, elementary_stream_priority_indicator, PCR_flag, OPCR_flag, splicing_point_flag,
@@ -1225,15 +1225,15 @@ int SrsTsAdaptationField::size()
 {
     int sz = 2;
 
-    sz += PCR_flag ? 6 : 0;
-    sz += OPCR_flag ? 6 : 0;
-    sz += splicing_point_flag ? 1 : 0;
-    sz += transport_private_data_flag ? 1 + transport_private_data.size() : 0;
-    sz += adaptation_field_extension_flag ? 2 + adaptation_field_extension_length : 0;
-    sz += nb_af_ext_reserved;
-    sz += nb_af_reserved;
+    sz += PCR_flag_ ? 6 : 0;
+    sz += OPCR_flag_ ? 6 : 0;
+    sz += splicing_point_flag_ ? 1 : 0;
+    sz += transport_private_data_flag_ ? 1 + transport_private_data_.size() : 0;
+    sz += adaptation_field_extension_flag_ ? 2 + adaptation_field_extension_length_ : 0;
+    sz += nb_af_ext_reserved_;
+    sz += nb_af_reserved_;
 
-    adaption_field_length = sz - 1;
+    adaption_field_length_ = sz - 1;
 
     return sz;
 }
@@ -1245,37 +1245,37 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
     if (!stream->require(2)) {
         return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af");
     }
-    stream->write_1bytes(adaption_field_length);
+    stream->write_1bytes(adaption_field_length_);
 
     // When the adaptation_field_control value is '11', the value of the adaptation_field_length shall
     // be in the range 0 to 182.
-    if (packet->adaption_field_control == SrsTsAdaptationFieldTypeBoth && adaption_field_length > 182) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af length failed, must in [0, 182], actual=%d", adaption_field_length);
+    if (packet_->adaption_field_control_ == SrsTsAdaptationFieldTypeBoth && adaption_field_length_ > 182) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af length failed, must in [0, 182], actual=%d", adaption_field_length_);
     }
     // When the adaptation_field_control value is '10', the value of the adaptation_field_length shall
     // be 183.
-    if (packet->adaption_field_control == SrsTsAdaptationFieldTypeAdaptionOnly && adaption_field_length != 183) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af length failed, must be 183, actual=%d", adaption_field_length);
+    if (packet_->adaption_field_control_ == SrsTsAdaptationFieldTypeAdaptionOnly && adaption_field_length_ != 183) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af length failed, must be 183, actual=%d", adaption_field_length_);
     }
 
     // no adaptation field.
-    if (adaption_field_length == 0) {
+    if (adaption_field_length_ == 0) {
         srs_info("ts: mux af empty.");
         return err;
     }
-    int8_t tmpv = adaptation_field_extension_flag & 0x01;
-    tmpv |= (discontinuity_indicator << 7) & 0x80;
-    tmpv |= (random_access_indicator << 6) & 0x40;
-    tmpv |= (elementary_stream_priority_indicator << 5) & 0x20;
-    tmpv |= (PCR_flag << 4) & 0x10;
-    tmpv |= (OPCR_flag << 3) & 0x08;
-    tmpv |= (splicing_point_flag << 2) & 0x04;
-    tmpv |= (transport_private_data_flag << 1) & 0x02;
+    int8_t tmpv = adaptation_field_extension_flag_ & 0x01;
+    tmpv |= (discontinuity_indicator_ << 7) & 0x80;
+    tmpv |= (random_access_indicator_ << 6) & 0x40;
+    tmpv |= (elementary_stream_priority_indicator_ << 5) & 0x20;
+    tmpv |= (PCR_flag_ << 4) & 0x10;
+    tmpv |= (OPCR_flag_ << 3) & 0x08;
+    tmpv |= (splicing_point_flag_ << 2) & 0x04;
+    tmpv |= (transport_private_data_flag_ << 1) & 0x02;
     stream->write_1bytes(tmpv);
 
     // Ignore the coverage bellow, for we don't use them in HLS.
     // LCOV_EXCL_START
-    if (PCR_flag) {
+    if (PCR_flag_) {
         if (!stream->require(6)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af PCR_flag");
         }
@@ -1286,9 +1286,9 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
 
         // @remark, use pcr base and ignore the extension
         // @see https://github.com/ossrs/srs/issues/250#issuecomment-71349370
-        int64_t pcrv = program_clock_reference_extension & 0x1ff;
-        pcrv |= (const1_value0 << 9) & 0x7E00;
-        pcrv |= (program_clock_reference_base << 15) & 0xFFFFFFFF8000LL;
+        int64_t pcrv = program_clock_reference_extension_ & 0x1ff;
+        pcrv |= (const1_value0_ << 9) & 0x7E00;
+        pcrv |= (program_clock_reference_base_ << 15) & 0xFFFFFFFF8000LL;
 
         pp = (char *)&pcrv;
         *p++ = pp[5];
@@ -1299,7 +1299,7 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
         *p++ = pp[0];
     }
 
-    if (OPCR_flag) {
+    if (OPCR_flag_) {
         if (!stream->require(6)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af OPCR_flag");
         }
@@ -1307,39 +1307,39 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
         srs_warn("ts: mux af ignore OPCR");
     }
 
-    if (splicing_point_flag) {
+    if (splicing_point_flag_) {
         if (!stream->require(1)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af splicing_point_flag");
         }
-        stream->write_1bytes(splice_countdown);
+        stream->write_1bytes(splice_countdown_);
     }
 
-    if (transport_private_data_flag) {
+    if (transport_private_data_flag_) {
         if (!stream->require(1)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af transport_private_data_flag");
         }
-        stream->write_1bytes(transport_private_data.size());
+        stream->write_1bytes(transport_private_data_.size());
 
-        if (!transport_private_data.empty()) {
-            if (!stream->require((int)transport_private_data.size())) {
+        if (!transport_private_data_.empty()) {
+            if (!stream->require((int)transport_private_data_.size())) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af transport_private_data");
             }
-            stream->write_bytes(&transport_private_data[0], (int)transport_private_data.size());
+            stream->write_bytes(&transport_private_data_[0], (int)transport_private_data_.size());
         }
     }
 
-    if (adaptation_field_extension_flag) {
+    if (adaptation_field_extension_flag_) {
         if (!stream->require(2)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af adaptation_field_extension_flag");
         }
-        stream->write_1bytes(adaptation_field_extension_length);
-        int8_t ltwfv = const1_value1 & 0x1F;
-        ltwfv |= (ltw_flag << 7) & 0x80;
-        ltwfv |= (piecewise_rate_flag << 6) & 0x40;
-        ltwfv |= (seamless_splice_flag << 5) & 0x20;
+        stream->write_1bytes(adaptation_field_extension_length_);
+        int8_t ltwfv = const1_value1_ & 0x1F;
+        ltwfv |= (ltw_flag_ << 7) & 0x80;
+        ltwfv |= (piecewise_rate_flag_ << 6) & 0x40;
+        ltwfv |= (seamless_splice_flag_ << 5) & 0x20;
         stream->write_1bytes(ltwfv);
 
-        if (ltw_flag) {
+        if (ltw_flag_) {
             if (!stream->require(2)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af ltw_flag");
             }
@@ -1347,7 +1347,7 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
             srs_warn("ts: mux af ignore ltw");
         }
 
-        if (piecewise_rate_flag) {
+        if (piecewise_rate_flag_) {
             if (!stream->require(3)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af piecewise_rate_flag");
             }
@@ -1355,7 +1355,7 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
             srs_warn("ts: mux af ignore piecewise_rate");
         }
 
-        if (seamless_splice_flag) {
+        if (seamless_splice_flag_) {
             if (!stream->require(5)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_AF, "ts: mux af seamless_splice_flag");
             }
@@ -1363,14 +1363,14 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
             srs_warn("ts: mux af ignore seamless_splice");
         }
 
-        if (nb_af_ext_reserved) {
-            stream->skip(nb_af_ext_reserved);
+        if (nb_af_ext_reserved_) {
+            stream->skip(nb_af_ext_reserved_);
         }
     }
     // LCOV_EXCL_STOP
 
-    if (nb_af_reserved) {
-        stream->skip(nb_af_reserved);
+    if (nb_af_reserved_) {
+        stream->skip(nb_af_reserved_);
     }
 
     srs_info("ts: af parsed, discontinuity=%d random=%d priority=%d PCR=%d OPCR=%d slicing=%d private=%d extension=%d/%d pcr=%" PRId64 "/%d opcr=%" PRId64 "/%d",
@@ -1383,7 +1383,7 @@ srs_error_t SrsTsAdaptationField::encode(SrsBuffer *stream)
 
 SrsTsPayload::SrsTsPayload(SrsTsPacket *p)
 {
-    packet = p;
+    packet_ = p;
 }
 
 SrsTsPayload::~SrsTsPayload()
@@ -1392,46 +1392,46 @@ SrsTsPayload::~SrsTsPayload()
 
 SrsMpegPES::SrsMpegPES()
 {
-    nb_stuffings = 0;
-    nb_bytes = 0;
-    nb_paddings = 0;
-    const2bits = 0x02;
-    const1_value0 = 0x07;
+    nb_stuffings_ = 0;
+    nb_bytes_ = 0;
+    nb_paddings_ = 0;
+    const2bits_ = 0x02;
+    const1_value0_ = 0x07;
 
-    packet_start_code_prefix = 0;
-    stream_id = 0;
-    PES_packet_length = 0;
-    PES_scrambling_control = 0;
-    PES_priority = 0;
-    data_alignment_indicator = 0;
-    copyright = 0;
-    original_or_copy = 0;
-    PTS_DTS_flags = 0;
-    ESCR_flag = 0;
-    ES_rate_flag = 0;
-    DSM_trick_mode_flag = 0;
-    additional_copy_info_flag = 0;
-    PES_CRC_flag = 0;
-    PES_extension_flag = 0;
-    PES_header_data_length = 0;
-    pts = dts = 0;
-    ESCR_base = 0;
-    ESCR_extension = 0;
-    ES_rate = 0;
-    trick_mode_control = 0;
-    trick_mode_value = 0;
-    additional_copy_info = 0;
-    previous_PES_packet_CRC = 0;
-    PES_private_data_flag = 0;
-    pack_header_field_flag = 0;
-    program_packet_sequence_counter_flag = 0;
-    P_STD_buffer_flag = 0;
-    PES_extension_flag_2 = 0;
-    program_packet_sequence_counter = 0;
-    MPEG1_MPEG2_identifier = 0;
-    original_stuff_length = 0;
-    P_STD_buffer_scale = 0;
-    P_STD_buffer_size = 0;
+    packet_start_code_prefix_ = 0;
+    stream_id_ = 0;
+    PES_packet_length_ = 0;
+    PES_scrambling_control_ = 0;
+    PES_priority_ = 0;
+    data_alignment_indicator_ = 0;
+    copyright_ = 0;
+    original_or_copy_ = 0;
+    PTS_DTS_flags_ = 0;
+    ESCR_flag_ = 0;
+    ES_rate_flag_ = 0;
+    DSM_trick_mode_flag_ = 0;
+    additional_copy_info_flag_ = 0;
+    PES_CRC_flag_ = 0;
+    PES_extension_flag_ = 0;
+    PES_header_data_length_ = 0;
+    pts_ = dts_ = 0;
+    ESCR_base_ = 0;
+    ESCR_extension_ = 0;
+    ES_rate_ = 0;
+    trick_mode_control_ = 0;
+    trick_mode_value_ = 0;
+    additional_copy_info_ = 0;
+    previous_PES_packet_CRC_ = 0;
+    PES_private_data_flag_ = 0;
+    pack_header_field_flag_ = 0;
+    program_packet_sequence_counter_flag_ = 0;
+    P_STD_buffer_flag_ = 0;
+    PES_extension_flag_2_ = 0;
+    program_packet_sequence_counter_ = 0;
+    MPEG1_MPEG2_identifier_ = 0;
+    original_stuff_length_ = 0;
+    P_STD_buffer_scale_ = 0;
+    P_STD_buffer_size_ = 0;
 
     has_payload_ = false;
     nb_payload_ = 0;
@@ -1450,22 +1450,22 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
         return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PSE");
     }
     // 3B
-    packet_start_code_prefix = stream->read_3bytes();
+    packet_start_code_prefix_ = stream->read_3bytes();
     // 1B
-    stream_id = stream->read_1bytes();
+    stream_id_ = stream->read_1bytes();
     // 2B
-    PES_packet_length = stream->read_2bytes();
+    PES_packet_length_ = stream->read_2bytes();
 
     // check the packet start prefix.
-    packet_start_code_prefix &= 0xFFFFFF;
-    if (packet_start_code_prefix != 0x01) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PES start code failed, expect=0x01, actual=%#x", packet_start_code_prefix);
+    packet_start_code_prefix_ &= 0xFFFFFF;
+    if (packet_start_code_prefix_ != 0x01) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PES start code failed, expect=0x01, actual=%#x", packet_start_code_prefix_);
     }
     int pos_packet = stream->pos();
 
     // @remark the sid indicates the elementary stream format.
     //      the SrsTsPESStreamIdAudio and SrsTsPESStreamIdVideo is start by 0b110 or 0b1110
-    SrsTsPESStreamId sid = (SrsTsPESStreamId)stream_id;
+    SrsTsPESStreamId sid = (SrsTsPESStreamId)stream_id_;
     if (sid != SrsTsPESStreamIdProgramStreamMap && sid != SrsTsPESStreamIdPaddingStream && sid != SrsTsPESStreamIdPrivateStream2 && sid != SrsTsPESStreamIdEcmStream && sid != SrsTsPESStreamIdEmmStream && sid != SrsTsPESStreamIdProgramStreamDirectory && sid != SrsTsPESStreamIdDsmccStream && sid != SrsTsPESStreamIdH2221TypeE) {
         // 3B flags.
         if (!stream->require(3)) {
@@ -1476,59 +1476,59 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
         // 1B
         int8_t pefv = stream->read_1bytes();
         // 1B
-        PES_header_data_length = stream->read_1bytes();
+        PES_header_data_length_ = stream->read_1bytes();
         // position of header start.
         int pos_header = stream->pos();
 
-        const2bits = (oocv >> 6) & 0x03;
-        PES_scrambling_control = (oocv >> 4) & 0x03;
-        PES_priority = (oocv >> 3) & 0x01;
-        data_alignment_indicator = (oocv >> 2) & 0x01;
-        copyright = (oocv >> 1) & 0x01;
-        original_or_copy = oocv & 0x01;
+        const2bits_ = (oocv >> 6) & 0x03;
+        PES_scrambling_control_ = (oocv >> 4) & 0x03;
+        PES_priority_ = (oocv >> 3) & 0x01;
+        data_alignment_indicator_ = (oocv >> 2) & 0x01;
+        copyright_ = (oocv >> 1) & 0x01;
+        original_or_copy_ = oocv & 0x01;
 
-        PTS_DTS_flags = (pefv >> 6) & 0x03;
-        ESCR_flag = (pefv >> 5) & 0x01;
-        ES_rate_flag = (pefv >> 4) & 0x01;
-        DSM_trick_mode_flag = (pefv >> 3) & 0x01;
-        additional_copy_info_flag = (pefv >> 2) & 0x01;
-        PES_CRC_flag = (pefv >> 1) & 0x01;
-        PES_extension_flag = pefv & 0x01;
+        PTS_DTS_flags_ = (pefv >> 6) & 0x03;
+        ESCR_flag_ = (pefv >> 5) & 0x01;
+        ES_rate_flag_ = (pefv >> 4) & 0x01;
+        DSM_trick_mode_flag_ = (pefv >> 3) & 0x01;
+        additional_copy_info_flag_ = (pefv >> 2) & 0x01;
+        PES_CRC_flag_ = (pefv >> 1) & 0x01;
+        PES_extension_flag_ = pefv & 0x01;
 
         // check required together.
         int nb_required = 0;
-        nb_required += (PTS_DTS_flags == 0x2) ? 5 : 0;
-        nb_required += (PTS_DTS_flags == 0x3) ? 10 : 0;
-        nb_required += ESCR_flag ? 6 : 0;
-        nb_required += ES_rate_flag ? 3 : 0;
-        nb_required += DSM_trick_mode_flag ? 1 : 0;
-        nb_required += additional_copy_info_flag ? 1 : 0;
-        nb_required += PES_CRC_flag ? 2 : 0;
-        nb_required += PES_extension_flag ? 1 : 0;
+        nb_required += (PTS_DTS_flags_ == 0x2) ? 5 : 0;
+        nb_required += (PTS_DTS_flags_ == 0x3) ? 10 : 0;
+        nb_required += ESCR_flag_ ? 6 : 0;
+        nb_required += ES_rate_flag_ ? 3 : 0;
+        nb_required += DSM_trick_mode_flag_ ? 1 : 0;
+        nb_required += additional_copy_info_flag_ ? 1 : 0;
+        nb_required += PES_CRC_flag_ ? 2 : 0;
+        nb_required += PES_extension_flag_ ? 1 : 0;
         if (!stream->require(nb_required)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PSE payload");
         }
 
         // 5B
-        if (PTS_DTS_flags == 0x2) {
-            if ((err = decode_33bits_dts_pts(stream, &pts)) != srs_success) {
+        if (PTS_DTS_flags_ == 0x2) {
+            if ((err = decode_33bits_dts_pts(stream, &pts_)) != srs_success) {
                 return srs_error_wrap(err, "dts/pts");
             }
-            dts = pts;
+            dts_ = pts_;
         }
 
         // 10B
-        if (PTS_DTS_flags == 0x3) {
-            if ((err = decode_33bits_dts_pts(stream, &pts)) != srs_success) {
+        if (PTS_DTS_flags_ == 0x3) {
+            if ((err = decode_33bits_dts_pts(stream, &pts_)) != srs_success) {
                 return srs_error_wrap(err, "dts/pts");
             }
-            if ((err = decode_33bits_dts_pts(stream, &dts)) != srs_success) {
+            if ((err = decode_33bits_dts_pts(stream, &dts_)) != srs_success) {
                 return srs_error_wrap(err, "dts/pts");
             }
 
             // check sync, the diff of dts and pts should never greater than 1s.
-            if (dts - pts > 90000 || pts - dts > 90000) {
-                srs_warn("ts: sync dts=%" PRId64 ", pts=%" PRId64, dts, pts);
+            if (dts_ - pts_ > 90000 || pts_ - dts_ > 90000) {
+                srs_warn("ts: sync dts=%" PRId64 ", pts=%" PRId64, dts_, pts_);
             }
         }
 
@@ -1536,71 +1536,71 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
         // LCOV_EXCL_START
 
         // 6B
-        if (ESCR_flag) {
-            ESCR_extension = 0;
-            ESCR_base = 0;
+        if (ESCR_flag_) {
+            ESCR_extension_ = 0;
+            ESCR_base_ = 0;
 
             stream->skip(6);
             srs_warn("ts: demux PES, ignore the escr.");
         }
 
         // 3B
-        if (ES_rate_flag) {
-            ES_rate = stream->read_3bytes();
+        if (ES_rate_flag_) {
+            ES_rate_ = stream->read_3bytes();
 
-            ES_rate = ES_rate >> 1;
-            ES_rate &= 0x3FFFFF;
+            ES_rate_ = ES_rate_ >> 1;
+            ES_rate_ &= 0x3FFFFF;
         }
 
         // 1B
-        if (DSM_trick_mode_flag) {
-            trick_mode_control = stream->read_1bytes();
+        if (DSM_trick_mode_flag_) {
+            trick_mode_control_ = stream->read_1bytes();
 
-            trick_mode_value = trick_mode_control & 0x1f;
-            trick_mode_control = (trick_mode_control >> 5) & 0x03;
+            trick_mode_value_ = trick_mode_control_ & 0x1f;
+            trick_mode_control_ = (trick_mode_control_ >> 5) & 0x03;
         }
 
         // 1B
-        if (additional_copy_info_flag) {
-            additional_copy_info = stream->read_1bytes();
+        if (additional_copy_info_flag_) {
+            additional_copy_info_ = stream->read_1bytes();
 
-            additional_copy_info &= 0x7f;
+            additional_copy_info_ &= 0x7f;
         }
 
         // 2B
-        if (PES_CRC_flag) {
-            previous_PES_packet_CRC = stream->read_2bytes();
+        if (PES_CRC_flag_) {
+            previous_PES_packet_CRC_ = stream->read_2bytes();
         }
 
         // 1B
-        if (PES_extension_flag) {
+        if (PES_extension_flag_) {
             int8_t efv = stream->read_1bytes();
 
-            PES_private_data_flag = (efv >> 7) & 0x01;
-            pack_header_field_flag = (efv >> 6) & 0x01;
-            program_packet_sequence_counter_flag = (efv >> 5) & 0x01;
-            P_STD_buffer_flag = (efv >> 4) & 0x01;
-            const1_value0 = (efv >> 1) & 0x07;
-            PES_extension_flag_2 = efv & 0x01;
+            PES_private_data_flag_ = (efv >> 7) & 0x01;
+            pack_header_field_flag_ = (efv >> 6) & 0x01;
+            program_packet_sequence_counter_flag_ = (efv >> 5) & 0x01;
+            P_STD_buffer_flag_ = (efv >> 4) & 0x01;
+            const1_value0_ = (efv >> 1) & 0x07;
+            PES_extension_flag_2_ = efv & 0x01;
 
             nb_required = 0;
-            nb_required += PES_private_data_flag ? 16 : 0;
-            nb_required += pack_header_field_flag ? 1 : 0; // 1+x bytes.
-            nb_required += program_packet_sequence_counter_flag ? 2 : 0;
-            nb_required += P_STD_buffer_flag ? 2 : 0;
-            nb_required += PES_extension_flag_2 ? 1 : 0; // 1+x bytes.
+            nb_required += PES_private_data_flag_ ? 16 : 0;
+            nb_required += pack_header_field_flag_ ? 1 : 0; // 1+x bytes.
+            nb_required += program_packet_sequence_counter_flag_ ? 2 : 0;
+            nb_required += P_STD_buffer_flag_ ? 2 : 0;
+            nb_required += PES_extension_flag_2_ ? 1 : 0; // 1+x bytes.
             if (!stream->require(nb_required)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PSE ext payload");
             }
 
             // 16B
-            if (PES_private_data_flag) {
-                PES_private_data.resize(16);
-                stream->read_bytes(&PES_private_data[0], 16);
+            if (PES_private_data_flag_) {
+                PES_private_data_.resize(16);
+                stream->read_bytes(&PES_private_data_[0], 16);
             }
 
             // (1+x)B
-            if (pack_header_field_flag) {
+            if (pack_header_field_flag_) {
                 // This is an 8-bit field which indicates the length, in bytes, of the pack_header_field()
                 uint8_t pack_field_length = stream->read_1bytes();
                 if (pack_field_length > 0) {
@@ -1609,34 +1609,34 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
                     if (!stream->require(nb_required)) {
                         return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PSE ext pack");
                     }
-                    pack_field.resize(pack_field_length);
-                    stream->read_bytes(&pack_field[0], pack_field_length);
+                    pack_field_.resize(pack_field_length);
+                    stream->read_bytes(&pack_field_[0], pack_field_length);
                 }
             }
 
             // 2B
-            if (program_packet_sequence_counter_flag) {
-                program_packet_sequence_counter = stream->read_1bytes();
-                program_packet_sequence_counter &= 0x7f;
+            if (program_packet_sequence_counter_flag_) {
+                program_packet_sequence_counter_ = stream->read_1bytes();
+                program_packet_sequence_counter_ &= 0x7f;
 
-                original_stuff_length = stream->read_1bytes();
-                MPEG1_MPEG2_identifier = (original_stuff_length >> 6) & 0x01;
-                original_stuff_length &= 0x3f;
+                original_stuff_length_ = stream->read_1bytes();
+                MPEG1_MPEG2_identifier_ = (original_stuff_length_ >> 6) & 0x01;
+                original_stuff_length_ &= 0x3f;
             }
 
             // 2B
-            if (P_STD_buffer_flag) {
-                P_STD_buffer_size = stream->read_2bytes();
+            if (P_STD_buffer_flag_) {
+                P_STD_buffer_size_ = stream->read_2bytes();
 
                 // '01'
                 // int8_t const2bits = (P_STD_buffer_scale >>14) & 0x03;
 
-                P_STD_buffer_scale = (P_STD_buffer_scale >> 13) & 0x01;
-                P_STD_buffer_size &= 0x1FFF;
+                P_STD_buffer_scale_ = (P_STD_buffer_size_ >> 13) & 0x01;
+                P_STD_buffer_size_ &= 0x1FFF;
             }
 
             // (1+x)B
-            if (PES_extension_flag_2) {
+            if (PES_extension_flag_2_) {
                 /**
                  * This is a 7-bit field which specifies the length, in bytes, of the data following this field in
                  * the PES extension field up to and including any reserved bytes.
@@ -1648,19 +1648,19 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
                     if (!stream->require(PES_extension_field_length)) {
                         return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PSE ext field");
                     }
-                    PES_extension_field.resize(PES_extension_field_length);
-                    stream->read_bytes(&PES_extension_field[0], PES_extension_field_length);
+                    PES_extension_field_.resize(PES_extension_field_length);
+                    stream->read_bytes(&PES_extension_field_[0], PES_extension_field_length);
                 }
             }
         }
 
         // stuffing_byte
-        nb_stuffings = PES_header_data_length - (stream->pos() - pos_header);
-        if (nb_stuffings > 0) {
-            if (!stream->require(nb_stuffings)) {
+        nb_stuffings_ = PES_header_data_length_ - (stream->pos() - pos_header);
+        if (nb_stuffings_ > 0) {
+            if (!stream->require(nb_stuffings_)) {
                 return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PSE stuffings");
             }
-            stream->skip(nb_stuffings);
+            stream->skip(nb_stuffings_);
         }
 
         // LCOV_EXCL_STOP
@@ -1677,10 +1677,10 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
         // should dump all left bytes in stream to message util next unit start packet.
         // Otherwise, the PES_packet_length should greater than 0, which is a specified length, then we also dump
         // the left bytes in stream, in such case, the nb_payload_ is the actual size of payload.
-        if (PES_packet_length > 0) {
-            int nb_packet = PES_packet_length - (stream->pos() - pos_packet);
+        if (PES_packet_length_ > 0) {
+            int nb_packet = PES_packet_length_ - (stream->pos() - pos_packet);
             if (nb_packet < 0) {
-                return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: Invalid PES_packet_length=%d, pos_packet=%d, pos=%d", PES_packet_length, pos_packet, stream->pos());
+                return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: Invalid PES_packet_length=%d, pos_packet=%d, pos=%d", PES_packet_length_, pos_packet, stream->pos());
             }
             nb_payload_ = nb_packet;
         }
@@ -1698,26 +1698,26 @@ srs_error_t SrsMpegPES::decode(SrsBuffer *stream)
         // }
 
         // For PS, the PES packet should never be empty, because there is no continuity for PS packet.
-        if (PES_packet_length <= 0) {
-            return srs_error_new(ERROR_GB_PS_PSE, "ts: Invalid PES_packet_length=%d for PS", PES_packet_length);
+        if (PES_packet_length_ <= 0) {
+            return srs_error_new(ERROR_GB_PS_PSE, "ts: Invalid PES_packet_length=%d for PS", PES_packet_length_);
         }
 
         // The pos_packet equals to stream pos, so the PES_packet_length is actually the payload length.
-        nb_payload_ = PES_packet_length;
+        nb_payload_ = PES_packet_length_;
         has_payload_ = true;
     } else if (sid == SrsTsPESStreamIdPaddingStream) {
         // for (i = 0; i < PES_packet_length; i++) {
         //         padding_byte
         // }
-        nb_paddings = stream->size() - stream->pos();
-        stream->skip(nb_paddings);
+        nb_paddings_ = stream->size() - stream->pos();
+        stream->skip(nb_paddings_);
         srs_info("ts: drop %dB padding bytes", nb_paddings);
 
         // LCOV_EXCL_STOP
     } else {
         int nb_drop = stream->size() - stream->pos();
         stream->skip(nb_drop);
-        srs_warn("ts: drop the pes packet %dB for stream_id=%#x", nb_drop, stream_id);
+        srs_warn("ts: drop the pes packet %dB for stream_id=%#x", nb_drop, stream_id_);
     }
 
     return err;
@@ -1727,36 +1727,36 @@ int SrsMpegPES::size()
 {
     int sz = 0;
 
-    PES_header_data_length = 0;
-    SrsTsPESStreamId sid = (SrsTsPESStreamId)stream_id;
+    PES_header_data_length_ = 0;
+    SrsTsPESStreamId sid = (SrsTsPESStreamId)stream_id_;
 
     if (sid != SrsTsPESStreamIdProgramStreamMap && sid != SrsTsPESStreamIdPaddingStream && sid != SrsTsPESStreamIdPrivateStream2 && sid != SrsTsPESStreamIdEcmStream && sid != SrsTsPESStreamIdEmmStream && sid != SrsTsPESStreamIdProgramStreamDirectory && sid != SrsTsPESStreamIdDsmccStream && sid != SrsTsPESStreamIdH2221TypeE) {
         sz += 6;
         sz += 3;
-        PES_header_data_length = sz;
+        PES_header_data_length_ = sz;
 
-        sz += (PTS_DTS_flags == 0x2) ? 5 : 0;
-        sz += (PTS_DTS_flags == 0x3) ? 10 : 0;
-        sz += ESCR_flag ? 6 : 0;
-        sz += ES_rate_flag ? 3 : 0;
-        sz += DSM_trick_mode_flag ? 1 : 0;
-        sz += additional_copy_info_flag ? 1 : 0;
-        sz += PES_CRC_flag ? 2 : 0;
-        sz += PES_extension_flag ? 1 : 0;
+        sz += (PTS_DTS_flags_ == 0x2) ? 5 : 0;
+        sz += (PTS_DTS_flags_ == 0x3) ? 10 : 0;
+        sz += ESCR_flag_ ? 6 : 0;
+        sz += ES_rate_flag_ ? 3 : 0;
+        sz += DSM_trick_mode_flag_ ? 1 : 0;
+        sz += additional_copy_info_flag_ ? 1 : 0;
+        sz += PES_CRC_flag_ ? 2 : 0;
+        sz += PES_extension_flag_ ? 1 : 0;
 
-        if (PES_extension_flag) {
+        if (PES_extension_flag_) {
             // Ignore coverage bellow, for we don't use them in HLS.
             // LCOV_EXCL_START
-            sz += PES_private_data_flag ? 16 : 0;
-            sz += pack_header_field_flag ? 1 + pack_field.size() : 0; // 1+x bytes.
-            sz += program_packet_sequence_counter_flag ? 2 : 0;
-            sz += P_STD_buffer_flag ? 2 : 0;
-            sz += PES_extension_flag_2 ? 1 + PES_extension_field.size() : 0; // 1+x bytes.
+            sz += PES_private_data_flag_ ? 16 : 0;
+            sz += pack_header_field_flag_ ? 1 + pack_field_.size() : 0; // 1+x bytes.
+            sz += program_packet_sequence_counter_flag_ ? 2 : 0;
+            sz += P_STD_buffer_flag_ ? 2 : 0;
+            sz += PES_extension_flag_2_ ? 1 + PES_extension_field_.size() : 0; // 1+x bytes.
             // LCOV_EXCL_STOP
         }
-        PES_header_data_length = sz - PES_header_data_length;
+        PES_header_data_length_ = sz - PES_header_data_length_;
 
-        sz += nb_stuffings;
+        sz += nb_stuffings_;
 
         // packet bytes
     } else if (sid == SrsTsPESStreamIdProgramStreamMap || sid == SrsTsPESStreamIdPrivateStream2 || sid == SrsTsPESStreamIdEcmStream || sid == SrsTsPESStreamIdEmmStream || sid == SrsTsPESStreamIdProgramStreamDirectory || sid == SrsTsPESStreamIdDsmccStream || sid == SrsTsPESStreamIdH2221TypeE) {
@@ -1778,23 +1778,23 @@ srs_error_t SrsMpegPES::encode(SrsBuffer *stream)
     }
 
     // 3B
-    stream->write_3bytes(packet_start_code_prefix);
+    stream->write_3bytes(packet_start_code_prefix_);
     // 1B
-    stream->write_1bytes(stream_id);
+    stream->write_1bytes(stream_id_);
     // 2B
     // the PES_packet_length is the actual bytes size, the pplv write to ts
     // is the actual bytes plus the header size.
     int32_t pplv = 0;
-    if (PES_packet_length > 0) {
-        pplv = PES_packet_length + 3 + PES_header_data_length;
+    if (PES_packet_length_ > 0) {
+        pplv = PES_packet_length_ + 3 + PES_header_data_length_;
         pplv = (pplv > 0xFFFF) ? 0 : pplv;
     }
     stream->write_2bytes(pplv);
 
     // check the packet start prefix.
-    packet_start_code_prefix &= 0xFFFFFF;
-    if (packet_start_code_prefix != 0x01) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: mux PSE start code failed, expect=0x01, actual=%#x", packet_start_code_prefix);
+    packet_start_code_prefix_ &= 0xFFFFFF;
+    if (packet_start_code_prefix_ != 0x01) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: mux PSE start code failed, expect=0x01, actual=%#x", packet_start_code_prefix_);
     }
 
     // 3B flags.
@@ -1802,58 +1802,58 @@ srs_error_t SrsMpegPES::encode(SrsBuffer *stream)
         return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: mux PSE flags");
     }
     // 1B
-    int8_t oocv = original_or_copy & 0x01;
-    oocv |= (const2bits << 6) & 0xC0;
-    oocv |= (PES_scrambling_control << 4) & 0x30;
-    oocv |= (PES_priority << 3) & 0x08;
-    oocv |= (data_alignment_indicator << 2) & 0x04;
-    oocv |= (copyright << 1) & 0x02;
+    int8_t oocv = original_or_copy_ & 0x01;
+    oocv |= (const2bits_ << 6) & 0xC0;
+    oocv |= (PES_scrambling_control_ << 4) & 0x30;
+    oocv |= (PES_priority_ << 3) & 0x08;
+    oocv |= (data_alignment_indicator_ << 2) & 0x04;
+    oocv |= (copyright_ << 1) & 0x02;
     stream->write_1bytes(oocv);
     // 1B
-    int8_t pefv = PES_extension_flag & 0x01;
-    pefv |= (PTS_DTS_flags << 6) & 0xC0;
-    pefv |= (ESCR_flag << 5) & 0x20;
-    pefv |= (ES_rate_flag << 4) & 0x10;
-    pefv |= (DSM_trick_mode_flag << 3) & 0x08;
-    pefv |= (additional_copy_info_flag << 2) & 0x04;
-    pefv |= (PES_CRC_flag << 1) & 0x02;
+    int8_t pefv = PES_extension_flag_ & 0x01;
+    pefv |= (PTS_DTS_flags_ << 6) & 0xC0;
+    pefv |= (ESCR_flag_ << 5) & 0x20;
+    pefv |= (ES_rate_flag_ << 4) & 0x10;
+    pefv |= (DSM_trick_mode_flag_ << 3) & 0x08;
+    pefv |= (additional_copy_info_flag_ << 2) & 0x04;
+    pefv |= (PES_CRC_flag_ << 1) & 0x02;
     stream->write_1bytes(pefv);
     // 1B
-    stream->write_1bytes(PES_header_data_length);
+    stream->write_1bytes(PES_header_data_length_);
 
     // check required together.
     int nb_required = 0;
-    nb_required += (PTS_DTS_flags == 0x2) ? 5 : 0;
-    nb_required += (PTS_DTS_flags == 0x3) ? 10 : 0;
-    nb_required += ESCR_flag ? 6 : 0;
-    nb_required += ES_rate_flag ? 3 : 0;
-    nb_required += DSM_trick_mode_flag ? 1 : 0;
-    nb_required += additional_copy_info_flag ? 1 : 0;
-    nb_required += PES_CRC_flag ? 2 : 0;
-    nb_required += PES_extension_flag ? 1 : 0;
+    nb_required += (PTS_DTS_flags_ == 0x2) ? 5 : 0;
+    nb_required += (PTS_DTS_flags_ == 0x3) ? 10 : 0;
+    nb_required += ESCR_flag_ ? 6 : 0;
+    nb_required += ES_rate_flag_ ? 3 : 0;
+    nb_required += DSM_trick_mode_flag_ ? 1 : 0;
+    nb_required += additional_copy_info_flag_ ? 1 : 0;
+    nb_required += PES_CRC_flag_ ? 2 : 0;
+    nb_required += PES_extension_flag_ ? 1 : 0;
     if (!stream->require(nb_required)) {
         return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: mux PSE payload");
     }
 
     // 5B
-    if (PTS_DTS_flags == 0x2) {
-        if ((err = encode_33bits_dts_pts(stream, 0x02, pts)) != srs_success) {
+    if (PTS_DTS_flags_ == 0x2) {
+        if ((err = encode_33bits_dts_pts(stream, 0x02, pts_)) != srs_success) {
             return srs_error_wrap(err, "dts/pts");
         }
     }
 
     // 10B
-    if (PTS_DTS_flags == 0x3) {
-        if ((err = encode_33bits_dts_pts(stream, 0x03, pts)) != srs_success) {
+    if (PTS_DTS_flags_ == 0x3) {
+        if ((err = encode_33bits_dts_pts(stream, 0x03, pts_)) != srs_success) {
             return srs_error_wrap(err, "dts/pts");
         }
-        if ((err = encode_33bits_dts_pts(stream, 0x01, dts)) != srs_success) {
+        if ((err = encode_33bits_dts_pts(stream, 0x01, dts_)) != srs_success) {
             return srs_error_wrap(err, "dts/pts");
         }
 
         // check sync, the diff of dts and pts should never greater than 1s.
-        if (dts - pts > 90000 || pts - dts > 90000) {
-            srs_warn("ts: sync dts=%" PRId64 ", pts=%" PRId64, dts, pts);
+        if (dts_ - pts_ > 90000 || pts_ - dts_ > 90000) {
+            srs_warn("ts: sync dts=%" PRId64 ", pts=%" PRId64, dts_, pts_);
         }
     }
 
@@ -1861,51 +1861,51 @@ srs_error_t SrsMpegPES::encode(SrsBuffer *stream)
     // LCOV_EXCL_START
 
     // 6B
-    if (ESCR_flag) {
+    if (ESCR_flag_) {
         stream->skip(6);
         srs_warn("ts: demux PES, ignore the escr.");
     }
 
     // 3B
-    if (ES_rate_flag) {
+    if (ES_rate_flag_) {
         stream->skip(3);
         srs_warn("ts: demux PES, ignore the ES_rate.");
     }
 
     // 1B
-    if (DSM_trick_mode_flag) {
+    if (DSM_trick_mode_flag_) {
         stream->skip(1);
         srs_warn("ts: demux PES, ignore the DSM_trick_mode.");
     }
 
     // 1B
-    if (additional_copy_info_flag) {
+    if (additional_copy_info_flag_) {
         stream->skip(1);
         srs_warn("ts: demux PES, ignore the additional_copy_info.");
     }
 
     // 2B
-    if (PES_CRC_flag) {
+    if (PES_CRC_flag_) {
         stream->skip(2);
         srs_warn("ts: demux PES, ignore the PES_CRC.");
     }
 
     // 1B
-    if (PES_extension_flag) {
-        int8_t efv = PES_extension_flag_2 & 0x01;
-        efv |= (PES_private_data_flag << 7) & 0x80;
-        efv |= (pack_header_field_flag << 6) & 0x40;
-        efv |= (program_packet_sequence_counter_flag << 5) & 0x20;
-        efv |= (P_STD_buffer_flag << 4) & 0x10;
-        efv |= (const1_value0 << 1) & 0xE0;
+    if (PES_extension_flag_) {
+        int8_t efv = PES_extension_flag_2_ & 0x01;
+        efv |= (PES_private_data_flag_ << 7) & 0x80;
+        efv |= (pack_header_field_flag_ << 6) & 0x40;
+        efv |= (program_packet_sequence_counter_flag_ << 5) & 0x20;
+        efv |= (P_STD_buffer_flag_ << 4) & 0x10;
+        efv |= (const1_value0_ << 1) & 0xE0;
         stream->write_1bytes(efv);
 
         nb_required = 0;
-        nb_required += PES_private_data_flag ? 16 : 0;
-        nb_required += pack_header_field_flag ? 1 + pack_field.size() : 0; // 1+x bytes.
-        nb_required += program_packet_sequence_counter_flag ? 2 : 0;
-        nb_required += P_STD_buffer_flag ? 2 : 0;
-        nb_required += PES_extension_flag_2 ? 1 + PES_extension_field.size() : 0; // 1+x bytes.
+        nb_required += PES_private_data_flag_ ? 16 : 0;
+        nb_required += pack_header_field_flag_ ? 1 + pack_field_.size() : 0; // 1+x bytes.
+        nb_required += program_packet_sequence_counter_flag_ ? 2 : 0;
+        nb_required += P_STD_buffer_flag_ ? 2 : 0;
+        nb_required += PES_extension_flag_2_ ? 1 + PES_extension_field_.size() : 0; // 1+x bytes.
         if (!stream->require(nb_required)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: mux PSE ext payload");
         }
@@ -1914,8 +1914,8 @@ srs_error_t SrsMpegPES::encode(SrsBuffer *stream)
     }
 
     // stuffing_byte
-    if (nb_stuffings) {
-        stream->skip(nb_stuffings);
+    if (nb_stuffings_) {
+        stream->skip(nb_stuffings_);
         srs_warn("ts: demux PES, ignore the stuffings.");
     }
 
@@ -2015,16 +2015,16 @@ srs_error_t SrsTsPayloadPES::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
     srs_error_t err = srs_success;
 
     // find the channel from chunk.
-    SrsTsChannel *channel = packet->context->get(packet->pid);
+    SrsTsChannel *channel = packet_->context_->get(packet_->pid_);
     if (!channel) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PES no channel for pid=%#x", packet->pid);
+        return srs_error_new(ERROR_STREAM_CASTER_TS_PSE, "ts: demux PES no channel for pid=%#x", packet_->pid_);
     }
 
     // init msg.
-    SrsTsMessage *msg = channel->msg;
+    SrsTsMessage *msg = channel->msg_;
     if (!msg) {
-        msg = new SrsTsMessage(channel, packet);
-        channel->msg = msg;
+        msg = new SrsTsMessage(channel, packet_);
+        channel->msg_ = msg;
     }
 
     // we must cache the fresh state of msg,
@@ -2034,26 +2034,26 @@ srs_error_t SrsTsPayloadPES::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
 
     // check when fresh, the payload_unit_start_indicator
     // should be 1 for the fresh msg.
-    if (is_fresh_msg && !packet->payload_unit_start_indicator) {
+    if (is_fresh_msg && !packet_->payload_unit_start_indicator_) {
         srs_warn("ts: PES fresh packet length=%d, us=%d, cc=%d",
-                 msg->PES_packet_length, packet->payload_unit_start_indicator, packet->continuity_counter);
+                 msg->PES_packet_length_, packet_->payload_unit_start_indicator_, packet_->continuity_counter_);
 
         stream->skip(stream->size() - stream->pos());
         srs_freep(msg);
-        channel->msg = NULL;
+        channel->msg_ = NULL;
         return err;
     }
 
     // check when not fresh and PES_packet_length>0,
     // the payload_unit_start_indicator should never be 1 when not completed.
-    if (!is_fresh_msg && msg->PES_packet_length > 0 && !msg->completed(packet->payload_unit_start_indicator) && packet->payload_unit_start_indicator) {
+    if (!is_fresh_msg && msg->PES_packet_length_ > 0 && !msg->completed(packet_->payload_unit_start_indicator_) && packet_->payload_unit_start_indicator_) {
         srs_warn("ts: ignore PES packet length=%d, payload=%d, us=%d, cc=%d",
-                 msg->PES_packet_length, msg->payload->length(), packet->payload_unit_start_indicator, packet->continuity_counter);
+                 msg->PES_packet_length_, msg->payload_->length(), packet_->payload_unit_start_indicator_, packet_->continuity_counter_);
 
         // reparse current msg.
         stream->skip(stream->pos() * -1);
         srs_freep(msg);
-        channel->msg = NULL;
+        channel->msg_ = NULL;
         return err;
     }
 
@@ -2061,30 +2061,30 @@ srs_error_t SrsTsPayloadPES::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
     if (!is_fresh_msg) {
         // late-incoming or duplicated continuity, drop message.
         // @remark check overflow, the counter plus 1 should greater when invalid.
-        if (msg->continuity_counter >= packet->continuity_counter && ((msg->continuity_counter + 1) & 0x0f) > packet->continuity_counter) {
-            srs_warn("ts: drop PES %dB for duplicated cc=%#x", msg->continuity_counter);
+        if (msg->continuity_counter_ >= packet_->continuity_counter_ && ((msg->continuity_counter_ + 1) & 0x0f) > packet_->continuity_counter_) {
+            srs_warn("ts: drop PES %dB for duplicated cc=%#x", msg->continuity_counter_);
             stream->skip(stream->size() - stream->pos());
             return err;
         }
 
         // when got partially message, the continous count must be continuous, or drop it.
-        if (((msg->continuity_counter + 1) & 0x0f) != packet->continuity_counter) {
-            srs_warn("ts: ignore continuity must be continous, msg=%#x, packet=%#x", msg->continuity_counter, packet->continuity_counter);
+        if (((msg->continuity_counter_ + 1) & 0x0f) != packet_->continuity_counter_) {
+            srs_warn("ts: ignore continuity must be continous, msg=%#x, packet=%#x", msg->continuity_counter_, packet_->continuity_counter_);
 
             // reparse current msg.
             stream->skip(stream->pos() * -1);
             srs_freep(msg);
-            channel->msg = NULL;
+            channel->msg_ = NULL;
             return err;
         }
     }
-    msg->continuity_counter = packet->continuity_counter;
+    msg->continuity_counter_ = packet_->continuity_counter_;
 
     // for the PES_packet_length(0), reap when completed.
-    if (!is_fresh_msg && msg->completed(packet->payload_unit_start_indicator)) {
+    if (!is_fresh_msg && msg->completed(packet_->payload_unit_start_indicator_)) {
         // reap previous PES packet.
         *ppmsg = msg;
-        channel->msg = NULL;
+        channel->msg_ = NULL;
 
         // reparse current msg.
         stream->skip(stream->pos() * -1);
@@ -2092,30 +2092,30 @@ srs_error_t SrsTsPayloadPES::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
     }
 
     // contious packet, append bytes for unit start is 0
-    if (!packet->payload_unit_start_indicator) {
-        if ((err = msg->dump(stream, &pes.nb_bytes)) != srs_success) {
+    if (!packet_->payload_unit_start_indicator_) {
+        if ((err = msg->dump(stream, &pes_.nb_bytes_)) != srs_success) {
             return srs_error_wrap(err, "ts: pes dump");
         }
     }
 
     // when unit start, parse the fresh msg.
-    if (packet->payload_unit_start_indicator) {
-        if ((err = pes.decode(stream)) != srs_success) {
+    if (packet_->payload_unit_start_indicator_) {
+        if ((err = pes_.decode(stream)) != srs_success) {
             return srs_error_wrap(err, "header");
         }
 
         // Update message when decode the first PES packet.
-        msg->sid = (SrsTsPESStreamId)pes.stream_id;
-        if (pes.PTS_DTS_flags == 0x02 || pes.PTS_DTS_flags == 0x03) {
-            msg->dts = pes.dts;
-            msg->pts = pes.pts;
+        msg->sid_ = (SrsTsPESStreamId)pes_.stream_id_;
+        if (pes_.PTS_DTS_flags_ == 0x02 || pes_.PTS_DTS_flags_ == 0x03) {
+            msg->dts_ = pes_.dts_;
+            msg->pts_ = pes_.pts_;
         }
-        if (pes.has_payload_) {
+        if (pes_.has_payload_) {
             // The size of message, might be 0 or a positive value.
-            msg->PES_packet_length = pes.nb_payload_;
+            msg->PES_packet_length_ = pes_.nb_payload_;
 
             // xB
-            if ((err = msg->dump(stream, &pes.nb_bytes)) != srs_success) {
+            if ((err = msg->dump(stream, &pes_.nb_bytes_)) != srs_success) {
                 return srs_error_wrap(err, "dump pes");
             }
         }
@@ -2124,14 +2124,14 @@ srs_error_t SrsTsPayloadPES::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
     // when fresh and the PES_packet_length is 0,
     // the payload_unit_start_indicator always be 1,
     // the message should never EOF for the first packet.
-    if (is_fresh_msg && msg->PES_packet_length == 0) {
+    if (is_fresh_msg && msg->PES_packet_length_ == 0) {
         return err;
     }
 
     // check msg, reap when completed.
-    if (msg->completed(packet->payload_unit_start_indicator)) {
+    if (msg->completed(packet_->payload_unit_start_indicator_)) {
         *ppmsg = msg;
-        channel->msg = NULL;
+        channel->msg_ = NULL;
         srs_info("ts: reap msg for completed.");
     }
 
@@ -2140,12 +2140,12 @@ srs_error_t SrsTsPayloadPES::decode(SrsBuffer *stream, SrsTsMessage **ppmsg)
 
 int SrsTsPayloadPES::size()
 {
-    return pes.size();
+    return pes_.size();
 }
 
 srs_error_t SrsTsPayloadPES::encode(SrsBuffer *stream)
 {
-    return pes.encode(stream);
+    return pes_.encode(stream);
 }
 
 SrsTsPayloadPSI::SrsTsPayloadPSI(SrsTsPacket *p) : SrsTsPayload(p)
@@ -2175,7 +2175,7 @@ srs_error_t SrsTsPayloadPSI::decode(SrsBuffer *stream, SrsTsMessage ** /*ppmsg*/
      * indicating that there is no pointer_field in the payload. Refer to 2.4.4.1 and 2.4.4.2. This also applies to private streams of
      * stream_type 5 (refer to Table 2-29).
      */
-    if (packet->payload_unit_start_indicator) {
+    if (packet_->payload_unit_start_indicator_) {
         if (!stream->require(1)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_PSI, "ts: demux PSI");
         }
@@ -2255,7 +2255,7 @@ int SrsTsPayloadPSI::size()
     // section size is the sl plus the crc32
     section_length = psi_size() + 4;
 
-    sz += packet->payload_unit_start_indicator ? 1 : 0;
+    sz += packet_->payload_unit_start_indicator_ ? 1 : 0;
     sz += 3;
     sz += section_length;
 
@@ -2266,7 +2266,7 @@ srs_error_t SrsTsPayloadPSI::encode(SrsBuffer *stream)
 {
     srs_error_t err = srs_success;
 
-    if (packet->payload_unit_start_indicator) {
+    if (packet_->payload_unit_start_indicator_) {
         if (!stream->require(1)) {
             return srs_error_new(ERROR_STREAM_CASTER_TS_PSI, "ts: mux PSI");
         }
@@ -2424,14 +2424,14 @@ srs_error_t SrsTsPayloadPAT::psi_decode(SrsBuffer *stream)
         }
 
         // update the apply pid table.
-        packet->context->set(program->pid, SrsTsPidApplyPMT);
+        packet_->context_->set(program->pid, SrsTsPidApplyPMT);
 
         programs.push_back(program);
     }
 
     // update the apply pid table.
-    packet->context->set(packet->pid, SrsTsPidApplyPAT);
-    packet->context->on_pmt_parsed();
+    packet_->context_->set(packet_->pid_, SrsTsPidApplyPAT);
+    packet_->context_->on_pmt_parsed();
 
     return err;
 }
@@ -2477,11 +2477,11 @@ srs_error_t SrsTsPayloadPAT::psi_encode(SrsBuffer *stream)
         }
 
         // update the apply pid table.
-        packet->context->set(program->pid, SrsTsPidApplyPMT);
+        packet_->context_->set(program->pid, SrsTsPidApplyPMT);
     }
 
     // update the apply pid table.
-    packet->context->set(packet->pid, SrsTsPidApplyPAT);
+    packet_->context_->set(packet_->pid_, SrsTsPidApplyPAT);
 
     return err;
 }
@@ -2653,13 +2653,13 @@ srs_error_t SrsTsPayloadPMT::psi_decode(SrsBuffer *stream)
         case SrsTsStreamVideoH264:
         case SrsTsStreamVideoHEVC:
         case SrsTsStreamVideoMpeg4:
-            packet->context->set(info->elementary_PID, SrsTsPidApplyVideo, info->stream_type);
+            packet_->context_->set(info->elementary_PID, SrsTsPidApplyVideo, info->stream_type);
             break;
         case SrsTsStreamAudioAAC:
         case SrsTsStreamAudioAC3:
         case SrsTsStreamAudioDTS:
         case SrsTsStreamAudioMp3:
-            packet->context->set(info->elementary_PID, SrsTsPidApplyAudio, info->stream_type);
+            packet_->context_->set(info->elementary_PID, SrsTsPidApplyAudio, info->stream_type);
             break;
         default:
             srs_warn("ts: drop pid=%#x, stream=%#x", info->elementary_PID, info->stream_type);
@@ -2668,7 +2668,7 @@ srs_error_t SrsTsPayloadPMT::psi_decode(SrsBuffer *stream)
     }
 
     // update the apply pid table.
-    packet->context->set(packet->pid, SrsTsPidApplyPMT);
+    packet_->context_->set(packet_->pid_, SrsTsPidApplyPMT);
 
     return err;
 }
@@ -2737,13 +2737,13 @@ srs_error_t SrsTsPayloadPMT::psi_encode(SrsBuffer *stream)
         case SrsTsStreamVideoH264:
         case SrsTsStreamVideoHEVC:
         case SrsTsStreamVideoMpeg4:
-            packet->context->set(info->elementary_PID, SrsTsPidApplyVideo, info->stream_type);
+            packet_->context_->set(info->elementary_PID, SrsTsPidApplyVideo, info->stream_type);
             break;
         case SrsTsStreamAudioAAC:
         case SrsTsStreamAudioAC3:
         case SrsTsStreamAudioDTS:
         case SrsTsStreamAudioMp3:
-            packet->context->set(info->elementary_PID, SrsTsPidApplyAudio, info->stream_type);
+            packet_->context_->set(info->elementary_PID, SrsTsPidApplyAudio, info->stream_type);
             break;
         default:
             srs_warn("ts: drop pid=%#x, stream=%#x", info->elementary_PID, info->stream_type);
@@ -2752,15 +2752,15 @@ srs_error_t SrsTsPayloadPMT::psi_encode(SrsBuffer *stream)
     }
 
     // update the apply pid table.
-    packet->context->set(packet->pid, SrsTsPidApplyPMT);
+    packet_->context_->set(packet_->pid_, SrsTsPidApplyPMT);
 
     return err;
 }
 
 SrsTsContextWriter::SrsTsContextWriter(ISrsStreamWriter *w, SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc)
 {
-    writer = w;
-    context = c;
+    writer_ = w;
+    context_ = c;
 
     acodec_ = ac;
     vcodec_ = vc;
@@ -2777,7 +2777,7 @@ srs_error_t SrsTsContextWriter::write_audio(SrsTsMessage *audio)
     srs_info("hls: write audio codec=%d/%d, pts=%" PRId64 ", dts=%" PRId64 ", size=%d",
              acodec_, vcodec_, audio->pts, audio->dts, audio->PES_packet_length);
 
-    if ((err = context->encode(writer, audio, vcodec_, acodec_)) != srs_success) {
+    if ((err = context_->encode(writer_, audio, vcodec_, acodec_)) != srs_success) {
         return srs_error_wrap(err, "ts: write audio");
     }
     srs_info("hls encode audio ok");
@@ -2792,7 +2792,7 @@ srs_error_t SrsTsContextWriter::write_video(SrsTsMessage *video)
     srs_info("hls: write video codec=%d/%d, pts=%" PRId64 ", dts=%" PRId64 ", size=%d",
              acodec_, vcodec_, video->pts, video->dts, video->PES_packet_length);
 
-    if ((err = context->encode(writer, video, vcodec_, acodec_)) != srs_success) {
+    if ((err = context_->encode(writer_, video, vcodec_, acodec_)) != srs_success) {
         return srs_error_wrap(err, "ts: write video");
     }
     srs_info("hls encode video ok");
@@ -2907,14 +2907,14 @@ void SrsEncFileWriter::close()
 
 SrsTsMessageCache::SrsTsMessageCache()
 {
-    audio = NULL;
-    video = NULL;
+    audio_ = NULL;
+    video_ = NULL;
 }
 
 SrsTsMessageCache::~SrsTsMessageCache()
 {
-    srs_freep(audio);
-    srs_freep(video);
+    srs_freep(audio_);
+    srs_freep(video_);
 }
 
 srs_error_t SrsTsMessageCache::cache_audio(SrsParsedAudioPacket *frame, int64_t dts)
@@ -2922,23 +2922,23 @@ srs_error_t SrsTsMessageCache::cache_audio(SrsParsedAudioPacket *frame, int64_t 
     srs_error_t err = srs_success;
 
     // create the ts audio message.
-    if (!audio) {
-        audio = new SrsTsMessage();
-        audio->write_pcr = false;
-        audio->dts = audio->pts = audio->start_pts = dts;
+    if (!audio_) {
+        audio_ = new SrsTsMessage();
+        audio_->write_pcr_ = false;
+        audio_->dts_ = audio_->pts_ = audio_->start_pts_ = dts;
     }
 
     // TODO: FIXME: refine code.
     // audio->dts = dts;
     // audio->pts = audio->dts;
-    audio->sid = SrsTsPESStreamIdAudioCommon;
+    audio_->sid_ = SrsTsPESStreamIdAudioCommon;
 
     // must be aac or mp3
     SrsAudioCodecConfig *acodec = frame->acodec();
-    srs_assert(acodec->id == SrsAudioCodecIdAAC || acodec->id == SrsAudioCodecIdMP3);
+    srs_assert(acodec->id_ == SrsAudioCodecIdAAC || acodec->id_ == SrsAudioCodecIdMP3);
 
     // write video to cache.
-    if (acodec->id == SrsAudioCodecIdAAC) {
+    if (acodec->id_ == SrsAudioCodecIdAAC) {
         if ((err = do_cache_aac(frame)) != srs_success) {
             return srs_error_wrap(err, "ts: cache aac");
         }
@@ -2956,18 +2956,18 @@ srs_error_t SrsTsMessageCache::cache_video(SrsParsedVideoPacket *frame, int64_t 
     srs_error_t err = srs_success;
 
     // create the ts video message.
-    if (!video) {
-        video = new SrsTsMessage();
-        video->write_pcr = (frame->frame_type == SrsVideoAvcFrameTypeKeyFrame);
-        video->start_pts = dts;
+    if (!video_) {
+        video_ = new SrsTsMessage();
+        video_->write_pcr_ = (frame->frame_type_ == SrsVideoAvcFrameTypeKeyFrame);
+        video_->start_pts_ = dts;
     }
 
-    video->dts = dts;
-    video->pts = video->dts + frame->cts * 90;
-    video->sid = SrsTsPESStreamIdVideoCommon;
+    video_->dts_ = dts;
+    video_->pts_ = video_->dts_ + frame->cts_ * 90;
+    video_->sid_ = SrsTsPESStreamIdVideoCommon;
 
     // Write H.265 video frame to cache.
-    if (frame && frame->vcodec()->id == SrsVideoCodecIdHEVC) {
+    if (frame && frame->vcodec()->id_ == SrsVideoCodecIdHEVC) {
         return do_cache_hevc(frame);
     }
 
@@ -2985,9 +2985,9 @@ srs_error_t SrsTsMessageCache::do_cache_mp3(SrsParsedAudioPacket *frame)
 
     // for mp3, directly write to cache.
     // TODO: FIXME: implements the ts jitter.
-    for (int i = 0; i < frame->nb_samples; i++) {
-        SrsNaluSample *sample = &frame->samples[i];
-        audio->payload->append(sample->bytes, sample->size);
+    for (int i = 0; i < frame->nb_samples_; i++) {
+        SrsNaluSample *sample = &frame->samples_[i];
+        audio_->payload_->append(sample->bytes_, sample->size_);
     }
 
     return err;
@@ -3000,11 +3000,11 @@ srs_error_t SrsTsMessageCache::do_cache_aac(SrsParsedAudioPacket *frame)
     SrsAudioCodecConfig *codec = frame->acodec();
     srs_assert(codec);
 
-    for (int i = 0; i < frame->nb_samples; i++) {
-        SrsNaluSample *sample = &frame->samples[i];
-        int32_t size = sample->size;
+    for (int i = 0; i < frame->nb_samples_; i++) {
+        SrsNaluSample *sample = &frame->samples_[i];
+        int32_t size = sample->size_;
 
-        if (!sample->bytes || size <= 0 || size > 0x1fff) {
+        if (!sample->bytes_ || size <= 0 || size > 0x1fff) {
             return srs_error_new(ERROR_HLS_AAC_FRAME_LENGTH, "ts: invalid aac frame length=%d", size);
         }
 
@@ -3040,13 +3040,13 @@ srs_error_t SrsTsMessageCache::do_cache_aac(SrsParsedAudioPacket *frame)
          int8_t number_of_raw_data_blocks_in_frame; //2bits, 0 indicating 1 raw_data_block()
          */
         // profile, 2bits
-        SrsAacProfile aac_profile = srs_aac_rtmp2ts(codec->aac_object);
+        SrsAacProfile aac_profile = srs_aac_rtmp2ts(codec->aac_object_);
         adts_header[2] = (aac_profile << 6) & 0xc0;
         // sampling_frequency_index 4bits
-        adts_header[2] |= (codec->aac_sample_rate << 2) & 0x3c;
+        adts_header[2] |= (codec->aac_sample_rate_ << 2) & 0x3c;
         // channel_configuration 3bits
-        adts_header[2] |= (codec->aac_channels >> 2) & 0x01;
-        adts_header[3] = (codec->aac_channels << 6) & 0xc0;
+        adts_header[2] |= (codec->aac_channels_ >> 2) & 0x01;
+        adts_header[3] = (codec->aac_channels_ << 6) & 0xc0;
         // frame_length 13bits
         adts_header[3] |= (frame_length >> 11) & 0x03;
         adts_header[4] = (frame_length >> 3) & 0xff;
@@ -3055,8 +3055,8 @@ srs_error_t SrsTsMessageCache::do_cache_aac(SrsParsedAudioPacket *frame)
         adts_header[5] |= 0x1f;
 
         // copy to audio buffer
-        audio->payload->append((const char *)adts_header, sizeof(adts_header));
-        audio->payload->append(sample->bytes, sample->size);
+        audio_->payload_->append((const char *)adts_header, sizeof(adts_header));
+        audio_->payload_->append(sample->bytes_, sample->size_);
     }
 
     return err;
@@ -3126,7 +3126,7 @@ srs_error_t SrsTsMessageCache::do_cache_avc(SrsParsedVideoPacket *frame)
     bool aud_inserted = false;
 
     // Insert a default AUD NALU when no AUD in samples.
-    if (!frame->has_aud) {
+    if (!frame->has_aud_) {
         // the aud(access unit delimiter) before each frame.
         // 7.3.2.4 Access unit delimiter RBSP syntax
         // ISO_IEC_14496-10-AVC-2012.pdf, page 66.
@@ -3158,8 +3158,8 @@ srs_error_t SrsTsMessageCache::do_cache_avc(SrsParsedVideoPacket *frame)
         //      9, SI (SI slice)
         // ISO_IEC_14496-10-AVC-2012.pdf, page 105.
         static uint8_t default_aud_nalu[] = {0x09, 0xf0};
-        srs_avc_insert_aud(video->payload, aud_inserted);
-        video->payload->append((const char *)default_aud_nalu, 2);
+        srs_avc_insert_aud(video_->payload_, aud_inserted);
+        video_->payload_->append((const char *)default_aud_nalu, 2);
     }
 
     SrsVideoCodecConfig *codec = frame->vcodec();
@@ -3168,35 +3168,35 @@ srs_error_t SrsTsMessageCache::do_cache_avc(SrsParsedVideoPacket *frame)
     bool is_sps_pps_appended = false;
 
     // all sample use cont nalu header, except the sps-pps before IDR frame.
-    for (int i = 0; i < frame->nb_samples; i++) {
-        SrsNaluSample *sample = &frame->samples[i];
-        int32_t size = sample->size;
+    for (int i = 0; i < frame->nb_samples_; i++) {
+        SrsNaluSample *sample = &frame->samples_[i];
+        int32_t size = sample->size_;
 
-        if (!sample->bytes || size <= 0) {
+        if (!sample->bytes_ || size <= 0) {
             return srs_error_new(ERROR_HLS_AVC_SAMPLE_SIZE, "ts: invalid avc sample length=%d", size);
         }
 
         // 5bits, 7.3.1 NAL unit syntax,
         // ISO_IEC_14496-10-AVC-2012.pdf, page 83.
-        SrsAvcNaluType nal_unit_type = (SrsAvcNaluType)(sample->bytes[0] & 0x1f);
+        SrsAvcNaluType nal_unit_type = (SrsAvcNaluType)(sample->bytes_[0] & 0x1f);
 
         // Insert sps/pps before IDR when there is no sps/pps in samples.
         // The sps/pps is parsed from sequence header(generally the first flv packet).
-        if (nal_unit_type == SrsAvcNaluTypeIDR && !frame->has_sps_pps && !is_sps_pps_appended) {
-            if (!codec->sequenceParameterSetNALUnit.empty()) {
-                srs_avc_insert_aud(video->payload, aud_inserted);
-                video->payload->append(&codec->sequenceParameterSetNALUnit[0], (int)codec->sequenceParameterSetNALUnit.size());
+        if (nal_unit_type == SrsAvcNaluTypeIDR && !frame->has_sps_pps_ && !is_sps_pps_appended) {
+            if (!codec->sequenceParameterSetNALUnit_.empty()) {
+                srs_avc_insert_aud(video_->payload_, aud_inserted);
+                video_->payload_->append(&codec->sequenceParameterSetNALUnit_[0], (int)codec->sequenceParameterSetNALUnit_.size());
             }
-            if (!codec->pictureParameterSetNALUnit.empty()) {
-                srs_avc_insert_aud(video->payload, aud_inserted);
-                video->payload->append(&codec->pictureParameterSetNALUnit[0], (int)codec->pictureParameterSetNALUnit.size());
+            if (!codec->pictureParameterSetNALUnit_.empty()) {
+                srs_avc_insert_aud(video_->payload_, aud_inserted);
+                video_->payload_->append(&codec->pictureParameterSetNALUnit_[0], (int)codec->pictureParameterSetNALUnit_.size());
             }
             is_sps_pps_appended = true;
         }
 
         // Insert the NALU to video in annexb.
-        srs_avc_insert_aud(video->payload, aud_inserted);
-        video->payload->append(sample->bytes, sample->size);
+        srs_avc_insert_aud(video_->payload_, aud_inserted);
+        video_->payload_->append(sample->bytes_, sample->size_);
     }
 
     return err;
@@ -3215,32 +3215,32 @@ srs_error_t SrsTsMessageCache::do_cache_hevc(SrsParsedVideoPacket *frame)
     bool is_sps_pps_appended = false;
 
     // all sample use cont nalu header, except the sps-pps before IDR frame.
-    for (int i = 0; i < frame->nb_samples; i++) {
-        SrsNaluSample *sample = &frame->samples[i];
-        int32_t size = sample->size;
+    for (int i = 0; i < frame->nb_samples_; i++) {
+        SrsNaluSample *sample = &frame->samples_[i];
+        int32_t size = sample->size_;
 
-        if (!sample->bytes || size <= 0) {
+        if (!sample->bytes_ || size <= 0) {
             return srs_error_new(ERROR_HLS_AVC_SAMPLE_SIZE, "ts: invalid avc sample length=%d", size);
         }
 
         // Insert aud before NALU for HEVC.
-        SrsHevcNaluType nalu_type = (SrsHevcNaluType)SrsHevcNaluTypeParse(sample->bytes[0]);
-        if (SrsIsIRAP(nalu_type) && !frame->has_sps_pps && !is_sps_pps_appended) {
-            for (size_t i = 0; i < codec->hevc_dec_conf_record_.nalu_vec.size(); i++) {
-                const SrsHevcHvccNalu &nalu = codec->hevc_dec_conf_record_.nalu_vec[i];
-                if (nalu.num_nalus <= 0 || nalu.nal_data_vec.empty())
+        SrsHevcNaluType nalu_type = (SrsHevcNaluType)SrsHevcNaluTypeParse(sample->bytes_[0]);
+        if (SrsIsIRAP(nalu_type) && !frame->has_sps_pps_ && !is_sps_pps_appended) {
+            for (size_t i = 0; i < codec->hevc_dec_conf_record_.nalu_vec_.size(); i++) {
+                const SrsHevcHvccNalu &nalu = codec->hevc_dec_conf_record_.nalu_vec_[i];
+                if (nalu.num_nalus_ <= 0 || nalu.nal_data_vec_.empty())
                     continue;
 
-                srs_avc_insert_aud(video->payload, aud_inserted);
-                const SrsHevcNalData &data = nalu.nal_data_vec.at(0);
-                video->payload->append((char *)&data.nal_unit_data[0], (int)data.nal_unit_data.size());
+                srs_avc_insert_aud(video_->payload_, aud_inserted);
+                const SrsHevcNalData &data = nalu.nal_data_vec_.at(0);
+                video_->payload_->append((char *)&data.nal_unit_data_[0], (int)data.nal_unit_data_.size());
                 is_sps_pps_appended = true;
             }
         }
 
         // Insert the NALU to video in annexb.
-        srs_avc_insert_aud(video->payload, aud_inserted);
-        video->payload->append(sample->bytes, sample->size);
+        srs_avc_insert_aud(video_->payload_, aud_inserted);
+        video_->payload_->append(sample->bytes_, sample->size_);
     }
 
     return err;
@@ -3326,26 +3326,26 @@ srs_error_t SrsTsTransmuxer::write_audio(int64_t timestamp, char *data, int size
         return srs_error_wrap(err, "ts: format on audio");
     }
 
-    if (!format->acodec) {
+    if (!format->acodec_) {
         return err;
     }
 
     // ts support audio codec: aac/mp3
-    srs_assert(format->acodec && format->audio);
-    if (format->acodec->id != SrsAudioCodecIdAAC && format->acodec->id != SrsAudioCodecIdMP3) {
+    srs_assert(format->acodec_ && format->audio_);
+    if (format->acodec_->id_ != SrsAudioCodecIdAAC && format->acodec_->id_ != SrsAudioCodecIdMP3) {
         return err;
     }
 
     // for aac: ignore sequence header
-    if (format->acodec->id == SrsAudioCodecIdAAC && format->audio->aac_packet_type == SrsAudioAacFrameTraitSequenceHeader) {
+    if (format->acodec_->id_ == SrsAudioCodecIdAAC && format->audio_->aac_packet_type_ == SrsAudioAacFrameTraitSequenceHeader) {
         return err;
     }
 
     // Switch audio codec if not AAC.
-    if (tscw->acodec() != format->acodec->id) {
+    if (tscw->acodec() != format->acodec_->id_) {
         srs_trace("TS: Switch audio codec %d(%s) to %d(%s)", tscw->acodec(), srs_audio_codec_id2str(tscw->acodec()).c_str(),
-                  format->acodec->id, srs_audio_codec_id2str(format->acodec->id).c_str());
-        tscw->set_acodec(format->acodec->id);
+                  format->acodec_->id_, srs_audio_codec_id2str(format->acodec_->id_).c_str());
+        tscw->set_acodec(format->acodec_->id_);
     }
 
     // the dts calc from rtmp/flv header.
@@ -3354,7 +3354,7 @@ srs_error_t SrsTsTransmuxer::write_audio(int64_t timestamp, char *data, int size
     int64_t dts = timestamp * 90;
 
     // write audio to cache.
-    if ((err = tsmc->cache_audio(format->audio, dts)) != srs_success) {
+    if ((err = tsmc->cache_audio(format->audio_, dts)) != srs_success) {
         return srs_error_wrap(err, "ts: cache audio");
     }
 
@@ -3373,35 +3373,35 @@ srs_error_t SrsTsTransmuxer::write_video(int64_t timestamp, char *data, int size
         return srs_error_wrap(err, "ts: on video");
     }
 
-    if (!format->vcodec) {
+    if (!format->vcodec_) {
         return err;
     }
 
     // ignore info frame,
     // @see https://github.com/ossrs/srs/issues/288#issuecomment-69863909
-    srs_assert(format->video && format->vcodec);
-    if (format->video->frame_type == SrsVideoAvcFrameTypeVideoInfoFrame) {
+    srs_assert(format->video_ && format->vcodec_);
+    if (format->video_->frame_type_ == SrsVideoAvcFrameTypeVideoInfoFrame) {
         return err;
     }
 
-    bool codec_ok = (format->vcodec->id == SrsVideoCodecIdAVC);
-    codec_ok = codec_ok ? true : (format->vcodec->id == SrsVideoCodecIdHEVC);
+    bool codec_ok = (format->vcodec_->id_ == SrsVideoCodecIdAVC);
+    codec_ok = codec_ok ? true : (format->vcodec_->id_ == SrsVideoCodecIdHEVC);
     if (!codec_ok) {
         return err;
     }
 
     // The video codec might change during streaming.
-    tscw->set_vcodec(format->vcodec->id);
+    tscw->set_vcodec(format->vcodec_->id_);
 
     // ignore sequence header
-    if (format->video->frame_type == SrsVideoAvcFrameTypeKeyFrame && format->video->avc_packet_type == SrsVideoAvcFrameTraitSequenceHeader) {
+    if (format->video_->frame_type_ == SrsVideoAvcFrameTypeKeyFrame && format->video_->avc_packet_type_ == SrsVideoAvcFrameTraitSequenceHeader) {
         return err;
     }
 
     int64_t dts = timestamp * 90;
 
     // write video to cache.
-    if ((err = tsmc->cache_video(format->video, dts)) != srs_success) {
+    if ((err = tsmc->cache_video(format->video_, dts)) != srs_success) {
         return srs_error_wrap(err, "ts: cache video");
     }
 
@@ -3412,12 +3412,12 @@ srs_error_t SrsTsTransmuxer::flush_audio()
 {
     srs_error_t err = srs_success;
 
-    if ((err = tscw->write_audio(tsmc->audio)) != srs_success) {
+    if ((err = tscw->write_audio(tsmc->audio_)) != srs_success) {
         return srs_error_wrap(err, "ts: write audio");
     }
 
     // write success, clear and free the ts message.
-    srs_freep(tsmc->audio);
+    srs_freep(tsmc->audio_);
 
     return err;
 }
@@ -3426,12 +3426,12 @@ srs_error_t SrsTsTransmuxer::flush_video()
 {
     srs_error_t err = srs_success;
 
-    if ((err = tscw->write_video(tsmc->video)) != srs_success) {
+    if ((err = tscw->write_video(tsmc->video_)) != srs_success) {
         return srs_error_wrap(err, "ts: write video");
     }
 
     // write success, clear and free the ts message.
-    srs_freep(tsmc->video);
+    srs_freep(tsmc->video_);
 
     return err;
 }

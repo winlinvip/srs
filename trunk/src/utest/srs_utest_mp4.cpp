@@ -230,7 +230,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeEDTS);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeEDTS, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeEDTS, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -241,7 +241,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeELST);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeELST, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeELST, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -252,7 +252,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeURN);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeURN, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeURN, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -263,7 +263,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeCTTS);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeCTTS, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeCTTS, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -274,7 +274,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeCO64);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeCO64, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeCO64, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -285,7 +285,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeUDTA);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeUDTA, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeUDTA, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -296,7 +296,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeMVEX);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeMVEX, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeMVEX, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -307,7 +307,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeTREX);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeTREX, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeTREX, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -318,7 +318,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeSTYP);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeSTYP, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeSTYP, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -329,7 +329,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeMOOF);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeMOOF, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeMOOF, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -340,7 +340,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeMFHD);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeMFHD, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeMFHD, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -351,7 +351,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeTRAF);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeTRAF, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeTRAF, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -362,7 +362,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeTFHD);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeTFHD, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeTFHD, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -373,7 +373,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeTFDT);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeTFDT, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeTFDT, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -384,7 +384,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeTRUN);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeTRUN, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeTRUN, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -395,7 +395,7 @@ VOID TEST(KernelMp4Test, DiscoveryBox)
         b.write_4bytes(SrsMp4BoxTypeSIDX);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeSIDX, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeSIDX, pbox->type_);
         srs_freep(pbox);
     }
 }
@@ -459,7 +459,7 @@ VOID TEST(KernelMp4Test, UUIDBoxDecode)
         b.write_4bytes(SrsMp4BoxTypeUUID);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeUUID, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeUUID, pbox->type_);
         HELPER_EXPECT_SUCCESS(pbox->decode(&b));
         srs_freep(pbox);
     }
@@ -471,7 +471,7 @@ VOID TEST(KernelMp4Test, UUIDBoxDecode)
         b.write_4bytes(SrsMp4BoxTypeUUID);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeUUID, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeUUID, pbox->type_);
         srs_freep(pbox);
     }
 
@@ -482,7 +482,7 @@ VOID TEST(KernelMp4Test, UUIDBoxDecode)
         b.write_4bytes(SrsMp4BoxTypeUUID);
         b.skip(-8);
         HELPER_ASSERT_SUCCESS(SrsMp4Box::discovery(&b, &pbox));
-        ASSERT_EQ(SrsMp4BoxTypeUUID, pbox->type);
+        ASSERT_EQ(SrsMp4BoxTypeUUID, pbox->type_);
         srs_freep(pbox);
     }
 }
@@ -496,8 +496,8 @@ VOID TEST(KernelMp4Test, UUIDBoxEncode)
         SrsBuffer b(data, 8);
 
         SrsMp4Box box;
-        box.type = SrsMp4BoxTypeFREE;
-        box.usertype.resize(8);
+        box.type_ = SrsMp4BoxTypeFREE;
+        box.usertype_.resize(8);
         ASSERT_EQ(8, (int)box.nb_bytes());
         HELPER_ASSERT_SUCCESS(box.encode(&b));
     }
@@ -507,8 +507,8 @@ VOID TEST(KernelMp4Test, UUIDBoxEncode)
         SrsBuffer b(data, 24);
 
         SrsMp4Box box;
-        box.type = SrsMp4BoxTypeUUID;
-        box.usertype.resize(16);
+        box.type_ = SrsMp4BoxTypeUUID;
+        box.usertype_.resize(16);
         ASSERT_EQ(24, (int)box.nb_bytes());
         HELPER_ASSERT_SUCCESS(box.encode(&b));
     }
@@ -529,14 +529,14 @@ VOID TEST(KernelMp4Test, FullBoxDump)
 
         SrsMp4FullBox box;
         HELPER_ASSERT_SUCCESS(box.decode(&b));
-        EXPECT_EQ(1, box.version);
-        EXPECT_EQ(2, (int)box.flags);
+        EXPECT_EQ(1, box.version_);
+        EXPECT_EQ(2, (int)box.flags_);
     }
 
     if (true) {
         SrsMp4FileTypeBox box;
-        box.major_brand = SrsMp4BoxBrandISO2;
-        box.compatible_brands.push_back(SrsMp4BoxBrandISOM);
+        box.major_brand_ = SrsMp4BoxBrandISO2;
+        box.compatible_brands_.push_back(SrsMp4BoxBrandISOM);
         EXPECT_EQ(20, (int)box.update_size());
 
         stringstream ss;
@@ -549,9 +549,9 @@ VOID TEST(KernelMp4Test, FullBoxDump)
 
     if (true) {
         SrsMp4FullBox box;
-        box.type = SrsMp4BoxTypeFTYP;
-        box.version = 1;
-        box.flags = 0x02;
+        box.type_ = SrsMp4BoxTypeFTYP;
+        box.version_ = 1;
+        box.flags_ = 0x02;
         EXPECT_EQ(12, (int)box.update_size());
 
         stringstream ss;
@@ -564,8 +564,8 @@ VOID TEST(KernelMp4Test, FullBoxDump)
 
     if (true) {
         SrsMp4FullBox box;
-        box.type = SrsMp4BoxTypeFTYP;
-        box.version = 1;
+        box.type_ = SrsMp4BoxTypeFTYP;
+        box.version_ = 1;
         EXPECT_EQ(12, (int)box.update_size());
 
         stringstream ss;
@@ -578,7 +578,7 @@ VOID TEST(KernelMp4Test, FullBoxDump)
 
     if (true) {
         SrsMp4FullBox box;
-        box.type = SrsMp4BoxTypeFTYP;
+        box.type_ = SrsMp4BoxTypeFTYP;
         EXPECT_EQ(12, (int)box.update_size());
 
         stringstream ss;
@@ -621,12 +621,12 @@ VOID TEST(KernelMp4Test, MFHDBox)
 
         SrsMp4MovieFragmentHeaderBox box;
         HELPER_ASSERT_SUCCESS(box.decode(&b));
-        EXPECT_EQ(3, (int)box.sequence_number);
+        EXPECT_EQ(3, (int)box.sequence_number_);
     }
 
     if (true) {
         SrsMp4MovieFragmentHeaderBox box;
-        box.sequence_number = 3;
+        box.sequence_number_ = 3;
         EXPECT_EQ(16, (int)box.update_size());
 
         stringstream ss;
@@ -652,7 +652,7 @@ VOID TEST(KernelMp4Test, TFHDBox)
 
         if (true) {
             SrsMp4TrackFragmentHeaderBox box;
-            box.track_id = 100;
+            box.track_id_ = 100;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -668,7 +668,7 @@ VOID TEST(KernelMp4Test, TFHDBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackFragmentHeaderBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(100, (int)box.track_id);
+            EXPECT_EQ(100, (int)box.track_id_);
         }
     }
 
@@ -678,13 +678,13 @@ VOID TEST(KernelMp4Test, TFHDBox)
 
         if (true) {
             SrsMp4TrackFragmentHeaderBox box;
-            box.track_id = 100;
-            box.flags = SrsMp4TfhdFlagsBaseDataOffset | SrsMp4TfhdFlagsSampleDescriptionIndex | SrsMp4TfhdFlagsDefaultSampleDuration | SrsMp4TfhdFlagsDefautlSampleSize | SrsMp4TfhdFlagsDefaultSampleFlags | SrsMp4TfhdFlagsDurationIsEmpty | SrsMp4TfhdFlagsDefaultBaseIsMoof;
-            box.base_data_offset = 10;
-            box.sample_description_index = 11;
-            box.default_sample_duration = 12;
-            box.default_sample_size = 13;
-            box.default_sample_flags = 14;
+            box.track_id_ = 100;
+            box.flags_ = SrsMp4TfhdFlagsBaseDataOffset | SrsMp4TfhdFlagsSampleDescriptionIndex | SrsMp4TfhdFlagsDefaultSampleDuration | SrsMp4TfhdFlagsDefautlSampleSize | SrsMp4TfhdFlagsDefaultSampleFlags | SrsMp4TfhdFlagsDurationIsEmpty | SrsMp4TfhdFlagsDefaultBaseIsMoof;
+            box.base_data_offset_ = 10;
+            box.sample_description_index_ = 11;
+            box.default_sample_duration_ = 12;
+            box.default_sample_size_ = 13;
+            box.default_sample_flags_ = 14;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -700,12 +700,12 @@ VOID TEST(KernelMp4Test, TFHDBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackFragmentHeaderBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ((int)box.track_id, 100);
-            EXPECT_EQ((int)box.base_data_offset, 10);
-            EXPECT_EQ((int)box.sample_description_index, 11);
-            EXPECT_EQ((int)box.default_sample_duration, 12);
-            EXPECT_EQ((int)box.default_sample_size, 13);
-            EXPECT_EQ((int)box.default_sample_flags, 14);
+            EXPECT_EQ((int)box.track_id_, 100);
+            EXPECT_EQ((int)box.base_data_offset_, 10);
+            EXPECT_EQ((int)box.sample_description_index_, 11);
+            EXPECT_EQ((int)box.default_sample_duration_, 12);
+            EXPECT_EQ((int)box.default_sample_size_, 13);
+            EXPECT_EQ((int)box.default_sample_flags_, 14);
         }
     }
 }
@@ -720,7 +720,7 @@ VOID TEST(KernelMp4Test, TFDTBox)
 
         if (true) {
             SrsMp4TrackFragmentDecodeTimeBox box;
-            box.base_media_decode_time = 100;
+            box.base_media_decode_time_ = 100;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -736,7 +736,7 @@ VOID TEST(KernelMp4Test, TFDTBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackFragmentDecodeTimeBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(100, (int)box.base_media_decode_time);
+            EXPECT_EQ(100, (int)box.base_media_decode_time_);
         }
     }
 
@@ -746,8 +746,8 @@ VOID TEST(KernelMp4Test, TFDTBox)
 
         if (true) {
             SrsMp4TrackFragmentDecodeTimeBox box;
-            box.version = 1;
-            box.base_media_decode_time = 100;
+            box.version_ = 1;
+            box.base_media_decode_time_ = 100;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -763,7 +763,7 @@ VOID TEST(KernelMp4Test, TFDTBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackFragmentDecodeTimeBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(100, (int)box.base_media_decode_time);
+            EXPECT_EQ(100, (int)box.base_media_decode_time_);
         }
     }
 }
@@ -802,11 +802,11 @@ VOID TEST(KernelMp4Test, TRUNBox)
 
         if (true) {
             SrsMp4TrackFragmentRunBox box;
-            box.flags = SrsMp4TrunFlagsSampleDuration;
+            box.flags_ = SrsMp4TrunFlagsSampleDuration;
 
             SrsMp4TrunEntry *entry = new SrsMp4TrunEntry(&box);
-            entry->sample_duration = 1000;
-            box.entries.push_back(entry);
+            entry->sample_duration_ = 1000;
+            box.entries_.push_back(entry);
 
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
@@ -823,10 +823,10 @@ VOID TEST(KernelMp4Test, TRUNBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackFragmentRunBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            ASSERT_EQ(1, (int)box.entries.size());
+            ASSERT_EQ(1, (int)box.entries_.size());
 
-            SrsMp4TrunEntry *entry = box.entries.at(0);
-            EXPECT_EQ(1000, (int)entry->sample_duration);
+            SrsMp4TrunEntry *entry = box.entries_.at(0);
+            EXPECT_EQ(1000, (int)entry->sample_duration_);
         }
     }
 }
@@ -841,7 +841,7 @@ VOID TEST(KernelMp4Test, FreeBox)
 
         if (true) {
             SrsMp4FreeSpaceBox box(SrsMp4BoxTypeFREE);
-            box.data.resize(4);
+            box.data_.resize(4);
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -857,7 +857,7 @@ VOID TEST(KernelMp4Test, FreeBox)
             b.skip(-1 * b.pos());
             SrsMp4FreeSpaceBox box(SrsMp4BoxTypeSKIP);
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(4, (int)box.data.size());
+            EXPECT_EQ(4, (int)box.data_.size());
         }
     }
 }
@@ -911,7 +911,7 @@ VOID TEST(KernelMp4Test, MOOVBox)
         if (true) {
             SrsMp4MediaBox *media = new SrsMp4MediaBox();
             SrsMp4HandlerReferenceBox *hdr = new SrsMp4HandlerReferenceBox();
-            hdr->handler_type = SrsMp4HandlerTypeVIDE;
+            hdr->handler_type_ = SrsMp4HandlerTypeVIDE;
             media->set_hdlr(hdr);
             video->set_mdia(media);
         }
@@ -923,7 +923,7 @@ VOID TEST(KernelMp4Test, MOOVBox)
         if (true) {
             SrsMp4MediaBox *media = new SrsMp4MediaBox();
             SrsMp4HandlerReferenceBox *hdr = new SrsMp4HandlerReferenceBox();
-            hdr->handler_type = SrsMp4HandlerTypeSOUN;
+            hdr->handler_type_ = SrsMp4HandlerTypeSOUN;
             media->set_hdlr(hdr);
             audio->set_mdia(media);
         }
@@ -943,11 +943,11 @@ VOID TEST(KernelMp4Test, TREXBox)
 
         if (true) {
             SrsMp4TrackExtendsBox box;
-            box.track_ID = 1;
-            box.default_sample_description_index = 2;
-            box.default_sample_size = 3;
-            box.default_sample_duration = 4;
-            box.default_sample_flags = 5;
+            box.track_ID_ = 1;
+            box.default_sample_description_index_ = 2;
+            box.default_sample_size_ = 3;
+            box.default_sample_duration_ = 4;
+            box.default_sample_flags_ = 5;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -963,11 +963,11 @@ VOID TEST(KernelMp4Test, TREXBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackExtendsBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ((int)box.track_ID, 1);
-            EXPECT_EQ((int)box.default_sample_description_index, 2);
-            EXPECT_EQ((int)box.default_sample_size, 3);
-            EXPECT_EQ((int)box.default_sample_duration, 4);
-            EXPECT_EQ((int)box.default_sample_flags, 5);
+            EXPECT_EQ((int)box.track_ID_, 1);
+            EXPECT_EQ((int)box.default_sample_description_index_, 2);
+            EXPECT_EQ((int)box.default_sample_size_, 3);
+            EXPECT_EQ((int)box.default_sample_duration_, 4);
+            EXPECT_EQ((int)box.default_sample_flags_, 5);
         }
     }
 
@@ -988,7 +988,7 @@ VOID TEST(KernelMp4Test, TKHDBox)
 
         if (true) {
             SrsMp4TrackHeaderBox box;
-            box.track_ID = 1;
+            box.track_ID_ = 1;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1004,7 +1004,7 @@ VOID TEST(KernelMp4Test, TKHDBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackHeaderBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ((int)box.track_ID, 1);
+            EXPECT_EQ((int)box.track_ID_, 1);
         }
     }
 
@@ -1014,8 +1014,8 @@ VOID TEST(KernelMp4Test, TKHDBox)
 
         if (true) {
             SrsMp4TrackHeaderBox box;
-            box.version = 1;
-            box.track_ID = 1;
+            box.version_ = 1;
+            box.track_ID_ = 1;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1031,7 +1031,7 @@ VOID TEST(KernelMp4Test, TKHDBox)
             b.skip(-1 * b.pos());
             SrsMp4TrackHeaderBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ((int)box.track_ID, 1);
+            EXPECT_EQ((int)box.track_ID_, 1);
         }
     }
 }
@@ -1072,7 +1072,7 @@ VOID TEST(KernelMp4Test, ELSTBox)
             SrsMp4EditListBox box;
             if (true) {
                 SrsMp4ElstEntry entry;
-                box.entries.push_back(entry);
+                box.entries_.push_back(entry);
             }
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
@@ -1170,13 +1170,13 @@ VOID TEST(KernelMp4Test, MDHDBox)
 
     if (true) {
         SrsMp4HandlerReferenceBox box;
-        box.handler_type = SrsMp4HandlerTypeVIDE;
+        box.handler_type_ = SrsMp4HandlerTypeVIDE;
         EXPECT_TRUE(box.is_video());
     }
 
     if (true) {
         SrsMp4HandlerReferenceBox box;
-        box.handler_type = SrsMp4HandlerTypeSOUN;
+        box.handler_type_ = SrsMp4HandlerTypeSOUN;
         EXPECT_TRUE(box.is_audio());
     }
 }
@@ -1191,7 +1191,7 @@ VOID TEST(KernelMp4Test, HDLRBox)
 
         if (true) {
             SrsMp4HandlerReferenceBox box;
-            box.handler_type = SrsMp4HandlerTypeSOUN;
+            box.handler_type_ = SrsMp4HandlerTypeSOUN;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1207,7 +1207,7 @@ VOID TEST(KernelMp4Test, HDLRBox)
             b.skip(-1 * b.pos());
             SrsMp4HandlerReferenceBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(SrsMp4HandlerTypeSOUN, box.handler_type);
+            EXPECT_EQ(SrsMp4HandlerTypeSOUN, box.handler_type_);
         }
     }
 
@@ -1217,7 +1217,7 @@ VOID TEST(KernelMp4Test, HDLRBox)
 
         if (true) {
             SrsMp4HandlerReferenceBox box;
-            box.handler_type = SrsMp4HandlerTypeVIDE;
+            box.handler_type_ = SrsMp4HandlerTypeVIDE;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1233,7 +1233,7 @@ VOID TEST(KernelMp4Test, HDLRBox)
             b.skip(-1 * b.pos());
             SrsMp4HandlerReferenceBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(SrsMp4HandlerTypeVIDE, box.handler_type);
+            EXPECT_EQ(SrsMp4HandlerTypeVIDE, box.handler_type_);
         }
     }
 
@@ -1243,8 +1243,8 @@ VOID TEST(KernelMp4Test, HDLRBox)
 
         if (true) {
             SrsMp4HandlerReferenceBox box;
-            box.handler_type = SrsMp4HandlerTypeVIDE;
-            box.name = "srs";
+            box.handler_type_ = SrsMp4HandlerTypeVIDE;
+            box.name_ = "srs";
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1260,7 +1260,7 @@ VOID TEST(KernelMp4Test, HDLRBox)
             b.skip(-1 * b.pos());
             SrsMp4HandlerReferenceBox box;
             HELPER_EXPECT_SUCCESS(box.decode(&b));
-            EXPECT_EQ(SrsMp4HandlerTypeVIDE, box.handler_type);
+            EXPECT_EQ(SrsMp4HandlerTypeVIDE, box.handler_type_);
         }
     }
 
@@ -1396,7 +1396,7 @@ VOID TEST(KernelMp4Test, SampleDescBox)
 
         if (true) {
             SrsMp4VisualSampleEntry box = SrsMp4VisualSampleEntry(SrsMp4BoxTypeAVC1);
-            box.data_reference_index = 1;
+            box.data_reference_index_ = 1;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1445,7 +1445,7 @@ VOID TEST(KernelMp4Test, SampleDescBox)
 
         if (true) {
             SrsMp4VisualSampleEntry box = SrsMp4VisualSampleEntry(SrsMp4BoxTypeHEV1);
-            box.data_reference_index = 1;
+            box.data_reference_index_ = 1;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1494,7 +1494,7 @@ VOID TEST(KernelMp4Test, SampleDescBox)
 
         if (true) {
             SrsMp4AudioSampleEntry box;
-            box.data_reference_index = 1;
+            box.data_reference_index_ = 1;
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1524,7 +1524,7 @@ VOID TEST(KernelMp4Test, SpecificInfoBox)
 
         if (true) {
             SrsMp4DecoderSpecificInfo box;
-            box.asc.resize(2);
+            box.asc_.resize(2);
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1602,7 +1602,7 @@ VOID TEST(KernelMp4Test, STSDBox)
 
         if (true) {
             SrsMp4SampleDescriptionBox box;
-            box.entries.push_back(new SrsMp4SampleEntry());
+            box.entries_.push_back(new SrsMp4SampleEntry());
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1627,7 +1627,7 @@ VOID TEST(KernelMp4Test, STSDBox)
 
         if (true) {
             SrsMp4DecodingTime2SampleBox box;
-            box.entries.push_back(SrsMp4SttsEntry());
+            box.entries_.push_back(SrsMp4SttsEntry());
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1652,7 +1652,7 @@ VOID TEST(KernelMp4Test, STSDBox)
 
         if (true) {
             SrsMp4CompositionTime2SampleBox box;
-            box.entries.push_back(SrsMp4CttsEntry());
+            box.entries_.push_back(SrsMp4CttsEntry());
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1797,7 +1797,7 @@ VOID TEST(KernelMp4Test, STSDBox)
 
         if (true) {
             SrsMp4UserDataBox box;
-            box.data.resize(2);
+            box.data_.resize(2);
             EXPECT_EQ((int)sizeof(buf), (int)box.nb_bytes());
             HELPER_EXPECT_SUCCESS(box.encode(&b));
 
@@ -1915,11 +1915,11 @@ VOID TEST(KernelMp4Test, SAIZBox)
 
         HELPER_ASSERT_SUCCESS(saiz.decode(&b));
         EXPECT_EQ(17, (int)saiz.nb_header());
-        EXPECT_EQ(0, (int)saiz.version);
-        EXPECT_EQ(0, (int)saiz.flags);
-        EXPECT_EQ(1, (int)saiz.default_sample_info_size);
-        EXPECT_EQ(0, (int)saiz.sample_count);
-        EXPECT_EQ(0, saiz.sample_info_sizes.size());
+        EXPECT_EQ(0, (int)saiz.version_);
+        EXPECT_EQ(0, (int)saiz.flags_);
+        EXPECT_EQ(1, (int)saiz.default_sample_info_size_);
+        EXPECT_EQ(0, (int)saiz.sample_count_);
+        EXPECT_EQ(0, saiz.sample_info_sizes_.size());
     }
 
     // flags & 1 == 1; default_sample_info_size == 1
@@ -1940,13 +1940,13 @@ VOID TEST(KernelMp4Test, SAIZBox)
 
         HELPER_ASSERT_SUCCESS(saiz.decode(&b));
         EXPECT_EQ(25, (int)saiz.nb_header());
-        EXPECT_EQ(0, (int)saiz.version);
-        EXPECT_EQ(1, (int)saiz.flags);
-        EXPECT_EQ(1, (int)saiz.aux_info_type);
-        EXPECT_EQ(2, (int)saiz.aux_info_type_parameter);
-        EXPECT_EQ(1, (int)saiz.default_sample_info_size);
-        EXPECT_EQ(0, (int)saiz.sample_count);
-        EXPECT_EQ(0, saiz.sample_info_sizes.size());
+        EXPECT_EQ(0, (int)saiz.version_);
+        EXPECT_EQ(1, (int)saiz.flags_);
+        EXPECT_EQ(1, (int)saiz.aux_info_type_);
+        EXPECT_EQ(2, (int)saiz.aux_info_type_parameter_);
+        EXPECT_EQ(1, (int)saiz.default_sample_info_size_);
+        EXPECT_EQ(0, (int)saiz.sample_count_);
+        EXPECT_EQ(0, saiz.sample_info_sizes_.size());
     }
 
     // flags & 1 == 1; default_sample_info_size == 0; sample_count = 3;
@@ -1970,23 +1970,23 @@ VOID TEST(KernelMp4Test, SAIZBox)
 
         HELPER_ASSERT_SUCCESS(saiz.decode(&b));
         EXPECT_EQ(28, (int)saiz.nb_header());
-        EXPECT_EQ(0, (int)saiz.version);
-        EXPECT_EQ(1, (int)saiz.flags);
-        EXPECT_EQ(1, (int)saiz.aux_info_type);
-        EXPECT_EQ(2, (int)saiz.aux_info_type_parameter);
-        EXPECT_EQ(0, (int)saiz.default_sample_info_size);
-        EXPECT_EQ(3, (int)saiz.sample_count);
-        EXPECT_EQ(3, saiz.sample_info_sizes.size());
-        EXPECT_EQ(4, saiz.sample_info_sizes[0]);
-        EXPECT_EQ(5, saiz.sample_info_sizes[1]);
-        EXPECT_EQ(6, saiz.sample_info_sizes[2]);
+        EXPECT_EQ(0, (int)saiz.version_);
+        EXPECT_EQ(1, (int)saiz.flags_);
+        EXPECT_EQ(1, (int)saiz.aux_info_type_);
+        EXPECT_EQ(2, (int)saiz.aux_info_type_parameter_);
+        EXPECT_EQ(0, (int)saiz.default_sample_info_size_);
+        EXPECT_EQ(3, (int)saiz.sample_count_);
+        EXPECT_EQ(3, saiz.sample_info_sizes_.size());
+        EXPECT_EQ(4, saiz.sample_info_sizes_[0]);
+        EXPECT_EQ(5, saiz.sample_info_sizes_[1]);
+        EXPECT_EQ(6, saiz.sample_info_sizes_[2]);
     }
 
     if (true) {
         SrsMp4SampleAuxiliaryInfoSizeBox saiz;
-        saiz.flags = 0;
-        saiz.default_sample_info_size = 1;
-        saiz.sample_count = 0;
+        saiz.flags_ = 0;
+        saiz.default_sample_info_size_ = 1;
+        saiz.sample_count_ = 0;
 
         EXPECT_EQ(17, saiz.nb_header());
 
@@ -1999,9 +1999,9 @@ VOID TEST(KernelMp4Test, SAIZBox)
 
     if (true) {
         SrsMp4SampleAuxiliaryInfoSizeBox saiz;
-        saiz.flags = 1;
-        saiz.default_sample_info_size = 1;
-        saiz.sample_count = 0;
+        saiz.flags_ = 1;
+        saiz.default_sample_info_size_ = 1;
+        saiz.sample_count_ = 0;
 
         EXPECT_EQ(25, saiz.nb_header());
         stringstream ss;
@@ -2013,10 +2013,10 @@ VOID TEST(KernelMp4Test, SAIZBox)
 
     if (true) {
         SrsMp4SampleAuxiliaryInfoSizeBox saiz;
-        saiz.flags = 1;
-        saiz.default_sample_info_size = 0;
-        saiz.sample_count = 1;
-        saiz.sample_info_sizes.push_back(4);
+        saiz.flags_ = 1;
+        saiz.default_sample_info_size_ = 0;
+        saiz.sample_count_ = 1;
+        saiz.sample_info_sizes_.push_back(4);
 
         EXPECT_EQ(26, saiz.nb_header());
         stringstream ss;
@@ -2046,10 +2046,10 @@ VOID TEST(KernelMp4Test, SAIOBox)
 
         HELPER_ASSERT_SUCCESS(saio.decode(&b));
         EXPECT_EQ(20, (int)saio.nb_header());
-        EXPECT_EQ(0, (int)saio.version);
-        EXPECT_EQ(0, (int)saio.flags);
-        EXPECT_EQ(1, (int)saio.offsets.size());
-        EXPECT_EQ(2, (int)saio.offsets[0]);
+        EXPECT_EQ(0, (int)saio.version_);
+        EXPECT_EQ(0, (int)saio.flags_);
+        EXPECT_EQ(1, (int)saio.offsets_.size());
+        EXPECT_EQ(2, (int)saio.offsets_[0]);
     }
 
     if (true) {
@@ -2069,12 +2069,12 @@ VOID TEST(KernelMp4Test, SAIOBox)
 
         HELPER_ASSERT_SUCCESS(saio.decode(&b));
         EXPECT_EQ(28, (int)saio.nb_header());
-        EXPECT_EQ(0, (int)saio.version);
-        EXPECT_EQ(1, (int)saio.flags);
-        EXPECT_EQ(1, (int)saio.aux_info_type);
-        EXPECT_EQ(2, (int)saio.aux_info_type_parameter);
-        EXPECT_EQ(1, (int)saio.offsets.size());
-        EXPECT_EQ(2, (int)saio.offsets[0]);
+        EXPECT_EQ(0, (int)saio.version_);
+        EXPECT_EQ(1, (int)saio.flags_);
+        EXPECT_EQ(1, (int)saio.aux_info_type_);
+        EXPECT_EQ(2, (int)saio.aux_info_type_parameter_);
+        EXPECT_EQ(1, (int)saio.offsets_.size());
+        EXPECT_EQ(2, (int)saio.offsets_[0]);
     }
 
     if (true) {
@@ -2094,19 +2094,19 @@ VOID TEST(KernelMp4Test, SAIOBox)
 
         HELPER_ASSERT_SUCCESS(saio.decode(&b));
         EXPECT_EQ(32, (int)saio.nb_header());
-        EXPECT_EQ(1, (int)saio.version);
-        EXPECT_EQ(1, (int)saio.flags);
-        EXPECT_EQ(1, (int)saio.aux_info_type);
-        EXPECT_EQ(2, (int)saio.aux_info_type_parameter);
-        EXPECT_EQ(1, (int)saio.offsets.size());
-        EXPECT_EQ(2, (int)saio.offsets[0]);
+        EXPECT_EQ(1, (int)saio.version_);
+        EXPECT_EQ(1, (int)saio.flags_);
+        EXPECT_EQ(1, (int)saio.aux_info_type_);
+        EXPECT_EQ(2, (int)saio.aux_info_type_parameter_);
+        EXPECT_EQ(1, (int)saio.offsets_.size());
+        EXPECT_EQ(2, (int)saio.offsets_[0]);
     }
 
     if (true) {
         SrsMp4SampleAuxiliaryInfoOffsetBox saio;
-        saio.version = 0;
-        saio.flags = 0;
-        saio.offsets.push_back(2);
+        saio.version_ = 0;
+        saio.flags_ = 0;
+        saio.offsets_.push_back(2);
         EXPECT_EQ(20, (int)saio.nb_header());
 
         stringstream ss;
@@ -2118,9 +2118,9 @@ VOID TEST(KernelMp4Test, SAIOBox)
 
     if (true) {
         SrsMp4SampleAuxiliaryInfoOffsetBox saio;
-        saio.version = 0;
-        saio.flags = 1;
-        saio.offsets.push_back(2);
+        saio.version_ = 0;
+        saio.flags_ = 1;
+        saio.offsets_.push_back(2);
         EXPECT_EQ(28, (int)saio.nb_header());
 
         stringstream ss;
@@ -2132,9 +2132,9 @@ VOID TEST(KernelMp4Test, SAIOBox)
 
     if (true) {
         SrsMp4SampleAuxiliaryInfoOffsetBox saio;
-        saio.version = 1;
-        saio.flags = 1;
-        saio.offsets.push_back(2);
+        saio.version_ = 1;
+        saio.flags_ = 1;
+        saio.offsets_.push_back(2);
         EXPECT_EQ(32, (int)saio.nb_header());
 
         stringstream ss;
@@ -2163,9 +2163,9 @@ VOID TEST(KernelMp4Test, SENCBox)
 
         HELPER_ASSERT_SUCCESS(senc.decode(&b));
         EXPECT_EQ(16, (int)senc.nb_header());
-        EXPECT_EQ(0, (int)senc.version);
-        EXPECT_EQ(0, (int)senc.flags);
-        EXPECT_EQ(0, (int)senc.entries.size());
+        EXPECT_EQ(0, (int)senc.version_);
+        EXPECT_EQ(0, (int)senc.flags_);
+        EXPECT_EQ(0, (int)senc.entries_.size());
     }
 
     if (true) {
@@ -2183,9 +2183,9 @@ VOID TEST(KernelMp4Test, SENCBox)
 
         HELPER_ASSERT_SUCCESS(senc.decode(&b));
         EXPECT_EQ(24, (int)senc.nb_header());
-        EXPECT_EQ(0, (int)senc.version);
-        EXPECT_EQ(0, (int)senc.flags);
-        EXPECT_EQ(1, (int)senc.entries.size());
+        EXPECT_EQ(0, (int)senc.version_);
+        EXPECT_EQ(0, (int)senc.flags_);
+        EXPECT_EQ(1, (int)senc.entries_.size());
     }
 }
 
@@ -2236,10 +2236,10 @@ VOID TEST(KernelMp4Test, SCHMBox)
 
         HELPER_ASSERT_SUCCESS(schm.decode(&b));
         EXPECT_EQ(20, (int)schm.nb_header());
-        EXPECT_EQ(0, (int)schm.version);
-        EXPECT_EQ(0, (int)schm.flags);
-        EXPECT_EQ(1, (int)schm.scheme_type);
-        EXPECT_EQ(2, (int)schm.scheme_version);
+        EXPECT_EQ(0, (int)schm.version_);
+        EXPECT_EQ(0, (int)schm.flags_);
+        EXPECT_EQ(1, (int)schm.scheme_type_);
+        EXPECT_EQ(2, (int)schm.scheme_version_);
     }
 
     if (true) {
@@ -2260,10 +2260,10 @@ VOID TEST(KernelMp4Test, SCHMBox)
 
         HELPER_ASSERT_SUCCESS(schm.decode(&b));
         EXPECT_EQ(24, (int)schm.nb_header());
-        EXPECT_EQ(0, (int)schm.version);
-        EXPECT_EQ(1, (int)schm.flags);
-        EXPECT_EQ(1, (int)schm.scheme_type);
-        EXPECT_EQ(2, (int)schm.scheme_version);
+        EXPECT_EQ(0, (int)schm.version_);
+        EXPECT_EQ(1, (int)schm.flags_);
+        EXPECT_EQ(1, (int)schm.scheme_type_);
+        EXPECT_EQ(2, (int)schm.scheme_version_);
 
         stringstream ss;
         SrsMp4DumpContext dc;
@@ -2369,17 +2369,17 @@ VOID TEST(KernelMp4Test, SrsFmp4SegmentEncoder)
 
         HELPER_ASSERT_SUCCESS(audio_fmt.on_audio(0, (char *)audio_raw, sizeof(audio_raw)));
 
-        SrsVideoAvcFrameType video_frame_type = video_fmt.video->frame_type;
-        uint32_t cts = (uint32_t)video_fmt.video->cts;
+        SrsVideoAvcFrameType video_frame_type = video_fmt.video_->frame_type_;
+        uint32_t cts = (uint32_t)video_fmt.video_->cts_;
 
         uint32_t dts = 0;
         uint32_t pts = dts + cts;
 
-        uint8_t *video_sample = (uint8_t *)video_fmt.raw;
-        uint32_t nb_video_sample = (uint32_t)video_fmt.nb_raw;
+        uint8_t *video_sample = (uint8_t *)video_fmt.raw_;
+        uint32_t nb_video_sample = (uint32_t)video_fmt.nb_raw_;
         encoder.write_sample(SrsMp4HandlerTypeVIDE, video_frame_type, dts, pts, video_sample, nb_video_sample);
-        uint8_t *audio_sample = (uint8_t *)audio_fmt.raw;
-        uint32_t nb_audio_sample = (uint32_t)audio_fmt.nb_raw;
+        uint8_t *audio_sample = (uint8_t *)audio_fmt.raw_;
+        uint32_t nb_audio_sample = (uint32_t)audio_fmt.nb_raw_;
         encoder.write_sample(SrsMp4HandlerTypeSOUN, 0, 0, 0, audio_sample, nb_audio_sample);
         encoder.flush(dts);
         EXPECT_TRUE(fw.filesize() > 0);
@@ -2475,13 +2475,13 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create audio sample that arrives first
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
-        audio_sample.dts = 1000; // Audio starts at 1000us
+        audio_sample.type_ = SrsFrameTypeAudio;
+        audio_sample.dts_ = 1000; // Audio starts at 1000us
 
         // Create video sample that arrives later
         SrsMp4Sample video_sample;
-        video_sample.type = SrsFrameTypeVideo;
-        video_sample.dts = 2000; // Video starts at 2000us
+        video_sample.type_ = SrsFrameTypeVideo;
+        video_sample.dts_ = 2000; // Video starts at 2000us
 
         // Process samples
         jitter.on_sample(&audio_sample);
@@ -2503,13 +2503,13 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create video sample that arrives first
         SrsMp4Sample video_sample;
-        video_sample.type = SrsFrameTypeVideo;
-        video_sample.dts = 500; // Video starts at 500us
+        video_sample.type_ = SrsFrameTypeVideo;
+        video_sample.dts_ = 500; // Video starts at 500us
 
         // Create audio sample that arrives later
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
-        audio_sample.dts = 1500; // Audio starts at 1500us
+        audio_sample.type_ = SrsFrameTypeAudio;
+        audio_sample.dts_ = 1500; // Audio starts at 1500us
 
         // Process samples
         jitter.on_sample(&video_sample);
@@ -2531,12 +2531,12 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create samples with same start time
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
-        audio_sample.dts = 1000;
+        audio_sample.type_ = SrsFrameTypeAudio;
+        audio_sample.dts_ = 1000;
 
         SrsMp4Sample video_sample;
-        video_sample.type = SrsFrameTypeVideo;
-        video_sample.dts = 1000;
+        video_sample.type_ = SrsFrameTypeVideo;
+        video_sample.dts_ = 1000;
 
         // Process samples
         jitter.on_sample(&audio_sample);
@@ -2556,8 +2556,8 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Initialize with samples
         SrsMp4Sample audio_sample;
-        audio_sample.type = SrsFrameTypeAudio;
-        audio_sample.dts = 1000;
+        audio_sample.type_ = SrsFrameTypeAudio;
+        audio_sample.dts_ = 1000;
 
         jitter.on_sample(&audio_sample);
 
@@ -2574,16 +2574,16 @@ VOID TEST(KernelMp4Test, SrsMp4DvrJitter)
 
         // Create multiple audio samples
         SrsMp4Sample audio1;
-        audio1.type = SrsFrameTypeAudio;
-        audio1.dts = 1000;
+        audio1.type_ = SrsFrameTypeAudio;
+        audio1.dts_ = 1000;
 
         SrsMp4Sample audio2;
-        audio2.type = SrsFrameTypeAudio;
-        audio2.dts = 2000; // This should be ignored
+        audio2.type_ = SrsFrameTypeAudio;
+        audio2.dts_ = 2000; // This should be ignored
 
         SrsMp4Sample video1;
-        video1.type = SrsFrameTypeVideo;
-        video1.dts = 1500;
+        video1.type_ = SrsFrameTypeVideo;
+        video1.dts_ = 1500;
 
         // Process samples
         jitter.on_sample(&audio1);

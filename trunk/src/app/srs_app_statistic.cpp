@@ -118,7 +118,7 @@ srs_error_t SrsStatisticStream::dumps(SrsJsonObject *obj)
     obj->set("url", SrsJsonAny::str(url.c_str()));
     obj->set("live_ms", SrsJsonAny::integer(srsu2ms(srs_time_now_cached())));
     obj->set("clients", SrsJsonAny::integer(nb_clients));
-    obj->set("frames", SrsJsonAny::integer(frames->sugar));
+    obj->set("frames", SrsJsonAny::integer(frames->sugar_));
     obj->set("send_bytes", SrsJsonAny::integer(kbps->get_send_bytes()));
     obj->set("recv_bytes", SrsJsonAny::integer(kbps->get_recv_bytes()));
 
@@ -395,7 +395,7 @@ srs_error_t SrsStatistic::on_video_frames(ISrsRequest *req, int nb_frames)
     SrsStatisticVhost *vhost = create_vhost(req);
     SrsStatisticStream *stream = create_stream(vhost, req);
 
-    stream->frames->sugar += nb_frames;
+    stream->frames->sugar_ += nb_frames;
 
     return err;
 }

@@ -137,26 +137,26 @@ public:
     // 3bytes.
     // Three-byte field that contains a timestamp delta of the message.
     // @remark, only used for decoding message from chunk stream.
-    int32_t timestamp_delta;
+    int32_t timestamp_delta_;
     // 3bytes.
     // Three-byte field that represents the size of the payload in bytes.
     // It is set in big-endian format.
-    int32_t payload_length;
+    int32_t payload_length_;
     // 1byte.
     // One byte field to represent the message type. A range of type IDs
     // (1-7) are reserved for protocol control messages.
     // For example, RTMP_MSG_AudioMessage or RTMP_MSG_VideoMessage.
-    int8_t message_type;
+    int8_t message_type_;
     // 4bytes.
     // Four-byte field that identifies the stream of the message. These
     // bytes are set in little-endian format.
-    int32_t stream_id;
+    int32_t stream_id_;
 
     // Four-byte field that contains a timestamp of the message.
     // The 4 bytes are packed in the big-endian order.
     // @remark, used as calc timestamp when decode and encode time.
     // @remark, we use 64bits for large time for jitter detect and hls.
-    int64_t timestamp;
+    int64_t timestamp_;
 
 public:
     SrsMessageHeader();
@@ -193,7 +193,7 @@ class SrsRtmpCommonMessage
 {
 public:
     // 4.1. Message Header
-    SrsMessageHeader header;
+    SrsMessageHeader header_;
 
 public:
     // 4.2. Message Payload
@@ -230,10 +230,10 @@ private:
     bool has_audio_;
     bool has_video_;
     bool drop_if_not_match_;
-    ISrsWriter *writer;
+    ISrsWriter *writer_;
 
 private:
-    char tag_header[SRS_FLV_TAG_HEADER_SIZE];
+    char tag_header_[SRS_FLV_TAG_HEADER_SIZE];
 
 public:
     SrsFlvTransmuxer();
@@ -277,14 +277,14 @@ public:
 
 private:
     // The cache tag header.
-    int nb_tag_headers;
-    char *tag_headers;
+    int nb_tag_headers_;
+    char *tag_headers_;
     // The cache pps(previous tag size)
-    int nb_ppts;
-    char *ppts;
+    int nb_ppts_;
+    char *ppts_;
     // The cache iovss.
-    int nb_iovss_cache;
-    iovec *iovss_cache;
+    int nb_iovss_cache_;
+    iovec *iovss_cache_;
 
 public:
     // Write the tags in a time.
@@ -302,7 +302,7 @@ private:
 class SrsFlvDecoder
 {
 private:
-    ISrsReader *reader;
+    ISrsReader *reader_;
 
 public:
     SrsFlvDecoder();
@@ -335,7 +335,7 @@ public:
 class SrsFlvVodStreamDecoder
 {
 private:
-    SrsFileReader *reader;
+    SrsFileReader *reader_;
 
 public:
     SrsFlvVodStreamDecoder();

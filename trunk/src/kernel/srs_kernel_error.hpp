@@ -434,19 +434,19 @@ extern bool srs_is_server_gracefully_close(srs_error_t err);
 class SrsCplxError
 {
 private:
-    int code;
-    SrsCplxError *wrapped;
-    std::string msg;
+    int code_;
+    SrsCplxError *wrapped_;
+    std::string msg_;
 
-    std::string func;
-    std::string file;
-    int line;
+    std::string func_;
+    std::string file_;
+    int line_;
 
-    SrsContextId cid;
-    int rerrno;
+    SrsContextId cid_;
+    int rerrno_;
 
-    std::string desc;
-    std::string _summary;
+    std::string desc_;
+    std::string summary_;
 
 private:
     SrsCplxError();

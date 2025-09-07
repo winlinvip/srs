@@ -20,7 +20,7 @@ class SrsFileWriter;
 class SrsMp3Transmuxer
 {
 private:
-    SrsFileWriter *writer;
+    SrsFileWriter *writer_;
 
 public:
     SrsMp3Transmuxer();

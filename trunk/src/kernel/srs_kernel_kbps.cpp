@@ -15,8 +15,8 @@ using namespace std;
 
 SrsRateSample::SrsRateSample()
 {
-    total = time = -1;
-    rate = 0;
+    total_ = time_ = -1;
+    rate_ = 0;
 }
 
 SrsRateSample::~SrsRateSample()
@@ -25,23 +25,23 @@ SrsRateSample::~SrsRateSample()
 
 SrsRateSample *SrsRateSample::update(int64_t nn, srs_utime_t t, int k)
 {
-    total = nn;
-    time = t;
-    rate = k;
+    total_ = nn;
+    time_ = t;
+    rate_ = k;
     return this;
 }
 
 void srs_pps_init(SrsRateSample &sample, int64_t nn, srs_utime_t now)
 {
-    if (sample.time < 0 || nn < sample.total) {
+    if (sample.time_ < 0 || nn < sample.total_) {
         sample.update(nn, now, 0);
     }
 }
 
 void srs_pps_update(SrsRateSample &sample, int64_t nn, srs_utime_t now)
 {
-    int pps = (int)((nn - sample.total) * 1000 / srsu2ms(now - sample.time));
-    if (pps == 0 && nn > sample.total) {
+    int pps = (int)((nn - sample.total_) * 1000 / srsu2ms(now - sample.time_));
+    if (pps == 0 && nn > sample.total_) {
         pps = 1; // For pps in (0, 1), we set to 1.
     }
     sample.update(nn, now, pps);
@@ -50,7 +50,7 @@ void srs_pps_update(SrsRateSample &sample, int64_t nn, srs_utime_t now)
 SrsPps::SrsPps()
 {
     clk_ = _srs_clock;
-    sugar = 0;
+    sugar_ = 0;
 }
 
 SrsPps::~SrsPps()
@@ -59,7 +59,7 @@ SrsPps::~SrsPps()
 
 void SrsPps::update()
 {
-    update(sugar);
+    update(sugar_);
 }
 
 void SrsPps::update(int64_t nn)
@@ -74,31 +74,31 @@ void SrsPps::update(int64_t nn)
     srs_pps_init(sample_5m_, nn, now);
     srs_pps_init(sample_60m_, nn, now);
 
-    if (now - sample_10s_.time >= 10 * SRS_UTIME_SECONDS) {
+    if (now - sample_10s_.time_ >= 10 * SRS_UTIME_SECONDS) {
         srs_pps_update(sample_10s_, nn, now);
     }
-    if (now - sample_30s_.time >= 30 * SRS_UTIME_SECONDS) {
+    if (now - sample_30s_.time_ >= 30 * SRS_UTIME_SECONDS) {
         srs_pps_update(sample_30s_, nn, now);
     }
-    if (now - sample_1m_.time >= 60 * SRS_UTIME_SECONDS) {
+    if (now - sample_1m_.time_ >= 60 * SRS_UTIME_SECONDS) {
         srs_pps_update(sample_1m_, nn, now);
     }
-    if (now - sample_5m_.time >= 300 * SRS_UTIME_SECONDS) {
+    if (now - sample_5m_.time_ >= 300 * SRS_UTIME_SECONDS) {
         srs_pps_update(sample_5m_, nn, now);
     }
-    if (now - sample_60m_.time >= 3600 * SRS_UTIME_SECONDS) {
+    if (now - sample_60m_.time_ >= 3600 * SRS_UTIME_SECONDS) {
         srs_pps_update(sample_60m_, nn, now);
     }
 }
 
 int SrsPps::r10s()
 {
-    return sample_10s_.rate;
+    return sample_10s_.rate_;
 }
 
 int SrsPps::r30s()
 {
-    return sample_30s_.rate;
+    return sample_30s_.rate_;
 }
 
 SrsWallClock::SrsWallClock()
@@ -344,14 +344,14 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
 {
     static char buf[128];
 
-    string &cid_desc = stats->cid_desc;
+    string &cid_desc = stats->cid_desc_;
     _srs_pps_cids_get->update();
     _srs_pps_cids_set->update();
     if (_srs_pps_cids_get->r10s() || _srs_pps_cids_set->r10s()) {
         snprintf(buf, sizeof(buf), ", cid=%d,%d", _srs_pps_cids_get->r10s(), _srs_pps_cids_set->r10s());
         cid_desc = buf;
     }
-    string &timer_desc = stats->timer_desc;
+    string &timer_desc = stats->timer_desc_;
     _srs_pps_timer->update();
     _srs_pps_pub->update();
     _srs_pps_conn->update();
@@ -360,14 +360,14 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
         timer_desc = buf;
     }
 
-    string &free_desc = stats->free_desc;
+    string &free_desc = stats->free_desc_;
     _srs_pps_dispose->update();
     if (_srs_pps_dispose->r10s()) {
         snprintf(buf, sizeof(buf), ", free=%d", _srs_pps_dispose->r10s());
         free_desc = buf;
     }
 
-    string &recvfrom_desc = stats->recvfrom_desc;
+    string &recvfrom_desc = stats->recvfrom_desc_;
     (void)recvfrom_desc;
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_recvfrom->update(_st_stat_recvfrom);
@@ -380,7 +380,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
     }
 #endif
 
-    string &io_desc = stats->io_desc;
+    string &io_desc = stats->io_desc_;
     (void)io_desc;
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_read->update(_st_stat_read);
@@ -395,7 +395,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
     }
 #endif
 
-    string &msg_desc = stats->msg_desc;
+    string &msg_desc = stats->msg_desc_;
     (void)msg_desc;
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_recvmsg->update(_st_stat_recvmsg);
@@ -408,7 +408,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
     }
 #endif
 
-    string &epoll_desc = stats->epoll_desc;
+    string &epoll_desc = stats->epoll_desc_;
     (void)epoll_desc;
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_epoll->update(_st_stat_epoll);
@@ -421,7 +421,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
     }
 #endif
 
-    string &sched_desc = stats->sched_desc;
+    string &sched_desc = stats->sched_desc_;
     (void)sched_desc;
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_sched_160ms->update(_st_stat_sched_160ms);
@@ -439,7 +439,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
     }
 #endif
 
-    string &clock_desc = stats->clock_desc;
+    string &clock_desc = stats->clock_desc_;
     _srs_pps_clock_15ms->update();
     _srs_pps_clock_20ms->update();
     _srs_pps_clock_25ms->update();
@@ -454,7 +454,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
         clock_desc = buf;
     }
 
-    string &thread_desc = stats->thread_desc;
+    string &thread_desc = stats->thread_desc_;
     (void)thread_desc;
 #if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
     _srs_pps_thread_run->update(_st_stat_thread_run);
@@ -467,7 +467,7 @@ void srs_global_kbps_update(SrsKbpsStats *stats)
     }
 #endif
 
-    string &objs_desc = stats->objs_desc;
+    string &objs_desc = stats->objs_desc_;
     _srs_pps_objs_rtps->update();
     _srs_pps_objs_rraw->update();
     _srs_pps_objs_rfua->update();
@@ -486,7 +486,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
 {
     static char buf[128];
 
-    string &rpkts_desc = stats->rpkts_desc;
+    string &rpkts_desc = stats->rpkts_desc_;
     _srs_pps_rpkts->update();
     _srs_pps_rrtps->update();
     _srs_pps_rstuns->update();
@@ -496,7 +496,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
         rpkts_desc = buf;
     }
 
-    string &spkts_desc = stats->spkts_desc;
+    string &spkts_desc = stats->spkts_desc_;
     _srs_pps_spkts->update();
     _srs_pps_srtps->update();
     _srs_pps_sstuns->update();
@@ -506,7 +506,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
         spkts_desc = buf;
     }
 
-    string &rtcp_desc = stats->rtcp_desc;
+    string &rtcp_desc = stats->rtcp_desc_;
     _srs_pps_pli->update();
     _srs_pps_twcc->update();
     _srs_pps_rr->update();
@@ -515,7 +515,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
         rtcp_desc = buf;
     }
 
-    string &snk_desc = stats->snk_desc;
+    string &snk_desc = stats->snk_desc_;
     _srs_pps_snack->update();
     _srs_pps_snack2->update();
     _srs_pps_sanack->update();
@@ -525,7 +525,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
         snk_desc = buf;
     }
 
-    string &rnk_desc = stats->rnk_desc;
+    string &rnk_desc = stats->rnk_desc_;
     _srs_pps_rnack->update();
     _srs_pps_rnack2->update();
     _srs_pps_rhnack->update();
@@ -535,7 +535,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
         rnk_desc = buf;
     }
 
-    string &fid_desc = stats->fid_desc;
+    string &fid_desc = stats->fid_desc_;
     _srs_pps_ids->update();
     _srs_pps_fids->update();
     _srs_pps_fids_level0->update();

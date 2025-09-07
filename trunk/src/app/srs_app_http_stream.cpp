@@ -958,11 +958,11 @@ srs_error_t SrsLiveStream::streaming_send_messages(ISrsBufferEncoder *enc, SrsMe
         SrsMediaPacket *msg = msgs[i];
 
         if (msg->is_audio()) {
-            err = enc->write_audio(msg->timestamp, msg->payload(), msg->size());
+            err = enc->write_audio(msg->timestamp_, msg->payload(), msg->size());
         } else if (msg->is_video()) {
-            err = enc->write_video(msg->timestamp, msg->payload(), msg->size());
+            err = enc->write_video(msg->timestamp_, msg->payload(), msg->size());
         } else {
-            err = enc->write_metadata(msg->timestamp, msg->payload(), msg->size());
+            err = enc->write_metadata(msg->timestamp_, msg->payload(), msg->size());
         }
 
         if (err != srs_success) {

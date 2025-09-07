@@ -122,23 +122,23 @@ public:
 };
 
 struct SrsRtcpRB {
-    uint32_t ssrc;
-    uint8_t fraction_lost;
-    uint32_t lost_packets;
-    uint32_t highest_sn;
-    uint32_t jitter;
-    uint32_t lsr;
-    uint32_t dlsr;
+    uint32_t ssrc_;
+    uint8_t fraction_lost_;
+    uint32_t lost_packets_;
+    uint32_t highest_sn_;
+    uint32_t jitter_;
+    uint32_t lsr_;
+    uint32_t dlsr_;
 
     SrsRtcpRB()
     {
-        ssrc = 0;
-        fraction_lost = 0;
-        lost_packets = 0;
-        highest_sn = 0;
-        jitter = 0;
-        lsr = 0;
-        dlsr = 0;
+        ssrc_ = 0;
+        fraction_lost_ = 0;
+        lost_packets_ = 0;
+        highest_sn_ = 0;
+        jitter_ = 0;
+        lsr_ = 0;
+        dlsr_ = 0;
     }
 };
 
@@ -284,14 +284,14 @@ private:
     std::set<uint16_t, SrsSeqCompareLess> recv_sns_;
 
     struct SrsRtcpTWCCChunk {
-        uint8_t delta_sizes[kTwccFbMaxBitElements];
-        uint16_t size;
-        bool all_same;
-        bool has_large_delta;
+        uint8_t delta_sizes_[kTwccFbMaxBitElements];
+        uint16_t size_;
+        bool all_same_;
+        bool has_large_delta_;
         SrsRtcpTWCCChunk();
     };
 
-    int pkt_len;
+    int pkt_len_;
     uint16_t next_base_sn_;
 
 private:
@@ -340,9 +340,9 @@ class SrsRtcpNack : public SrsRtcpFbCommon
 {
 private:
     struct SrsPidBlp {
-        uint16_t pid;
-        uint16_t blp;
-        bool in_use;
+        uint16_t pid_;
+        uint16_t blp_;
+        bool in_use_;
     };
 
     std::set<uint16_t, SrsSeqCompareLess> lost_sns_;

@@ -138,13 +138,13 @@ std::string srs_ts_stream2string(SrsTsStream stream);
 
 // The ts channel.
 struct SrsTsChannel {
-    int pid;
-    SrsTsPidApply apply;
-    SrsTsStream stream;
-    SrsTsMessage *msg;
-    SrsTsContext *context;
+    int pid_;
+    SrsTsPidApply apply_;
+    SrsTsStream stream_;
+    SrsTsMessage *msg_;
+    SrsTsContext *context_;
     // for encoder.
-    uint8_t continuity_counter;
+    uint8_t continuity_counter_;
 
     SrsTsChannel();
     virtual ~SrsTsChannel();
@@ -213,36 +213,36 @@ class SrsTsMessage
 {
 public:
     // For decoder only, the ts message does not use them, for user to get the channel and packet.
-    SrsTsChannel *channel;
-    SrsTsPacket *packet;
+    SrsTsChannel *channel_;
+    SrsTsPacket *packet_;
     // For decoder only, the ts message does not use them, to get the RTP packet source.
     void *ps_helper_;
 
 public:
     // The audio cache buffer start pts, to flush audio if full.
     // @remark the pts is not the adjust one, it's the orignal pts.
-    int64_t start_pts;
+    int64_t start_pts_;
     // Whether this message with pcr info,
     // generally, the video IDR(I frame, the keyframe of h.264) carray the pcr info.
-    bool write_pcr;
+    bool write_pcr_;
     // Whether got discontinuity ts, for example, sequence header changed.
-    bool is_discontinuity;
+    bool is_discontinuity_;
 
 public:
     // The chunk id of TS packet.
-    uint8_t continuity_counter;
+    uint8_t continuity_counter_;
 
 public:
     // The timestamp in 90khz
-    int64_t dts;
-    int64_t pts;
+    int64_t dts_;
+    int64_t pts_;
     // The id of pes stream to indicates the payload codec.
     // @remark use is_audio() and is_video() to check it, and stream_number() to finger it out.
-    SrsTsPESStreamId sid;
+    SrsTsPESStreamId sid_;
     // The size of payload, 0 indicates the length() of payload.
-    uint16_t PES_packet_length;
+    uint16_t PES_packet_length_;
     // The payload bytes.
-    SrsSimpleStream *payload;
+    SrsSimpleStream *payload_;
 
 public:
     SrsTsMessage(SrsTsChannel *c = NULL, SrsTsPacket *p = NULL);
@@ -298,17 +298,17 @@ private:
     // Whether context is ready, failed if try to write data when not ready.
     // When PAT and PMT writen, the context is ready.
     // @see https://github.com/ossrs/srs/issues/834
-    bool ready;
+    bool ready_;
 
 private:
-    std::map<int, SrsTsChannel *> pids;
-    bool pure_audio;
-    int8_t sync_byte;
+    std::map<int, SrsTsChannel *> pids_;
+    bool pure_audio_;
+    int8_t sync_byte_;
 
 private:
     // when any codec changed, write the PAT/PMT.
-    SrsVideoCodecId vcodec;
-    SrsAudioCodecId acodec;
+    SrsVideoCodecId vcodec_;
+    SrsAudioCodecId acodec_;
 
 public:
     SrsTsContext();
@@ -361,13 +361,13 @@ public:
     // 1B
     // The sync_byte is a fixed 8-bit field whose value is '0100 0111' (0x47). Sync_byte emulation in the choice of
     // values for other regularly occurring fields, such as PID, should be avoided.
-    int8_t sync_byte; // 8bits
+    int8_t sync_byte_; // 8bits
 
     // 2B
     // The transport_error_indicator is a 1-bit flag. When set to '1' it indicates that at least
     // 1 uncorrectable bit error exists in the associated Transport Stream packet. This bit may be set to '1' by entities external to
     // the transport layer. When set to '1' this bit shall not be reset to '0' unless the bit value(s) in error have been corrected.
-    int8_t transport_error_indicator; // 1bit
+    int8_t transport_error_indicator_; // 1bit
     // The payload_unit_start_indicator is a 1-bit flag which has normative meaning for
     // Transport Stream packets that carry PES packets (refer to 2.4.3.6) or PSI data (refer to 2.4.4).
     //
@@ -387,31 +387,31 @@ public:
     // For null packets the payload_unit_start_indicator shall be set to '0'.
     //
     // The meaning of this bit for Transport Stream packets carrying only private data is not defined in this Specification.
-    int8_t payload_unit_start_indicator; // 1bit
+    int8_t payload_unit_start_indicator_; // 1bit
     // The transport_priority is a 1-bit indicator. When set to '1' it indicates that the associated packet is
     // of greater priority than other packets having the same PID which do not have the bit set to '1'. The transport mechanism
     // can use this to prioritize its data within an elementary stream. Depending on the application the transport_priority field
     // may be coded regardless of the PID or within one PID only. This field may be changed by channel specific encoders or
     // decoders.
-    int8_t transport_priority; // 1bit
+    int8_t transport_priority_; // 1bit
     // The PID is a 13-bit field, indicating the type of the data stored in the packet payload. PID value 0x0000 is
     // reserved for the Program Association Table (see Table 2-25). PID value 0x0001 is reserved for the Conditional Access
     // Table (see Table 2-27). PID values 0x0002 - 0x000F are reserved. PID value 0x1FFF is reserved for null packets (see
     // Table 2-3).
-    SrsTsPid pid; // 13bits
+    SrsTsPid pid_; // 13bits
 
     // 1B
     // This 2-bit field indicates the scrambling mode of the Transport Stream packet payload.
     // The Transport Stream packet header, and the adaptation field when present, shall not be scrambled. In the case of a null
     // packet the value of the transport_scrambling_control field shall be set to '00' (see Table 2-4).
-    SrsTsScrambled transport_scrambling_control; // 2bits
+    SrsTsScrambled transport_scrambling_control_; // 2bits
     // This 2-bit field indicates whether this Transport Stream packet header is followed by an
     // adaptation field and/or payload (see Table 2-5).
     //
     // ITU-T Rec. H.222.0 | ISO/IEC 13818-1 decoders shall discard Transport Stream packets with the
     // adaptation_field_control field set to a value of '00'. In the case of a null packet the value of the adaptation_field_control
     // shall be set to '01'.
-    SrsTsAdaptationFieldType adaption_field_control; // 2bits
+    SrsTsAdaptationFieldType adaption_field_control_; // 2bits
     // The continuity_counter is a 4-bit field incrementing with each Transport Stream packet with the
     // same PID. The continuity_counter wraps around to 0 after its maximum value. The continuity_counter shall not be
     // incremented when the adaptation_field_control of the packet equals '00'(reseverd) or '10'(adaptation field only).
@@ -426,13 +426,13 @@ public:
     // conditions (adaptation_field_control set to '00' or '10', or duplicate packets as described above) are met.
     // The continuity counter may be discontinuous when the discontinuity_indicator is set to '1' (refer to 2.4.3.4). In the case of
     // a null packet the value of the continuity_counter is undefined.
-    uint8_t continuity_counter; // 4bits
+    uint8_t continuity_counter_; // 4bits
 private:
-    SrsTsAdaptationField *adaptation_field;
-    SrsTsPayload *payload;
+    SrsTsAdaptationField *adaptation_field_;
+    SrsTsPayload *payload_;
 
 public:
-    SrsTsContext *context;
+    SrsTsContext *context_;
 
 public:
     SrsTsPacket(SrsTsContext *c);
@@ -474,7 +474,7 @@ public:
     //
     // This is the only method of stuffing allowed for Transport Stream packets carrying PES packets. For Transport Stream
     // packets carrying PSI, an alternative stuffing method is described in 2.4.4.
-    uint8_t adaption_field_length; // 8bits
+    uint8_t adaption_field_length_; // 8bits
     // 1B
     // This is a 1-bit field which when set to '1' indicates that the discontinuity state is true for the
     // current Transport Stream packet. When the discontinuity_indicator is set to '0' or is not present, the discontinuity state is
@@ -535,7 +535,7 @@ public:
     // then be followed by a version of the TS_program_map_section for each affected program with the version_number
     // incremented by one and the current_next_indicator = = 1, containing a complete program definition. This indicates a
     // version change in PSI data.
-    int8_t discontinuity_indicator; // 1bit
+    int8_t discontinuity_indicator_; // 1bit
     // The random_access_indicator is a 1-bit field that indicates that the current Transport
     // Stream packet, and possibly subsequent Transport Stream packets with the same PID, contain some information to aid
     // random access at this point. Specifically, when the bit is set to '1', the next PES packet to start in the payload of Transport
@@ -545,31 +545,31 @@ public:
     // sequence header. In the case of audio, the presentation timestamp shall be present in the PES packet containing the first
     // byte of the audio frame. In the PCR_PID the random_access_indicator may only be set to '1' in Transport Stream packet
     // containing the PCR fields.
-    int8_t random_access_indicator; // 1bit
+    int8_t random_access_indicator_; // 1bit
     // The elementary_stream_priority_indicator is a 1-bit field. It indicates, among
     // packets with the same PID, the priority of the elementary stream data carried within the payload of this Transport Stream
     // packet. A '1' indicates that the payload has a higher priority than the payloads of other Transport Stream packets. In the
     // case of video, this field may be set to '1' only if the payload contains one or more bytes from an intra-coded slice. A
     // value of '0' indicates that the payload has the same priority as all other packets which do not have this bit set to '1'.
-    int8_t elementary_stream_priority_indicator; // 1bit
+    int8_t elementary_stream_priority_indicator_; // 1bit
     // The PCR_flag is a 1-bit flag. A value of '1' indicates that the adaptation_field contains a PCR field coded in
     // two parts. A value of '0' indicates that the adaptation field does not contain any PCR field.
-    int8_t PCR_flag; // 1bit
+    int8_t PCR_flag_; // 1bit
     // The OPCR_flag is a 1-bit flag. A value of '1' indicates that the adaptation_field contains an OPCR field
     // coded in two parts. A value of '0' indicates that the adaptation field does not contain any OPCR field.
-    int8_t OPCR_flag; // 1bit
+    int8_t OPCR_flag_; // 1bit
     // The splicing_point_flag is a 1-bit flag. When set to '1', it indicates that a splice_countdown field
     // shall be present in the associated adaptation field, specifying the occurrence of a splicing point. A value of '0' indicates
     // that a splice_countdown field is not present in the adaptation field.
-    int8_t splicing_point_flag; // 1bit
+    int8_t splicing_point_flag_; // 1bit
     // The transport_private_data_flag is a 1-bit flag. A value of '1' indicates that the
     // adaptation field contains one or more private_data bytes. A value of '0' indicates the adaptation field does not contain any
     // private_data bytes.
-    int8_t transport_private_data_flag; // 1bit
+    int8_t transport_private_data_flag_; // 1bit
     // The adaptation_field_extension_flag is a 1-bit field which when set to '1' indicates
     // the presence of an adaptation field extension. A value of '0' indicates that an adaptation field extension is not present in
     // the adaptation field.
-    int8_t adaptation_field_extension_flag; // 1bit
+    int8_t adaptation_field_extension_flag_; // 1bit
 
     // If PCR_flag, 6B
     // The program_clock_reference (PCR) is a
@@ -577,10 +577,10 @@ public:
     // PCR_base(i), as given in equation 2-2. The second part, program_clock_reference_extension, is a 9-bit field whose value
     // is given by PCR_ext(i), as given in equation 2-3. The PCR indicates the intended time of arrival of the byte containing
     // the last bit of the program_clock_reference_base at the input of the system target decoder.
-    int64_t program_clock_reference_base; // 33bits
+    int64_t program_clock_reference_base_; // 33bits
     // 6bits reserved, must be '1'
-    int8_t const1_value0;                      // 6bits
-    int16_t program_clock_reference_extension; // 9bits
+    int8_t const1_value0_;                      // 6bits
+    int16_t program_clock_reference_extension_; // 9bits
 
     // If OPCR_flag, 6B
     // The optional original
@@ -595,10 +595,10 @@ public:
     // would include at least any PSI and private data packets which were present in the original Transport Stream and would
     // possibly require other private arrangements. It also means that the OPCR must be an identical copy of its associated PCR
     // in the original single program Transport Stream.
-    int64_t original_program_clock_reference_base; // 33bits
+    int64_t original_program_clock_reference_base_; // 33bits
     // 6bits reserved, must be '1'
-    int8_t const1_value2;                               // 6bits
-    int16_t original_program_clock_reference_extension; // 9bits
+    int8_t const1_value2_;                               // 6bits
+    int16_t original_program_clock_reference_extension_; // 9bits
 
     // If splicing_point_flag, 1B
     // The splice_countdown is an 8-bit field, representing a value which may be positive or negative. A
@@ -623,20 +623,20 @@ public:
     // For the purposes of this subclause, an access point is defined as follows:
     //       Video - The first byte of a video_sequence_header.
     //       Audio - The first byte of an audio frame.
-    int8_t splice_countdown; // 8bits
+    int8_t splice_countdown_; // 8bits
 
     // If transport_private_data_flag, 1+p[0] B
-    std::vector<char> transport_private_data; //[transport_private_data_length]bytes
+    std::vector<char> transport_private_data_; //[transport_private_data_length]bytes
 
     // If adaptation_field_extension_flag, 2+x B
     // The adaptation_field_extension_length is an 8-bit field. It indicates the number of
     // bytes of the extended adaptation field data immediately following this field, including reserved bytes if present.
-    uint8_t adaptation_field_extension_length; // 8bits
+    uint8_t adaptation_field_extension_length_; // 8bits
     // This is a 1-bit field which when set to '1' indicates the presence of the ltw_offset
     // field.
-    int8_t ltw_flag; // 1bit
+    int8_t ltw_flag_; // 1bit
     // This is a 1-bit field which when set to '1' indicates the presence of the piecewise_rate field.
-    int8_t piecewise_rate_flag; // 1bit
+    int8_t piecewise_rate_flag_; // 1bit
     // This is a 1-bit flag which when set to '1' indicates that the splice_type and DTS_next_AU fields
     // are present. A value of '0' indicates that neither splice_type nor DTS_next_AU fields are present. This field shall not be
     // set to '1' in Transport Stream packets in which the splicing_point_flag is not set to '1'. Once it is set to '1' in a Transport
@@ -645,13 +645,13 @@ public:
     // reaches zero (including this packet). When this flag is set, if the elementary stream carried in this PID is an audio stream,
     // the splice_type field shall be set to '0000'. If the elementary stream carried in this PID is a video stream, it shall fulfil the
     // constraints indicated by the splice_type value.
-    int8_t seamless_splice_flag; // 1bit
+    int8_t seamless_splice_flag_; // 1bit
     // reserved 5bits, must be '1'
-    int8_t const1_value1; // 5bits
+    int8_t const1_value1_; // 5bits
     // if ltw_flag, 2B
     // (legal time window_valid_flag) - This is a 1-bit field which when set to '1' indicates that the value of the
     // ltw_offset shall be valid. A value of '0' indicates that the value in the ltw_offset field is undefined.
-    int8_t ltw_valid_flag; // 1bit
+    int8_t ltw_valid_flag_; // 1bit
     // (legal time window offset) - This is a 15-bit field, the value of which is defined only if the ltw_valid flag has
     // a value of '1'. When defined, the legal time window offset is in units of (300/fs) seconds, where fs is the system clock
     // frequency of the program that this PID belongs to, and fulfils:
@@ -660,14 +660,14 @@ public:
     // where i is the index of the first byte of this Transport Stream packet, offset is the value encoded in this field, t(i) is the
     // arrival time of byte i in the T-STD, and t1(i) is the upper bound in time of a time interval called the Legal Time Window
     // which is associated with this Transport Stream packet.
-    int16_t ltw_offset; // 15bits
+    int16_t ltw_offset_; // 15bits
     // if piecewise_rate_flag, 3B
     // 2bits reserved
     // The meaning of this 22-bit field is only defined when both the ltw_flag and the ltw_valid_flag are set
     // to '1'. When defined, it is a positive integer specifying a hypothetical bitrate R which is used to define the end times of
     // the Legal Time Windows of Transport Stream packets of the same PID that follow this packet but do not include the
     // legal_time_window_offset field.
-    int32_t piecewise_rate; // 22bits
+    int32_t piecewise_rate_; // 22bits
     // if seamless_splice_flag, 5B
     // This is a 4-bit field. From the first occurrence of this field onwards, it shall have the same value in all the
     // subsequent Transport Stream packets of the same PID in which it is present, until the packet in which the
@@ -675,31 +675,31 @@ public:
     // this field shall have the value '0000'. If the elementary stream carried in that PID is a video stream, this field indicates the
     // conditions that shall be respected by this elementary stream for splicing purposes. These conditions are defined as a
     // function of profile, level and splice_type in Table 2-7 through Table 2-16.
-    int8_t splice_type; // 4bits
+    int8_t splice_type_; // 4bits
     // (decoding time stamp next access unit) - This is a 33-bit field, coded in three parts. In the case of
     // continuous and periodic decoding through this splicing point it indicates the decoding time of the first access unit
     // following the splicing point. This decoding time is expressed in the time base which is valid in the Transport Stream
     // packet in which the splice_countdown reaches zero. From the first occurrence of this field onwards, it shall have the
     // same value in all the subsequent Transport Stream packets of the same PID in which it is present, until the packet in
     // which the splice_countdown reaches zero (including this packet).
-    int8_t DTS_next_AU0;  // 3bits
-    int8_t marker_bit0;   // 1bit
-    int16_t DTS_next_AU1; // 15bits
-    int8_t marker_bit1;   // 1bit
-    int16_t DTS_next_AU2; // 15bits
-    int8_t marker_bit2;   // 1bit
+    int8_t DTS_next_AU0_;  // 3bits
+    int8_t marker_bit0_;   // 1bit
+    int16_t DTS_next_AU1_; // 15bits
+    int8_t marker_bit1_;   // 1bit
+    int16_t DTS_next_AU2_; // 15bits
+    int8_t marker_bit2_;   // 1bit
     // left bytes.
     // This is a fixed 8-bit value equal to '1111 1111' that can be inserted by the encoder. It is discarded by the
     // decoder.
-    int nb_af_ext_reserved;
+    int nb_af_ext_reserved_;
 
     // left bytes.
     // This is a fixed 8-bit value equal to '1111 1111' that can be inserted by the encoder. It is discarded by the
     // decoder.
-    int nb_af_reserved;
+    int nb_af_reserved_;
 
 private:
-    SrsTsPacket *packet;
+    SrsTsPacket *packet_;
 
 public:
     SrsTsAdaptationField(SrsTsPacket *pkt);
@@ -745,7 +745,7 @@ enum SrsTsPsiId {
 class SrsTsPayload
 {
 protected:
-    SrsTsPacket *packet;
+    SrsTsPacket *packet_;
 
 public:
     SrsTsPayload(SrsTsPacket *p);
@@ -767,77 +767,77 @@ public:
     // The packet_start_code_prefix is a 24-bit code. Together with the stream_id that follows it
     // constitutes a packet start code that identifies the beginning of a packet. The packet_start_code_prefix is the bit string
     // '0000 0000 0000 0000 0000 0001' (0x000001).
-    int32_t packet_start_code_prefix; // 24bits
+    int32_t packet_start_code_prefix_; // 24bits
     // 1B
     // In Program Streams, the stream_id specifies the type and number of the elementary stream as defined by the
     // stream_id Table 2-18. In Transport Streams, the stream_id may be set to any valid value which correctly describes the
     // elementary stream type as defined in Table 2-18. In Transport Streams, the elementary stream type is specified in the
     // Program Specific Information as specified in 2.4.4.
     // @see SrsTsPESStreamId, value can be SrsTsPESStreamIdAudioCommon or SrsTsPESStreamIdVideoCommon.
-    uint8_t stream_id; // 8bits
+    uint8_t stream_id_; // 8bits
     // 2B
     // A 16-bit field specifying the number of bytes in the PES packet following the last byte of the
     // field. A value of 0 indicates that the PES packet length is neither specified nor bounded and is allowed only in
     // PES packets whose payload consists of bytes from a video elementary stream contained in Transport Stream packets.
-    uint16_t PES_packet_length; // 16bits
+    uint16_t PES_packet_length_; // 16bits
 
     // 1B
     // 2bits const '10'
-    int8_t const2bits; // 2bits
+    int8_t const2bits_; // 2bits
     // The 2-bit PES_scrambling_control field indicates the scrambling mode of the PES packet
     // payload. When scrambling is performed at the PES level, the PES packet header, including the optional fields when
     // present, shall not be scrambled (see Table 2-19).
-    int8_t PES_scrambling_control; // 2bits
+    int8_t PES_scrambling_control_; // 2bits
     // This is a 1-bit field indicating the priority of the payload in this PES packet. A '1' indicates a higher
     // priority of the payload of the PES packet payload than a PES packet payload with this field set to '0'. A multiplexor can
     // use the PES_priority bit to prioritize its data within an elementary stream. This field shall not be changed by the transport
     // mechanism.
-    int8_t PES_priority; // 1bit
+    int8_t PES_priority_; // 1bit
     // This is a 1-bit flag. When set to a value of '1' it indicates that the PES packet header is
     // immediately followed by the video start code or audio syncword indicated in the data_stream_alignment_descriptor
     // in 2.6.10 if this descriptor is present. If set to a value of '1' and the descriptor is not present, alignment as indicated in
     // alignment_type '01' in Table 2-47 and Table 2-48 is required. When set to a value of '0' it is not defined whether any such
     // alignment occurs or not.
-    int8_t data_alignment_indicator; // 1bit
+    int8_t data_alignment_indicator_; // 1bit
     // This is a 1-bit field. When set to '1' it indicates that the material of the associated PES packet payload is
     // protected by copyright. When set to '0' it is not defined whether the material is protected by copyright. A copyright
     // descriptor described in 2.6.24 is associated with the elementary stream which contains this PES packet and the copyright
     // flag is set to '1' if the descriptor applies to the material contained in this PES packet
-    int8_t copyright; // 1bit
+    int8_t copyright_; // 1bit
     // This is a 1-bit field. When set to '1' the contents of the associated PES packet payload is an original.
     // When set to '0' it indicates that the contents of the associated PES packet payload is a copy.
-    int8_t original_or_copy; // 1bit
+    int8_t original_or_copy_; // 1bit
 
     // 1B
     // This is a 2-bit field. When the PTS_DTS_flags field is set to '10', the PTS fields shall be present in
     // the PES packet header. When the PTS_DTS_flags field is set to '11', both the PTS fields and DTS fields shall be present
     // in the PES packet header. When the PTS_DTS_flags field is set to '00' no PTS or DTS fields shall be present in the PES
     // packet header. The value '01' is forbidden.
-    int8_t PTS_DTS_flags; // 2bits
+    int8_t PTS_DTS_flags_; // 2bits
     // A 1-bit flag, which when set to '1' indicates that ESCR base and extension fields are present in the PES
     // packet header. When set to '0' it indicates that no ESCR fields are present.
-    int8_t ESCR_flag; // 1bit
+    int8_t ESCR_flag_; // 1bit
     // A 1-bit flag, which when set to '1' indicates that the ES_rate field is present in the PES packet header.
     // When set to '0' it indicates that no ES_rate field is present.
-    int8_t ES_rate_flag; // 1bit
+    int8_t ES_rate_flag_; // 1bit
     // A 1-bit flag, which when set to '1' it indicates the presence of an 8-bit trick mode field. When
     // set to '0' it indicates that this field is not present.
-    int8_t DSM_trick_mode_flag; // 1bit
+    int8_t DSM_trick_mode_flag_; // 1bit
     // A 1-bit flag, which when set to '1' indicates the presence of the additional_copy_info field.
     // When set to '0' it indicates that this field is not present.
-    int8_t additional_copy_info_flag; // 1bit
+    int8_t additional_copy_info_flag_; // 1bit
     // A 1-bit flag, which when set to '1' indicates that a CRC field is present in the PES packet. When set to
     // '0' it indicates that this field is not present.
-    int8_t PES_CRC_flag; // 1bit
+    int8_t PES_CRC_flag_; // 1bit
     // A 1-bit flag, which when set to '1' indicates that an extension field exists in this PES packet
     // header. When set to '0' it indicates that this field is not present.
-    int8_t PES_extension_flag; // 1bit
+    int8_t PES_extension_flag_; // 1bit
 
     // 1B
     // An 8-bit field specifying the total number of bytes occupied by the optional fields and any
     // stuffing bytes contained in this PES packet header. The presence of optional fields is indicated in the byte that precedes
     // the PES_header_data_length field.
-    uint8_t PES_header_data_length; // 8bits
+    uint8_t PES_header_data_length_; // 8bits
 
     // 5B
     // Presentation times shall be related to decoding times as follows: The PTS is a 33-bit
@@ -855,7 +855,7 @@ public:
     // --------------2B
     // 15bits PTS [14..0]
     // 1bit const '1'
-    int64_t pts; // 33bits
+    int64_t pts_; // 33bits
 
     // 5B
     // The DTS is a 33-bit number coded in three separate fields. It indicates the decoding time,
@@ -871,7 +871,7 @@ public:
     // --------------2B
     // 15bits DTS [14..0]
     // 1bit const '1'
-    int64_t dts; // 33bits
+    int64_t dts_; // 33bits
 
     // 6B
     // The elementary stream clock reference is a 42-bit field coded in two parts. The first
@@ -888,8 +888,8 @@ public:
     // 1bit const '1'
     // 9bits ESCR_extension
     // 1bit const '1'
-    int64_t ESCR_base;      // 33bits
-    int16_t ESCR_extension; // 9bits
+    int64_t ESCR_base_;      // 33bits
+    int16_t ESCR_extension_; // 9bits
 
     // 3B
     // The ES_rate field is a 22-bit unsigned integer specifying the rate at which the
@@ -901,56 +901,56 @@ public:
     // 1bit const '1'
     // 22bits ES_rate
     // 1bit const '1'
-    int32_t ES_rate; // 22bits
+    int32_t ES_rate_; // 22bits
 
     // 1B
     // A 3-bit field that indicates which trick mode is applied to the associated video stream. In cases of
     // other types of elementary streams, the meanings of this field and those defined by the following five bits are undefined.
     // For the definition of trick_mode status, refer to the trick mode section of 2.4.2.3.
-    int8_t trick_mode_control; // 3bits
-    int8_t trick_mode_value;   // 5bits
+    int8_t trick_mode_control_; // 3bits
+    int8_t trick_mode_value_;   // 5bits
 
     // 1B
     // 1bit const '1'
     // This 7-bit field contains private data relating to copyright information.
-    int8_t additional_copy_info; // 7bits
+    int8_t additional_copy_info_; // 7bits
 
     // 2B
     // The previous_PES_packet_CRC is a 16-bit field that contains the CRC value that yields
     // a zero output of the 16 registers in the decoder similar to the one defined in Annex A,
-    int16_t previous_PES_packet_CRC; // 16bits
+    int16_t previous_PES_packet_CRC_; // 16bits
 
     // 1B
     // A 1-bit flag which when set to '1' indicates that the PES packet header contains private data.
     // When set to a value of '0' it indicates that private data is not present in the PES header.
-    int8_t PES_private_data_flag; // 1bit
+    int8_t PES_private_data_flag_; // 1bit
     // A 1-bit flag which when set to '1' indicates that an ISO/IEC 11172-1 pack header or a
     // Program Stream pack header is stored in this PES packet header. If this field is in a PES packet that is contained in a
     // Program Stream, then this field shall be set to '0'. In a Transport Stream, when set to the value '0' it indicates that no pack
     // header is present in the PES header.
-    int8_t pack_header_field_flag; // 1bit
+    int8_t pack_header_field_flag_; // 1bit
     // A 1-bit flag which when set to '1' indicates that the
     // program_packet_sequence_counter, MPEG1_MPEG2_identifier, and original_stuff_length fields are present in this
     // PES packet. When set to a value of '0' it indicates that these fields are not present in the PES header.
-    int8_t program_packet_sequence_counter_flag; // 1bit
+    int8_t program_packet_sequence_counter_flag_; // 1bit
     // A 1-bit flag which when set to '1' indicates that the P-STD_buffer_scale and P-STD_buffer_size
     // are present in the PES packet header. When set to a value of '0' it indicates that these fields are not present in the
     // PES header.
-    int8_t P_STD_buffer_flag; // 1bit
+    int8_t P_STD_buffer_flag_; // 1bit
     // reverved value, must be '1'
-    int8_t const1_value0; // 3bits
+    int8_t const1_value0_; // 3bits
     // A 1-bit field which when set to '1' indicates the presence of the PES_extension_field_length
     // field and associated fields. When set to a value of '0' this indicates that the PES_extension_field_length field and any
     // associated fields are not present.
-    int8_t PES_extension_flag_2; // 1bit
+    int8_t PES_extension_flag_2_; // 1bit
 
     // 16B
     // This is a 16-byte field which contains private data. This data, combined with the fields before and
     // after, shall not emulate the packet_start_code_prefix (0x000001).
-    std::vector<char> PES_private_data; // 128bits
+    std::vector<char> PES_private_data_; // 128bits
 
     // (1+x)B
-    std::vector<char> pack_field; //[pack_field_length] bytes
+    std::vector<char> pack_field_; //[pack_field_length] bytes
 
     // 2B
     // 1bit const '1'
@@ -961,14 +961,14 @@ public:
     // Stream or the original packet sequence of the original ISO/IEC 11172-1 stream. The counter will wrap around to 0 after
     // its maximum value. Repetition of PES packets shall not occur. Consequently, no two consecutive PES packets in the
     // program multiplex shall have identical program_packet_sequence_counter values.
-    int8_t program_packet_sequence_counter; // 7bits
+    int8_t program_packet_sequence_counter_; // 7bits
     // 1bit const '1'
     // A 1-bit flag which when set to '1' indicates that this PES packet carries information from
     // an ISO/IEC 11172-1 stream. When set to '0' it indicates that this PES packet carries information from a Program Stream.
-    int8_t MPEG1_MPEG2_identifier; // 1bit
+    int8_t MPEG1_MPEG2_identifier_; // 1bit
     // This 6-bit field specifies the number of stuffing bytes used in the original ITU-T
     // Rec. H.222.0 | ISO/IEC 13818-1 PES packet header or in the original ISO/IEC 11172-1 packet header.
-    int8_t original_stuff_length; // 6bits
+    int8_t original_stuff_length_; // 6bits
 
     // 2B
     // 2bits const '01'
@@ -977,22 +977,22 @@ public:
     // If the preceding stream_id indicates an audio stream, P-STD_buffer_scale shall have the value '0'. If the preceding
     // stream_id indicates a video stream, P-STD_buffer_scale shall have the value '1'. For all other stream types, the value
     // may be either '1' or '0'.
-    int8_t P_STD_buffer_scale; // 1bit
+    int8_t P_STD_buffer_scale_; // 1bit
     // The P-STD_buffer_size is a 13-bit unsigned integer, the meaning of which is only defined if this
     // PES packet is contained in a Program Stream. It defines the size of the input buffer, BS n , in the P-STD. If
     // P-STD_buffer_scale has the value '0', then the P-STD_buffer_size measures the buffer size in units of 128 bytes. If
     // P-STD_buffer_scale has the value '1', then the P-STD_buffer_size measures the buffer size in units of 1024 bytes.
-    int16_t P_STD_buffer_size; // 13bits
+    int16_t P_STD_buffer_size_; // 13bits
 
     // (1+x)B
     // 1bit const '1'
-    std::vector<char> PES_extension_field; //[PES_extension_field_length] bytes
+    std::vector<char> PES_extension_field_; //[PES_extension_field_length] bytes
 
     // NB
     // This is a fixed 8-bit value equal to '1111 1111' that can be inserted by the encoder, for example to meet
     // the requirements of the channel. It is discarded by the decoder. No more than 32 stuffing bytes shall be present in one
     // PES packet header.
-    int nb_stuffings;
+    int nb_stuffings_;
 
     // NB
     // PES_packet_data_bytes shall be contiguous bytes of data from the elementary stream
@@ -1005,11 +1005,11 @@ public:
     //
     // In the case of a private_stream_1, private_stream_2, ECM_stream, or EMM_stream, the contents of the
     // PES_packet_data_byte field are user definable and will not be specified by ITU-T | ISO/IEC in the future.
-    int nb_bytes;
+    int nb_bytes_;
 
     // NB
     // This is a fixed 8-bit value equal to '1111 1111'. It is discarded by the decoder.
-    int nb_paddings;
+    int nb_paddings_;
 
 public:
     // Whether contains payload to dump to message.
@@ -1037,7 +1037,7 @@ private:
 class SrsTsPayloadPES : public SrsTsPayload
 {
 public:
-    SrsMpegPES pes;
+    SrsMpegPES pes_;
 
 public:
     SrsTsPayloadPES(SrsTsPacket *p);
@@ -1304,9 +1304,9 @@ private:
     SrsAudioCodecId acodec_;
 
 private:
-    SrsTsContext *context;
-    ISrsStreamWriter *writer;
-    std::string path;
+    SrsTsContext *context_;
+    ISrsStreamWriter *writer_;
+    std::string path_;
 
 public:
     SrsTsContextWriter(ISrsStreamWriter *w, SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc);
@@ -1358,8 +1358,8 @@ class SrsTsMessageCache
 {
 public:
     // The current ts message.
-    SrsTsMessage *audio;
-    SrsTsMessage *video;
+    SrsTsMessage *audio_;
+    SrsTsMessage *video_;
 
 public:
     SrsTsMessageCache();

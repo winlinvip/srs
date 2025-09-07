@@ -164,7 +164,7 @@ code_patterns:
 
   naming_conventions:
     - pattern: "field_naming"
-      description: "MANDATORY - All class and struct fields must end with underscore (_)"
+      description: "MANDATORY - All class and struct fields (member variables) must end with underscore (_), but NOT functions/methods"
       usage: |
         WRONG: Fields without underscore
         class SrsBuffer {
@@ -175,17 +175,19 @@ code_patterns:
             bool enabled;
         };
 
-        CORRECT: Fields with underscore
+        CORRECT: Fields with underscore, functions without underscore
         class SrsBuffer {
         private:
             char *p_;
             int size_;
         public:
             bool enabled_;
+        public:
+            srs_error_t initialize();
         };
-      scope: "Applies to ALL fields (private, protected, public) in both classes and structs"
+      scope: "Applies ONLY to fields (member variables) in classes and structs - NOT to functions, methods, or parameters"
       exceptions: "Only applies to SRS-defined classes/structs - do NOT change 3rd party code like llhttp"
-      rationale: "Consistent naming convention across SRS codebase for better code readability and maintenance"
+      rationale: "Consistent naming convention across SRS codebase for better code readability and maintenance - underscore distinguishes member variables from local variables and parameters"
 
   commenting_style:
     - pattern: "C++ style comments"

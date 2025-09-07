@@ -23,7 +23,7 @@ using namespace std;
 
 SrsMp3Transmuxer::SrsMp3Transmuxer()
 {
-    writer = NULL;
+    writer_ = NULL;
 }
 
 SrsMp3Transmuxer::~SrsMp3Transmuxer()
@@ -40,7 +40,7 @@ srs_error_t SrsMp3Transmuxer::initialize(SrsFileWriter *fw)
         return srs_error_new(ERROR_KERNEL_MP3_STREAM_CLOSED, "stream is not open");
     }
 
-    writer = fw;
+    writer_ = fw;
 
     return err;
 }
@@ -60,7 +60,7 @@ srs_error_t SrsMp3Transmuxer::write_header()
         (char)0x00, (char)0x00                          // Flags
     };
 
-    if ((err = writer->write(id3, sizeof(id3), NULL)) != srs_success) {
+    if ((err = writer_->write(id3, sizeof(id3), NULL)) != srs_success) {
         return srs_error_wrap(err, "write id3");
     }
 
@@ -98,7 +98,7 @@ srs_error_t SrsMp3Transmuxer::write_audio(int64_t timestamp, char *data, int siz
         return srs_error_new(ERROR_MP3_DECODE_ERROR, "mp3 decode aac_packet_type failed");
     }
 
-    if ((err = writer->write(data + stream->pos(), size - stream->pos(), NULL)) != srs_success) {
+    if ((err = writer_->write(data + stream->pos(), size - stream->pos(), NULL)) != srs_success) {
         return srs_error_wrap(err, "write audio");
     }
 

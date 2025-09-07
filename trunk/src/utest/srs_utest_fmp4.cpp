@@ -59,7 +59,7 @@ class MockSrsMediaPacket : public SrsMediaPacket
 public:
     MockSrsMediaPacket(bool is_video_msg, uint32_t ts)
     {
-        timestamp = ts;
+        timestamp_ = ts;
 
         // Create sample payload
         char *payload = new char[1024];
@@ -67,9 +67,9 @@ public:
         SrsMediaPacket::wrap(payload, 1024);
 
         if (is_video_msg) {
-            message_type = SrsFrameTypeVideo;
+            message_type_ = SrsFrameTypeVideo;
         } else {
-            message_type = SrsFrameTypeAudio;
+            message_type_ = SrsFrameTypeAudio;
         }
     }
     virtual ~MockSrsMediaPacket() {}
@@ -411,17 +411,17 @@ VOID TEST(Fmp4Test, SrsMp4TrackEncryptionBox_CBCS)
     SrsMp4TrackEncryptionBox tenc;
 
     // Configure for CBCS video encryption (1:9 pattern)
-    tenc.version = 1;
-    tenc.default_crypt_byte_block = 1; // Encrypt 1 block
-    tenc.default_skip_byte_block = 9;  // Skip 9 blocks
-    tenc.default_is_protected = 1;
-    tenc.default_per_sample_IV_size = 0; // Use constant IV
-    tenc.default_constant_IV_size = 16;
+    tenc.version_ = 1;
+    tenc.default_crypt_byte_block_ = 1; // Encrypt 1 block
+    tenc.default_skip_byte_block_ = 9;  // Skip 9 blocks
+    tenc.default_is_protected_ = 1;
+    tenc.default_per_sample_IV_size_ = 0; // Use constant IV
+    tenc.default_constant_IV_size_ = 16;
 
     // Set Key ID
     unsigned char kid[16] = {0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68,
                              0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70};
-    memcpy(tenc.default_KID, kid, 16);
+    memcpy(tenc.default_KID_, kid, 16);
 
     // Set constant IV
     unsigned char iv[16] = {0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78,
@@ -429,16 +429,16 @@ VOID TEST(Fmp4Test, SrsMp4TrackEncryptionBox_CBCS)
     tenc.set_default_constant_IV(iv, 16);
 
     // Verify configuration
-    EXPECT_EQ(1, tenc.version);
-    EXPECT_EQ(1, tenc.default_crypt_byte_block);
-    EXPECT_EQ(9, tenc.default_skip_byte_block);
-    EXPECT_EQ(1, tenc.default_is_protected);
-    EXPECT_EQ(0, tenc.default_per_sample_IV_size);
-    EXPECT_EQ(16, tenc.default_constant_IV_size);
-    EXPECT_EQ(0x61, tenc.default_KID[0]);
-    EXPECT_EQ(0x70, tenc.default_KID[15]);
-    EXPECT_EQ(0x71, tenc.default_constant_IV[0]);
-    EXPECT_EQ(0x80, tenc.default_constant_IV[15]);
+    EXPECT_EQ(1, tenc.version_);
+    EXPECT_EQ(1, tenc.default_crypt_byte_block_);
+    EXPECT_EQ(9, tenc.default_skip_byte_block_);
+    EXPECT_EQ(1, tenc.default_is_protected_);
+    EXPECT_EQ(0, tenc.default_per_sample_IV_size_);
+    EXPECT_EQ(16, tenc.default_constant_IV_size_);
+    EXPECT_EQ(0x61, tenc.default_KID_[0]);
+    EXPECT_EQ(0x70, tenc.default_KID_[15]);
+    EXPECT_EQ(0x71, tenc.default_constant_IV_[0]);
+    EXPECT_EQ(0x80, tenc.default_constant_IV_[15]);
 
     // Test encoding/decoding
     char buffer_data[1024];
@@ -459,17 +459,17 @@ VOID TEST(Fmp4Test, SrsMp4TrackEncryptionBox_AudioFullSample)
     SrsMp4TrackEncryptionBox tenc;
 
     // Configure for audio full-sample encryption
-    tenc.version = 1;
-    tenc.default_crypt_byte_block = 0; // No pattern (full encryption)
-    tenc.default_skip_byte_block = 0;  // No skip
-    tenc.default_is_protected = 1;
-    tenc.default_per_sample_IV_size = 0; // Use constant IV
-    tenc.default_constant_IV_size = 16;
+    tenc.version_ = 1;
+    tenc.default_crypt_byte_block_ = 0; // No pattern (full encryption)
+    tenc.default_skip_byte_block_ = 0;  // No skip
+    tenc.default_is_protected_ = 1;
+    tenc.default_per_sample_IV_size_ = 0; // Use constant IV
+    tenc.default_constant_IV_size_ = 16;
 
     // Verify audio encryption configuration
-    EXPECT_EQ(0, tenc.default_crypt_byte_block);
-    EXPECT_EQ(0, tenc.default_skip_byte_block);
-    EXPECT_EQ(1, tenc.default_is_protected);
+    EXPECT_EQ(0, tenc.default_crypt_byte_block_);
+    EXPECT_EQ(0, tenc.default_skip_byte_block_);
+    EXPECT_EQ(1, tenc.default_is_protected_);
 }
 
 VOID TEST(Fmp4Test, SrsMp4SampleEncryptionBox_Basic)
@@ -479,8 +479,8 @@ VOID TEST(Fmp4Test, SrsMp4SampleEncryptionBox_Basic)
     SrsMp4SampleEncryptionBox senc(16); // 16-byte IV size
 
     // Test basic properties - flags may be set by constructor
-    EXPECT_EQ(0, senc.version);
-    EXPECT_EQ(0, (int)senc.entries.size());
+    EXPECT_EQ(0, senc.version_);
+    EXPECT_EQ(0, (int)senc.entries_.size());
 
     // Test encoding empty box
     char buffer_data[1024];
@@ -503,10 +503,10 @@ VOID TEST(Fmp4Test, SrsMp4SampleAuxiliaryInfoSizeBox_Basic)
     SrsMp4SampleAuxiliaryInfoSizeBox saiz;
 
     // Configure SAIZ box
-    saiz.version = 0;
-    saiz.flags = 0;
-    saiz.default_sample_info_size = 16; // 16-byte IV
-    saiz.sample_count = 0;
+    saiz.version_ = 0;
+    saiz.flags_ = 0;
+    saiz.default_sample_info_size_ = 16; // 16-byte IV
+    saiz.sample_count_ = 0;
 
     // Test encoding
     char buffer_data[1024];
@@ -529,9 +529,9 @@ VOID TEST(Fmp4Test, SrsMp4SampleAuxiliaryInfoOffsetBox_Basic)
     SrsMp4SampleAuxiliaryInfoOffsetBox saio;
 
     // Configure SAIO box
-    saio.version = 0;
-    saio.flags = 0;
-    saio.offsets.push_back(100); // Offset to SENC box
+    saio.version_ = 0;
+    saio.flags_ = 0;
+    saio.offsets_.push_back(100); // Offset to SENC box
 
     // Test encoding
     char buffer_data[1024];
@@ -763,10 +763,10 @@ VOID TEST(Fmp4Test, CodecDetection_AudioCodecUpdate)
 
     // Create mock format with AAC audio codec
     MockSrsFormat fmt;
-    fmt.acodec = new SrsAudioCodecConfig();
-    fmt.acodec->id = SrsAudioCodecIdAAC;
-    fmt.audio = new SrsParsedAudioPacket();
-    fmt.audio->codec = fmt.acodec;
+    fmt.acodec_ = new SrsAudioCodecConfig();
+    fmt.acodec_->id_ = SrsAudioCodecIdAAC;
+    fmt.audio_ = new SrsParsedAudioPacket();
+    fmt.audio_->codec_ = fmt.acodec_;
 
     // Initial codec should be forbidden (not set)
     EXPECT_EQ(SrsAudioCodecIdForbidden, controller.muxer_->latest_acodec());
@@ -779,15 +779,15 @@ VOID TEST(Fmp4Test, CodecDetection_AudioCodecUpdate)
     EXPECT_EQ(SrsAudioCodecIdAAC, controller.muxer_->latest_acodec());
 
     // Test codec change from AAC to MP3
-    fmt.acodec->id = SrsAudioCodecIdMP3;
+    fmt.acodec_->id_ = SrsAudioCodecIdMP3;
     HELPER_ASSERT_SUCCESS(controller.write_audio(&audio_msg, &fmt));
 
     // Codec should now be updated to MP3
     EXPECT_EQ(SrsAudioCodecIdMP3, controller.muxer_->latest_acodec());
 
     controller.dispose();
-    srs_freep(fmt.acodec);
-    srs_freep(fmt.audio);
+    srs_freep(fmt.acodec_);
+    srs_freep(fmt.audio_);
 }
 
 VOID TEST(Fmp4Test, CodecDetection_VideoCodecUpdate)
@@ -802,10 +802,10 @@ VOID TEST(Fmp4Test, CodecDetection_VideoCodecUpdate)
 
     // Create mock format with H.264 video codec
     MockSrsFormat fmt;
-    fmt.vcodec = new SrsVideoCodecConfig();
-    fmt.vcodec->id = SrsVideoCodecIdAVC;
-    fmt.video = new SrsParsedVideoPacket();
-    fmt.video->codec = fmt.vcodec;
+    fmt.vcodec_ = new SrsVideoCodecConfig();
+    fmt.vcodec_->id_ = SrsVideoCodecIdAVC;
+    fmt.video_ = new SrsParsedVideoPacket();
+    fmt.video_->codec_ = fmt.vcodec_;
 
     // Initial codec should be forbidden (not set)
     EXPECT_EQ(SrsVideoCodecIdForbidden, controller.muxer_->latest_vcodec());
@@ -818,15 +818,15 @@ VOID TEST(Fmp4Test, CodecDetection_VideoCodecUpdate)
     EXPECT_EQ(SrsVideoCodecIdAVC, controller.muxer_->latest_vcodec());
 
     // Test codec change from H.264 to HEVC
-    fmt.vcodec->id = SrsVideoCodecIdHEVC;
+    fmt.vcodec_->id_ = SrsVideoCodecIdHEVC;
     HELPER_ASSERT_SUCCESS(controller.write_video(&video_msg, &fmt));
 
     // Codec should now be updated to HEVC
     EXPECT_EQ(SrsVideoCodecIdHEVC, controller.muxer_->latest_vcodec());
 
     controller.dispose();
-    srs_freep(fmt.vcodec);
-    srs_freep(fmt.video);
+    srs_freep(fmt.vcodec_);
+    srs_freep(fmt.video_);
 }
 
 VOID TEST(Fmp4Test, Performance_MultipleSegments)

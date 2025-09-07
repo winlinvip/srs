@@ -33,7 +33,7 @@ srs_error_t SrsRtmpFormat::on_audio(SrsMediaPacket *shared_audio)
     char *data = msg->payload();
     int size = msg->size();
 
-    return SrsFormat::on_audio(msg->timestamp, data, size);
+    return SrsFormat::on_audio(msg->timestamp_, data, size);
 }
 
 srs_error_t SrsRtmpFormat::on_audio(int64_t timestamp, char *data, int size)
@@ -47,7 +47,7 @@ srs_error_t SrsRtmpFormat::on_video(SrsMediaPacket *shared_video)
     char *data = msg->payload();
     int size = msg->size();
 
-    return SrsFormat::on_video(msg->timestamp, data, size);
+    return SrsFormat::on_video(msg->timestamp_, data, size);
 }
 
 srs_error_t SrsRtmpFormat::on_video(int64_t timestamp, char *data, int size)

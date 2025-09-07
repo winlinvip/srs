@@ -217,7 +217,7 @@ string SrsDvrSegmenter::generate_path()
 
 srs_error_t SrsDvrSegmenter::on_update_duration(SrsMediaPacket *msg)
 {
-    fragment->append(msg->timestamp);
+    fragment->append(msg->timestamp_);
     return srs_success;
 }
 
@@ -372,7 +372,7 @@ srs_error_t SrsDvrFlvSegmenter::encode_audio(SrsMediaPacket *audio, SrsFormat *f
 
     char *payload = audio->payload();
     int size = audio->size();
-    if ((err = enc->write_audio(audio->timestamp, payload, size)) != srs_success) {
+    if ((err = enc->write_audio(audio->timestamp_, payload, size)) != srs_success) {
         return srs_error_wrap(err, "write audio");
     }
 
@@ -385,8 +385,8 @@ srs_error_t SrsDvrFlvSegmenter::encode_video(SrsMediaPacket *video, SrsFormat *f
 
     char *payload = video->payload();
     int size = video->size();
-    bool sh = (format->video->avc_packet_type == SrsVideoAvcFrameTraitSequenceHeader);
-    bool keyframe = (!sh && format->video->frame_type == SrsVideoAvcFrameTypeKeyFrame);
+    bool sh = (format->video_->avc_packet_type_ == SrsVideoAvcFrameTraitSequenceHeader);
+    bool keyframe = (!sh && format->video_->frame_type_ == SrsVideoAvcFrameTypeKeyFrame);
 
     if (keyframe) {
         has_keyframe = true;
@@ -398,7 +398,7 @@ srs_error_t SrsDvrFlvSegmenter::encode_video(SrsMediaPacket *video, SrsFormat *f
         return err;
     }
 
-    if ((err = enc->write_video(video->timestamp, payload, size)) != srs_success) {
+    if ((err = enc->write_video(video->timestamp_, payload, size)) != srs_success) {
         return srs_error_wrap(err, "write video");
     }
 
@@ -448,23 +448,23 @@ srs_error_t SrsDvrMp4Segmenter::encode_audio(SrsMediaPacket *audio, SrsFormat *f
 {
     srs_error_t err = srs_success;
 
-    SrsAudioCodecId sound_format = format->acodec->id;
-    SrsAudioSampleRate sound_rate = format->acodec->sound_rate;
-    SrsAudioSampleBits sound_size = format->acodec->sound_size;
-    SrsAudioChannels channels = format->acodec->sound_type;
+    SrsAudioCodecId sound_format = format->acodec_->id_;
+    SrsAudioSampleRate sound_rate = format->acodec_->sound_rate_;
+    SrsAudioSampleBits sound_size = format->acodec_->sound_size_;
+    SrsAudioChannels channels = format->acodec_->sound_type_;
 
-    SrsAudioAacFrameTrait ct = format->audio->aac_packet_type;
+    SrsAudioAacFrameTrait ct = format->audio_->aac_packet_type_;
     if (ct == SrsAudioAacFrameTraitSequenceHeader || ct == SrsAudioMp3FrameTraitSequenceHeader) {
-        enc->acodec = sound_format;
-        enc->sample_rate = sound_rate;
-        enc->sound_bits = sound_size;
-        enc->channels = channels;
+        enc->acodec_ = sound_format;
+        enc->sample_rate_ = sound_rate;
+        enc->sound_bits_ = sound_size;
+        enc->channels_ = channels;
     }
 
-    uint8_t *sample = (uint8_t *)format->raw;
-    uint32_t nb_sample = (uint32_t)format->nb_raw;
+    uint8_t *sample = (uint8_t *)format->raw_;
+    uint32_t nb_sample = (uint32_t)format->nb_raw_;
 
-    uint32_t dts = (uint32_t)audio->timestamp;
+    uint32_t dts = (uint32_t)audio->timestamp_;
     if ((err = enc->write_sample(format, SrsMp4HandlerTypeSOUN, 0x00, ct, dts, dts, sample, nb_sample)) != srs_success) {
         return srs_error_wrap(err, "write sample");
     }
@@ -476,21 +476,21 @@ srs_error_t SrsDvrMp4Segmenter::encode_video(SrsMediaPacket *video, SrsFormat *f
 {
     srs_error_t err = srs_success;
 
-    SrsVideoAvcFrameType frame_type = format->video->frame_type;
-    SrsVideoCodecId codec_id = format->vcodec->id;
+    SrsVideoAvcFrameType frame_type = format->video_->frame_type_;
+    SrsVideoCodecId codec_id = format->vcodec_->id_;
 
-    SrsVideoAvcFrameTrait ct = format->video->avc_packet_type;
-    uint32_t cts = (uint32_t)format->video->cts;
+    SrsVideoAvcFrameTrait ct = format->video_->avc_packet_type_;
+    uint32_t cts = (uint32_t)format->video_->cts_;
 
     if (ct == SrsVideoAvcFrameTraitSequenceHeader) {
-        enc->vcodec = codec_id;
+        enc->vcodec_ = codec_id;
     }
 
-    uint32_t dts = (uint32_t)video->timestamp;
+    uint32_t dts = (uint32_t)video->timestamp_;
     uint32_t pts = dts + cts;
 
-    uint8_t *sample = (uint8_t *)format->raw;
-    uint32_t nb_sample = (uint32_t)format->nb_raw;
+    uint8_t *sample = (uint8_t *)format->raw_;
+    uint32_t nb_sample = (uint32_t)format->nb_raw_;
     if ((err = enc->write_sample(format, SrsMp4HandlerTypeVIDE, frame_type, ct, dts, pts, sample, nb_sample)) != srs_success) {
         return srs_error_wrap(err, "write sample");
     }

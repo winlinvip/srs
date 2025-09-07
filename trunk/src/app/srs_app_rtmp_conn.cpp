@@ -829,11 +829,11 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
 
                 // foreach msg, collect the duration.
                 // @remark: never use msg when sent it, for the protocol sdk will free it.
-                if (starttime < 0 || starttime > msg->timestamp) {
-                    starttime = msg->timestamp;
+                if (starttime < 0 || starttime > msg->timestamp_) {
+                    starttime = msg->timestamp_;
                 }
-                duration += (msg->timestamp - starttime) * SRS_UTIME_MILLISECONDS;
-                starttime = msg->timestamp;
+                duration += (msg->timestamp_ - starttime) * SRS_UTIME_MILLISECONDS;
+                starttime = msg->timestamp_;
             }
         }
 
@@ -1108,7 +1108,7 @@ srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &sou
     srs_error_t err = srs_success;
 
     // process publish event.
-    if (msg->header.is_amf0_command() || msg->header.is_amf3_command()) {
+    if (msg->header_.is_amf0_command() || msg->header_.is_amf3_command()) {
         SrsRtmpCommand *pkt_raw = NULL;
         if ((err = rtmp->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "rtmp: decode message");
@@ -1157,14 +1157,14 @@ srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &so
     }
 
     // process audio packet
-    if (msg->header.is_audio()) {
+    if (msg->header_.is_audio()) {
         if ((err = source->on_audio(msg)) != srs_success) {
             return srs_error_wrap(err, "rtmp: consume audio");
         }
         return err;
     }
     // process video packet
-    if (msg->header.is_video()) {
+    if (msg->header_.is_video()) {
         if ((err = source->on_video(msg)) != srs_success) {
             return srs_error_wrap(err, "rtmp: consume video");
         }
@@ -1172,7 +1172,7 @@ srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &so
     }
 
     // process aggregate packet
-    if (msg->header.is_aggregate()) {
+    if (msg->header_.is_aggregate()) {
         if ((err = source->on_aggregate(msg)) != srs_success) {
             return srs_error_wrap(err, "rtmp: consume aggregate");
         }
@@ -1180,7 +1180,7 @@ srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &so
     }
 
     // process onMetaData
-    if (msg->header.is_amf0_data() || msg->header.is_amf3_data()) {
+    if (msg->header_.is_amf0_data() || msg->header_.is_amf3_data()) {
         SrsRtmpCommand *pkt_raw = NULL;
         if ((err = rtmp->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "rtmp: decode message");
@@ -1209,7 +1209,7 @@ srs_error_t SrsRtmpConn::process_play_control_msg(SrsLiveConsumer *consumer, Srs
     }
     SrsUniquePtr<SrsRtmpCommonMessage> msg(msg_raw);
 
-    if (!msg->header.is_amf0_command() && !msg->header.is_amf3_command()) {
+    if (!msg->header_.is_amf0_command() && !msg->header_.is_amf3_command()) {
         return err;
     }
 

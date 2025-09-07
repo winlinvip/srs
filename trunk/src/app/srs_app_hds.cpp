@@ -46,7 +46,7 @@ string serialFlv(SrsMediaPacket *msg)
     SrsUniquePtr<SrsBuffer> stream(new SrsBuffer(byte, size));
 
     // tag header
-    long long dts = msg->timestamp;
+    long long dts = msg->timestamp_;
     char type = msg->is_video() ? 0x09 : 0x08;
 
     stream->write_1bytes(type);

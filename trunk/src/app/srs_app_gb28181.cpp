@@ -145,12 +145,12 @@ void SrsGbSession::on_ps_pack(SrsPackContext *ctx, SrsPsPacket *ps, const std::v
         SrsTsMessage *msg = *it;
 
         // Group all videos to one video.
-        if (msg->sid == SrsTsPESStreamIdVideoCommon) {
+        if (msg->sid_ == SrsTsPESStreamIdVideoCommon) {
             video->ps_helper_ = msg->ps_helper_;
-            video->dts = msg->dts;
-            video->pts = msg->pts;
-            video->sid = msg->sid;
-            video->payload->append(msg->payload);
+            video->dts_ = msg->dts_;
+            video->pts_ = msg->pts_;
+            video->sid_ = msg->sid_;
+            video->payload_->append(msg->payload_);
             continue;
         }
 
@@ -163,7 +163,7 @@ void SrsGbSession::on_ps_pack(SrsPackContext *ctx, SrsPsPacket *ps, const std::v
     }
 
     // Send the generated video message.
-    if (video->payload->length() > 0) {
+    if (video->payload_->length() > 0) {
         srs_error_t err = muxer_->on_ts_message(video.get());
         if (err != srs_success) {
             srs_warn("Muxer: Ignore video err %s", srs_error_desc(err).c_str());
@@ -672,15 +672,15 @@ srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
 
     // TODO: FIXME: use right way.
     for (int i = 0; i < 10; i++) {
-        if (msgs.find(msg->timestamp) == msgs.end()) {
+        if (msgs.find(msg->timestamp_) == msgs.end()) {
             break;
         }
 
         // adjust the ts, add 1ms.
-        msg->timestamp += 1;
+        msg->timestamp_ += 1;
 
         if (i >= 100) {
-            srs_warn("Muxer: free the msg for dts exists, dts=%" PRId64, msg->timestamp);
+            srs_warn("Muxer: free the msg for dts exists, dts=%" PRId64, msg->timestamp_);
             srs_freep(msg);
             return err;
         }
@@ -694,7 +694,7 @@ srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
         nb_videos++;
     }
 
-    msgs[msg->timestamp] = msg;
+    msgs[msg->timestamp_] = msg;
 
     return err;
 }
@@ -765,8 +765,8 @@ srs_error_t SrsGbMuxer::on_ts_message(SrsTsMessage *msg)
 {
     srs_error_t err = srs_success;
 
-    SrsBuffer avs(msg->payload->bytes(), msg->payload->length());
-    if (msg->sid == SrsTsPESStreamIdVideoCommon) {
+    SrsBuffer avs(msg->payload_->bytes(), msg->payload_->length());
+    if (msg->sid_ == SrsTsPESStreamIdVideoCommon) {
         if ((err = on_ts_video(msg, &avs)) != srs_success) {
             return srs_error_wrap(err, "ts: consume video");
         }
@@ -811,8 +811,8 @@ srs_error_t SrsGbMuxer::mux_h264(SrsTsMessage *msg, SrsBuffer *avs)
     srs_error_t err = srs_success;
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
-    uint32_t pts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
+    uint32_t pts = (uint32_t)(msg->dts_ / 90);
 
     // send each frame.
     while (!avs->empty()) {
@@ -972,8 +972,8 @@ srs_error_t SrsGbMuxer::mux_h265(SrsTsMessage *msg, SrsBuffer *avs)
     srs_error_t err = srs_success;
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
-    uint32_t pts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
+    uint32_t pts = (uint32_t)(msg->dts_ / 90);
 
     // send each frame.
     while (!avs->empty()) {
@@ -1154,7 +1154,7 @@ srs_error_t SrsGbMuxer::on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs)
     }
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
 
     // send each frame.
     while (!avs->empty()) {
@@ -1242,7 +1242,7 @@ srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *d
             srs_trace("Muxer: send msg %s age=%d, dts=%" PRId64 ", size=%d",
                       msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                               : "N",
-                      pprint_->age(), msg->timestamp, msg->size());
+                      pprint_->age(), msg->timestamp_, msg->size());
         }
 
         // send out encoded msg.
@@ -1346,12 +1346,12 @@ srs_error_t SrsPackContext::on_ts_message(SrsTsMessage *msg)
     //}
 
     // Correct DTS/PS to the last one.
-    if (!msgs_.empty() && (!msg->dts || !msg->pts)) {
+    if (!msgs_.empty() && (!msg->dts_ || !msg->pts_)) {
         SrsTsMessage *last = msgs_.back();
-        if (!msg->dts)
-            msg->dts = last->dts;
-        if (!msg->pts)
-            msg->pts = last->pts;
+        if (!msg->dts_)
+            msg->dts_ = last->dts_;
+        if (!msg->pts_)
+            msg->pts_ = last->pts_;
     }
 
     // uint8_t* p = (uint8_t*)msg->payload->bytes();
@@ -1424,14 +1424,14 @@ srs_error_t SrsRecoverablePsContext::decode_rtp(SrsBuffer *stream, int reserved,
         memmove(dst, src, reserved);
 
         // The payload also should skip back to the reserved bytes.
-        rtp_raw->payload -= reserved;
-        rtp_raw->nn_payload += reserved;
+        rtp_raw->payload_ -= reserved;
+        rtp_raw->nn_payload_ += reserved;
 
         // The stream also skip back to the not parsed bytes.
         stream->skip(-1 * reserved);
     }
 
-    SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+    SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
     // srs_trace("GB: Got RTP length=%d, payload=%d, seq=%u, ts=%d", length, rtp_raw->nn_payload, rtp.header.get_sequence(), rtp.header.get_timestamp());
 
     ctx_.helper_.rtp_seq_ = rtp.header.get_sequence();
@@ -1488,7 +1488,7 @@ srs_error_t SrsRecoverablePsContext::enter_recover_mode(SrsBuffer *stream, ISrsP
     uint16_t lsopm = h.pack_pre_msg_last_seq_;
     SrsTsMessage *last = ctx_.last();
     srs_warn("PS: Enter recover=%d, seq=%u, ts=%u, pt=%u, pack=%u, msgs=%u, lsopm=%u, last=%u/%u, bytes=[%s], pos=%d, left=%d for err %s",
-             recover_, h.rtp_seq_, h.rtp_ts_, h.rtp_pt_, pack_seq, pack_msgs, lsopm, last->PES_packet_length, last->payload->length(),
+             recover_, h.rtp_seq_, h.rtp_ts_, h.rtp_pt_, pack_seq, pack_msgs, lsopm, last->PES_packet_length_, last->payload_->length(),
              bytes.c_str(), npos, stream->left(), srs_error_desc(err).c_str());
 
     // If RTP packet exceed SRS_GB_LARGE_PACKET, which is large packet, might be correct length and impossible to

@@ -463,7 +463,7 @@ int SrsUdpMuxSocket::recvfrom(srs_utime_t timeout)
     address_changed_ = true;
 
     // Update the stat.
-    ++_srs_pps_rpkts->sugar;
+    ++_srs_pps_rpkts->sugar_;
 
     return nread;
 }
@@ -472,7 +472,7 @@ srs_error_t SrsUdpMuxSocket::sendto(void *data, int size, srs_utime_t timeout)
 {
     srs_error_t err = srs_success;
 
-    ++_srs_pps_spkts->sugar;
+    ++_srs_pps_spkts->sugar_;
 
     int nb_write = srs_sendto(lfd, data, size, (sockaddr *)&from, fromlen, timeout);
 
@@ -576,7 +576,7 @@ std::string SrsUdpMuxSocket::peer_id()
         peer_id_ = string(id_buf, len);
 
         // Update the stat.
-        ++_srs_pps_addrs->sugar;
+        ++_srs_pps_addrs->sugar_;
     }
 
     return peer_id_;
@@ -584,7 +584,7 @@ std::string SrsUdpMuxSocket::peer_id()
 
 uint64_t SrsUdpMuxSocket::fast_id()
 {
-    ++_srs_pps_fast_addrs->sugar;
+    ++_srs_pps_fast_addrs->sugar_;
     return fast_id_;
 }
 

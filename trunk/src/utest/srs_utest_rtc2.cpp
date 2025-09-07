@@ -434,16 +434,16 @@ SrsRtpPacket *mock_create_test_rtp_packet(uint16_t sequence_number, uint32_t tim
 SrsRtpFUAPayload2 *mock_create_test_fua_payload(bool start, bool end, const char *payload_data, int size)
 {
     SrsRtpFUAPayload2 *fua = new SrsRtpFUAPayload2();
-    fua->start = start;
-    fua->end = end;
-    fua->nalu_type = SrsAvcNaluTypeNonIDR; // Use a common NALU type
-    fua->nri = SrsAvcNaluTypeNonIDR;
+    fua->start_ = start;
+    fua->end_ = end;
+    fua->nalu_type_ = SrsAvcNaluTypeNonIDR; // Use a common NALU type
+    fua->nri_ = SrsAvcNaluTypeNonIDR;
 
     // Create a buffer for the payload
     char *buf = new char[size];
     memcpy(buf, payload_data, size);
-    fua->payload = buf;
-    fua->size = size;
+    fua->payload_ = buf;
+    fua->size_ = size;
 
     return fua;
 }
@@ -1595,18 +1595,18 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderPacketVideoRtmpNullPointerCrash)
         // Add some payload to ensure packets are not empty
         char payload_data[] = "test_payload_data";
         SrsRtpRawPayload *payload101 = new SrsRtpRawPayload();
-        payload101->payload = (char *)payload_data;
-        payload101->nn_payload = strlen(payload_data);
+        payload101->payload_ = (char *)payload_data;
+        payload101->nn_payload_ = strlen(payload_data);
         pkt101->set_payload(payload101, SrsRtpPacketPayloadTypeRaw);
 
         SrsRtpRawPayload *payload102 = new SrsRtpRawPayload();
-        payload102->payload = (char *)payload_data;
-        payload102->nn_payload = strlen(payload_data);
+        payload102->payload_ = (char *)payload_data;
+        payload102->nn_payload_ = strlen(payload_data);
         pkt102->set_payload(payload102, SrsRtpPacketPayloadTypeRaw);
 
         SrsRtpRawPayload *payload103 = new SrsRtpRawPayload();
-        payload103->payload = (char *)payload_data;
-        payload103->nn_payload = strlen(payload_data);
+        payload103->payload_ = (char *)payload_data;
+        payload103->nn_payload_ = strlen(payload_data);
         pkt103->set_payload(payload103, SrsRtpPacketPayloadTypeRaw);
 
         // Set the avsync time for the packets to avoid other null pointer issues

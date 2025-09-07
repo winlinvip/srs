@@ -184,11 +184,11 @@ class SrsBuffer
 {
 private:
     // Current read/write position within the buffer
-    char *p;
+    char *p_;
     // Pointer to the start of the buffer data (not owned by this class)
-    char *bytes;
+    char *bytes_;
     // Total size of the buffer in bytes
-    int nb_bytes;
+    int nb_bytes_;
 
 public:
     // Create a buffer wrapper around existing memory.
@@ -404,11 +404,11 @@ class SrsBitBuffer
 {
 private:
     // Current byte being processed (cached from stream)
-    int8_t cb;
+    int8_t cb_;
     // Number of unread bits remaining in current byte (0-8)
-    uint8_t cb_left;
+    uint8_t cb_left_;
     // Underlying byte buffer (not owned by this class)
-    SrsBuffer *stream;
+    SrsBuffer *stream_;
 
 public:
     // Construct a bit buffer from an existing byte buffer.

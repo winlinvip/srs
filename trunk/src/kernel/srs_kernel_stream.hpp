@@ -18,7 +18,7 @@
 class SrsSimpleStream
 {
 private:
-    std::vector<char> data;
+    std::vector<char> data_;
 
 public:
     SrsSimpleStream();

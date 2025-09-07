@@ -360,13 +360,13 @@ srs_error_t SrsPublishRecvThread::consume(SrsRtmpCommonMessage *msg)
 
     _nb_msgs++;
 
-    if (msg->header.is_video()) {
+    if (msg->header_.is_video()) {
         video_frames++;
     }
 
     // log to show the time of recv thread.
     srs_verbose("recv thread now=%" PRId64 "us, got msg time=%" PRId64 "ms, size=%d",
-                srs_time_now_realtime(), msg->header.timestamp, msg->size);
+                srs_time_now_realtime(), msg->header_.timestamp, msg->size);
 
     // the rtmp connection will handle this message
     err = _conn->handle_publish_message(source_, msg);

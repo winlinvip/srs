@@ -47,7 +47,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // There should be three video messages.
         HELPER_ASSERT_SUCCESS(context.decode(&b, &handler));
@@ -72,7 +72,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // Bytes continuity for the large video frame, got nothing message yet.
         HELPER_ASSERT_SUCCESS(context.decode(&b, handler.clear()));
@@ -96,7 +96,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // There should be one large video message, might be an I frame.
         HELPER_ASSERT_SUCCESS(context.decode(&b, handler.clear()));
@@ -115,7 +115,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // There should be a message of private stream, we ignore it, so we won't get it in callback.
         HELPER_ASSERT_SUCCESS(context.decode(&b, handler.clear()));
@@ -137,7 +137,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // There should be one audio message.
         HELPER_ASSERT_SUCCESS(context.decode(&b, handler.clear()));
@@ -159,7 +159,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // There should be another audio message.
         HELPER_ASSERT_SUCCESS(context.decode(&b, handler.clear()));
@@ -181,7 +181,7 @@ VOID TEST(KernelPSTest, PsPacketDecodeNormal)
         }
 
         SrsRtpRawPayload *rtp_raw = dynamic_cast<SrsRtpRawPayload *>(rtp.payload());
-        SrsBuffer b((char *)rtp_raw->payload, rtp_raw->nn_payload);
+        SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
 
         // There should be another audio message.
         HELPER_ASSERT_SUCCESS(context.decode(&b, handler.clear()));
@@ -424,10 +424,10 @@ VOID TEST(KernelRTMPExtTest, ExtRTMPTest)
         HELPER_EXPECT_SUCCESS(f.on_video(0, (char *)"\x17\x01\x00\x00\x12", 5));
 
         // Verify the frame type, codec id, avc packet type and composition time.
-        EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, f.video->frame_type);
-        EXPECT_EQ(SrsVideoCodecIdAVC, f.vcodec->id);
-        EXPECT_EQ(SrsVideoAvcFrameTraitNALU, f.video->avc_packet_type);
-        EXPECT_EQ(0x12, f.video->cts);
+        EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, f.video_->frame_type_);
+        EXPECT_EQ(SrsVideoCodecIdAVC, f.vcodec_->id_);
+        EXPECT_EQ(SrsVideoAvcFrameTraitNALU, f.video_->avc_packet_type_);
+        EXPECT_EQ(0x12, f.video_->cts_);
     }
 
     // For new RTMP enhanced specification, with ext tag header.
@@ -437,10 +437,10 @@ VOID TEST(KernelRTMPExtTest, ExtRTMPTest)
         HELPER_EXPECT_SUCCESS(f.on_video(0, (char *)"\x91hvc1\x00\x00\x12", 8));
 
         // Verify the frame type, codec id, avc packet type and composition time.
-        EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, f.video->frame_type);
-        EXPECT_EQ(SrsVideoCodecIdHEVC, f.vcodec->id);
-        EXPECT_EQ(SrsVideoHEVCFrameTraitPacketTypeCodedFrames, f.video->avc_packet_type);
-        EXPECT_EQ(0x12, f.video->cts);
+        EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, f.video_->frame_type_);
+        EXPECT_EQ(SrsVideoCodecIdHEVC, f.vcodec_->id_);
+        EXPECT_EQ(SrsVideoHEVCFrameTraitPacketTypeCodedFrames, f.video_->avc_packet_type_);
+        EXPECT_EQ(0x12, f.video_->cts_);
     }
 
     // If packet type is 3, which is coded frame X, the composition time is 0.
@@ -450,10 +450,10 @@ VOID TEST(KernelRTMPExtTest, ExtRTMPTest)
         HELPER_EXPECT_SUCCESS(f.on_video(0, (char *)"\x93hvc1", 5));
 
         // Verify the frame type, codec id, avc packet type and composition time.
-        EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, f.video->frame_type);
-        EXPECT_EQ(SrsVideoCodecIdHEVC, f.vcodec->id);
-        EXPECT_EQ(SrsVideoHEVCFrameTraitPacketTypeCodedFramesX, f.video->avc_packet_type);
-        EXPECT_EQ(0, f.video->cts);
+        EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, f.video_->frame_type_);
+        EXPECT_EQ(SrsVideoCodecIdHEVC, f.vcodec_->id_);
+        EXPECT_EQ(SrsVideoHEVCFrameTraitPacketTypeCodedFramesX, f.video_->avc_packet_type_);
+        EXPECT_EQ(0, f.video_->cts_);
     }
 
     // Should fail if only 1 byte for ext tag header, should be more bytes for fourcc.

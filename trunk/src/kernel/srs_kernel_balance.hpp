@@ -51,9 +51,9 @@ public:
 class SrsLbRoundRobin : public ISrsLbRoundRobin
 {
 private:
-    int index;
-    uint32_t count;
-    std::string elem;
+    int index_;
+    uint32_t count_;
+    std::string elem_;
 
 public:
     SrsLbRoundRobin();

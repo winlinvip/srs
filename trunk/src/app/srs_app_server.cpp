@@ -1363,10 +1363,10 @@ srs_error_t SrsServer::srs_update_server_statistics()
 
     srs_trace("SRS: cpu=%.2f%%,%dMB%s%s%s%s%s%s%s%s%s%s%s",
               u->percent * 100, memory,
-              stats.cid_desc.c_str(), stats.timer_desc.c_str(),
-              stats.recvfrom_desc.c_str(), stats.io_desc.c_str(), stats.msg_desc.c_str(),
-              stats.epoll_desc.c_str(), stats.sched_desc.c_str(), stats.clock_desc.c_str(),
-              stats.thread_desc.c_str(), stats.free_desc.c_str(), stats.objs_desc.c_str());
+              stats.cid_desc_.c_str(), stats.timer_desc_.c_str(),
+              stats.recvfrom_desc_.c_str(), stats.io_desc_.c_str(), stats.msg_desc_.c_str(),
+              stats.epoll_desc_.c_str(), stats.sched_desc_.c_str(), stats.clock_desc_.c_str(),
+              stats.thread_desc_.c_str(), stats.free_desc_.c_str(), stats.objs_desc_.c_str());
 
     return err;
 }

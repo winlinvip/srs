@@ -19,10 +19,10 @@ class SrsWallClock;
 class SrsRateSample
 {
 public:
-    int64_t total;
-    srs_utime_t time;
+    int64_t total_;
+    srs_utime_t time_;
     // kbps or kps
-    int rate;
+    int rate_;
 
 public:
     SrsRateSample();
@@ -48,7 +48,7 @@ private:
 
 public:
     // Sugar for target to stat.
-    int64_t sugar;
+    int64_t sugar_;
 
 public:
     SrsPps();
@@ -200,17 +200,17 @@ srs_error_t srs_global_kbps_initialize();
 class SrsKbpsStats
 {
 public:
-    std::string cid_desc;
-    std::string timer_desc;
-    std::string free_desc;
-    std::string recvfrom_desc;
-    std::string io_desc;
-    std::string msg_desc;
-    std::string epoll_desc;
-    std::string sched_desc;
-    std::string clock_desc;
-    std::string thread_desc;
-    std::string objs_desc;
+    std::string cid_desc_;
+    std::string timer_desc_;
+    std::string free_desc_;
+    std::string recvfrom_desc_;
+    std::string io_desc_;
+    std::string msg_desc_;
+    std::string epoll_desc_;
+    std::string sched_desc_;
+    std::string clock_desc_;
+    std::string thread_desc_;
+    std::string objs_desc_;
 };
 
 // Update the global kbps statistics variables
@@ -219,12 +219,12 @@ void srs_global_kbps_update(SrsKbpsStats *stats);
 class SrsKbsRtcStats
 {
 public:
-    std::string rpkts_desc;
-    std::string spkts_desc;
-    std::string rtcp_desc;
-    std::string snk_desc;
-    std::string rnk_desc;
-    std::string fid_desc;
+    std::string rpkts_desc_;
+    std::string spkts_desc_;
+    std::string rtcp_desc_;
+    std::string snk_desc_;
+    std::string rnk_desc_;
+    std::string fid_desc_;
 };
 
 // Update the global rtc statistics variables

@@ -21,14 +21,14 @@ SrsSimpleStream::~SrsSimpleStream()
 
 int SrsSimpleStream::length()
 {
-    int len = (int)data.size();
+    int len = (int)data_.size();
     srs_assert(len >= 0);
     return len;
 }
 
 char *SrsSimpleStream::bytes()
 {
-    return (length() == 0) ? NULL : &data.at(0);
+    return (length() == 0) ? NULL : &data_.at(0);
 }
 
 void SrsSimpleStream::erase(int size)
@@ -38,17 +38,17 @@ void SrsSimpleStream::erase(int size)
     }
 
     if (size >= length()) {
-        data.clear();
+        data_.clear();
         return;
     }
 
-    data.erase(data.begin(), data.begin() + size);
+    data_.erase(data_.begin(), data_.begin() + size);
 }
 
 void SrsSimpleStream::append(const char *bytes, int size)
 {
     if (size > 0) {
-        data.insert(data.end(), bytes, bytes + size);
+        data_.insert(data_.end(), bytes, bytes + size);
     }
 }
 

@@ -2346,23 +2346,23 @@ VOID TEST(KernelRTCTest, H265RtpSTAPPayload)
         // Create sample VPS NALU
         SrsNaluSample *vps = new SrsNaluSample();
         uint8_t vps_data[] = {0x40, 0x01, 0x0c, 0x01, 0xff, 0xff, 0x01, 0x60, 0x00, 0x00, 0x03, 0x00, 0x90, 0x00, 0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x3d, 0x95, 0x98, 0x09};
-        vps->bytes = (char *)vps_data;
-        vps->size = sizeof(vps_data);
-        stap.nalus.push_back(vps);
+        vps->bytes_ = (char *)vps_data;
+        vps->size_ = sizeof(vps_data);
+        stap.nalus_.push_back(vps);
 
         // Create sample SPS NALU
         SrsNaluSample *sps = new SrsNaluSample();
         uint8_t sps_data[] = {0x42, 0x01, 0x01, 0x01, 0x60, 0x00, 0x00, 0x03, 0x00, 0x90, 0x00, 0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x3d, 0xa0, 0x02, 0x80, 0x80, 0x2d, 0x16, 0x59, 0x59, 0xa4, 0x93, 0x2b, 0xc0, 0x5a, 0x70, 0x80, 0x80, 0x80, 0x82};
-        sps->bytes = (char *)sps_data;
-        sps->size = sizeof(sps_data);
-        stap.nalus.push_back(sps);
+        sps->bytes_ = (char *)sps_data;
+        sps->size_ = sizeof(sps_data);
+        stap.nalus_.push_back(sps);
 
         // Create sample PPS NALU
         SrsNaluSample *pps = new SrsNaluSample();
         uint8_t pps_data[] = {0x44, 0x01, 0xc1, 0x72, 0xb4, 0x62, 0x40};
-        pps->bytes = (char *)pps_data;
-        pps->size = sizeof(pps_data);
-        stap.nalus.push_back(pps);
+        pps->bytes_ = (char *)pps_data;
+        pps->size_ = sizeof(pps_data);
+        stap.nalus_.push_back(pps);
 
         // Test encoding
         char buf[1500];
@@ -2380,29 +2380,29 @@ VOID TEST(KernelRTCTest, H265RtpSTAPPayload)
         HELPER_EXPECT_SUCCESS(decode_stap.decode(&decode_buf));
 
         // Verify decoded NALUs
-        EXPECT_EQ(3, (int)decode_stap.nalus.size());
+        EXPECT_EQ(3, (int)decode_stap.nalus_.size());
 
         // Check VPS
         SrsNaluSample *decoded_vps = decode_stap.get_vps();
         EXPECT_TRUE(decoded_vps != NULL);
-        EXPECT_EQ(sizeof(vps_data), (size_t)decoded_vps->size);
+        EXPECT_EQ(sizeof(vps_data), (size_t)decoded_vps->size_);
 
         // Check SPS
         SrsNaluSample *decoded_sps = decode_stap.get_sps();
         EXPECT_TRUE(decoded_sps != NULL);
-        EXPECT_EQ(sizeof(sps_data), (size_t)decoded_sps->size);
+        EXPECT_EQ(sizeof(sps_data), (size_t)decoded_sps->size_);
 
         // Check PPS
         SrsNaluSample *decoded_pps = decode_stap.get_pps();
         EXPECT_TRUE(decoded_pps != NULL);
-        EXPECT_EQ(sizeof(pps_data), (size_t)decoded_pps->size);
+        EXPECT_EQ(sizeof(pps_data), (size_t)decoded_pps->size_);
 
         // Test copy functionality
         ISrsRtpPayloader *copied = stap.copy();
         SrsUniquePtr<ISrsRtpPayloader> copied_uptr(copied);
         SrsRtpSTAPPayloadHevc *copied_stap = dynamic_cast<SrsRtpSTAPPayloadHevc *>(copied);
         EXPECT_TRUE(copied_stap != NULL);
-        EXPECT_EQ(3, (int)copied_stap->nalus.size());
+        EXPECT_EQ(3, (int)copied_stap->nalus_.size());
     }
 
     // Test SrsRtpSTAPPayloadHevc with empty NALUs
@@ -2438,16 +2438,16 @@ VOID TEST(KernelRTCTest, H265RtpFUAPayload)
     // Test SrsRtpFUAPayloadHevc encoding and decoding
     if (true) {
         SrsRtpFUAPayloadHevc fua;
-        fua.start = true;
-        fua.end = false;
-        fua.nalu_type = SrsHevcNaluType_CODED_SLICE_IDR;
+        fua.start_ = true;
+        fua.end_ = false;
+        fua.nalu_type_ = SrsHevcNaluType_CODED_SLICE_IDR;
 
         // Create sample payload data
         SrsNaluSample *sample = new SrsNaluSample();
         uint8_t payload_data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-        sample->bytes = (char *)payload_data;
-        sample->size = sizeof(payload_data);
-        fua.nalus.push_back(sample);
+        sample->bytes_ = (char *)payload_data;
+        sample->size_ = sizeof(payload_data);
+        fua.nalus_.push_back(sample);
 
         // Test encoding
         char buf[100];
@@ -2465,33 +2465,33 @@ VOID TEST(KernelRTCTest, H265RtpFUAPayload)
         HELPER_EXPECT_SUCCESS(decode_fua.decode(&decode_buf));
 
         // Verify decoded values
-        EXPECT_TRUE(decode_fua.start);
-        EXPECT_FALSE(decode_fua.end);
-        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_IDR, decode_fua.nalu_type);
-        EXPECT_EQ(1, (int)decode_fua.nalus.size());
-        EXPECT_EQ(sizeof(payload_data), (size_t)decode_fua.nalus[0]->size);
+        EXPECT_TRUE(decode_fua.start_);
+        EXPECT_FALSE(decode_fua.end_);
+        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_IDR, decode_fua.nalu_type_);
+        EXPECT_EQ(1, (int)decode_fua.nalus_.size());
+        EXPECT_EQ(sizeof(payload_data), (size_t)decode_fua.nalus_[0]->size_);
 
         // Test copy functionality
         ISrsRtpPayloader *copied = fua.copy();
         SrsUniquePtr<ISrsRtpPayloader> copied_uptr(copied);
         SrsRtpFUAPayloadHevc *copied_fua = dynamic_cast<SrsRtpFUAPayloadHevc *>(copied);
         EXPECT_TRUE(copied_fua != NULL);
-        EXPECT_TRUE(copied_fua->start);
-        EXPECT_FALSE(copied_fua->end);
-        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_IDR, copied_fua->nalu_type);
-        EXPECT_EQ(1, (int)copied_fua->nalus.size());
+        EXPECT_TRUE(copied_fua->start_);
+        EXPECT_FALSE(copied_fua->end_);
+        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_IDR, copied_fua->nalu_type_);
+        EXPECT_EQ(1, (int)copied_fua->nalus_.size());
     }
 
     // Test SrsRtpFUAPayloadHevc2 encoding and decoding
     if (true) {
         SrsRtpFUAPayloadHevc2 fua2;
-        fua2.start = false;
-        fua2.end = true;
-        fua2.nalu_type = SrsHevcNaluType_CODED_SLICE_TRAIL_R;
+        fua2.start_ = false;
+        fua2.end_ = true;
+        fua2.nalu_type_ = SrsHevcNaluType_CODED_SLICE_TRAIL_R;
 
         uint8_t payload_data[] = {0xAA, 0xBB, 0xCC, 0xDD};
-        fua2.payload = (char *)payload_data;
-        fua2.size = sizeof(payload_data);
+        fua2.payload_ = (char *)payload_data;
+        fua2.size_ = sizeof(payload_data);
 
         // Test encoding
         char buf[100];
@@ -2509,20 +2509,20 @@ VOID TEST(KernelRTCTest, H265RtpFUAPayload)
         HELPER_EXPECT_SUCCESS(decode_fua2.decode(&decode_buf2));
 
         // Verify decoded values
-        EXPECT_FALSE(decode_fua2.start);
-        EXPECT_TRUE(decode_fua2.end);
-        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_TRAIL_R, decode_fua2.nalu_type);
-        EXPECT_EQ(sizeof(payload_data), (size_t)decode_fua2.size);
+        EXPECT_FALSE(decode_fua2.start_);
+        EXPECT_TRUE(decode_fua2.end_);
+        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_TRAIL_R, decode_fua2.nalu_type_);
+        EXPECT_EQ(sizeof(payload_data), (size_t)decode_fua2.size_);
 
         // Test copy functionality
         ISrsRtpPayloader *copied = fua2.copy();
         SrsUniquePtr<ISrsRtpPayloader> copied_uptr(copied);
         SrsRtpFUAPayloadHevc2 *copied_fua2 = dynamic_cast<SrsRtpFUAPayloadHevc2 *>(copied);
         EXPECT_TRUE(copied_fua2 != NULL);
-        EXPECT_FALSE(copied_fua2->start);
-        EXPECT_TRUE(copied_fua2->end);
-        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_TRAIL_R, copied_fua2->nalu_type);
-        EXPECT_EQ(sizeof(payload_data), (size_t)copied_fua2->size);
+        EXPECT_FALSE(copied_fua2->start_);
+        EXPECT_TRUE(copied_fua2->end_);
+        EXPECT_EQ(SrsHevcNaluType_CODED_SLICE_TRAIL_R, copied_fua2->nalu_type_);
+        EXPECT_EQ(sizeof(payload_data), (size_t)copied_fua2->size_);
     }
 }
 
@@ -2531,46 +2531,46 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
     // Test RTP packet keyframe detection for HEVC
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsFrameTypeVideo;
+        pkt.frame_type_ = SrsFrameTypeVideo;
 
         // Test VPS NALU (should be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_VPS;
+        pkt.nalu_type_ = SrsHevcNaluType_VPS;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test SPS NALU (should be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_SPS;
+        pkt.nalu_type_ = SrsHevcNaluType_SPS;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test PPS NALU (should be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_PPS;
+        pkt.nalu_type_ = SrsHevcNaluType_PPS;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test IDR NALU (should be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_CODED_SLICE_IDR;
+        pkt.nalu_type_ = SrsHevcNaluType_CODED_SLICE_IDR;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test CRA NALU (should be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_CODED_SLICE_CRA;
+        pkt.nalu_type_ = SrsHevcNaluType_CODED_SLICE_CRA;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test BLA NALU (should be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_CODED_SLICE_BLA;
+        pkt.nalu_type_ = SrsHevcNaluType_CODED_SLICE_BLA;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test regular P-frame NALU (should not be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_CODED_SLICE_TRAIL_R;
+        pkt.nalu_type_ = SrsHevcNaluType_CODED_SLICE_TRAIL_R;
         EXPECT_FALSE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test regular B-frame NALU (should not be keyframe)
-        pkt.nalu_type = SrsHevcNaluType_CODED_SLICE_TSA_N;
+        pkt.nalu_type_ = SrsHevcNaluType_CODED_SLICE_TSA_N;
         EXPECT_FALSE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
     }
 
     // Test HEVC STAP payload keyframe detection
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsFrameTypeVideo;
-        pkt.nalu_type = kStapHevc;
+        pkt.frame_type_ = SrsFrameTypeVideo;
+        pkt.nalu_type_ = kStapHevc;
 
         SrsRtpSTAPPayloadHevc *stap_payload = new SrsRtpSTAPPayloadHevc();
         pkt.set_payload(stap_payload, SrsRtpPacketPayloadTypeSTAPHevc);
@@ -2578,9 +2578,9 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
         // Create VPS NALU
         SrsNaluSample *vps = new SrsNaluSample();
         uint8_t vps_data[] = {0x40, 0x01}; // VPS NALU header
-        vps->bytes = (char *)vps_data;
-        vps->size = sizeof(vps_data);
-        stap_payload->nalus.push_back(vps);
+        vps->bytes_ = (char *)vps_data;
+        vps->size_ = sizeof(vps_data);
+        stap_payload->nalus_.push_back(vps);
 
         // Should be keyframe because it contains VPS
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
@@ -2589,26 +2589,26 @@ VOID TEST(KernelRTCTest, H265RtpPacketKeyframe)
     // Test HEVC FU-A payload keyframe detection
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsFrameTypeVideo;
-        pkt.nalu_type = kFuHevc;
+        pkt.frame_type_ = SrsFrameTypeVideo;
+        pkt.nalu_type_ = kFuHevc;
 
         SrsRtpFUAPayloadHevc2 *fua_payload = new SrsRtpFUAPayloadHevc2();
         pkt.set_payload(fua_payload, SrsRtpPacketPayloadTypeFUAHevc2);
 
         // Test IDR slice in FU-A (should be keyframe)
-        fua_payload->nalu_type = SrsHevcNaluType_CODED_SLICE_IDR;
+        fua_payload->nalu_type_ = SrsHevcNaluType_CODED_SLICE_IDR;
         EXPECT_TRUE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
 
         // Test regular slice in FU-A (should not be keyframe)
-        fua_payload->nalu_type = SrsHevcNaluType_CODED_SLICE_TRAIL_R;
+        fua_payload->nalu_type_ = SrsHevcNaluType_CODED_SLICE_TRAIL_R;
         EXPECT_FALSE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
     }
 
     // Test audio packet (should not be keyframe regardless of NALU type)
     if (true) {
         SrsRtpPacket pkt;
-        pkt.frame_type = SrsFrameTypeAudio;
-        pkt.nalu_type = SrsHevcNaluType_VPS;
+        pkt.frame_type_ = SrsFrameTypeAudio;
+        pkt.nalu_type_ = SrsHevcNaluType_VPS;
         EXPECT_FALSE(pkt.is_keyframe(SrsVideoCodecIdHEVC));
     }
 }
@@ -2626,8 +2626,8 @@ VOID TEST(KernelRTCTest, H265RtpRawNALUsSkipBytes)
         // Create sample HEVC NALU
         SrsNaluSample *sample = new SrsNaluSample();
         uint8_t nalu_data[] = {0x26, 0x01, 0x12, 0x34, 0x56, 0x78}; // IDR slice
-        sample->bytes = (char *)nalu_data;
-        sample->size = sizeof(nalu_data);
+        sample->bytes_ = (char *)nalu_data;
+        sample->size_ = sizeof(nalu_data);
         raw_nalus.push_back(sample);
 
         // Skip HEVC header (2 bytes)
@@ -2638,11 +2638,11 @@ VOID TEST(KernelRTCTest, H265RtpRawNALUsSkipBytes)
         std::vector<SrsNaluSample *> samples;
         HELPER_EXPECT_SUCCESS(raw_nalus.read_samples(samples, 4));
         EXPECT_EQ(1, (int)samples.size());
-        EXPECT_EQ(4, samples[0]->size);
-        EXPECT_EQ(0x12, (uint8_t)samples[0]->bytes[0]);
-        EXPECT_EQ(0x34, (uint8_t)samples[0]->bytes[1]);
-        EXPECT_EQ(0x56, (uint8_t)samples[0]->bytes[2]);
-        EXPECT_EQ(0x78, (uint8_t)samples[0]->bytes[3]);
+        EXPECT_EQ(4, samples[0]->size_);
+        EXPECT_EQ(0x12, (uint8_t)samples[0]->bytes_[0]);
+        EXPECT_EQ(0x34, (uint8_t)samples[0]->bytes_[1]);
+        EXPECT_EQ(0x56, (uint8_t)samples[0]->bytes_[2]);
+        EXPECT_EQ(0x78, (uint8_t)samples[0]->bytes_[3]);
 
         // Clean up
         for (size_t i = 0; i < samples.size(); i++) {
@@ -2657,8 +2657,8 @@ VOID TEST(KernelRTCTest, H265RtpRawNALUsSkipBytes)
         // Create sample H.264 NALU
         SrsNaluSample *sample = new SrsNaluSample();
         uint8_t nalu_data[] = {0x65, 0x12, 0x34, 0x56}; // IDR slice
-        sample->bytes = (char *)nalu_data;
-        sample->size = sizeof(nalu_data);
+        sample->bytes_ = (char *)nalu_data;
+        sample->size_ = sizeof(nalu_data);
         raw_nalus.push_back(sample);
 
         // Skip H.264 header (1 byte)
@@ -2669,10 +2669,10 @@ VOID TEST(KernelRTCTest, H265RtpRawNALUsSkipBytes)
         std::vector<SrsNaluSample *> samples;
         HELPER_EXPECT_SUCCESS(raw_nalus.read_samples(samples, 3));
         EXPECT_EQ(1, (int)samples.size());
-        EXPECT_EQ(3, samples[0]->size);
-        EXPECT_EQ(0x12, (uint8_t)samples[0]->bytes[0]);
-        EXPECT_EQ(0x34, (uint8_t)samples[0]->bytes[1]);
-        EXPECT_EQ(0x56, (uint8_t)samples[0]->bytes[2]);
+        EXPECT_EQ(3, samples[0]->size_);
+        EXPECT_EQ(0x12, (uint8_t)samples[0]->bytes_[0]);
+        EXPECT_EQ(0x34, (uint8_t)samples[0]->bytes_[1]);
+        EXPECT_EQ(0x56, (uint8_t)samples[0]->bytes_[2]);
 
         // Clean up
         for (size_t i = 0; i < samples.size(); i++) {

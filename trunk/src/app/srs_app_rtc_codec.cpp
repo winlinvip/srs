@@ -179,8 +179,8 @@ void SrsAudioTranscoder::free_frames(std::vector<SrsParsedAudioPacket *> &frames
     for (std::vector<SrsParsedAudioPacket *>::iterator it = frames.begin(); it != frames.end(); ++it) {
         SrsParsedAudioPacket *p = *it;
 
-        for (int i = 0; i < p->nb_samples; i++) {
-            char *pa = p->samples[i].bytes;
+        for (int i = 0; i < p->nb_samples_; i++) {
+            char *pa = p->samples_[i].bytes_;
             srs_freepa(pa);
         }
 
@@ -329,8 +329,8 @@ srs_error_t SrsAudioTranscoder::decode_and_resample(SrsParsedAudioPacket *pkt)
 {
     srs_error_t err = srs_success;
 
-    dec_packet_->data = (uint8_t *)pkt->samples[0].bytes;
-    dec_packet_->size = pkt->samples[0].size;
+    dec_packet_->data = (uint8_t *)pkt->samples_[0].bytes_;
+    dec_packet_->size = pkt->samples_[0].size_;
 
     // Ignore empty packet, see https://github.com/ossrs/srs/pull/2757#discussion_r759797651
     if (!dec_packet_->data || !dec_packet_->size) {
@@ -344,7 +344,7 @@ srs_error_t SrsAudioTranscoder::decode_and_resample(SrsParsedAudioPacket *pkt)
                              av_make_error_string(err_buf, AV_ERROR_MAX_STRING_SIZE, error));
     }
 
-    new_pkt_pts_ = pkt->dts + pkt->cts;
+    new_pkt_pts_ = pkt->dts_ + pkt->cts_;
     while (error >= 0) {
         error = avcodec_receive_frame(dec_, dec_frame_);
         if (error == AVERROR(EAGAIN) || error == AVERROR_EOF) {
@@ -439,8 +439,8 @@ srs_error_t SrsAudioTranscoder::encode(std::vector<SrsParsedAudioPacket *> &pkts
             char *buf = new char[enc_packet_->size];
             memcpy(buf, enc_packet_->data, enc_packet_->size);
             out_frame->add_sample(buf, enc_packet_->size);
-            out_frame->dts = enc_packet_->dts;
-            out_frame->cts = enc_packet_->pts - enc_packet_->dts;
+            out_frame->dts_ = enc_packet_->dts;
+            out_frame->cts_ = enc_packet_->pts - enc_packet_->dts;
             pkts.push_back(out_frame);
         }
     }

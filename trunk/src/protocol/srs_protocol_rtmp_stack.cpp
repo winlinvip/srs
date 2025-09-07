@@ -105,9 +105,9 @@ srs_error_t SrsRtmpCommand::to_msg(SrsRtmpCommonMessage *msg, int stream_id)
 
     // to message
     SrsMessageHeader header;
-    header.payload_length = size;
-    header.message_type = get_message_type();
-    header.stream_id = stream_id;
+    header.payload_length_ = size;
+    header.message_type_ = get_message_type();
+    header.stream_id_ = stream_id;
 
     if ((err = msg->create(&header, payload, size)) != srs_success) {
         return srs_error_wrap(err, "create %dB message", size);
@@ -331,10 +331,10 @@ srs_error_t SrsProtocol::recv_message(SrsRtmpCommonMessage **pmsg)
             continue;
         }
 
-        if (msg->size() <= 0 || msg->header.payload_length <= 0) {
+        if (msg->size() <= 0 || msg->header_.payload_length_ <= 0) {
             srs_trace("ignore empty message(type=%d, size=%d, time=%" PRId64 ", sid=%d).",
-                      msg->header.message_type, msg->header.payload_length,
-                      msg->header.timestamp, msg->header.stream_id);
+                      msg->header_.message_type_, msg->header_.payload_length_,
+                      msg->header_.timestamp_, msg->header_.stream_id_);
             srs_freep(msg);
             continue;
         }
@@ -365,7 +365,7 @@ srs_error_t SrsProtocol::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpComman
 
     // decode the packet.
     SrsRtmpCommand *packet = NULL;
-    if ((err = do_decode_message(msg->header, &stream, &packet)) != srs_success) {
+    if ((err = do_decode_message(msg->header_, &stream, &packet)) != srs_success) {
         srs_freep(packet);
         return srs_error_wrap(err, "decode message");
     }
@@ -561,7 +561,7 @@ srs_error_t SrsProtocol::do_send_and_free_packet(SrsRtmpCommand *packet_raw, int
         return srs_error_wrap(err, "send packet");
     }
 
-    if ((err = on_send_packet(&msg->header, packet.get())) != srs_success) {
+    if ((err = on_send_packet(&msg->header_, packet.get())) != srs_success) {
         return srs_error_wrap(err, "on send packet");
     }
 
@@ -695,7 +695,7 @@ srs_error_t SrsProtocol::do_decode_message(SrsMessageHeader &header, SrsBuffer *
         return packet->decode(stream);
     } else {
         if (!header.is_set_peer_bandwidth() && !header.is_ackledgement()) {
-            srs_trace("drop unknown message, type=%d", header.message_type);
+            srs_trace("drop unknown message, type=%d", header.message_type_);
         }
     }
 
@@ -996,7 +996,7 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream *chunk, char fmt)
     if (fmt <= RTMP_FMT_TYPE2) {
         char *p = in_buffer->read_slice(mh_size);
 
-        char *pp = (char *)&chunk->header.timestamp_delta;
+        char *pp = (char *)&chunk->header.timestamp_delta_;
         pp[2] = *p++;
         pp[1] = *p++;
         pp[0] = *p++;
@@ -1015,7 +1015,7 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream *chunk, char fmt)
         // 0x00ffffff), this value MUST be 16777215, and the 'extended
         // timestamp header' MUST be present. Otherwise, this value SHOULD be
         // the entire delta.
-        chunk->has_extended_timestamp = (chunk->header.timestamp_delta >= RTMP_EXTENDED_TIMESTAMP);
+        chunk->has_extended_timestamp = (chunk->header.timestamp_delta_ >= RTMP_EXTENDED_TIMESTAMP);
 
         if (fmt <= RTMP_FMT_TYPE1) {
             int32_t payload_length = 0;
@@ -1029,15 +1029,15 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream *chunk, char fmt)
             // always use the actual msg size to compare, for the cache payload length can changed,
             // for the fmt type1(stream_id not changed), user can change the payload
             // length(it's not allowed in the continue chunks).
-            if (!is_first_chunk_of_msg && chunk->header.payload_length != payload_length) {
-                return srs_error_new(ERROR_RTMP_PACKET_SIZE, "msg in chunk cache, size=%d cannot change to %d", chunk->header.payload_length, payload_length);
+            if (!is_first_chunk_of_msg && chunk->header.payload_length_ != payload_length) {
+                return srs_error_new(ERROR_RTMP_PACKET_SIZE, "msg in chunk cache, size=%d cannot change to %d", chunk->header.payload_length_, payload_length);
             }
 
-            chunk->header.payload_length = payload_length;
-            chunk->header.message_type = *p++;
+            chunk->header.payload_length_ = payload_length;
+            chunk->header.message_type_ = *p++;
 
             if (fmt == RTMP_FMT_TYPE0) {
-                pp = (char *)&chunk->header.stream_id;
+                pp = (char *)&chunk->header.stream_id_;
                 pp[0] = *p++;
                 pp[1] = *p++;
                 pp[2] = *p++;
@@ -1125,18 +1125,18 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream *chunk, char fmt)
     // 0x00ffffff), this value MUST be 16777215, and the 'extended
     // timestamp header' MUST be present. Otherwise, this value SHOULD be
     // the entire delta.
-    uint32_t timestamp = chunk->has_extended_timestamp ? chunk->extended_timestamp : chunk->header.timestamp_delta;
+    uint32_t timestamp = chunk->has_extended_timestamp ? chunk->extended_timestamp : chunk->header.timestamp_delta_;
     if (fmt == RTMP_FMT_TYPE0) {
         // 6.1.2.1. Type 0
         // For a type-0 chunk, the absolute timestamp of the message is sent
         // here.
-        chunk->header.timestamp = timestamp;
+        chunk->header.timestamp_ = timestamp;
     } else if (is_first_chunk_of_msg) {
         // 6.1.2.2. Type 1
         // 6.1.2.3. Type 2
         // For a type-1 or type-2 chunk, the difference between the previous
         // chunk's timestamp and the current chunk's timestamp is sent here.
-        chunk->header.timestamp += timestamp;
+        chunk->header.timestamp_ += timestamp;
     }
 
     // the extended-timestamp must be unsigned-int,
@@ -1159,14 +1159,14 @@ srs_error_t SrsProtocol::read_message_header(SrsChunkStream *chunk, char fmt)
     //        milliseconds.
     // in a word, 31bits timestamp is ok.
     // convert extended timestamp to 31bits.
-    chunk->header.timestamp &= 0x7fffffff;
+    chunk->header.timestamp_ &= 0x7fffffff;
 
     // valid message, the payload_length is 24bits,
     // so it should never be negative.
-    srs_assert(chunk->header.payload_length >= 0);
+    srs_assert(chunk->header.payload_length_ >= 0);
 
     // copy header to msg
-    chunk->msg->header = chunk->header;
+    chunk->msg->header_ = chunk->header;
 
     // increase the msg count, the chunk stream can accept fmt=1/2/3 message now.
     chunk->msg_count++;
@@ -1179,9 +1179,9 @@ srs_error_t SrsProtocol::read_message_payload(SrsChunkStream *chunk, SrsRtmpComm
     srs_error_t err = srs_success;
 
     // empty message
-    if (chunk->header.payload_length <= 0) {
-        srs_trace("get an empty RTMP message(type=%d, size=%d, time=%" PRId64 ", sid=%d)", chunk->header.message_type,
-                  chunk->header.payload_length, chunk->header.timestamp, chunk->header.stream_id);
+    if (chunk->header.payload_length_ <= 0) {
+        srs_trace("get an empty RTMP message(type=%d, size=%d, time=%" PRId64 ", sid=%d)", chunk->header.message_type_,
+                  chunk->header.payload_length_, chunk->header.timestamp_, chunk->header.stream_id_);
 
         *pmsg = chunk->msg;
 
@@ -1190,16 +1190,16 @@ srs_error_t SrsProtocol::read_message_payload(SrsChunkStream *chunk, SrsRtmpComm
 
         return err;
     }
-    srs_assert(chunk->header.payload_length > 0);
+    srs_assert(chunk->header.payload_length_ > 0);
 
     // the chunk payload size.
     int nn_written = (int)(chunk->writing_pos_ - chunk->msg->payload());
-    int payload_size = chunk->header.payload_length - nn_written; // Left bytes to read.
+    int payload_size = chunk->header.payload_length_ - nn_written; // Left bytes to read.
     payload_size = srs_min(payload_size, in_chunk_size);          // Restrict to chunk size.
 
     // create msg payload if not initialized
     if (!chunk->msg->payload()) {
-        chunk->msg->create_payload(chunk->header.payload_length);
+        chunk->msg->create_payload(chunk->header.payload_length_);
         chunk->writing_pos_ = chunk->msg->payload();
     }
 
@@ -1212,7 +1212,7 @@ srs_error_t SrsProtocol::read_message_payload(SrsChunkStream *chunk, SrsRtmpComm
 
     // got entire RTMP message?
     nn_written = (int)(chunk->writing_pos_ - chunk->msg->payload());
-    if (nn_written == chunk->header.payload_length) {
+    if (nn_written == chunk->header.payload_length_) {
         *pmsg = chunk->msg;
 
         chunk->msg = NULL;
@@ -1235,7 +1235,7 @@ srs_error_t SrsProtocol::on_recv_message(SrsRtmpCommonMessage *msg)
     }
 
     SrsRtmpCommand *packet_raw = NULL;
-    switch (msg->header.message_type) {
+    switch (msg->header_.message_type_) {
     case RTMP_MSG_SetChunkSize:
     case RTMP_MSG_UserControlMessage:
     case RTMP_MSG_WindowAcknowledgementSize:
@@ -1254,7 +1254,7 @@ srs_error_t SrsProtocol::on_recv_message(SrsRtmpCommonMessage *msg)
     srs_assert(packet_raw);
     SrsUniquePtr<SrsRtmpCommand> packet(packet_raw);
 
-    switch (msg->header.message_type) {
+    switch (msg->header_.message_type_) {
     case RTMP_MSG_WindowAcknowledgementSize: {
         SrsSetWindowAckSizePacket *pkt = dynamic_cast<SrsSetWindowAckSizePacket *>(packet.get());
         srs_assert(pkt != NULL);
@@ -1317,7 +1317,7 @@ srs_error_t SrsProtocol::on_send_packet(SrsMessageHeader *mh, SrsRtmpCommand *pa
         return err;
     }
 
-    switch (mh->message_type) {
+    switch (mh->message_type_) {
     case RTMP_MSG_SetChunkSize: {
         SrsSetChunkSizePacket *pkt = dynamic_cast<SrsSetChunkSizePacket *>(packet);
         out_chunk_size = pkt->chunk_size;
@@ -2469,14 +2469,14 @@ srs_error_t SrsRtmpServer::identify_client(int stream_id, SrsRtmpConnType &type,
         }
 
         SrsUniquePtr<SrsRtmpCommonMessage> msg(msg_raw);
-        SrsMessageHeader &h = msg->header;
+        SrsMessageHeader &h = msg->header_;
 
         if (h.is_ackledgement() || h.is_set_chunk_size() || h.is_window_ackledgement_size() || h.is_user_control_message()) {
             continue;
         }
 
         if (!h.is_amf0_command() && !h.is_amf3_command()) {
-            srs_trace("ignore message type=%#x", h.message_type);
+            srs_trace("ignore message type=%#x", h.message_type_);
             continue;
         }
 
@@ -2860,14 +2860,14 @@ srs_error_t SrsRtmpServer::identify_create_stream_client(SrsCreateStreamPacket *
         }
 
         SrsUniquePtr<SrsRtmpCommonMessage> msg(msg_raw);
-        SrsMessageHeader &h = msg->header;
+        SrsMessageHeader &h = msg->header_;
 
         if (h.is_ackledgement() || h.is_set_chunk_size() || h.is_window_ackledgement_size() || h.is_user_control_message()) {
             continue;
         }
 
         if (!h.is_amf0_command() && !h.is_amf3_command()) {
-            srs_trace("ignore message type=%#x", h.message_type);
+            srs_trace("ignore message type=%#x", h.message_type_);
             continue;
         }
 

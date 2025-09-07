@@ -109,7 +109,7 @@ srs_error_t SrsHourGlass::cycle()
             srs_utime_t interval = it->second;
 
             if (interval == 0 || (total_elapse % interval) == 0) {
-                ++_srs_pps_timer->sugar;
+                ++_srs_pps_timer->sugar_;
 
                 if ((err = handler->notify(event, interval, total_elapse)) != srs_success) {
                     return srs_error_wrap(err, "notify");
@@ -179,7 +179,7 @@ srs_error_t SrsFastTimer::cycle()
             return srs_error_wrap(err, "quit");
         }
 
-        ++_srs_pps_timer->sugar;
+        ++_srs_pps_timer->sugar_;
 
         for (int i = 0; i < (int)handlers_.size(); i++) {
             ISrsFastTimer *timer = handlers_.at(i);
@@ -219,23 +219,23 @@ srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
     clock = now;
 
     if (elapsed <= 15 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_15ms->sugar;
+        ++_srs_pps_clock_15ms->sugar_;
     } else if (elapsed <= 21 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_20ms->sugar;
+        ++_srs_pps_clock_20ms->sugar_;
     } else if (elapsed <= 25 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_25ms->sugar;
+        ++_srs_pps_clock_25ms->sugar_;
     } else if (elapsed <= 30 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_30ms->sugar;
+        ++_srs_pps_clock_30ms->sugar_;
     } else if (elapsed <= 35 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_35ms->sugar;
+        ++_srs_pps_clock_35ms->sugar_;
     } else if (elapsed <= 40 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_40ms->sugar;
+        ++_srs_pps_clock_40ms->sugar_;
     } else if (elapsed <= 80 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_80ms->sugar;
+        ++_srs_pps_clock_80ms->sugar_;
     } else if (elapsed <= 160 * SRS_UTIME_MILLISECONDS) {
-        ++_srs_pps_clock_160ms->sugar;
+        ++_srs_pps_clock_160ms->sugar_;
     } else {
-        ++_srs_pps_timer_s->sugar;
+        ++_srs_pps_timer_s->sugar_;
     }
 
     return err;

@@ -208,22 +208,22 @@ srs_error_t SrsHlsM4sSegment::write(SrsMediaPacket *shared_msg, SrsFormat *forma
     srs_error_t err = srs_success;
 
     if (shared_msg->is_audio()) {
-        uint8_t *sample = (uint8_t *)format->raw;
-        uint32_t nb_sample = (uint32_t)format->nb_raw;
+        uint8_t *sample = (uint8_t *)format->raw_;
+        uint32_t nb_sample = (uint32_t)format->nb_raw_;
 
-        uint32_t dts = (uint32_t)shared_msg->timestamp;
+        uint32_t dts = (uint32_t)shared_msg->timestamp_;
         if ((err = enc_.write_sample(SrsMp4HandlerTypeSOUN, 0x00, dts, dts, sample, nb_sample)) != srs_success) {
             return srs_error_wrap(err, "m4s segment write audio sample");
         }
     } else if (shared_msg->is_video()) {
-        SrsVideoAvcFrameType frame_type = format->video->frame_type;
-        uint32_t cts = (uint32_t)format->video->cts;
+        SrsVideoAvcFrameType frame_type = format->video_->frame_type_;
+        uint32_t cts = (uint32_t)format->video_->cts_;
 
-        uint32_t dts = (uint32_t)shared_msg->timestamp;
+        uint32_t dts = (uint32_t)shared_msg->timestamp_;
         uint32_t pts = dts + cts;
 
-        uint8_t *sample = (uint8_t *)format->raw;
-        uint32_t nb_sample = (uint32_t)format->nb_raw;
+        uint8_t *sample = (uint8_t *)format->raw_;
+        uint32_t nb_sample = (uint32_t)format->nb_raw_;
         if ((err = enc_.write_sample(SrsMp4HandlerTypeVIDE, frame_type, dts, pts, sample, nb_sample)) != srs_success) {
             return srs_error_wrap(err, "m4s segment write video sample");
         }
@@ -232,7 +232,7 @@ srs_error_t SrsHlsM4sSegment::write(SrsMediaPacket *shared_msg, SrsFormat *forma
         return err;
     }
 
-    append(shared_msg->timestamp);
+    append(shared_msg->timestamp_);
 
     return err;
 }
@@ -585,7 +585,7 @@ srs_error_t SrsHlsFmp4Muxer::write_audio(SrsMediaPacket *shared_audio, SrsFormat
     srs_error_t err = srs_success;
 
     if (!current_) {
-        if ((err = segment_open(shared_audio->timestamp * SRS_UTIME_MILLISECONDS)) != srs_success) {
+        if ((err = segment_open(shared_audio->timestamp_ * SRS_UTIME_MILLISECONDS)) != srs_success) {
             return srs_error_wrap(err, "open segment");
         }
     }
@@ -595,7 +595,7 @@ srs_error_t SrsHlsFmp4Muxer::write_audio(SrsMediaPacket *shared_audio, SrsFormat
             return srs_error_wrap(err, "segment close");
         }
 
-        if ((err = segment_open(shared_audio->timestamp * SRS_UTIME_MILLISECONDS)) != srs_success) {
+        if ((err = segment_open(shared_audio->timestamp_ * SRS_UTIME_MILLISECONDS)) != srs_success) {
             return srs_error_wrap(err, "open segment");
         }
     }
@@ -608,10 +608,10 @@ srs_error_t SrsHlsFmp4Muxer::write_video(SrsMediaPacket *shared_video, SrsFormat
 {
     srs_error_t err = srs_success;
 
-    video_dts_ = shared_video->timestamp;
+    video_dts_ = shared_video->timestamp_;
 
     if (!current_) {
-        if ((err = segment_open(shared_video->timestamp * SRS_UTIME_MILLISECONDS)) != srs_success) {
+        if ((err = segment_open(shared_video->timestamp_ * SRS_UTIME_MILLISECONDS)) != srs_success) {
             return srs_error_wrap(err, "open segment");
         }
     }
@@ -622,7 +622,7 @@ srs_error_t SrsHlsFmp4Muxer::write_video(SrsMediaPacket *shared_video, SrsFormat
             return srs_error_wrap(err, "segment close");
         }
 
-        if ((err = segment_open(shared_video->timestamp * SRS_UTIME_MILLISECONDS)) != srs_success) {
+        if ((err = segment_open(shared_video->timestamp_ * SRS_UTIME_MILLISECONDS)) != srs_success) {
             return srs_error_wrap(err, "open segment");
         }
     }
@@ -1593,19 +1593,19 @@ srs_error_t SrsHlsMuxer::flush_audio(SrsTsMessageCache *cache)
         return err;
     }
 
-    if (!cache->audio || cache->audio->payload->length() <= 0) {
+    if (!cache->audio_ || cache->audio_->payload_->length() <= 0) {
         return err;
     }
 
     // update the duration of segment.
-    update_duration(cache->audio->dts);
+    update_duration(cache->audio_->dts_);
 
-    if ((err = current->tscw->write_audio(cache->audio)) != srs_success) {
+    if ((err = current->tscw->write_audio(cache->audio_)) != srs_success) {
         return srs_error_wrap(err, "hls: write audio");
     }
 
     // write success, clear and free the msg
-    srs_freep(cache->audio);
+    srs_freep(cache->audio_);
 
     return err;
 }
@@ -1620,21 +1620,21 @@ srs_error_t SrsHlsMuxer::flush_video(SrsTsMessageCache *cache)
         return err;
     }
 
-    if (!cache->video || cache->video->payload->length() <= 0) {
+    if (!cache->video_ || cache->video_->payload_->length() <= 0) {
         return err;
     }
 
     srs_assert(current);
 
     // update the duration of segment.
-    update_duration(cache->video->dts);
+    update_duration(cache->video_->dts_);
 
-    if ((err = current->tscw->write_video(cache->video)) != srs_success) {
+    if ((err = current->tscw->write_video(cache->video_)) != srs_success) {
         return srs_error_wrap(err, "hls: write video");
     }
 
     // write success, clear and free the msg
-    srs_freep(cache->video);
+    srs_freep(cache->video_);
 
     return err;
 }
@@ -2053,24 +2053,24 @@ srs_error_t SrsHlsController::on_sequence_header(SrsMediaPacket *msg, SrsFormat 
 srs_error_t SrsHlsController::write_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
 {
     srs_error_t err = srs_success;
-    SrsParsedAudioPacket *frame = format->audio;
+    SrsParsedAudioPacket *frame = format->audio_;
 
     // Reset the aac samples counter when DTS jitter.
-    if (previous_audio_dts > shared_audio->timestamp) {
-        previous_audio_dts = shared_audio->timestamp;
+    if (previous_audio_dts > shared_audio->timestamp_) {
+        previous_audio_dts = shared_audio->timestamp_;
         aac_samples = 0;
     }
 
     // The diff duration in ms between two FLV audio packets.
-    int diff = ::abs((int)(shared_audio->timestamp - previous_audio_dts));
-    previous_audio_dts = shared_audio->timestamp;
+    int diff = ::abs((int)(shared_audio->timestamp_ - previous_audio_dts));
+    previous_audio_dts = shared_audio->timestamp_;
 
     // Guess the number of samples for each AAC frame.
     // If samples is 1024, the sample-rate is 8000HZ, the diff should be 1024/8000s=128ms.
     // If samples is 1024, the sample-rate is 44100HZ, the diff should be 1024/44100s=23ms.
     // If samples is 2048, the sample-rate is 44100HZ, the diff should be 2048/44100s=46ms.
     int nb_samples_per_frame = 0;
-    int guessNumberOfSamples = diff * srs_flv_srates[format->acodec->sound_rate] / 1000;
+    int guessNumberOfSamples = diff * srs_flv_srates[format->acodec_->sound_rate_] / 1000;
     if (guessNumberOfSamples > 0) {
         if (guessNumberOfSamples < 960) {
             nb_samples_per_frame = 960;
@@ -2085,19 +2085,19 @@ srs_error_t SrsHlsController::write_audio(SrsMediaPacket *shared_audio, SrsForma
 
     // Recalc the DTS by the samples of AAC.
     aac_samples += nb_samples_per_frame;
-    int64_t dts = 90000 * aac_samples / srs_flv_srates[format->acodec->sound_rate];
+    int64_t dts = 90000 * aac_samples / srs_flv_srates[format->acodec_->sound_rate_];
 
     // If directly turn FLV timestamp, overwrite the guessed DTS.
     // @doc https://github.com/ossrs/srs/issues/1506#issuecomment-562063095
     if (hls_dts_directly) {
-        dts = shared_audio->timestamp * 90;
+        dts = shared_audio->timestamp_ * 90;
     }
 
     // Refresh the codec ASAP.
-    if (muxer->latest_acodec() != frame->acodec()->id) {
+    if (muxer->latest_acodec() != frame->acodec()->id_) {
         srs_trace("HLS: Switch audio codec %d(%s) to %d(%s)", muxer->latest_acodec(), srs_audio_codec_id2str(muxer->latest_acodec()).c_str(),
-                  frame->acodec()->id, srs_audio_codec_id2str(frame->acodec()->id).c_str());
-        muxer->set_latest_acodec(frame->acodec()->id);
+                  frame->acodec()->id_, srs_audio_codec_id2str(frame->acodec()->id_).c_str());
+        muxer->set_latest_acodec(frame->acodec()->id_);
     }
 
     // write audio to cache.
@@ -2107,7 +2107,7 @@ srs_error_t SrsHlsController::write_audio(SrsMediaPacket *shared_audio, SrsForma
 
     // First, update the duration of the segment, as we might reap the segment. The duration should
     // cover from the first frame to the last frame.
-    muxer->update_duration(tsmc->audio->dts);
+    muxer->update_duration(tsmc->audio_->dts_);
 
     // reap when current source is pure audio.
     // it maybe changed when stream info changed,
@@ -2115,7 +2115,7 @@ srs_error_t SrsHlsController::write_audio(SrsMediaPacket *shared_audio, SrsForma
     // pure audio again for audio disabled.
     // so we reap event when the audio incoming when segment overflow.
     // we use absolutely overflow of segment to make jwplayer/ffplay happy
-    if (tsmc->audio && muxer->is_segment_absolutely_overflow()) {
+    if (tsmc->audio_ && muxer->is_segment_absolutely_overflow()) {
         if ((err = reap_segment()) != srs_success) {
             return srs_error_wrap(err, "hls: reap segment");
         }
@@ -2123,8 +2123,8 @@ srs_error_t SrsHlsController::write_audio(SrsMediaPacket *shared_audio, SrsForma
 
     // for pure audio, aggregate some frame to one.
     // TODO: FIXME: Check whether it's necessary.
-    if (muxer->pure_audio() && tsmc->audio) {
-        if (dts - tsmc->audio->start_pts < SRS_CONSTS_HLS_PURE_AUDIO_AGGREGATE) {
+    if (muxer->pure_audio() && tsmc->audio_) {
+        if (dts - tsmc->audio_->start_pts_ < SRS_CONSTS_HLS_PURE_AUDIO_AGGREGATE) {
             return err;
         }
     }
@@ -2143,14 +2143,14 @@ srs_error_t SrsHlsController::write_audio(SrsMediaPacket *shared_audio, SrsForma
 srs_error_t SrsHlsController::write_video(SrsMediaPacket *shared_video, SrsFormat *format)
 {
     srs_error_t err = srs_success;
-    SrsParsedVideoPacket *frame = format->video;
-    int64_t dts = shared_video->timestamp * 90;
+    SrsParsedVideoPacket *frame = format->video_;
+    int64_t dts = shared_video->timestamp_ * 90;
 
     // Refresh the codec ASAP.
-    if (muxer->latest_vcodec() != frame->vcodec()->id) {
+    if (muxer->latest_vcodec() != frame->vcodec()->id_) {
         srs_trace("HLS: Switch video codec %d(%s) to %d(%s)", muxer->latest_vcodec(), srs_video_codec_id2str(muxer->latest_vcodec()).c_str(),
-                  frame->vcodec()->id, srs_video_codec_id2str(frame->vcodec()->id).c_str());
-        muxer->set_latest_vcodec(frame->vcodec()->id);
+                  frame->vcodec()->id_, srs_video_codec_id2str(frame->vcodec()->id_).c_str());
+        muxer->set_latest_vcodec(frame->vcodec()->id_);
     }
 
     // write video to cache.
@@ -2160,14 +2160,14 @@ srs_error_t SrsHlsController::write_video(SrsMediaPacket *shared_video, SrsForma
 
     // First, update the duration of the segment, as we might reap the segment. The duration should
     // cover from the first frame to the last frame.
-    muxer->update_duration(tsmc->video->dts);
+    muxer->update_duration(tsmc->video_->dts_);
 
     // when segment overflow, reap if possible.
     if (muxer->is_segment_overflow()) {
         // do reap ts if any of:
         //      a. wait keyframe and got keyframe.
         //      b. always reap when not wait keyframe.
-        if (!muxer->wait_keyframe() || frame->frame_type == SrsVideoAvcFrameTypeKeyFrame) {
+        if (!muxer->wait_keyframe() || frame->frame_type_ == SrsVideoAvcFrameTypeKeyFrame) {
             // reap the segment, which will also flush the video.
             if ((err = reap_segment()) != srs_success) {
                 return srs_error_wrap(err, "hls: reap segment");
@@ -2309,7 +2309,7 @@ srs_error_t SrsHlsMp4Controller::on_unpublish()
 srs_error_t SrsHlsMp4Controller::write_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
 {
     srs_error_t err = srs_success;
-    SrsParsedAudioPacket *frame = format->audio;
+    SrsParsedAudioPacket *frame = format->audio_;
 
     // Ignore audio sequence header
     if (format->is_aac_sequence_header() || format->is_mp3_sequence_header()) {
@@ -2317,13 +2317,13 @@ srs_error_t SrsHlsMp4Controller::write_audio(SrsMediaPacket *shared_audio, SrsFo
     }
 
     // Refresh the codec ASAP.
-    if (muxer_->latest_acodec() != frame->acodec()->id) {
+    if (muxer_->latest_acodec() != frame->acodec()->id_) {
         srs_trace("HLS: Switch audio codec %d(%s) to %d(%s)", muxer_->latest_acodec(), srs_audio_codec_id2str(muxer_->latest_acodec()).c_str(),
-                  frame->acodec()->id, srs_audio_codec_id2str(frame->acodec()->id).c_str());
-        muxer_->set_latest_acodec(frame->acodec()->id);
+                  frame->acodec()->id_, srs_audio_codec_id2str(frame->acodec()->id_).c_str());
+        muxer_->set_latest_acodec(frame->acodec()->id_);
     }
 
-    audio_dts_ = shared_audio->timestamp;
+    audio_dts_ = shared_audio->timestamp_;
 
     if ((err = muxer_->write_audio(shared_audio, format)) != srs_success) {
         return srs_error_wrap(err, "write audio");
@@ -2335,16 +2335,16 @@ srs_error_t SrsHlsMp4Controller::write_audio(SrsMediaPacket *shared_audio, SrsFo
 srs_error_t SrsHlsMp4Controller::write_video(SrsMediaPacket *shared_video, SrsFormat *format)
 {
     srs_error_t err = srs_success;
-    SrsParsedVideoPacket *frame = format->video;
+    SrsParsedVideoPacket *frame = format->video_;
 
     // Refresh the codec ASAP.
-    if (muxer_->latest_vcodec() != frame->vcodec()->id) {
+    if (muxer_->latest_vcodec() != frame->vcodec()->id_) {
         srs_trace("HLS: Switch video codec %d(%s) to %d(%s)", muxer_->latest_vcodec(), srs_video_codec_id2str(muxer_->latest_vcodec()).c_str(),
-                  frame->vcodec()->id, srs_video_codec_id2str(frame->vcodec()->id).c_str());
-        muxer_->set_latest_vcodec(frame->vcodec()->id);
+                  frame->vcodec()->id_, srs_video_codec_id2str(frame->vcodec()->id_).c_str());
+        muxer_->set_latest_vcodec(frame->vcodec()->id_);
     }
 
-    video_dts_ = shared_video->timestamp;
+    video_dts_ = shared_video->timestamp_;
 
     if ((err = muxer_->write_video(shared_video, format)) != srs_success) {
         return srs_error_wrap(err, "write video");
@@ -2366,7 +2366,7 @@ srs_error_t SrsHlsMp4Controller::on_sequence_header(SrsMediaPacket *msg, SrsForm
     }
 
     if (msg->is_audio()) {
-        if (format->acodec->aac_extra_data.size() == 0) {
+        if (format->acodec_->aac_extra_data_.size() == 0) {
             srs_trace("the audio codec's aac extra data is empty");
             return err;
         }
@@ -2635,7 +2635,7 @@ srs_error_t SrsHls::on_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
     // Ignore if no format->acodec, it means the codec is not parsed, or unknown codec.
     // @issue https://github.com/ossrs/srs/issues/1506#issuecomment-562079474
     // TODO: format->acodec is always not-nil, remove this check.
-    if (!format->acodec) {
+    if (!format->acodec_) {
         return err;
     }
 
@@ -2645,13 +2645,13 @@ srs_error_t SrsHls::on_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
     SrsUniquePtr<SrsMediaPacket> audio(shared_audio->copy());
 
     // ts support audio codec: aac/mp3
-    SrsAudioCodecId acodec = format->acodec->id;
+    SrsAudioCodecId acodec = format->acodec_->id_;
     if (acodec != SrsAudioCodecIdAAC && acodec != SrsAudioCodecIdMP3) {
         return err;
     }
 
     // ignore sequence header
-    srs_assert(format->audio);
+    srs_assert(format->audio_);
     // TODO: verify mp3 play by HLS.
     if (format->is_aac_sequence_header() || format->is_mp3_sequence_header()) {
         return controller->on_sequence_header(audio.get(), format);
@@ -2681,7 +2681,7 @@ srs_error_t SrsHls::on_video(SrsMediaPacket *shared_video, SrsFormat *format)
 
     // Ignore if no format->vcodec, it means the codec is not parsed, or unknown codec.
     // @issue https://github.com/ossrs/srs/issues/1506#issuecomment-562079474
-    if (!format->vcodec) {
+    if (!format->vcodec_) {
         return err;
     }
 
@@ -2692,13 +2692,13 @@ srs_error_t SrsHls::on_video(SrsMediaPacket *shared_video, SrsFormat *format)
 
     // ignore info frame,
     // @see https://github.com/ossrs/srs/issues/288#issuecomment-69863909
-    srs_assert(format->video);
-    if (format->video->frame_type == SrsVideoAvcFrameTypeVideoInfoFrame) {
+    srs_assert(format->video_);
+    if (format->video_->frame_type_ == SrsVideoAvcFrameTypeVideoInfoFrame) {
         return err;
     }
 
-    srs_assert(format->vcodec);
-    if (format->vcodec->id != SrsVideoCodecIdAVC && format->vcodec->id != SrsVideoCodecIdHEVC) {
+    srs_assert(format->vcodec_);
+    if (format->vcodec_->id_ != SrsVideoCodecIdAVC && format->vcodec_->id_ != SrsVideoCodecIdHEVC) {
         return err;
     }
 

@@ -339,7 +339,7 @@ srs_error_t SrsEdgeFlvUpstream::decode_message(SrsRtmpCommonMessage *msg, SrsRtm
 
     SrsRtmpCommand *packet = NULL;
     SrsBuffer stream(msg->payload(), msg->size());
-    SrsMessageHeader &header = msg->header;
+    SrsMessageHeader &header = msg->header_;
 
     if (header.is_amf0_data() || header.is_amf3_data()) {
         std::string command;
@@ -619,21 +619,21 @@ srs_error_t SrsEdgeIngester::process_publish_message(SrsRtmpCommonMessage *msg, 
     srs_error_t err = srs_success;
 
     // process audio packet
-    if (msg->header.is_audio()) {
+    if (msg->header_.is_audio()) {
         if ((err = source_->on_audio(msg)) != srs_success) {
             return srs_error_wrap(err, "source consume audio");
         }
     }
 
     // process video packet
-    if (msg->header.is_video()) {
+    if (msg->header_.is_video()) {
         if ((err = source_->on_video(msg)) != srs_success) {
             return srs_error_wrap(err, "source consume video");
         }
     }
 
     // process aggregate packet
-    if (msg->header.is_aggregate()) {
+    if (msg->header_.is_aggregate()) {
         if ((err = source_->on_aggregate(msg)) != srs_success) {
             return srs_error_wrap(err, "source consume aggregate");
         }
@@ -641,7 +641,7 @@ srs_error_t SrsEdgeIngester::process_publish_message(SrsRtmpCommonMessage *msg, 
     }
 
     // process onMetaData
-    if (msg->header.is_amf0_data() || msg->header.is_amf3_data()) {
+    if (msg->header_.is_amf0_data() || msg->header_.is_amf3_data()) {
         SrsRtmpCommand *pkt_raw = NULL;
         if ((err = upstream->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "decode message");
@@ -660,7 +660,7 @@ srs_error_t SrsEdgeIngester::process_publish_message(SrsRtmpCommonMessage *msg, 
     }
 
     // call messages, for example, reject, redirect.
-    if (msg->header.is_amf0_command() || msg->header.is_amf3_command()) {
+    if (msg->header_.is_amf0_command() || msg->header_.is_amf3_command()) {
         SrsRtmpCommand *pkt_raw = NULL;
         if ((err = upstream->decode_message(msg, &pkt_raw)) != srs_success) {
             return srs_error_wrap(err, "decode message");
@@ -919,14 +919,14 @@ srs_error_t SrsEdgeForwarder::proxy(SrsRtmpCommonMessage *msg)
 
     // the msg is auto free by source,
     // so we just ignore, or copy then send it.
-    if (msg->size() <= 0 || msg->header.is_set_chunk_size() || msg->header.is_window_ackledgement_size() || msg->header.is_ackledgement()) {
+    if (msg->size() <= 0 || msg->header_.is_set_chunk_size() || msg->header_.is_window_ackledgement_size() || msg->header_.is_ackledgement()) {
         return err;
     }
 
     SrsMediaPacket copy;
     msg->to_msg(&copy);
 
-    copy.stream_id = sdk->sid();
+    copy.stream_id_ = sdk->sid();
     if ((err = queue->enqueue(copy.copy())) != srs_success) {
         return srs_error_wrap(err, "enqueue message");
     }

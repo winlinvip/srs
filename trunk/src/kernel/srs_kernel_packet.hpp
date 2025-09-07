@@ -21,9 +21,9 @@ class SrsNaluSample
 {
 public:
     // The size of unit.
-    int size;
+    int size_;
     // The ptr of unit, user must free it.
-    char *bytes;
+    char *bytes_;
 
 public:
     SrsNaluSample();
@@ -42,14 +42,14 @@ class SrsMediaPacket
 {
 public:
     // Timestamp of the media packet. The timebase is defined by context.
-    int64_t timestamp;
+    int64_t timestamp_;
     // Type of the media packet (audio, video, or script).
-    SrsFrameType message_type;
+    SrsFrameType message_type_;
 
 public:
     // Stream identifier for the packet. It's optional, so only used for some
     // protocols, for example, RTMP.
-    int32_t stream_id;
+    int32_t stream_id_;
 
 public:
     // Raw payload data of the media packet.
@@ -88,17 +88,17 @@ class SrsParsedPacket
 {
 public:
     // The DTS/PTS in milliseconds, which is TBN=1000.
-    int64_t dts;
+    int64_t dts_;
     // PTS = DTS + CTS.
-    int32_t cts;
+    int32_t cts_;
 
 public:
     // The codec info of frame.
-    SrsCodecConfig *codec;
+    SrsCodecConfig *codec_;
     // The actual parsed number of samples.
-    int nb_samples;
+    int nb_samples_;
     // The sampels cache.
-    SrsNaluSample samples[SrsMaxNbSamples];
+    SrsNaluSample samples_[SrsMaxNbSamples];
 
 public:
     SrsParsedPacket();
@@ -115,7 +115,7 @@ public:
 class SrsParsedAudioPacket : public SrsParsedPacket
 {
 public:
-    SrsAudioAacFrameTrait aac_packet_type;
+    SrsAudioAacFrameTrait aac_packet_type_;
 
 public:
     SrsParsedAudioPacket();
@@ -130,16 +130,16 @@ class SrsParsedVideoPacket : public SrsParsedPacket
 {
 public:
     // video specified
-    SrsVideoAvcFrameType frame_type;
-    SrsVideoAvcFrameTrait avc_packet_type;
+    SrsVideoAvcFrameType frame_type_;
+    SrsVideoAvcFrameTrait avc_packet_type_;
     // whether sample_units contains IDR frame.
-    bool has_idr;
+    bool has_idr_;
     // Whether exists AUD NALU.
-    bool has_aud;
+    bool has_aud_;
     // Whether exists SPS/PPS NALU.
-    bool has_sps_pps;
+    bool has_sps_pps_;
     // The first nalu type.
-    SrsAvcNaluType first_nalu_type;
+    SrsAvcNaluType first_nalu_type_;
 
 public:
     SrsParsedVideoPacket();
@@ -169,21 +169,21 @@ public:
 class SrsFormat
 {
 public:
-    SrsParsedAudioPacket *audio;
-    SrsAudioCodecConfig *acodec;
-    SrsParsedVideoPacket *video;
-    SrsVideoCodecConfig *vcodec;
+    SrsParsedAudioPacket *audio_;
+    SrsAudioCodecConfig *acodec_;
+    SrsParsedVideoPacket *video_;
+    SrsVideoCodecConfig *vcodec_;
 
 public:
-    char *raw;
-    int nb_raw;
+    char *raw_;
+    int nb_raw_;
 
 public:
     // for sequence header, whether parse the h.264 sps.
     // TODO: FIXME: Refine it.
-    bool avc_parse_sps;
+    bool avc_parse_sps_;
     // Whether try to parse in ANNEXB, then by IBMF.
-    bool try_annexb_first;
+    bool try_annexb_first_;
 
 public:
     SrsFormat();

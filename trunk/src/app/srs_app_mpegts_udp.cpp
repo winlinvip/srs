@@ -98,15 +98,15 @@ srs_error_t SrsMpegtsQueue::push(SrsMediaPacket *msg)
 
     // TODO: FIXME: use right way.
     for (int i = 0; i < 10; i++) {
-        if (msgs.find(msg->timestamp) == msgs.end()) {
+        if (msgs.find(msg->timestamp_) == msgs.end()) {
             break;
         }
 
         // adjust the ts, add 1ms.
-        msg->timestamp += 1;
+        msg->timestamp_ += 1;
 
         if (i >= 100) {
-            srs_warn("mpegts: free the msg for dts exists, dts=%" PRId64, msg->timestamp);
+            srs_warn("mpegts: free the msg for dts exists, dts=%" PRId64, msg->timestamp_);
             srs_freep(msg);
             return err;
         }
@@ -120,7 +120,7 @@ srs_error_t SrsMpegtsQueue::push(SrsMediaPacket *msg)
         nb_videos++;
     }
 
-    msgs[msg->timestamp] = msg;
+    msgs[msg->timestamp_] = msg;
 
     return err;
 }
@@ -327,8 +327,8 @@ srs_error_t SrsMpegtsOverUdp::on_ts_message(SrsTsMessage *msg)
 
     if (pprint->can_print()) {
         srs_trace("<- " SRS_CONSTS_LOG_STREAM_CASTER " mpegts: got %s age=%d stream=%s, dts=%" PRId64 ", pts=%" PRId64 ", size=%d, us=%d, cc=%d, sid=%#x(%s-%d)",
-                  (msg->channel->apply == SrsTsPidApplyVideo) ? "Video" : "Audio", pprint->age(), srs_ts_stream2string(msg->channel->stream).c_str(),
-                  msg->dts, msg->pts, msg->payload->length(), msg->packet->payload_unit_start_indicator, msg->continuity_counter, msg->sid,
+                  (msg->channel_->apply_ == SrsTsPidApplyVideo) ? "Video" : "Audio", pprint->age(), srs_ts_stream2string(msg->channel_->stream_).c_str(),
+                  msg->dts_, msg->pts_, msg->payload_->length(), msg->packet_->payload_unit_start_indicator_, msg->continuity_counter_, msg->sid_,
                   msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                           : "N",
                   msg->stream_number());
@@ -336,33 +336,33 @@ srs_error_t SrsMpegtsOverUdp::on_ts_message(SrsTsMessage *msg)
 
     // When the audio SID is private stream 1, we use common audio.
     // @see https://github.com/ossrs/srs/issues/740
-    if (msg->channel->apply == SrsTsPidApplyAudio && msg->sid == SrsTsPESStreamIdPrivateStream1) {
-        msg->sid = SrsTsPESStreamIdAudioCommon;
+    if (msg->channel_->apply_ == SrsTsPidApplyAudio && msg->sid_ == SrsTsPESStreamIdPrivateStream1) {
+        msg->sid_ = SrsTsPESStreamIdAudioCommon;
     }
 
     // when not audio/video, or not adts/annexb format, donot support.
     if (msg->stream_number() != 0) {
         return srs_error_new(ERROR_STREAM_CASTER_TS_ES, "ts: unsupported stream format, sid=%#x(%s-%d)",
-                             msg->sid, msg->is_audio() ? "A" : msg->is_video() ? "V"
+                             msg->sid_, msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                                                : "N",
                              msg->stream_number());
     }
 
     // check supported codec
-    if (msg->channel->stream != SrsTsStreamVideoH264 && msg->channel->stream != SrsTsStreamAudioAAC) {
-        return srs_error_new(ERROR_STREAM_CASTER_TS_CODEC, "ts: unsupported stream codec=%d", msg->channel->stream);
+    if (msg->channel_->stream_ != SrsTsStreamVideoH264 && msg->channel_->stream_ != SrsTsStreamAudioAAC) {
+        return srs_error_new(ERROR_STREAM_CASTER_TS_CODEC, "ts: unsupported stream codec=%d", msg->channel_->stream_);
     }
 
     // parse the stream.
-    SrsBuffer avs(msg->payload->bytes(), msg->payload->length());
+    SrsBuffer avs(msg->payload_->bytes(), msg->payload_->length());
 
     // publish audio or video.
-    if (msg->channel->stream == SrsTsStreamVideoH264) {
+    if (msg->channel_->stream_ == SrsTsStreamVideoH264) {
         if ((err = on_ts_video(msg, &avs)) != srs_success) {
             return srs_error_wrap(err, "ts: consume video");
         }
     }
-    if (msg->channel->stream == SrsTsStreamAudioAAC) {
+    if (msg->channel_->stream_ == SrsTsStreamAudioAAC) {
         if ((err = on_ts_audio(msg, &avs)) != srs_success) {
             return srs_error_wrap(err, "ts: consume audio");
         }
@@ -382,8 +382,8 @@ srs_error_t SrsMpegtsOverUdp::on_ts_video(SrsTsMessage *msg, SrsBuffer *avs)
     }
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
-    uint32_t pts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
+    uint32_t pts = (uint32_t)(msg->dts_ / 90);
 
     // send each frame.
     while (!avs->empty()) {
@@ -540,7 +540,7 @@ srs_error_t SrsMpegtsOverUdp::on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs)
     }
 
     // ts tbn to flv tbn.
-    uint32_t dts = (uint32_t)(msg->dts / 90);
+    uint32_t dts = (uint32_t)(msg->dts_ / 90);
 
     // send each frame.
     while (!avs->empty()) {
@@ -629,7 +629,7 @@ srs_error_t SrsMpegtsOverUdp::rtmp_write_packet(char type, uint32_t timestamp, c
             srs_trace("mpegts: send msg %s age=%d, dts=%" PRId64 ", size=%d",
                       msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                               : "N",
-                      pprint->age(), msg->timestamp, msg->size());
+                      pprint->age(), msg->timestamp_, msg->size());
         }
 
         // send out encoded msg.

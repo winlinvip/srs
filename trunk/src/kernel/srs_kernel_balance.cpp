@@ -20,8 +20,8 @@ ISrsLbRoundRobin::~ISrsLbRoundRobin()
 
 SrsLbRoundRobin::SrsLbRoundRobin()
 {
-    index = -1;
-    count = 0;
+    index_ = -1;
+    count_ = 0;
 }
 
 SrsLbRoundRobin::~SrsLbRoundRobin()
@@ -30,20 +30,20 @@ SrsLbRoundRobin::~SrsLbRoundRobin()
 
 uint32_t SrsLbRoundRobin::current()
 {
-    return index;
+    return index_;
 }
 
 string SrsLbRoundRobin::selected()
 {
-    return elem;
+    return elem_;
 }
 
 string SrsLbRoundRobin::select(const vector<string> &servers)
 {
     srs_assert(!servers.empty());
 
-    index = (int)(count++ % servers.size());
-    elem = servers.at(index);
+    index_ = (int)(count_++ % servers.size());
+    elem_ = servers.at(index_);
 
-    return elem;
+    return elem_;
 }

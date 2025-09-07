@@ -239,14 +239,14 @@ public:
 class SrsRtpHeader // : public ISrsCodec
 {
 private:
-    uint8_t padding_length;
-    uint8_t cc;
-    bool marker;
-    uint8_t payload_type;
-    uint16_t sequence;
-    uint32_t timestamp;
-    uint32_t ssrc;
-    uint32_t csrc[15];
+    uint8_t padding_length_;
+    uint8_t cc_;
+    bool marker_;
+    uint8_t payload_type_;
+    uint16_t sequence_;
+    uint32_t timestamp_;
+    uint32_t ssrc_;
+    uint32_t csrc_[15];
     SrsRtpExtensions extensions_;
     bool ignore_padding_;
 
@@ -275,7 +275,7 @@ public:
     void set_timestamp(uint32_t v);
     uint32_t get_timestamp() const;
     void set_ssrc(uint32_t v);
-    inline uint32_t get_ssrc() const { return ssrc; } // SrsRtpHeader::get_ssrc
+    inline uint32_t get_ssrc() const { return ssrc_; } // SrsRtpHeader::get_ssrc
     void set_padding(uint8_t v);
     uint8_t get_padding() const;
     void set_extensions(SrsRtpExtensionTypes *extmap);
@@ -341,15 +341,15 @@ private:
     // Helper fields.
 public:
     // The first byte as nalu type, for video decoder only.
-    uint8_t nalu_type;
+    uint8_t nalu_type_;
     // The frame type, for RTMP bridge or SFU source.
-    SrsFrameType frame_type;
+    SrsFrameType frame_type_;
     // Fast cache for performance.
 private:
     // The cached payload size for packet.
-    int cached_payload_size;
+    int cached_payload_size_;
     // The helper handler for decoder, use RAW payload if NULL.
-    ISrsRtpPacketDecodeHandler *decode_handler;
+    ISrsRtpPacketDecodeHandler *decode_handler_;
 
 private:
     int64_t avsync_time_;
@@ -407,8 +407,8 @@ class SrsRtpRawPayload : public ISrsRtpPayloader
 public:
     // The RAW payload, directly point to the shared memory.
     // @remark We only refer to the memory, user must free its bytes.
-    char *payload;
-    int nn_payload;
+    char *payload_;
+    int nn_payload_;
 
 public:
     // Use the whole RAW RTP payload as a sample.
@@ -430,9 +430,9 @@ class SrsRtpRawNALUs : public ISrsRtpPayloader
 {
 private:
     // We will manage the samples, but the sample itself point to the shared memory.
-    std::vector<SrsNaluSample *> nalus;
-    int nn_bytes;
-    int cursor;
+    std::vector<SrsNaluSample *> nalus_;
+    int nn_bytes_;
+    int cursor_;
 
 public:
     SrsRtpRawNALUs();
@@ -458,10 +458,10 @@ class SrsRtpSTAPPayload : public ISrsRtpPayloader
 {
 public:
     // The NRI in NALU type.
-    SrsAvcNaluType nri;
+    SrsAvcNaluType nri_;
     // The NALU samples, we will manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsNaluSample *> nalus;
+    std::vector<SrsNaluSample *> nalus_;
 
 public:
     SrsRtpSTAPPayload();
@@ -484,14 +484,14 @@ class SrsRtpFUAPayload : public ISrsRtpPayloader
 {
 public:
     // The NRI in NALU type.
-    SrsAvcNaluType nri;
+    SrsAvcNaluType nri_;
     // The FUA header.
-    bool start;
-    bool end;
-    SrsAvcNaluType nalu_type;
+    bool start_;
+    bool end_;
+    SrsAvcNaluType nalu_type_;
     // The NALU samples, we manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsNaluSample *> nalus;
+    std::vector<SrsNaluSample *> nalus_;
 
 public:
     SrsRtpFUAPayload();
@@ -510,14 +510,14 @@ class SrsRtpFUAPayload2 : public ISrsRtpPayloader
 {
 public:
     // The NRI in NALU type.
-    SrsAvcNaluType nri;
+    SrsAvcNaluType nri_;
     // The FUA header.
-    bool start;
-    bool end;
-    SrsAvcNaluType nalu_type;
+    bool start_;
+    bool end_;
+    SrsAvcNaluType nalu_type_;
     // The payload and size,
-    char *payload;
-    int size;
+    char *payload_;
+    int size_;
 
 public:
     SrsRtpFUAPayload2();
@@ -535,7 +535,7 @@ class SrsRtpSTAPPayloadHevc : public ISrsRtpPayloader
 public:
     // The NALU samples, we will manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsNaluSample *> nalus;
+    std::vector<SrsNaluSample *> nalus_;
 
 public:
     SrsRtpSTAPPayloadHevc();
@@ -559,12 +559,12 @@ class SrsRtpFUAPayloadHevc : public ISrsRtpPayloader
 {
 public:
     // The FUA header.
-    bool start;
-    bool end;
-    SrsHevcNaluType nalu_type;
+    bool start_;
+    bool end_;
+    SrsHevcNaluType nalu_type_;
     // The NALU samples, we manage the samples.
     // @remark We only refer to the memory, user must free its bytes.
-    std::vector<SrsNaluSample *> nalus;
+    std::vector<SrsNaluSample *> nalus_;
 
 public:
     SrsRtpFUAPayloadHevc();
@@ -582,11 +582,11 @@ public:
 class SrsRtpFUAPayloadHevc2 : public ISrsRtpPayloader
 {
 public:
-    bool start;
-    bool end;
-    SrsHevcNaluType nalu_type;
-    char *payload;
-    int size;
+    bool start_;
+    bool end_;
+    SrsHevcNaluType nalu_type_;
+    char *payload_;
+    int size_;
 
 public:
     SrsRtpFUAPayloadHevc2();

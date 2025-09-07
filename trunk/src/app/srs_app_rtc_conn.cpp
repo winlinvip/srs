@@ -112,7 +112,7 @@ srs_error_t SrsSecurityTransport::write_dtls_data(void *data, int size)
         return err;
     }
 
-    ++_srs_pps_sstuns->sugar;
+    ++_srs_pps_sstuns->sugar_;
 
     if ((err = network_->write(data, size, NULL)) != srs_success) {
         return srs_error_wrap(err, "send dtls packet");
@@ -352,7 +352,7 @@ srs_error_t SrsRtcPLIWorker::cycle()
                 uint32_t ssrc = it->first;
                 SrsContextId cid = it->second;
 
-                ++_srs_pps_pli->sugar;
+                ++_srs_pps_pli->sugar_;
 
                 if ((err = handler_->do_request_keyframe(ssrc, cid)) != srs_success) {
                     srs_warn("PLI error, %s", srs_error_desc(err).c_str());
@@ -822,7 +822,7 @@ srs_error_t SrsRtcPlayStream::on_rtcp_nack(SrsRtcpNack *rtcp)
 {
     srs_error_t err = srs_success;
 
-    ++_srs_pps_rnack->sugar;
+    ++_srs_pps_rnack->sugar_;
 
     uint32_t ssrc = rtcp->get_media_ssrc();
 
@@ -951,14 +951,14 @@ srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
     // to prevent it from being freed.
     SrsLocker(&lock_);
 
-    ++_srs_pps_pub->sugar;
+    ++_srs_pps_pub->sugar_;
 
     if (!p_->is_started) {
         return err;
     }
 
     // For RR and RRTR.
-    ++_srs_pps_rr->sugar;
+    ++_srs_pps_rr->sugar_;
 
     if ((err = p_->send_rtcp_rr()) != srs_success) {
         srs_warn("RR err %s", srs_error_desc(err).c_str());
@@ -998,7 +998,7 @@ srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
     // to prevent it from being freed.
     SrsLocker(&lock_);
 
-    ++_srs_pps_pub->sugar;
+    ++_srs_pps_pub->sugar_;
 
     if (!p_->is_started) {
         return err;
@@ -1009,11 +1009,11 @@ srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
         return err;
     }
 
-    ++_srs_pps_twcc->sugar;
+    ++_srs_pps_twcc->sugar_;
 
     // If circuit-breaker is dropping packet, disable TWCC.
     if (_srs_circuit_breaker->hybrid_critical_water_level()) {
-        ++_srs_pps_snack4->sugar;
+        ++_srs_pps_snack4->sugar_;
         return err;
     }
 
@@ -1445,12 +1445,12 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
     SrsRtcAudioRecvTrack *audio_track = get_audio_track(ssrc);
     SrsRtcVideoRecvTrack *video_track = get_video_track(ssrc);
     if (audio_track) {
-        pkt->frame_type = SrsFrameTypeAudio;
+        pkt->frame_type_ = SrsFrameTypeAudio;
         if ((err = audio_track->on_rtp(source_, pkt)) != srs_success) {
             return srs_error_wrap(err, "on audio");
         }
     } else if (video_track) {
-        pkt->frame_type = SrsFrameTypeVideo;
+        pkt->frame_type_ = SrsFrameTypeVideo;
         if ((err = video_track->on_rtp(source_, pkt)) != srs_success) {
             return srs_error_wrap(err, "on video");
         }
@@ -1460,7 +1460,7 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
 
     // If circuit-breaker is enabled, disable nack.
     if (_srs_circuit_breaker->hybrid_critical_water_level()) {
-        ++_srs_pps_snack4->sugar;
+        ++_srs_pps_snack4->sugar_;
         return err;
     }
 
@@ -1542,7 +1542,7 @@ srs_error_t SrsRtcPublishStream::send_periodic_twcc()
         return err;
     }
 
-    ++_srs_pps_srtcps->sugar;
+    ++_srs_pps_srtcps->sugar_;
 
     // limit the max count=1024 to avoid dead loop.
     for (int i = 0; i < 1024 && rtcp_twcc_.need_feedback(); ++i) {
@@ -1772,11 +1772,11 @@ srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
         return err;
     }
 
-    ++_srs_pps_conn->sugar;
+    ++_srs_pps_conn->sugar_;
 
     // If circuit-breaker is enabled, disable nack.
     if (_srs_circuit_breaker->hybrid_critical_water_level()) {
-        ++_srs_pps_snack4->sugar;
+        ++_srs_pps_snack4->sugar_;
         return err;
     }
 
@@ -2315,7 +2315,7 @@ srs_error_t SrsRtcConnection::send_rtcp(char *data, int nb_data)
 {
     srs_error_t err = srs_success;
 
-    ++_srs_pps_srtcps->sugar;
+    ++_srs_pps_srtcps->sugar_;
 
     int nb_buf = nb_data;
     if ((err = networks_->available()->protect_rtcp(data, &nb_buf)) != srs_success) {
@@ -2331,7 +2331,7 @@ srs_error_t SrsRtcConnection::send_rtcp(char *data, int nb_data)
 
 void SrsRtcConnection::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks)
 {
-    ++_srs_pps_snack->sugar;
+    ++_srs_pps_snack->sugar_;
 
     SrsRtcpNack rtcpNack(ssrc);
 
@@ -2342,8 +2342,8 @@ void SrsRtcConnection::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ss
         return;
     }
 
-    ++_srs_pps_snack2->sugar;
-    ++_srs_pps_srtcps->sugar;
+    ++_srs_pps_snack2->sugar_;
+    ++_srs_pps_srtcps->sugar_;
 
     char buf[kRtcpPacketSize];
     SrsBuffer stream(buf, sizeof(buf));
@@ -2357,7 +2357,7 @@ void SrsRtcConnection::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ss
 
 srs_error_t SrsRtcConnection::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp)
 {
-    ++_srs_pps_srtcps->sugar;
+    ++_srs_pps_srtcps->sugar_;
 
     // @see https://tools.ietf.org/html/rfc3550#section-6.4.2
     char buf[kRtpPacketSize];
@@ -2397,7 +2397,7 @@ srs_error_t SrsRtcConnection::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_
 
 srs_error_t SrsRtcConnection::send_rtcp_xr_rrtr(uint32_t ssrc)
 {
-    ++_srs_pps_srtcps->sugar;
+    ++_srs_pps_srtcps->sugar_;
 
     /*
      @see: http://www.rfc-editor.org/rfc/rfc3611.html#section-2
@@ -2444,7 +2444,7 @@ srs_error_t SrsRtcConnection::send_rtcp_xr_rrtr(uint32_t ssrc)
 
 srs_error_t SrsRtcConnection::send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber)
 {
-    ++_srs_pps_srtcps->sugar;
+    ++_srs_pps_srtcps->sugar_;
 
     char buf[kRtpPacketSize];
     SrsBuffer stream(buf, sizeof(buf));
@@ -2519,7 +2519,7 @@ srs_error_t SrsRtcConnection::do_send_packet(SrsRtpPacket *pkt)
         return err;
     }
 
-    ++_srs_pps_srtps->sugar;
+    ++_srs_pps_srtps->sugar_;
 
     if ((err = networks_->available()->write(iov->iov_base, iov->iov_len, NULL)) != srs_success) {
         srs_warn("RTC: Write %d bytes err %s", iov->iov_len, srs_error_desc(err).c_str());
@@ -2562,7 +2562,7 @@ srs_error_t SrsRtcConnection::on_binding_request(SrsStunPacket *r, string &ice_p
 {
     srs_error_t err = srs_success;
 
-    ++_srs_pps_sstuns->sugar;
+    ++_srs_pps_sstuns->sugar_;
 
     bool strict_check = _srs_config->get_rtc_stun_strict_check(req_->vhost);
     if (strict_check && r->get_ice_controlled()) {

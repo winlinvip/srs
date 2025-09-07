@@ -30,7 +30,7 @@ SrsRtpPacket *mock_create_audio_rtp_packet(uint16_t sequence, uint32_t timestamp
     // We're not testing the downstream transcoding, just the cache reordering behavior
 
     // Set frame type for audio
-    pkt->frame_type = SrsFrameTypeAudio;
+    pkt->frame_type_ = SrsFrameTypeAudio;
 
     return pkt;
 }

@@ -519,15 +519,15 @@ enum SrsHevcSliceType {
 };
 
 struct SrsHevcNalData {
-    uint16_t nal_unit_length;
-    std::vector<uint8_t> nal_unit_data;
+    uint16_t nal_unit_length_;
+    std::vector<uint8_t> nal_unit_data_;
 };
 
 struct SrsHevcHvccNalu {
-    uint8_t array_completeness;
-    uint8_t nal_unit_type;
-    uint16_t num_nalus;
-    std::vector<SrsHevcNalData> nal_data_vec;
+    uint8_t array_completeness_;
+    uint8_t nal_unit_type_;
+    uint16_t num_nalus_;
+    std::vector<SrsHevcNalData> nal_data_vec_;
 };
 
 /**
@@ -551,60 +551,60 @@ const int SrsHevcMax_PPS_COUNT = 64;
  */
 struct SrsHevcProfileTierLevel {
 public:
-    uint8_t general_profile_space;
-    uint8_t general_tier_flag;
-    uint8_t general_profile_idc;
-    uint8_t general_profile_compatibility_flag[32];
-    uint8_t general_progressive_source_flag;
-    uint8_t general_interlaced_source_flag;
-    uint8_t general_non_packed_constraint_flag;
-    uint8_t general_frame_only_constraint_flag;
-    uint8_t general_max_12bit_constraint_flag;
-    uint8_t general_max_10bit_constraint_flag;
-    uint8_t general_max_8bit_constraint_flag;
-    uint8_t general_max_422chroma_constraint_flag;
-    uint8_t general_max_420chroma_constraint_flag;
-    uint8_t general_max_monochrome_constraint_flag;
-    uint8_t general_intra_constraint_flag;
-    uint8_t general_one_picture_only_constraint_flag;
-    uint8_t general_lower_bit_rate_constraint_flag;
-    uint32_t general_max_14bit_constraint_flag;
-    uint8_t general_reserved_zero_7bits;
-    uint64_t general_reserved_zero_33bits;
-    uint64_t general_reserved_zero_34bits;
-    uint64_t general_reserved_zero_35bits;
-    uint64_t general_reserved_zero_43bits;
-    uint8_t general_inbld_flag;
-    uint8_t general_reserved_zero_bit;
-    uint8_t general_level_idc;
-    std::vector<uint8_t> sub_layer_profile_present_flag;
-    std::vector<uint8_t> sub_layer_level_present_flag;
-    uint8_t reserved_zero_2bits[8];
-    std::vector<uint8_t> sub_layer_profile_space;
-    std::vector<uint8_t> sub_layer_tier_flag;
-    std::vector<uint8_t> sub_layer_profile_idc;
-    std::vector<std::vector<uint8_t> > sub_layer_profile_compatibility_flag;
-    std::vector<uint8_t> sub_layer_progressive_source_flag;
-    std::vector<uint8_t> sub_layer_interlaced_source_flag;
-    std::vector<uint8_t> sub_layer_non_packed_constraint_flag;
-    std::vector<uint8_t> sub_layer_frame_only_constraint_flag;
-    std::vector<uint8_t> sub_layer_max_12bit_constraint_flag;
-    std::vector<uint8_t> sub_layer_max_10bit_constraint_flag;
-    std::vector<uint8_t> sub_layer_max_8bit_constraint_flag;
-    std::vector<uint8_t> sub_layer_max_422chroma_constraint_flag;
-    std::vector<uint8_t> sub_layer_max_420chroma_constraint_flag;
-    std::vector<uint8_t> sub_layer_max_monochrome_constraint_flag;
-    std::vector<uint8_t> sub_layer_intra_constraint_flag;
-    std::vector<uint8_t> sub_layer_one_picture_only_constraint_flag;
-    std::vector<uint8_t> sub_layer_lower_bit_rate_constraint_flag;
-    std::vector<uint8_t> sub_layer_reserved_zero_7bits;
-    std::vector<uint64_t> sub_layer_reserved_zero_33bits;
-    std::vector<uint64_t> sub_layer_reserved_zero_34bits;
-    std::vector<uint64_t> sub_layer_reserved_zero_35bits;
-    std::vector<uint64_t> sub_layer_reserved_zero_43bits;
-    std::vector<uint8_t> sub_layer_inbld_flag;
-    std::vector<uint8_t> sub_layer_reserved_zero_bit;
-    std::vector<uint8_t> sub_layer_level_idc;
+    uint8_t general_profile_space_;
+    uint8_t general_tier_flag_;
+    uint8_t general_profile_idc_;
+    uint8_t general_profile_compatibility_flag_[32];
+    uint8_t general_progressive_source_flag_;
+    uint8_t general_interlaced_source_flag_;
+    uint8_t general_non_packed_constraint_flag_;
+    uint8_t general_frame_only_constraint_flag_;
+    uint8_t general_max_12bit_constraint_flag_;
+    uint8_t general_max_10bit_constraint_flag_;
+    uint8_t general_max_8bit_constraint_flag_;
+    uint8_t general_max_422chroma_constraint_flag_;
+    uint8_t general_max_420chroma_constraint_flag_;
+    uint8_t general_max_monochrome_constraint_flag_;
+    uint8_t general_intra_constraint_flag_;
+    uint8_t general_one_picture_only_constraint_flag_;
+    uint8_t general_lower_bit_rate_constraint_flag_;
+    uint32_t general_max_14bit_constraint_flag_;
+    uint8_t general_reserved_zero_7bits_;
+    uint64_t general_reserved_zero_33bits_;
+    uint64_t general_reserved_zero_34bits_;
+    uint64_t general_reserved_zero_35bits_;
+    uint64_t general_reserved_zero_43bits_;
+    uint8_t general_inbld_flag_;
+    uint8_t general_reserved_zero_bit_;
+    uint8_t general_level_idc_;
+    std::vector<uint8_t> sub_layer_profile_present_flag_;
+    std::vector<uint8_t> sub_layer_level_present_flag_;
+    uint8_t reserved_zero_2bits_[8];
+    std::vector<uint8_t> sub_layer_profile_space_;
+    std::vector<uint8_t> sub_layer_tier_flag_;
+    std::vector<uint8_t> sub_layer_profile_idc_;
+    std::vector<std::vector<uint8_t> > sub_layer_profile_compatibility_flag_;
+    std::vector<uint8_t> sub_layer_progressive_source_flag_;
+    std::vector<uint8_t> sub_layer_interlaced_source_flag_;
+    std::vector<uint8_t> sub_layer_non_packed_constraint_flag_;
+    std::vector<uint8_t> sub_layer_frame_only_constraint_flag_;
+    std::vector<uint8_t> sub_layer_max_12bit_constraint_flag_;
+    std::vector<uint8_t> sub_layer_max_10bit_constraint_flag_;
+    std::vector<uint8_t> sub_layer_max_8bit_constraint_flag_;
+    std::vector<uint8_t> sub_layer_max_422chroma_constraint_flag_;
+    std::vector<uint8_t> sub_layer_max_420chroma_constraint_flag_;
+    std::vector<uint8_t> sub_layer_max_monochrome_constraint_flag_;
+    std::vector<uint8_t> sub_layer_intra_constraint_flag_;
+    std::vector<uint8_t> sub_layer_one_picture_only_constraint_flag_;
+    std::vector<uint8_t> sub_layer_lower_bit_rate_constraint_flag_;
+    std::vector<uint8_t> sub_layer_reserved_zero_7bits_;
+    std::vector<uint64_t> sub_layer_reserved_zero_33bits_;
+    std::vector<uint64_t> sub_layer_reserved_zero_34bits_;
+    std::vector<uint64_t> sub_layer_reserved_zero_35bits_;
+    std::vector<uint64_t> sub_layer_reserved_zero_43bits_;
+    std::vector<uint8_t> sub_layer_inbld_flag_;
+    std::vector<uint8_t> sub_layer_reserved_zero_bit_;
+    std::vector<uint8_t> sub_layer_level_idc_;
 
 public:
     SrsHevcProfileTierLevel();
@@ -617,11 +617,11 @@ public:
  * @doc ITU-T-H.265-2021.pdf, page 440.
  */
 struct SrsHevcSubLayerHrdParameters {
-    std::vector<int> bit_rate_value_minus1;
-    std::vector<int> cpb_size_value_minus1;
-    std::vector<int> cpb_size_du_value_minus1;
-    std::vector<int> bit_rate_du_value_minus1;
-    std::vector<uint8_t> cbr_flag;
+    std::vector<int> bit_rate_value_minus1_;
+    std::vector<int> cpb_size_value_minus1_;
+    std::vector<int> cpb_size_du_value_minus1_;
+    std::vector<int> bit_rate_du_value_minus1_;
+    std::vector<uint8_t> cbr_flag_;
 };
 
 /**
@@ -630,26 +630,26 @@ struct SrsHevcSubLayerHrdParameters {
  * @doc ITU-T-H.265-2021.pdf, page 439.
  */
 struct SrsHevcHrdParameters {
-    uint8_t nal_hrd_parameters_present_flag;
-    uint8_t vcl_hrd_parameters_present_flag;
-    uint8_t sub_pic_hrd_params_present_flag;
-    uint8_t tick_divisor_minus2;
-    uint8_t du_cpb_removal_delay_increment_length_minus1;
-    uint8_t sub_pic_cpb_params_in_pic_timing_sei_flag;
-    uint8_t dpb_output_delay_du_length_minus1;
-    uint8_t bit_rate_scale;
-    uint8_t cpb_size_scale;
-    uint8_t cpb_size_du_scale;
-    uint8_t initial_cpb_removal_delay_length_minus1;
-    uint8_t au_cpb_removal_delay_length_minus1;
-    uint8_t dpb_output_delay_length_minus1;
-    std::vector<uint8_t> fixed_pic_rate_general_flag;
-    std::vector<uint8_t> fixed_pic_rate_within_cvs_flag;
-    std::vector<int> elemental_duration_in_tc_minus1;
-    std::vector<uint8_t> low_delay_hrd_flag;
-    std::vector<int> cpb_cnt_minus1;
-    SrsHevcSubLayerHrdParameters sub_layer_hrd_parameters;   // nal
-    SrsHevcSubLayerHrdParameters sub_layer_hrd_parameters_v; // vlc
+    uint8_t nal_hrd_parameters_present_flag_;
+    uint8_t vcl_hrd_parameters_present_flag_;
+    uint8_t sub_pic_hrd_params_present_flag_;
+    uint8_t tick_divisor_minus2_;
+    uint8_t du_cpb_removal_delay_increment_length_minus1_;
+    uint8_t sub_pic_cpb_params_in_pic_timing_sei_flag_;
+    uint8_t dpb_output_delay_du_length_minus1_;
+    uint8_t bit_rate_scale_;
+    uint8_t cpb_size_scale_;
+    uint8_t cpb_size_du_scale_;
+    uint8_t initial_cpb_removal_delay_length_minus1_;
+    uint8_t au_cpb_removal_delay_length_minus1_;
+    uint8_t dpb_output_delay_length_minus1_;
+    std::vector<uint8_t> fixed_pic_rate_general_flag_;
+    std::vector<uint8_t> fixed_pic_rate_within_cvs_flag_;
+    std::vector<int> elemental_duration_in_tc_minus1_;
+    std::vector<uint8_t> low_delay_hrd_flag_;
+    std::vector<int> cpb_cnt_minus1_;
+    SrsHevcSubLayerHrdParameters sub_layer_hrd_parameters_;   // nal
+    SrsHevcSubLayerHrdParameters sub_layer_hrd_parameters_v_; // vlc
 };
 
 /**
@@ -658,11 +658,11 @@ struct SrsHevcHrdParameters {
  * @doc ITU-T-H.265-2021.pdf, page 65.
  */
 struct SrsHevcScalingListData {
-    uint32_t scaling_list_pred_mode_flag[4][6];
-    uint32_t scaling_list_pred_matrix_id_delta[4][6];
-    int32_t scaling_list_dc_coef_minus8[4][6];
-    uint32_t ScalingList[4][6][64];
-    int32_t coefNum;
+    uint32_t scaling_list_pred_mode_flag_[4][6];
+    uint32_t scaling_list_pred_matrix_id_delta_[4][6];
+    int32_t scaling_list_dc_coef_minus8_[4][6];
+    uint32_t ScalingList_[4][6][64];
+    int32_t coefNum_;
 };
 
 /**
@@ -671,15 +671,15 @@ struct SrsHevcScalingListData {
  * @doc ITU-T-H.265-2021.pdf, page 57.
  */
 struct SrsHevcSpsRangeExtension {
-    uint8_t transform_skip_rotation_enabled_flag;
-    uint8_t transform_skip_context_enabled_flag;
-    uint8_t implicit_rdpcm_enabled_flag;
-    uint8_t explicit_rdpcm_enabled_flag;
-    uint8_t extended_precision_processing_flag;
-    uint8_t intra_smoothing_disabled_flag;
-    uint8_t high_precision_offsets_enabled_flag;
-    uint8_t persistent_rice_adaptation_enabled_flag;
-    uint8_t cabac_bypass_alignment_enabled_flag;
+    uint8_t transform_skip_rotation_enabled_flag_;
+    uint8_t transform_skip_context_enabled_flag_;
+    uint8_t implicit_rdpcm_enabled_flag_;
+    uint8_t explicit_rdpcm_enabled_flag_;
+    uint8_t extended_precision_processing_flag_;
+    uint8_t intra_smoothing_disabled_flag_;
+    uint8_t high_precision_offsets_enabled_flag_;
+    uint8_t persistent_rice_adaptation_enabled_flag_;
+    uint8_t cabac_bypass_alignment_enabled_flag_;
 };
 
 /**
@@ -688,15 +688,15 @@ struct SrsHevcSpsRangeExtension {
  * @doc ITU-T-H.265-2021.pdf, page 57.
  */
 struct SrsHevcPpsRangeExtension {
-    uint32_t log2_max_transform_skip_block_size_minus2;
-    uint8_t cross_component_prediction_enabled_flag;
-    uint8_t chroma_qp_offset_list_enabled_flag;
-    uint32_t diff_cu_chroma_qp_offset_depth;
-    uint32_t chroma_qp_offset_list_len_minus1;
-    std::vector<int> cb_qp_offset_list;
-    std::vector<int> cr_qp_offset_list;
-    uint32_t log2_sao_offset_scale_luma;
-    uint32_t log2_sao_offset_scale_chroma;
+    uint32_t log2_max_transform_skip_block_size_minus2_;
+    uint8_t cross_component_prediction_enabled_flag_;
+    uint8_t chroma_qp_offset_list_enabled_flag_;
+    uint32_t diff_cu_chroma_qp_offset_depth_;
+    uint32_t chroma_qp_offset_list_len_minus1_;
+    std::vector<int> cb_qp_offset_list_;
+    std::vector<int> cr_qp_offset_list_;
+    uint32_t log2_sao_offset_scale_luma_;
+    uint32_t log2_sao_offset_scale_chroma_;
 };
 
 /**
@@ -705,19 +705,19 @@ struct SrsHevcPpsRangeExtension {
  * @doc ITU-T-H.265-2021.pdf, page 70.
  */
 struct SrsHevcStRefPicSet {
-    uint8_t inter_ref_pic_set_prediction_flag;
-    int delta_idx_minus1;
-    uint8_t delta_rps_sign;
-    int abs_delta_rps_minus1;
-    std::vector<uint8_t> used_by_curr_pic_flag;
-    std::vector<uint8_t> use_delta_flag;
-    int num_negative_pics;
-    int num_positive_pics;
+    uint8_t inter_ref_pic_set_prediction_flag_;
+    int delta_idx_minus1_;
+    uint8_t delta_rps_sign_;
+    int abs_delta_rps_minus1_;
+    std::vector<uint8_t> used_by_curr_pic_flag_;
+    std::vector<uint8_t> use_delta_flag_;
+    int num_negative_pics_;
+    int num_positive_pics_;
 
-    std::vector<int> delta_poc_s0_minus1;
-    std::vector<uint8_t> used_by_curr_pic_s0_flag;
-    std::vector<int> delta_poc_s1_minus1;
-    std::vector<uint8_t> used_by_curr_pic_s1_flag;
+    std::vector<int> delta_poc_s0_minus1_;
+    std::vector<uint8_t> used_by_curr_pic_s0_flag_;
+    std::vector<int> delta_poc_s1_minus1_;
+    std::vector<uint8_t> used_by_curr_pic_s1_flag_;
 };
 
 /**
@@ -726,46 +726,46 @@ struct SrsHevcStRefPicSet {
  * @doc ITU-T-H.265-2021.pdf, page 437.
  */
 struct SrsHevcVuiParameters {
-    uint8_t aspect_ratio_info_present_flag;
-    uint8_t aspect_ratio_idc;
-    int sar_width;
-    int sar_height;
-    uint8_t overscan_info_present_flag;
-    uint8_t overscan_appropriate_flag;
-    uint8_t video_signal_type_present_flag;
-    uint8_t video_format;
-    uint8_t video_full_range_flag;
-    uint8_t colour_description_present_flag;
-    uint8_t colour_primaries;
-    uint8_t transfer_characteristics;
-    uint8_t matrix_coeffs;
-    uint8_t chroma_loc_info_present_flag;
-    int chroma_sample_loc_type_top_field;
-    int chroma_sample_loc_type_bottom_field;
-    uint8_t neutral_chroma_indication_flag;
-    uint8_t field_seq_flag;
-    uint8_t frame_field_info_present_flag;
-    uint8_t default_display_window_flag;
-    int def_disp_win_left_offset;
-    int def_disp_win_right_offset;
-    int def_disp_win_top_offset;
-    int def_disp_win_bottom_offset;
-    uint8_t vui_timing_info_present_flag;
-    uint32_t vui_num_units_in_tick;
-    uint32_t vui_time_scale;
-    uint8_t vui_poc_proportional_to_timing_flag;
-    int vui_num_ticks_poc_diff_one_minus1;
-    uint8_t vui_hrd_parameters_present_flag;
-    SrsHevcHrdParameters hrd_parameters;
-    uint8_t bitstream_restriction_flag;
-    uint8_t tiles_fixed_structure_flag;
-    uint8_t motion_vectors_over_pic_boundaries_flag;
-    uint8_t restricted_ref_pic_lists_flag;
-    int min_spatial_segmentation_idc;
-    int max_bytes_per_pic_denom;
-    int max_bits_per_min_cu_denom;
-    int log2_max_mv_length_horizontal;
-    int log2_max_mv_length_vertical;
+    uint8_t aspect_ratio_info_present_flag_;
+    uint8_t aspect_ratio_idc_;
+    int sar_width_;
+    int sar_height_;
+    uint8_t overscan_info_present_flag_;
+    uint8_t overscan_appropriate_flag_;
+    uint8_t video_signal_type_present_flag_;
+    uint8_t video_format_;
+    uint8_t video_full_range_flag_;
+    uint8_t colour_description_present_flag_;
+    uint8_t colour_primaries_;
+    uint8_t transfer_characteristics_;
+    uint8_t matrix_coeffs_;
+    uint8_t chroma_loc_info_present_flag_;
+    int chroma_sample_loc_type_top_field_;
+    int chroma_sample_loc_type_bottom_field_;
+    uint8_t neutral_chroma_indication_flag_;
+    uint8_t field_seq_flag_;
+    uint8_t frame_field_info_present_flag_;
+    uint8_t default_display_window_flag_;
+    int def_disp_win_left_offset_;
+    int def_disp_win_right_offset_;
+    int def_disp_win_top_offset_;
+    int def_disp_win_bottom_offset_;
+    uint8_t vui_timing_info_present_flag_;
+    uint32_t vui_num_units_in_tick_;
+    uint32_t vui_time_scale_;
+    uint8_t vui_poc_proportional_to_timing_flag_;
+    int vui_num_ticks_poc_diff_one_minus1_;
+    uint8_t vui_hrd_parameters_present_flag_;
+    SrsHevcHrdParameters hrd_parameters_;
+    uint8_t bitstream_restriction_flag_;
+    uint8_t tiles_fixed_structure_flag_;
+    uint8_t motion_vectors_over_pic_boundaries_flag_;
+    uint8_t restricted_ref_pic_lists_flag_;
+    int min_spatial_segmentation_idc_;
+    int max_bytes_per_pic_denom_;
+    int max_bits_per_min_cu_denom_;
+    int log2_max_mv_length_horizontal_;
+    int log2_max_mv_length_vertical_;
 };
 
 /**
@@ -774,33 +774,33 @@ struct SrsHevcVuiParameters {
  * @doc ITU-T-H.265-2021.pdf, page 54.
  */
 struct SrsHevcRbspVps {
-    uint8_t vps_video_parameter_set_id;    // u(4)
-    uint8_t vps_base_layer_internal_flag;  // u(1)
-    uint8_t vps_base_layer_available_flag; // u(1)
-    uint8_t vps_max_layers_minus1;         // u(6)
-    uint8_t vps_max_sub_layers_minus1;     // u(3)
-    uint8_t vps_temporal_id_nesting_flag;  // u(1)
-    int vps_reserved_0xffff_16bits;        // u(16)
-    SrsHevcProfileTierLevel ptl;
-    uint8_t vps_sub_layer_ordering_info_present_flag;
+    uint8_t vps_video_parameter_set_id_;    // u(4)
+    uint8_t vps_base_layer_internal_flag_;  // u(1)
+    uint8_t vps_base_layer_available_flag_; // u(1)
+    uint8_t vps_max_layers_minus1_;         // u(6)
+    uint8_t vps_max_sub_layers_minus1_;     // u(3)
+    uint8_t vps_temporal_id_nesting_flag_;  // u(1)
+    int vps_reserved_0xffff_16bits_;        // u(16)
+    SrsHevcProfileTierLevel ptl_;
+    uint8_t vps_sub_layer_ordering_info_present_flag_;
     // Sublayers
-    uint32_t vps_max_dec_pic_buffering_minus1[8]; // max u(3)
-    uint32_t vps_max_num_reorder_pics[8];
-    uint32_t vps_max_latency_increase_plus1[8];
-    uint8_t vps_max_layer_id;
-    uint32_t vps_num_layer_sets_minus1;
-    std::vector<std::vector<uint8_t> > layer_id_included_flag;
-    uint8_t vps_timing_info_present_flag;
-    uint32_t vps_num_units_in_tick;
-    uint32_t vps_time_scale;
-    uint8_t vps_poc_proportional_to_timing_flag;
-    uint32_t vps_num_ticks_poc_diff_one_minus1;
-    uint32_t vps_num_hrd_parameters;
-    std::vector<uint32_t> hrd_layer_set_idx;
-    std::vector<uint8_t> cprms_present_flag;
-    SrsHevcHrdParameters hrd_parameters;
-    uint8_t vps_extension_flag;
-    uint8_t vps_extension_data_flag;
+    uint32_t vps_max_dec_pic_buffering_minus1_[8]; // max u(3)
+    uint32_t vps_max_num_reorder_pics_[8];
+    uint32_t vps_max_latency_increase_plus1_[8];
+    uint8_t vps_max_layer_id_;
+    uint32_t vps_num_layer_sets_minus1_;
+    std::vector<std::vector<uint8_t> > layer_id_included_flag_;
+    uint8_t vps_timing_info_present_flag_;
+    uint32_t vps_num_units_in_tick_;
+    uint32_t vps_time_scale_;
+    uint8_t vps_poc_proportional_to_timing_flag_;
+    uint32_t vps_num_ticks_poc_diff_one_minus1_;
+    uint32_t vps_num_hrd_parameters_;
+    std::vector<uint32_t> hrd_layer_set_idx_;
+    std::vector<uint8_t> cprms_present_flag_;
+    SrsHevcHrdParameters hrd_parameters_;
+    uint8_t vps_extension_flag_;
+    uint8_t vps_extension_data_flag_;
 };
 
 /**
@@ -809,64 +809,64 @@ struct SrsHevcRbspVps {
  * @doc ITU-T-H.265-2021.pdf, page 55.
  */
 struct SrsHevcRbspSps {
-    uint8_t sps_video_parameter_set_id;
-    uint8_t sps_max_sub_layers_minus1;
-    uint8_t sps_temporal_id_nesting_flag;
-    SrsHevcProfileTierLevel ptl;
-    uint32_t sps_seq_parameter_set_id;
-    uint32_t chroma_format_idc;
-    uint8_t separate_colour_plane_flag;
-    uint32_t pic_width_in_luma_samples;
-    uint32_t pic_height_in_luma_samples;
-    uint32_t conformance_window_flag;
-    uint32_t conf_win_left_offset;
-    uint32_t conf_win_right_offset;
-    uint32_t conf_win_top_offset;
-    uint32_t conf_win_bottom_offset;
-    uint32_t bit_depth_luma_minus8;
-    uint32_t bit_depth_chroma_minus8;
-    uint32_t log2_max_pic_order_cnt_lsb_minus4;
-    uint8_t sps_sub_layer_ordering_info_present_flag;
-    uint32_t sps_max_dec_pic_buffering_minus1[8]; // max u(3)
-    uint32_t sps_max_num_reorder_pics[8];
-    uint32_t sps_max_latency_increase_plus1[8];
-    uint32_t log2_min_luma_coding_block_size_minus3;
-    uint32_t log2_diff_max_min_luma_coding_block_size;
-    uint32_t log2_min_luma_transform_block_size_minus2;
-    uint32_t log2_diff_max_min_luma_transform_block_size;
-    uint32_t max_transform_hierarchy_depth_inter;
-    uint32_t max_transform_hierarchy_depth_intra;
-    uint8_t scaling_list_enabled_flag;
-    uint8_t sps_infer_scaling_list_flag;
-    uint32_t sps_scaling_list_ref_layer_id;
-    uint32_t sps_scaling_list_data_present_flag;
-    SrsHevcScalingListData scaling_list_data;
-    uint8_t amp_enabled_flag;
-    uint8_t sample_adaptive_offset_enabled_flag;
-    uint8_t pcm_enabled_flag;
-    uint8_t pcm_sample_bit_depth_luma_minus1;
-    uint8_t pcm_sample_bit_depth_chroma_minus1;
-    uint32_t log2_min_pcm_luma_coding_block_size_minus3;
-    uint32_t log2_diff_max_min_pcm_luma_coding_block_size;
-    uint8_t pcm_loop_filter_disabled_flag;
-    uint32_t num_short_term_ref_pic_sets;
-    std::vector<SrsHevcStRefPicSet> st_ref_pic_set;
-    uint8_t long_term_ref_pics_present_flag;
-    uint32_t num_long_term_ref_pics_sps;
-    uint32_t lt_ref_pic_poc_lsb_sps_bytes;
-    std::vector<uint32_t> lt_ref_pic_poc_lsb_sps;
-    std::vector<uint8_t> used_by_curr_pic_lt_sps_flag;
-    uint8_t sps_temporal_mvp_enabled_flag;
-    uint8_t strong_intra_smoothing_enabled_flag;
-    uint8_t vui_parameters_present_flag;
-    SrsHevcVuiParameters vui;
-    uint8_t sps_extension_present_flag;
-    uint8_t sps_range_extension_flag;
-    uint8_t sps_multilayer_extension_flag;
-    uint8_t sps_3d_extension_flag;
-    uint8_t sps_extension_5bits;
-    SrsHevcSpsRangeExtension sps_range_extension;
-    uint8_t inter_view_mv_vert_constraint_flag; // sps_multilayer_extension_t sps_multilayer_extension;
+    uint8_t sps_video_parameter_set_id_;
+    uint8_t sps_max_sub_layers_minus1_;
+    uint8_t sps_temporal_id_nesting_flag_;
+    SrsHevcProfileTierLevel ptl_;
+    uint32_t sps_seq_parameter_set_id_;
+    uint32_t chroma_format_idc_;
+    uint8_t separate_colour_plane_flag_;
+    uint32_t pic_width_in_luma_samples_;
+    uint32_t pic_height_in_luma_samples_;
+    uint32_t conformance_window_flag_;
+    uint32_t conf_win_left_offset_;
+    uint32_t conf_win_right_offset_;
+    uint32_t conf_win_top_offset_;
+    uint32_t conf_win_bottom_offset_;
+    uint32_t bit_depth_luma_minus8_;
+    uint32_t bit_depth_chroma_minus8_;
+    uint32_t log2_max_pic_order_cnt_lsb_minus4_;
+    uint8_t sps_sub_layer_ordering_info_present_flag_;
+    uint32_t sps_max_dec_pic_buffering_minus1_[8]; // max u(3)
+    uint32_t sps_max_num_reorder_pics_[8];
+    uint32_t sps_max_latency_increase_plus1_[8];
+    uint32_t log2_min_luma_coding_block_size_minus3_;
+    uint32_t log2_diff_max_min_luma_coding_block_size_;
+    uint32_t log2_min_luma_transform_block_size_minus2_;
+    uint32_t log2_diff_max_min_luma_transform_block_size_;
+    uint32_t max_transform_hierarchy_depth_inter_;
+    uint32_t max_transform_hierarchy_depth_intra_;
+    uint8_t scaling_list_enabled_flag_;
+    uint8_t sps_infer_scaling_list_flag_;
+    uint32_t sps_scaling_list_ref_layer_id_;
+    uint32_t sps_scaling_list_data_present_flag_;
+    SrsHevcScalingListData scaling_list_data_;
+    uint8_t amp_enabled_flag_;
+    uint8_t sample_adaptive_offset_enabled_flag_;
+    uint8_t pcm_enabled_flag_;
+    uint8_t pcm_sample_bit_depth_luma_minus1_;
+    uint8_t pcm_sample_bit_depth_chroma_minus1_;
+    uint32_t log2_min_pcm_luma_coding_block_size_minus3_;
+    uint32_t log2_diff_max_min_pcm_luma_coding_block_size_;
+    uint8_t pcm_loop_filter_disabled_flag_;
+    uint32_t num_short_term_ref_pic_sets_;
+    std::vector<SrsHevcStRefPicSet> st_ref_pic_set_;
+    uint8_t long_term_ref_pics_present_flag_;
+    uint32_t num_long_term_ref_pics_sps_;
+    uint32_t lt_ref_pic_poc_lsb_sps_bytes_;
+    std::vector<uint32_t> lt_ref_pic_poc_lsb_sps_;
+    std::vector<uint8_t> used_by_curr_pic_lt_sps_flag_;
+    uint8_t sps_temporal_mvp_enabled_flag_;
+    uint8_t strong_intra_smoothing_enabled_flag_;
+    uint8_t vui_parameters_present_flag_;
+    SrsHevcVuiParameters vui_;
+    uint8_t sps_extension_present_flag_;
+    uint8_t sps_range_extension_flag_;
+    uint8_t sps_multilayer_extension_flag_;
+    uint8_t sps_3d_extension_flag_;
+    uint8_t sps_extension_5bits_;
+    SrsHevcSpsRangeExtension sps_range_extension_;
+    uint8_t inter_view_mv_vert_constraint_flag_; // sps_multilayer_extension_t sps_multilayer_extension;
     // sps_3d_extension_t sps_3d_extension;
     // int sps_extension_data_flag; // no need
     // rbsp_trailing_bits()...
@@ -878,81 +878,81 @@ struct SrsHevcRbspSps {
  * @doc ITU-T-H.265-2021.pdf, page 57.
  */
 struct SrsHevcRbspPps {
-    uint8_t pps_pic_parameter_set_id;
-    uint8_t pps_seq_parameter_set_id;
-    uint8_t dependent_slice_segments_enabled_flag;
-    uint8_t output_flag_present_flag;
-    uint8_t num_extra_slice_header_bits;
-    uint8_t sign_data_hiding_enabled_flag;
-    uint8_t cabac_init_present_flag;
-    uint32_t num_ref_idx_l0_default_active_minus1;
-    uint32_t num_ref_idx_l1_default_active_minus1;
-    int32_t init_qp_minus26;
-    uint8_t constrained_intra_pred_flag;
-    uint8_t transform_skip_enabled_flag;
-    uint8_t cu_qp_delta_enabled_flag;
-    uint32_t diff_cu_qp_delta_depth;
-    int32_t pps_cb_qp_offset;
-    int32_t pps_cr_qp_offset;
-    uint8_t pps_slice_chroma_qp_offsets_present_flag;
-    uint8_t weighted_pred_flag;
-    uint32_t weighted_bipred_flag;
-    uint8_t transquant_bypass_enabled_flag;
-    uint8_t tiles_enabled_flag;
-    uint8_t entropy_coding_sync_enabled_flag;
-    uint32_t num_tile_columns_minus1;
-    uint32_t num_tile_rows_minus1;
-    uint32_t uniform_spacing_flag;
-    std::vector<uint32_t> column_width_minus1;
-    std::vector<uint32_t> row_height_minus1;
-    uint8_t loop_filter_across_tiles_enabled_flag;
-    uint8_t pps_loop_filter_across_slices_enabled_flag;
-    uint8_t deblocking_filter_control_present_flag;
-    uint8_t deblocking_filter_override_enabled_flag;
-    uint8_t pps_deblocking_filter_disabled_flag;
-    int32_t pps_beta_offset_div2;
-    int32_t pps_tc_offset_div2;
-    uint8_t pps_scaling_list_data_present_flag;
-    SrsHevcScalingListData scaling_list_data;
-    uint8_t lists_modification_present_flag;
-    uint32_t log2_parallel_merge_level_minus2;
-    uint8_t slice_segment_header_extension_present_flag;
-    uint8_t pps_extension_present_flag;
-    uint8_t pps_range_extension_flag;
-    uint8_t pps_multilayer_extension_flag;
-    uint8_t pps_3d_extension_flag;
-    uint8_t pps_scc_extension_flag;
-    uint8_t pps_extension_4bits;
-    SrsHevcPpsRangeExtension pps_range_extension;
+    uint8_t pps_pic_parameter_set_id_;
+    uint8_t pps_seq_parameter_set_id_;
+    uint8_t dependent_slice_segments_enabled_flag_;
+    uint8_t output_flag_present_flag_;
+    uint8_t num_extra_slice_header_bits_;
+    uint8_t sign_data_hiding_enabled_flag_;
+    uint8_t cabac_init_present_flag_;
+    uint32_t num_ref_idx_l0_default_active_minus1_;
+    uint32_t num_ref_idx_l1_default_active_minus1_;
+    int32_t init_qp_minus26_;
+    uint8_t constrained_intra_pred_flag_;
+    uint8_t transform_skip_enabled_flag_;
+    uint8_t cu_qp_delta_enabled_flag_;
+    uint32_t diff_cu_qp_delta_depth_;
+    int32_t pps_cb_qp_offset_;
+    int32_t pps_cr_qp_offset_;
+    uint8_t pps_slice_chroma_qp_offsets_present_flag_;
+    uint8_t weighted_pred_flag_;
+    uint32_t weighted_bipred_flag_;
+    uint8_t transquant_bypass_enabled_flag_;
+    uint8_t tiles_enabled_flag_;
+    uint8_t entropy_coding_sync_enabled_flag_;
+    uint32_t num_tile_columns_minus1_;
+    uint32_t num_tile_rows_minus1_;
+    uint32_t uniform_spacing_flag_;
+    std::vector<uint32_t> column_width_minus1_;
+    std::vector<uint32_t> row_height_minus1_;
+    uint8_t loop_filter_across_tiles_enabled_flag_;
+    uint8_t pps_loop_filter_across_slices_enabled_flag_;
+    uint8_t deblocking_filter_control_present_flag_;
+    uint8_t deblocking_filter_override_enabled_flag_;
+    uint8_t pps_deblocking_filter_disabled_flag_;
+    int32_t pps_beta_offset_div2_;
+    int32_t pps_tc_offset_div2_;
+    uint8_t pps_scaling_list_data_present_flag_;
+    SrsHevcScalingListData scaling_list_data_;
+    uint8_t lists_modification_present_flag_;
+    uint32_t log2_parallel_merge_level_minus2_;
+    uint8_t slice_segment_header_extension_present_flag_;
+    uint8_t pps_extension_present_flag_;
+    uint8_t pps_range_extension_flag_;
+    uint8_t pps_multilayer_extension_flag_;
+    uint8_t pps_3d_extension_flag_;
+    uint8_t pps_scc_extension_flag_;
+    uint8_t pps_extension_4bits_;
+    SrsHevcPpsRangeExtension pps_range_extension_;
     // pps_multilayer_extension_t pps_multilayer_extension;
     // pps_3d_extension_t pps_3d_extension;
-    uint8_t pps_extension_data_flag;
+    uint8_t pps_extension_data_flag_;
     // rbsp_trailing_bits( ) ...
 };
 
 struct SrsHevcDecoderConfigurationRecord {
-    uint8_t configuration_version;
-    uint8_t general_profile_space;
-    uint8_t general_tier_flag;
-    uint8_t general_profile_idc;
-    uint32_t general_profile_compatibility_flags;
-    uint64_t general_constraint_indicator_flags;
-    uint8_t general_level_idc;
-    uint16_t min_spatial_segmentation_idc;
-    uint8_t parallelism_type;
-    uint8_t chroma_format;
-    uint8_t bit_depth_luma_minus8;
-    uint8_t bit_depth_chroma_minus8;
-    uint16_t avg_frame_rate;
-    uint8_t constant_frame_rate;
-    uint8_t num_temporal_layers;
-    uint8_t temporal_id_nested;
-    uint8_t length_size_minus_one;
-    std::vector<SrsHevcHvccNalu> nalu_vec;
+    uint8_t configuration_version_;
+    uint8_t general_profile_space_;
+    uint8_t general_tier_flag_;
+    uint8_t general_profile_idc_;
+    uint32_t general_profile_compatibility_flags_;
+    uint64_t general_constraint_indicator_flags_;
+    uint8_t general_level_idc_;
+    uint16_t min_spatial_segmentation_idc_;
+    uint8_t parallelism_type_;
+    uint8_t chroma_format_;
+    uint8_t bit_depth_luma_minus8_;
+    uint8_t bit_depth_chroma_minus8_;
+    uint16_t avg_frame_rate_;
+    uint8_t constant_frame_rate_;
+    uint8_t num_temporal_layers_;
+    uint8_t temporal_id_nested_;
+    uint8_t length_size_minus_one_;
+    std::vector<SrsHevcHvccNalu> nalu_vec_;
 
-    SrsHevcRbspVps vps_table[SrsHevcMax_VPS_COUNT];
-    SrsHevcRbspSps sps_table[SrsHevcMax_SPS_COUNT];
-    SrsHevcRbspPps pps_table[SrsHevcMax_PPS_COUNT];
+    SrsHevcRbspVps vps_table_[SrsHevcMax_VPS_COUNT];
+    SrsHevcRbspSps sps_table_[SrsHevcMax_SPS_COUNT];
+    SrsHevcRbspPps pps_table_[SrsHevcMax_PPS_COUNT];
 };
 
 /**
@@ -1132,15 +1132,15 @@ class SrsAudioCodecConfig : public SrsCodecConfig
     // In FLV specification.
 public:
     // The audio codec id; for FLV, it's SoundFormat.
-    SrsAudioCodecId id;
+    SrsAudioCodecId id_;
     // The audio sample rate; for FLV, it's SoundRate.
-    SrsAudioSampleRate sound_rate;
+    SrsAudioSampleRate sound_rate_;
     // The audio sample size, such as 16 bits; for FLV, it's SoundSize.
-    SrsAudioSampleBits sound_size;
+    SrsAudioSampleBits sound_size_;
     // The audio number of channels; for FLV, it's SoundType.
     // TODO: FIXME: Rename to sound_channels.
-    SrsAudioChannels sound_type;
-    int audio_data_rate; // in bps
+    SrsAudioChannels sound_type_;
+    int audio_data_rate_; // in bps
     // In AAC specification.
 public:
     /**
@@ -1149,15 +1149,15 @@ public:
      * 1.5.1.1 Audio object type definition, page 23,
      *           in ISO_IEC_14496-3-AAC-2001.pdf.
      */
-    SrsAacObjectType aac_object;
+    SrsAacObjectType aac_object_;
     /**
      * samplingFrequencyIndex
      */
-    uint8_t aac_sample_rate;
+    uint8_t aac_sample_rate_;
     /**
      * channelConfiguration
      */
-    uint8_t aac_channels;
+    uint8_t aac_channels_;
     // Sequence header payload.
 public:
     /**
@@ -1165,7 +1165,7 @@ public:
      * without the flv codec header,
      * @see: ffmpeg, AVCodecContext::extradata
      */
-    std::vector<char> aac_extra_data;
+    std::vector<char> aac_extra_data_;
 
 public:
     SrsAudioCodecConfig();
@@ -1181,12 +1181,12 @@ public:
 class SrsVideoCodecConfig : public SrsCodecConfig
 {
 public:
-    SrsVideoCodecId id;
-    int video_data_rate; // in bps
-    double frame_rate;
-    double duration;
-    int width;
-    int height;
+    SrsVideoCodecId id_;
+    int video_data_rate_; // in bps
+    double frame_rate_;
+    double duration_;
+    int width_;
+    int height_;
 
 public:
     /**
@@ -1194,29 +1194,29 @@ public:
      * without the flv codec header,
      * @see: ffmpeg, AVCodecContext::extradata
      */
-    std::vector<char> avc_extra_data;
+    std::vector<char> avc_extra_data_;
 
 public:
     /**
      * video specified
      */
     // profile_idc, ISO_IEC_14496-10-AVC-2003.pdf, page 45.
-    SrsAvcProfile avc_profile;
+    SrsAvcProfile avc_profile_;
     // level_idc, ISO_IEC_14496-10-AVC-2003.pdf, page 45.
-    SrsAvcLevel avc_level;
+    SrsAvcLevel avc_level_;
     // The profile_idc, ITU-T-H.265-2021.pdf, page 62.
-    SrsHevcProfile hevc_profile;
+    SrsHevcProfile hevc_profile_;
     // The level_idc, ITU-T-H.265-2021.pdf, page 63.
-    SrsHevcLevel hevc_level;
+    SrsHevcLevel hevc_level_;
     // lengthSizeMinusOne, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
-    int8_t NAL_unit_length;
+    int8_t NAL_unit_length_;
     // Note that we may resize the vector, so the under-layer bytes may change.
-    std::vector<char> sequenceParameterSetNALUnit;
-    std::vector<char> pictureParameterSetNALUnit;
+    std::vector<char> sequenceParameterSetNALUnit_;
+    std::vector<char> pictureParameterSetNALUnit_;
 
 public:
     // the avc payload format.
-    SrsAvcPayloadFormat payload_format;
+    SrsAvcPayloadFormat payload_format_;
 
 public:
     SrsHevcDecoderConfigurationRecord hevc_dec_conf_record_;

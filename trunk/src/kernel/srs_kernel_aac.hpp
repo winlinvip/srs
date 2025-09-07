@@ -20,13 +20,13 @@ class ISrsStreamWriter;
 class SrsAacTransmuxer
 {
 private:
-    ISrsStreamWriter *writer;
+    ISrsStreamWriter *writer_;
 
 private:
-    SrsAacObjectType aac_object;
-    int8_t aac_sample_rate;
-    int8_t aac_channels;
-    bool got_sequence_header;
+    SrsAacObjectType aac_object_;
+    int8_t aac_sample_rate_;
+    int8_t aac_channels_;
+    bool got_sequence_header_;
 
 public:
     SrsAacTransmuxer();

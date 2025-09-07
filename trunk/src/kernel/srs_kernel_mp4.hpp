@@ -164,8 +164,8 @@ enum SrsMp4BoxBrand {
 class SrsMp4DumpContext
 {
 public:
-    int level;
-    bool summary;
+    int level_;
+    bool summary_;
 
     SrsMp4DumpContext();
     virtual ~SrsMp4DumpContext();
@@ -184,23 +184,23 @@ private:
     // if size is 1 then the actual size is in the field largesize;
     // if size is 0, then this box is the last one in the file, and its contents
     // extend to the end of the file (normally only used for a Media Data Box)
-    uint32_t smallsize;
-    uint64_t largesize;
+    uint32_t smallsize_;
+    uint64_t largesize_;
 
 public:
     // identifies the box type; standard boxes use a compact type, which is normally four printable
     // characters, to permit ease of identification, and is shown so in the boxes below. User extensions use
     // An extended type; in this case, the type field is set to ‘uuid’.
-    SrsMp4BoxType type;
+    SrsMp4BoxType type_;
     // For box 'uuid'.
-    std::vector<char> usertype;
+    std::vector<char> usertype_;
 
 protected:
-    std::vector<SrsMp4Box *> boxes;
+    std::vector<SrsMp4Box *> boxes_;
 
 private:
     // The position at buffer to start demux the box.
-    int start_pos;
+    int start_pos_;
 
 public:
     SrsMp4Box();
@@ -268,9 +268,9 @@ class SrsMp4FullBox : public SrsMp4Box
 {
 public:
     // An integer that specifies the version of this format of the box.
-    uint8_t version;
+    uint8_t version_;
     // A map of flags
-    uint32_t flags;
+    uint32_t flags_;
 
 public:
     SrsMp4FullBox();
@@ -295,13 +295,13 @@ class SrsMp4FileTypeBox : public SrsMp4Box
 {
 public:
     // A brand identifier
-    SrsMp4BoxBrand major_brand;
+    SrsMp4BoxBrand major_brand_;
     // An informative integer for the minor version of the major brand
-    uint32_t minor_version;
+    uint32_t minor_version_;
 
 private:
     // A list, to the end of the box, of brands
-    std::vector<SrsMp4BoxBrand> compatible_brands;
+    std::vector<SrsMp4BoxBrand> compatible_brands_;
 
 public:
     SrsMp4FileTypeBox();
@@ -364,7 +364,7 @@ class SrsMp4MovieFragmentHeaderBox : public SrsMp4FullBox
 {
 public:
     // The ordinal number of this fragment, in increasing order
-    uint32_t sequence_number;
+    uint32_t sequence_number_;
 
 public:
     SrsMp4MovieFragmentHeaderBox();
@@ -438,15 +438,15 @@ enum SrsMp4TfhdFlags {
 class SrsMp4TrackFragmentHeaderBox : public SrsMp4FullBox
 {
 public:
-    uint32_t track_id;
+    uint32_t track_id_;
     // all the following are optional fields
 public:
     // The base offset to use when calculating data offsets
-    uint64_t base_data_offset;
-    uint32_t sample_description_index;
-    uint32_t default_sample_duration;
-    uint32_t default_sample_size;
-    uint32_t default_sample_flags;
+    uint64_t base_data_offset_;
+    uint32_t sample_description_index_;
+    uint32_t default_sample_duration_;
+    uint32_t default_sample_size_;
+    uint32_t default_sample_flags_;
 
 public:
     SrsMp4TrackFragmentHeaderBox();
@@ -472,7 +472,7 @@ class SrsMp4TrackFragmentDecodeTimeBox : public SrsMp4FullBox
 {
 public:
     // It's in ms.
-    uint64_t base_media_decode_time;
+    uint64_t base_media_decode_time_;
 
 public:
     SrsMp4TrackFragmentDecodeTimeBox();
@@ -512,13 +512,13 @@ enum SrsMp4TrunFlags {
 class SrsMp4TrunEntry : public ISrsCodec
 {
 public:
-    SrsMp4FullBox *owner;
+    SrsMp4FullBox *owner_;
 
-    uint32_t sample_duration;
-    uint32_t sample_size;
-    uint32_t sample_flags;
+    uint32_t sample_duration_;
+    uint32_t sample_size_;
+    uint32_t sample_flags_;
     // if version == 0, unsigned int(32); otherwise, signed int(32).
-    int64_t sample_composition_time_offset;
+    int64_t sample_composition_time_offset_;
 
     SrsMp4TrunEntry(SrsMp4FullBox *o);
     virtual ~SrsMp4TrunEntry();
@@ -543,12 +543,12 @@ public:
     // The following are optional fields
 public:
     // added to the implicit or explicit data_offset established in the track fragment header.
-    int32_t data_offset;
+    int32_t data_offset_;
     // provides a set of flags for the first sample only of this run.
-    uint32_t first_sample_flags;
+    uint32_t first_sample_flags_;
     // all fields in the following array are optional
 public:
-    std::vector<SrsMp4TrunEntry *> entries;
+    std::vector<SrsMp4TrunEntry *> entries_;
 
 public:
     SrsMp4TrackFragmentRunBox();
@@ -612,7 +612,7 @@ class SrsMp4MediaDataBox : public SrsMp4Box
 {
 public:
     // The contained media data, which we never directly read/write it.
-    uint64_t nb_data;
+    uint64_t nb_data_;
 
 public:
     SrsMp4MediaDataBox();
@@ -642,7 +642,7 @@ public:
 class SrsMp4FreeSpaceBox : public SrsMp4Box
 {
 private:
-    std::vector<char> data;
+    std::vector<char> data_;
 
 public:
     SrsMp4FreeSpaceBox(SrsMp4BoxType v);
@@ -698,37 +698,37 @@ class SrsMp4MovieHeaderBox : public SrsMp4FullBox
 public:
     // An integer that declares the creation time of the presentation (in seconds since
     // midnight, Jan. 1, 1904, in UTC time)
-    uint64_t creation_time;
+    uint64_t creation_time_;
     // An integer that declares the most recent time the presentation was modified (in
     // seconds since midnight, Jan. 1, 1904, in UTC time)
-    uint64_t modification_time;
+    uint64_t modification_time_;
 
 public:
     // An integer that specifies the time-scale for the entire presentation; this is the number of
     // time units that pass in one second. For example, a time coordinate system that measures time in
     // sixtieths of a second has a time scale of 60.
-    uint32_t timescale;
+    uint32_t timescale_;
     // An integer that declares length of the presentation (in the indicated timescale). This property
     // is derived from the presentation’s tracks: the value of this field corresponds to the duration of the
     // longest track in the presentation. If the duration cannot be determined then duration is set to all 1s.
-    uint64_t duration_in_tbn;
+    uint64_t duration_in_tbn_;
 
 public:
     // A fixed point 16.16 number that indicates the preferred rate to play the presentation; 1.0
     // (0x00010000) is normal forward playback
-    uint32_t rate;
+    uint32_t rate_;
     // A fixed point 8.8 number that indicates the preferred playback volume. 1.0 (0x0100) is full volume.
-    uint16_t volume;
-    uint16_t reserved0;
-    uint64_t reserved1;
+    uint16_t volume_;
+    uint16_t reserved0_;
+    uint64_t reserved1_;
     // A transformation matrix for the video; (u,v,w) are restricted here to (0,0,1), hex values (0,0,0x40000000).
-    int32_t matrix[9];
-    uint32_t pre_defined[6];
+    int32_t matrix_[9];
+    uint32_t pre_defined_[6];
     // A non-zero integer that indicates a value to use for the track ID of the next track to be
     // added to this presentation. Zero is not a valid track ID value. The value of next_track_ID shall be
     // larger than the largest track-ID in use. If this value is equal to all 1s (32-bit maxint), and a new media
     // track is to be added, then a search must be made in the file for an unused track identifier.
-    uint32_t next_track_ID;
+    uint32_t next_track_ID_;
 
 public:
     SrsMp4MovieHeaderBox();
@@ -776,12 +776,12 @@ class SrsMp4TrackExtendsBox : public SrsMp4FullBox
 {
 public:
     // identifies the track; this shall be the track ID of a track in the Movie Box
-    uint32_t track_ID;
+    uint32_t track_ID_;
     // These fields set up defaults used in the track fragments.
-    uint32_t default_sample_description_index;
-    uint32_t default_sample_duration;
-    uint32_t default_sample_size;
-    uint32_t default_sample_flags;
+    uint32_t default_sample_description_index_;
+    uint32_t default_sample_duration_;
+    uint32_t default_sample_size_;
+    uint32_t default_sample_flags_;
 
 public:
     SrsMp4TrackExtendsBox();
@@ -869,47 +869,47 @@ class SrsMp4TrackHeaderBox : public SrsMp4FullBox
 public:
     // An integer that declares the creation time of the presentation (in seconds since
     // midnight, Jan. 1, 1904, in UTC time)
-    uint64_t creation_time;
+    uint64_t creation_time_;
     // An integer that declares the most recent time the presentation was modified (in
     // seconds since midnight, Jan. 1, 1904, in UTC time)
-    uint64_t modification_time;
+    uint64_t modification_time_;
     // An integer that uniquely identifies this track over the entire life-time of this presentation.
     // Track IDs are never re-used and cannot be zero.
-    uint32_t track_ID;
-    uint32_t reserved0;
+    uint32_t track_ID_;
+    uint32_t reserved0_;
     // An integer that indicates the duration of this track (in the timescale indicated in the Movie
     // Header Box). The value of this field is equal to the sum of the durations of all of the track’s edits. If
     // There is no edit list, then the duration is the sum of the sample durations, converted into the timescale
     // in the Movie Header Box. If the duration of this track cannot be determined then duration is set to all
     // 1s.
-    uint64_t duration;
+    uint64_t duration_;
 
 public:
-    uint64_t reserved1;
+    uint64_t reserved1_;
     // specifies the front-to-back ordering of video tracks; tracks with lower numbers are closer to the
     // viewer. 0 is the normal value, and -1 would be in front of track 0, and so on.
-    int16_t layer;
+    int16_t layer_;
     // An integer that specifies a group or collection of tracks. If this field is 0 there is no
     // information on possible relations to other tracks. If this field is not 0, it should be the same for tracks
     // that contain alternate data for one another and different for tracks belonging to different such groups.
     // Only one track within an alternate group should be played or streamed at any one time, and must be
     // distinguishable from other tracks in the group via attributes such as bitrate, codec, language, packet
     // size etc. A group may have only one member.
-    int16_t alternate_group;
+    int16_t alternate_group_;
     // A fixed 8.8 value specifying the track's relative audio volume. Full volume is 1.0 (0x0100) and
     // is the normal value. Its value is irrelevant for a purely visual track. Tracks may be composed by
     // combining them according to their volume, and then using the overall Movie Header Box volume
     // setting; or more complex audio composition (e.g. MPEG-4 BIFS) may be used.
-    int16_t volume;
-    uint16_t reserved2;
+    int16_t volume_;
+    uint16_t reserved2_;
     // A transformation matrix for the video; (u,v,w) are restricted here to (0,0,1), hex (0,0,0x40000000).
-    int32_t matrix[9];
+    int32_t matrix_[9];
     // The track's visual presentation size as fixed-point 16.16 values. These need
     // not be the same as the pixel dimensions of the images, which is documented in the sample
     // description(s); all images in the sequence are scaled to this size, before any overall transformation of
     // The track represented by the matrix. The pixel dimensions of the images are the default values.
-    int32_t width;
-    int32_t height;
+    int32_t width_;
+    int32_t height_;
 
 public:
     SrsMp4TrackHeaderBox();
@@ -946,19 +946,19 @@ class SrsMp4ElstEntry
 public:
     // An integer that specifies the duration of this edit segment in units of the timescale
     // in the Movie Header Box
-    uint64_t segment_duration;
+    uint64_t segment_duration_;
     // An integer containing the starting time within the media of this edit segment (in media time
     // scale units, in composition time). If this field is set to –1, it is an empty edit. The last edit in a track
     // shall never be an empty edit. Any difference between the duration in the Movie Header Box, and the
     // track’s duration is expressed as an implicit empty edit at the end.
-    int64_t media_time;
+    int64_t media_time_;
 
 public:
     // specifies the relative rate at which to play the media corresponding to this edit segment. If this value is 0,
     // Then the edit is specifying a ‘dwell’: the media at media-time is presented for the segment-duration. Otherwise
     // this field shall contain the value 1.
-    int16_t media_rate_integer;
-    int16_t media_rate_fraction;
+    int16_t media_rate_integer_;
+    int16_t media_rate_fraction_;
 
 public:
     SrsMp4ElstEntry();
@@ -979,7 +979,7 @@ class SrsMp4EditListBox : public SrsMp4FullBox
 {
 public:
     // An integer that gives the number of entries in the following table
-    std::vector<SrsMp4ElstEntry> entries;
+    std::vector<SrsMp4ElstEntry> entries_;
 
 public:
     SrsMp4EditListBox();
@@ -1029,25 +1029,25 @@ class SrsMp4MediaHeaderBox : public SrsMp4FullBox
 public:
     // An integer that declares the creation time of the presentation (in seconds since
     // midnight, Jan. 1, 1904, in UTC time)
-    uint64_t creation_time;
+    uint64_t creation_time_;
     // An integer that declares the most recent time the presentation was modified (in
     // seconds since midnight, Jan. 1, 1904, in UTC time)
-    uint64_t modification_time;
+    uint64_t modification_time_;
     // An integer that specifies the time-scale for the entire presentation; this is the number of
     // time units that pass in one second. For example, a time coordinate system that measures time in
     // sixtieths of a second has a time scale of 60.
-    uint32_t timescale;
+    uint32_t timescale_;
     // An integer that declares length of the presentation (in the indicated timescale). This property
     // is derived from the presentation’s tracks: the value of this field corresponds to the duration of the
     // longest track in the presentation. If the duration cannot be determined then duration is set to all 1s.
-    uint64_t duration;
+    uint64_t duration_;
 
 private:
     // The language code for this media. See ISO 639-2/T for the set of three character
     // codes. Each character is packed as the difference between its ASCII value and 0x60. Since the code
     // is confined to being three lower-case letters, these values are strictly positive.
-    uint16_t language;
-    uint16_t pre_defined;
+    uint16_t language_;
+    uint16_t pre_defined_;
 
 public:
     SrsMp4MediaHeaderBox();
@@ -1083,15 +1083,15 @@ public:
 class SrsMp4HandlerReferenceBox : public SrsMp4FullBox
 {
 public:
-    uint32_t pre_defined;
+    uint32_t pre_defined_;
     // An integer containing one of the following values, or a value from a derived specification:
     //      ‘vide’, Video track
     //      ‘soun’, Audio track
-    SrsMp4HandlerType handler_type;
-    uint32_t reserved[3];
+    SrsMp4HandlerType handler_type_;
+    uint32_t reserved_[3];
     // A null-terminated string in UTF-8 characters which gives a human-readable name for the track
     // type (for debugging and inspection purposes).
-    std::string name;
+    std::string name_;
 
 public:
     SrsMp4HandlerReferenceBox();
@@ -1144,9 +1144,9 @@ public:
     // A composition mode for this video track, from the following enumerated set,
     // which may be extended by derived specifications:
     //      copy = 0 copy over the existing image
-    uint16_t graphicsmode;
+    uint16_t graphicsmode_;
     // A set of 3 colour values (red, green, blue) available for use by graphics modes
-    uint16_t opcolor[3];
+    uint16_t opcolor_[3];
 
 public:
     SrsMp4VideoMeidaHeaderBox();
@@ -1167,8 +1167,8 @@ class SrsMp4SoundMeidaHeaderBox : public SrsMp4FullBox
 public:
     // A fixed-point 8.8 number that places mono audio tracks in a stereo space; 0 is centre (the
     // normal value); full left is -1.0 and full right is 1.0.
-    int16_t balance;
-    uint16_t reserved;
+    int16_t balance_;
+    uint16_t reserved_;
 
 public:
     SrsMp4SoundMeidaHeaderBox();
@@ -1202,7 +1202,7 @@ public:
 class SrsMp4DataEntryBox : public SrsMp4FullBox
 {
 public:
-    std::string location;
+    std::string location_;
 
 public:
     SrsMp4DataEntryBox();
@@ -1234,7 +1234,7 @@ public:
 class SrsMp4DataEntryUrnBox : public SrsMp4DataEntryBox
 {
 public:
-    std::string name;
+    std::string name_;
 
 public:
     SrsMp4DataEntryUrnBox();
@@ -1257,7 +1257,7 @@ public:
 class SrsMp4DataReferenceBox : public SrsMp4FullBox
 {
 private:
-    std::vector<SrsMp4DataEntryBox *> entries;
+    std::vector<SrsMp4DataEntryBox *> entries_;
 
 public:
     SrsMp4DataReferenceBox();
@@ -1330,7 +1330,7 @@ public:
     // An integer that contains the index of the data reference to use to retrieve
     // data associated with samples that use this sample description. Data references are stored in Data
     // Reference Boxes. The index ranges from 1 to the number of data references.
-    uint16_t data_reference_index;
+    uint16_t data_reference_index_;
 
 public:
     SrsMp4SampleEntry();
@@ -1350,27 +1350,27 @@ public:
 class SrsMp4VisualSampleEntry : public SrsMp4SampleEntry
 {
 public:
-    uint16_t pre_defined0;
-    uint16_t reserved0;
-    uint32_t pre_defined1[3];
+    uint16_t pre_defined0_;
+    uint16_t reserved0_;
+    uint32_t pre_defined1_[3];
     // The maximum visual width and height of the stream described by this sample
     // description, in pixels
-    uint16_t width;
-    uint16_t height;
-    uint32_t horizresolution;
-    uint32_t vertresolution;
-    uint32_t reserved1;
+    uint16_t width_;
+    uint16_t height_;
+    uint32_t horizresolution_;
+    uint32_t vertresolution_;
+    uint32_t reserved1_;
     // how many frames of compressed video are stored in each sample. The default is
     // 1, for one frame per sample; it may be more than 1 for multiple frames per sample
-    uint16_t frame_count;
+    uint16_t frame_count_;
     // A name, for informative purposes. It is formatted in a fixed 32-byte field, with the first
     // byte set to the number of bytes to be displayed, followed by that number of bytes of displayable data,
     // And then padding to complete 32 bytes total (including the size byte). The field may be set to 0.
-    char compressorname[32];
+    char compressorname_[32];
     // one of the following values
     //      0x0018 – images are in colour with no alpha
-    uint16_t depth;
-    int16_t pre_defined2;
+    uint16_t depth_;
+    int16_t pre_defined2_;
 
 public:
     SrsMp4VisualSampleEntry(SrsMp4BoxType boxType);
@@ -1400,7 +1400,7 @@ public:
 class SrsMp4AvccBox : public SrsMp4Box
 {
 public:
-    std::vector<char> avc_config;
+    std::vector<char> avc_config_;
 
 public:
     SrsMp4AvccBox();
@@ -1420,7 +1420,7 @@ public:
 class SrsMp4HvcCBox : public SrsMp4Box
 {
 public:
-    std::vector<char> hevc_config;
+    std::vector<char> hevc_config_;
 
 public:
     SrsMp4HvcCBox();
@@ -1440,12 +1440,12 @@ public:
 class SrsMp4AudioSampleEntry : public SrsMp4SampleEntry
 {
 public:
-    uint64_t reserved0;
-    uint16_t channelcount;
-    uint16_t samplesize;
-    uint16_t pre_defined0;
-    uint16_t reserved1;
-    uint32_t samplerate;
+    uint64_t reserved0_;
+    uint16_t channelcount_;
+    uint16_t samplesize_;
+    uint16_t pre_defined0_;
+    uint16_t reserved1_;
+    uint32_t samplerate_;
 
 public:
     SrsMp4AudioSampleEntry();
@@ -1543,7 +1543,7 @@ class SrsMp4DecoderSpecificInfo : public SrsMp4BaseDescriptor
 public:
     // AAC Audio Specific Config.
     // 1.6.2.1 AudioSpecificConfig, in ISO_IEC_14496-3-AAC-2001.pdf, page 33.
-    std::vector<char> asc;
+    std::vector<char> asc_;
 
 public:
     SrsMp4DecoderSpecificInfo();
@@ -1569,10 +1569,10 @@ public:
     SrsMp4StreamType streamType;           // bit(6)
     uint8_t upStream;                      // bit(1)
     uint8_t reserved;                      // bit(1)
-    uint32_t bufferSizeDB;                 // bit(24)
-    uint32_t maxBitrate;
-    uint32_t avgBitrate;
-    SrsMp4DecoderSpecificInfo *decSpecificInfo; // optional.
+    uint32_t bufferSizeDB_;                 // bit(24)
+    uint32_t maxBitrate_;
+    uint32_t avgBitrate_;
+    SrsMp4DecoderSpecificInfo *decSpecificInfo_; // optional.
 public:
     SrsMp4DecoderConfigDescriptor();
     virtual ~SrsMp4DecoderConfigDescriptor();
@@ -1591,7 +1591,7 @@ public:
 class SrsMp4SLConfigDescriptor : public SrsMp4BaseDescriptor
 {
 public:
-    uint8_t predefined;
+    uint8_t predefined_;
 
 public:
     SrsMp4SLConfigDescriptor();
@@ -1608,19 +1608,19 @@ protected:
 class SrsMp4ES_Descriptor : public SrsMp4BaseDescriptor
 {
 public:
-    uint16_t ES_ID;
-    uint8_t streamDependenceFlag; // bit(1)
-    uint8_t URL_Flag;             // bit(1)
-    uint8_t OCRstreamFlag;        // bit(1)
-    uint8_t streamPriority;       // bit(5)
+    uint16_t ES_ID_;
+    uint8_t streamDependenceFlag_; // bit(1)
+    uint8_t URL_Flag_;             // bit(1)
+    uint8_t OCRstreamFlag_;        // bit(1)
+    uint8_t streamPriority_;       // bit(5)
     // if (streamDependenceFlag)
-    uint16_t dependsOn_ES_ID;
+    uint16_t dependsOn_ES_ID_;
     // if (URL_Flag)
-    std::vector<char> URLstring;
+    std::vector<char> URLstring_;
     // if (OCRstreamFlag)
-    uint16_t OCR_ES_Id;
-    SrsMp4DecoderConfigDescriptor decConfigDescr;
-    SrsMp4SLConfigDescriptor slConfigDescr;
+    uint16_t OCR_ES_Id_;
+    SrsMp4DecoderConfigDescriptor decConfigDescr_;
+    SrsMp4SLConfigDescriptor slConfigDescr_;
 
 public:
     SrsMp4ES_Descriptor();
@@ -1668,7 +1668,7 @@ public:
 class SrsMp4SampleDescriptionBox : public SrsMp4FullBox
 {
 private:
-    std::vector<SrsMp4SampleEntry *> entries;
+    std::vector<SrsMp4SampleEntry *> entries_;
 
 public:
     SrsMp4SampleDescriptionBox();
@@ -1703,9 +1703,9 @@ class SrsMp4SttsEntry
 public:
     // An integer that counts the number of consecutive samples that have the given
     // duration.
-    uint32_t sample_count;
+    uint32_t sample_count_;
     // An integer that gives the delta of these samples in the time-scale of the media.
-    uint32_t sample_delta;
+    uint32_t sample_delta_;
     // Constructor
     SrsMp4SttsEntry();
     virtual ~SrsMp4SttsEntry();
@@ -1724,12 +1724,12 @@ class SrsMp4DecodingTime2SampleBox : public SrsMp4FullBox
 {
 public:
     // An integer that gives the number of entries in the following table.
-    std::vector<SrsMp4SttsEntry> entries;
+    std::vector<SrsMp4SttsEntry> entries_;
 
 private:
     // The index for counter to calc the dts for samples.
-    uint32_t index;
-    uint32_t count;
+    uint32_t index_;
+    uint32_t count_;
 
 public:
     SrsMp4DecodingTime2SampleBox();
@@ -1757,12 +1757,12 @@ class SrsMp4CttsEntry
 {
 public:
     // An integer that counts the number of consecutive samples that have the given offset.
-    uint32_t sample_count;
+    uint32_t sample_count_;
     // uint32_t for version=0
     // int32_t for version=1
     // An integer that gives the offset between CT and DT, such that CT(n) = DT(n) +
     // CTTS(n).
-    int64_t sample_offset;
+    int64_t sample_offset_;
     // Constructor
     SrsMp4CttsEntry();
     virtual ~SrsMp4CttsEntry();
@@ -1784,12 +1784,12 @@ class SrsMp4CompositionTime2SampleBox : public SrsMp4FullBox
 {
 public:
     // An integer that gives the number of entries in the following table.
-    std::vector<SrsMp4CttsEntry> entries;
+    std::vector<SrsMp4CttsEntry> entries_;
 
 private:
     // The index for counter to calc the dts for samples.
-    uint32_t index;
-    uint32_t count;
+    uint32_t index_;
+    uint32_t count_;
 
 public:
     SrsMp4CompositionTime2SampleBox();
@@ -1819,9 +1819,9 @@ class SrsMp4SyncSampleBox : public SrsMp4FullBox
 public:
     // An integer that gives the number of entries in the following table. If entry_count is zero,
     // There are no sync samples within the stream and the following table is empty.
-    uint32_t entry_count;
+    uint32_t entry_count_;
     // The numbers of the samples that are sync samples in the stream.
-    uint32_t *sample_numbers;
+    uint32_t *sample_numbers_;
 
 public:
     SrsMp4SyncSampleBox();
@@ -1849,13 +1849,13 @@ public:
     // same samples-per-chunk and sample-description-index; the index of the first chunk in a track has the
     // value 1 (the first_chunk field in the first record of this box has the value 1, identifying that the first
     // sample maps to the first chunk).
-    uint32_t first_chunk;
+    uint32_t first_chunk_;
     // An integer that gives the number of samples in each of these chunks
-    uint32_t samples_per_chunk;
+    uint32_t samples_per_chunk_;
     // An integer that gives the index of the sample entry that describes the
     // samples in this chunk. The index ranges from 1 to the number of sample entries in the Sample
     // Description Box
-    uint32_t sample_description_index;
+    uint32_t sample_description_index_;
     // Constructor
     SrsMp4StscEntry();
 
@@ -1872,13 +1872,13 @@ class SrsMp4Sample2ChunkBox : public SrsMp4FullBox
 {
 public:
     // An integer that gives the number of entries in the following table
-    uint32_t entry_count;
+    uint32_t entry_count_;
     // The numbers of the samples that are sync samples in the stream.
-    SrsMp4StscEntry *entries;
+    SrsMp4StscEntry *entries_;
 
 private:
     // The index for counter to calc the dts for samples.
-    uint32_t index;
+    uint32_t index_;
 
 public:
     SrsMp4Sample2ChunkBox();
@@ -1908,10 +1908,10 @@ class SrsMp4ChunkOffsetBox : public SrsMp4FullBox
 {
 public:
     // An integer that gives the number of entries in the following table
-    uint32_t entry_count;
+    uint32_t entry_count_;
     // A 32 bit integer that gives the offset of the start of a chunk into its containing
     // media file.
-    uint32_t *entries;
+    uint32_t *entries_;
 
 public:
     SrsMp4ChunkOffsetBox();
@@ -1935,10 +1935,10 @@ class SrsMp4ChunkLargeOffsetBox : public SrsMp4FullBox
 {
 public:
     // An integer that gives the number of entries in the following table
-    uint32_t entry_count;
+    uint32_t entry_count_;
     // A 64 bit integer that gives the offset of the start of a chunk into its containing
     // media file.
-    uint64_t *entries;
+    uint64_t *entries_;
 
 public:
     SrsMp4ChunkLargeOffsetBox();
@@ -1964,12 +1964,12 @@ public:
     // contains that size value. If this field is set to 0, then the samples have different sizes, and those sizes
     // are stored in the sample size table. If this field is not 0, it specifies the constant sample size, and no
     // array follows.
-    uint32_t sample_size;
+    uint32_t sample_size_;
     // An integer that gives the number of samples in the track; if sample-size is 0, then it is
     // also the number of entries in the following table.
-    uint32_t sample_count;
+    uint32_t sample_count_;
     // Each entry_size is an integer specifying the size of a sample, indexed by its number.
-    uint32_t *entry_sizes;
+    uint32_t *entry_sizes_;
 
 public:
     SrsMp4SampleSizeBox();
@@ -1995,7 +1995,7 @@ public:
 class SrsMp4UserDataBox : public SrsMp4Box
 {
 public:
-    std::vector<char> data;
+    std::vector<char> data_;
 
 public:
     SrsMp4UserDataBox();
@@ -2013,12 +2013,12 @@ public:
 // The entry for SegmentIndexBox(sidx) for MPEG-DASH.
 // @doc https://patches.videolan.org/patch/103/
 struct SrsMp4SegmentIndexEntry {
-    uint8_t reference_type;       // 1bit
-    uint32_t referenced_size;     // 31bits
-    uint32_t subsegment_duration; // 32bits
-    uint8_t starts_with_SAP;      // 1bit
-    uint8_t SAP_type;             // 3bits
-    uint32_t SAP_delta_time;      // 28bits
+    uint8_t reference_type_;       // 1bit
+    uint32_t referenced_size_;     // 31bits
+    uint32_t subsegment_duration_; // 32bits
+    uint8_t starts_with_SAP_;      // 1bit
+    uint8_t SAP_type_;             // 3bits
+    uint32_t SAP_delta_time_;      // 28bits
 };
 
 // The SegmentIndexBox(sidx) for MPEG-DASH.
@@ -2028,13 +2028,13 @@ struct SrsMp4SegmentIndexEntry {
 class SrsMp4SegmentIndexBox : public SrsMp4Box
 {
 public:
-    uint8_t version;
-    uint32_t flags;
-    uint32_t reference_id;
-    uint32_t timescale;
-    uint64_t earliest_presentation_time;
-    uint64_t first_offset;
-    std::vector<SrsMp4SegmentIndexEntry> entries;
+    uint8_t version_;
+    uint32_t flags_;
+    uint32_t reference_id_;
+    uint32_t timescale_;
+    uint64_t earliest_presentation_time_;
+    uint64_t first_offset_;
+    std::vector<SrsMp4SegmentIndexEntry> entries_;
 
 public:
     SrsMp4SegmentIndexBox();
@@ -2068,12 +2068,12 @@ public:
 class SrsMp4SampleAuxiliaryInfoSizeBox : public SrsMp4FullBox
 {
 public:
-    uint32_t aux_info_type;
-    uint32_t aux_info_type_parameter;
+    uint32_t aux_info_type_;
+    uint32_t aux_info_type_parameter_;
 
-    uint8_t default_sample_info_size;
-    uint32_t sample_count;
-    std::vector<uint8_t> sample_info_sizes;
+    uint8_t default_sample_info_size_;
+    uint32_t sample_count_;
+    std::vector<uint8_t> sample_info_sizes_;
 
 public:
     SrsMp4SampleAuxiliaryInfoSizeBox();
@@ -2108,10 +2108,10 @@ public:
 class SrsMp4SampleAuxiliaryInfoOffsetBox : public SrsMp4FullBox
 {
 public:
-    uint32_t aux_info_type;
-    uint32_t aux_info_type_parameter;
+    uint32_t aux_info_type_;
+    uint32_t aux_info_type_parameter_;
     // uint32_t entry_count;
-    std::vector<uint64_t> offsets;
+    std::vector<uint64_t> offsets_;
 
 public:
     SrsMp4SampleAuxiliaryInfoOffsetBox();
@@ -2132,8 +2132,8 @@ enum SrsMp4CencSampleEncryptionFlags {
 };
 
 struct SrsMp4SubSampleEncryptionInfo : public ISrsCodec {
-    uint16_t bytes_of_clear_data;
-    uint32_t bytes_of_protected_data;
+    uint16_t bytes_of_clear_data_;
+    uint32_t bytes_of_protected_data_;
 
     SrsMp4SubSampleEncryptionInfo();
     virtual ~SrsMp4SubSampleEncryptionInfo();
@@ -2149,7 +2149,7 @@ class SrsMp4SampleEncryptionEntry : public ISrsCodec
 {
 public:
     // if flags && 0x02
-    std::vector<SrsMp4SubSampleEncryptionInfo> subsample_infos;
+    std::vector<SrsMp4SubSampleEncryptionInfo> subsample_infos_;
 
 public:
     SrsMp4SampleEncryptionEntry(SrsMp4FullBox *senc, uint8_t per_sample_iv_size);
@@ -2193,7 +2193,7 @@ private:
 class SrsMp4SampleEncryptionBox : public SrsMp4FullBox
 {
 public:
-    std::vector<SrsMp4SampleEncryptionEntry *> entries;
+    std::vector<SrsMp4SampleEncryptionEntry *> entries_;
 
 private:
     uint8_t per_sample_iv_size_;
@@ -2251,10 +2251,10 @@ public:
 class SrsMp4SchemeTypeBox : public SrsMp4FullBox
 {
 public:
-    uint32_t scheme_type;
-    uint32_t scheme_version;
-    char scheme_uri[SCHM_SCHEME_URI_MAX_SIZE];
-    uint32_t scheme_uri_size;
+    uint32_t scheme_type_;
+    uint32_t scheme_version_;
+    char scheme_uri_[SCHM_SCHEME_URI_MAX_SIZE];
+    uint32_t scheme_uri_size_;
 
 public:
     SrsMp4SchemeTypeBox();
@@ -2370,15 +2370,15 @@ public:
 class SrsMp4TrackEncryptionBox : public SrsMp4FullBox
 {
 public:
-    uint8_t reserved;
-    uint8_t reserved_2;
-    uint8_t default_crypt_byte_block;
-    uint8_t default_skip_byte_block;
-    uint8_t default_is_protected;
-    uint8_t default_per_sample_IV_size;
-    uint8_t default_KID[16];
-    uint8_t default_constant_IV_size;
-    uint8_t default_constant_IV[16];
+    uint8_t reserved_;
+    uint8_t reserved_2_;
+    uint8_t default_crypt_byte_block_;
+    uint8_t default_skip_byte_block_;
+    uint8_t default_is_protected_;
+    uint8_t default_per_sample_IV_size_;
+    uint8_t default_KID_[16];
+    uint8_t default_constant_IV_size_;
+    uint8_t default_constant_IV_[16];
 
 public:
     SrsMp4TrackEncryptionBox();
@@ -2403,25 +2403,25 @@ class SrsMp4Sample
 {
 public:
     // The type of sample, audio or video.
-    SrsFrameType type;
+    SrsFrameType type_;
     // The offset of sample in file.
-    off_t offset;
+    off_t offset_;
     // The index of sample with a track, start from 0.
-    uint32_t index;
+    uint32_t index_;
     // The dts in tbn.
-    uint64_t dts;
+    uint64_t dts_;
     // For video, the pts in tbn.
-    uint64_t pts;
+    uint64_t pts_;
     // The tbn(timebase).
-    uint32_t tbn;
+    uint32_t tbn_;
     // For video, the frame type, whether keyframe.
-    SrsVideoAvcFrameType frame_type;
+    SrsVideoAvcFrameType frame_type_;
     // The adjust timestamp in milliseconds.
     // For example, we can adjust a timestamp for A/V to monotonically increase.
-    int32_t adjust;
+    int32_t adjust_;
     // The sample data.
-    uint32_t nb_data;
-    uint8_t *data;
+    uint32_t nb_data_;
+    uint8_t *data_;
 
 public:
     SrsMp4Sample();
@@ -2477,7 +2477,7 @@ private:
     SrsMp4DvrJitter *jitter_; // MP4 A/V sync jitter handler
 
 public:
-    std::vector<SrsMp4Sample *> samples;
+    std::vector<SrsMp4Sample *> samples_;
 
 public:
     SrsMp4SampleManager();
@@ -2518,9 +2518,9 @@ private:
 class SrsMp4BoxReader
 {
 private:
-    ISrsReadSeeker *rsio;
+    ISrsReadSeeker *rsio_;
     // The temporary buffer to read from buffer.
-    char *buf;
+    char *buf_;
 
 public:
     SrsMp4BoxReader();
@@ -2546,51 +2546,51 @@ class SrsMp4Decoder
 {
 private:
     // The major brand of decoder, parse from ftyp.
-    SrsMp4BoxBrand brand;
+    SrsMp4BoxBrand brand_;
     // The samples build from moov.
-    SrsMp4SampleManager *samples;
+    SrsMp4SampleManager *samples_;
     // The current written sample information.
-    uint32_t current_index;
-    off_t current_offset;
+    uint32_t current_index_;
+    off_t current_offset_;
 
 public:
     // The video codec of first track, generally there is zero or one track.
     // Forbidden if no video stream.
     // TODO: FIXME: Use SrsFormat instead.
-    SrsVideoCodecId vcodec;
+    SrsVideoCodecId vcodec_;
 
 private:
     // For H.264/AVC, the avcc contains the sps/pps.
-    std::vector<char> pavcc;
+    std::vector<char> pavcc_;
     // Whether avcc is written to reader.
-    bool avcc_written;
+    bool avcc_written_;
 
 public:
     // The audio codec of first track, generally there is zero or one track.
     // Forbidden if no audio stream.
-    SrsAudioCodecId acodec;
+    SrsAudioCodecId acodec_;
     // The audio sample rate.
-    SrsAudioSampleRate sample_rate;
+    SrsAudioSampleRate sample_rate_;
     // The audio sound bits.
-    SrsAudioSampleBits sound_bits;
+    SrsAudioSampleBits sound_bits_;
     // The audio sound type.
-    SrsAudioChannels channels;
+    SrsAudioChannels channels_;
 
 private:
     // For AAC, the asc in esds box.
-    std::vector<char> pasc;
+    std::vector<char> pasc_;
     // Whether asc is written to reader.
-    bool asc_written;
+    bool asc_written_;
 
 private:
     // Underlayer reader and seeker.
     // @remark The demuxer must use seeker for general MP4 to seek the moov.
-    ISrsReadSeeker *rsio;
+    ISrsReadSeeker *rsio_;
     // The MP4 box reader.
-    SrsMp4BoxReader *br;
+    SrsMp4BoxReader *br_;
     // The stream used to demux the boxes.
     // TODO: FIXME: refine for performance issue.
-    SrsSimpleStream *stream;
+    SrsSimpleStream *stream_;
 
 public:
     SrsMp4Decoder();
@@ -2628,50 +2628,50 @@ private:
 class SrsMp4Encoder
 {
 private:
-    ISrsWriteSeeker *wsio;
+    ISrsWriteSeeker *wsio_;
     // The mdat offset at file, we must update the header when flush.
-    off_t mdat_offset;
+    off_t mdat_offset_;
     // The mdat size in bytes, we must update it to the mdat box header.
-    uint64_t mdat_bytes;
+    uint64_t mdat_bytes_;
     // The samples build from moov.
-    SrsMp4SampleManager *samples;
+    SrsMp4SampleManager *samples_;
 
 public:
     // The audio codec of first track, generally there is zero or one track.
     // Forbidden if no audio stream.
-    SrsAudioCodecId acodec;
+    SrsAudioCodecId acodec_;
     // The audio sample rate.
-    SrsAudioSampleRate sample_rate;
+    SrsAudioSampleRate sample_rate_;
     // The audio sound bits.
-    SrsAudioSampleBits sound_bits;
+    SrsAudioSampleBits sound_bits_;
     // The audio sound type.
-    SrsAudioChannels channels;
+    SrsAudioChannels channels_;
 
 private:
     // For AAC, the asc in esds box.
-    std::vector<char> pasc;
+    std::vector<char> pasc_;
     // The number of audio samples.
-    uint32_t nb_audios;
+    uint32_t nb_audios_;
     // The duration of audio stream.
-    uint64_t aduration;
+    uint64_t aduration_;
 
 public:
     // The video codec of first track, generally there is zero or one track.
     // Forbidden if no video stream.
-    SrsVideoCodecId vcodec;
+    SrsVideoCodecId vcodec_;
 
 private:
     // For H.264/AVC, the avcc contains the sps/pps.
-    std::vector<char> pavcc;
+    std::vector<char> pavcc_;
     // For H.265/HEVC, the hvcC contains the vps/sps/pps.
-    std::vector<char> phvcc;
+    std::vector<char> phvcc_;
     // The number of video samples.
-    uint32_t nb_videos;
+    uint32_t nb_videos_;
     // The duration of video stream.
-    uint64_t vduration;
+    uint64_t vduration_;
     // The size width/height of video.
-    uint32_t width;
-    uint32_t height;
+    uint32_t width_;
+    uint32_t height_;
 
 public:
     SrsMp4Encoder();
@@ -2705,7 +2705,7 @@ private:
 class SrsMp4M2tsInitEncoder
 {
 private:
-    ISrsWriter *writer;
+    ISrsWriter *writer_;
 
 private:
     uint8_t crypt_byte_block_;
@@ -2766,17 +2766,17 @@ private:
 class SrsMp4M2tsSegmentEncoder
 {
 private:
-    ISrsWriter *writer;
-    uint32_t sequence_number;
-    srs_utime_t decode_basetime;
-    uint32_t track_id;
+    ISrsWriter *writer_;
+    uint32_t sequence_number_;
+    srs_utime_t decode_basetime_;
+    uint32_t track_id_;
 
 private:
-    uint32_t nb_audios;
-    uint32_t nb_videos;
-    uint32_t styp_bytes;
-    uint64_t mdat_bytes;
-    SrsMp4SampleManager *samples;
+    uint32_t nb_audios_;
+    uint32_t nb_videos_;
+    uint32_t styp_bytes_;
+    uint64_t mdat_bytes_;
+    SrsMp4SampleManager *samples_;
 
 public:
     SrsMp4M2tsSegmentEncoder();
@@ -2875,7 +2875,7 @@ std::stringstream &srs_dumps_array(std::vector<T> &arr, std::stringstream &ss, S
                                    void (*delimiter)(std::stringstream &, SrsMp4DumpContext))
 {
     int limit = arr.size();
-    if (dc.summary) {
+    if (dc.summary_) {
         limit = srs_min(SrsMp4SummaryCount, limit);
     }
 
@@ -2898,7 +2898,7 @@ std::stringstream &srs_dumps_array(T *arr, int size, std::stringstream &ss, SrsM
                                    void (*delimiter)(std::stringstream &, SrsMp4DumpContext))
 {
     int limit = size;
-    if (dc.summary) {
+    if (dc.summary_) {
         limit = srs_min(SrsMp4SummaryCount, limit);
     }
 

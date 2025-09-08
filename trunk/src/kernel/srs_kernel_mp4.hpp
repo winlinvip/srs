@@ -1569,7 +1569,7 @@ public:
     SrsMp4StreamType streamType;           // bit(6)
     uint8_t upStream;                      // bit(1)
     uint8_t reserved;                      // bit(1)
-    uint32_t bufferSizeDB_;                 // bit(24)
+    uint32_t bufferSizeDB_;                // bit(24)
     uint32_t maxBitrate_;
     uint32_t avgBitrate_;
     SrsMp4DecoderSpecificInfo *decSpecificInfo_; // optional.

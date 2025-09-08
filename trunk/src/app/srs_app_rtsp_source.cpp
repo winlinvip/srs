@@ -784,7 +784,7 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
     }
 
     // AU-headers: 16 bits per AU (13 bits for size + 3 bits for index)
-    int au_headers_length = audio->nb_samples_ * 16;          // bits
+    int au_headers_length = audio->nb_samples_ * 16;         // bits
     int au_headers_bytes = (au_headers_length + 7) / 8;      // convert to bytes
     int payload_size = 2 + au_headers_bytes + total_au_size; // AU-headers-length(2) + AU-headers + AU data
 
@@ -800,7 +800,7 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
         // AU-header: AU-size(13 bits) + AU-index(3 bits) = 16 bits
         // According to RFC 3640, AU-size comes first (MSB), then AU-index (LSB)
         uint16_t au_size = audio->samples_[i].size_ & 0x1FFF; // 13 bits mask
-        uint16_t au_index = i & 0x07;                       // 3 bits mask
+        uint16_t au_index = i & 0x07;                         // 3 bits mask
         buffer.write_2bytes((au_size << 3) | au_index);
     }
 

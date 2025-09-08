@@ -374,7 +374,7 @@ srs_error_t SrsSrtFrameBuilder::on_ts_message(SrsTsMessage *msg)
     if (msg->stream_number() != 0) {
         return srs_error_new(ERROR_STREAM_CASTER_TS_ES, "ts: unsupported stream format, sid=%#x(%s-%d)",
                              msg->sid_, msg->is_audio() ? "A" : msg->is_video() ? "V"
-                                                                               : "N",
+                                                                                : "N",
                              msg->stream_number());
     }
 

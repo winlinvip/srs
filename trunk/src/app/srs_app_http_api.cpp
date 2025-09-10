@@ -368,24 +368,24 @@ srs_error_t SrsGoApiRusages::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
     SrsRusage *ru = srs_get_system_rusage();
 
-    data->set("ok", SrsJsonAny::boolean(ru->ok));
-    data->set("sample_time", SrsJsonAny::integer(ru->sample_time));
-    data->set("ru_utime", SrsJsonAny::integer(ru->r.ru_utime.tv_sec));
-    data->set("ru_stime", SrsJsonAny::integer(ru->r.ru_stime.tv_sec));
-    data->set("ru_maxrss", SrsJsonAny::integer(ru->r.ru_maxrss));
-    data->set("ru_ixrss", SrsJsonAny::integer(ru->r.ru_ixrss));
-    data->set("ru_idrss", SrsJsonAny::integer(ru->r.ru_idrss));
-    data->set("ru_isrss", SrsJsonAny::integer(ru->r.ru_isrss));
-    data->set("ru_minflt", SrsJsonAny::integer(ru->r.ru_minflt));
-    data->set("ru_majflt", SrsJsonAny::integer(ru->r.ru_majflt));
-    data->set("ru_nswap", SrsJsonAny::integer(ru->r.ru_nswap));
-    data->set("ru_inblock", SrsJsonAny::integer(ru->r.ru_inblock));
-    data->set("ru_oublock", SrsJsonAny::integer(ru->r.ru_oublock));
-    data->set("ru_msgsnd", SrsJsonAny::integer(ru->r.ru_msgsnd));
-    data->set("ru_msgrcv", SrsJsonAny::integer(ru->r.ru_msgrcv));
-    data->set("ru_nsignals", SrsJsonAny::integer(ru->r.ru_nsignals));
-    data->set("ru_nvcsw", SrsJsonAny::integer(ru->r.ru_nvcsw));
-    data->set("ru_nivcsw", SrsJsonAny::integer(ru->r.ru_nivcsw));
+    data->set("ok", SrsJsonAny::boolean(ru->ok_));
+    data->set("sample_time", SrsJsonAny::integer(ru->sample_time_));
+    data->set("ru_utime", SrsJsonAny::integer(ru->r_.ru_utime.tv_sec));
+    data->set("ru_stime", SrsJsonAny::integer(ru->r_.ru_stime.tv_sec));
+    data->set("ru_maxrss", SrsJsonAny::integer(ru->r_.ru_maxrss));
+    data->set("ru_ixrss", SrsJsonAny::integer(ru->r_.ru_ixrss));
+    data->set("ru_idrss", SrsJsonAny::integer(ru->r_.ru_idrss));
+    data->set("ru_isrss", SrsJsonAny::integer(ru->r_.ru_isrss));
+    data->set("ru_minflt", SrsJsonAny::integer(ru->r_.ru_minflt));
+    data->set("ru_majflt", SrsJsonAny::integer(ru->r_.ru_majflt));
+    data->set("ru_nswap", SrsJsonAny::integer(ru->r_.ru_nswap));
+    data->set("ru_inblock", SrsJsonAny::integer(ru->r_.ru_inblock));
+    data->set("ru_oublock", SrsJsonAny::integer(ru->r_.ru_oublock));
+    data->set("ru_msgsnd", SrsJsonAny::integer(ru->r_.ru_msgsnd));
+    data->set("ru_msgrcv", SrsJsonAny::integer(ru->r_.ru_msgrcv));
+    data->set("ru_nsignals", SrsJsonAny::integer(ru->r_.ru_nsignals));
+    data->set("ru_nvcsw", SrsJsonAny::integer(ru->r_.ru_nvcsw));
+    data->set("ru_nivcsw", SrsJsonAny::integer(ru->r_.ru_nivcsw));
 
     return srs_api_response(w, r, obj->dumps());
 }
@@ -415,55 +415,55 @@ srs_error_t SrsGoApiSelfProcStats::serve_http(ISrsHttpResponseWriter *w, ISrsHtt
     SrsProcSelfStat *u = srs_get_self_proc_stat();
 
     string state;
-    state += (char)u->state;
+    state += (char)u->state_;
 
-    data->set("ok", SrsJsonAny::boolean(u->ok));
-    data->set("sample_time", SrsJsonAny::integer(u->sample_time));
-    data->set("percent", SrsJsonAny::number(u->percent));
-    data->set("pid", SrsJsonAny::integer(u->pid));
-    data->set("comm", SrsJsonAny::str(u->comm));
+    data->set("ok", SrsJsonAny::boolean(u->ok_));
+    data->set("sample_time", SrsJsonAny::integer(u->sample_time_));
+    data->set("percent", SrsJsonAny::number(u->percent_));
+    data->set("pid", SrsJsonAny::integer(u->pid_));
+    data->set("comm", SrsJsonAny::str(u->comm_));
     data->set("state", SrsJsonAny::str(state.c_str()));
-    data->set("ppid", SrsJsonAny::integer(u->ppid));
-    data->set("pgrp", SrsJsonAny::integer(u->pgrp));
-    data->set("session", SrsJsonAny::integer(u->session));
-    data->set("tty_nr", SrsJsonAny::integer(u->tty_nr));
-    data->set("tpgid", SrsJsonAny::integer(u->tpgid));
-    data->set("flags", SrsJsonAny::integer(u->flags));
-    data->set("minflt", SrsJsonAny::integer(u->minflt));
-    data->set("cminflt", SrsJsonAny::integer(u->cminflt));
-    data->set("majflt", SrsJsonAny::integer(u->majflt));
-    data->set("cmajflt", SrsJsonAny::integer(u->cmajflt));
-    data->set("utime", SrsJsonAny::integer(u->utime));
-    data->set("stime", SrsJsonAny::integer(u->stime));
-    data->set("cutime", SrsJsonAny::integer(u->cutime));
-    data->set("cstime", SrsJsonAny::integer(u->cstime));
-    data->set("priority", SrsJsonAny::integer(u->priority));
-    data->set("nice", SrsJsonAny::integer(u->nice));
-    data->set("num_threads", SrsJsonAny::integer(u->num_threads));
-    data->set("itrealvalue", SrsJsonAny::integer(u->itrealvalue));
-    data->set("starttime", SrsJsonAny::integer(u->starttime));
-    data->set("vsize", SrsJsonAny::integer(u->vsize));
-    data->set("rss", SrsJsonAny::integer(u->rss));
-    data->set("rsslim", SrsJsonAny::integer(u->rsslim));
-    data->set("startcode", SrsJsonAny::integer(u->startcode));
-    data->set("endcode", SrsJsonAny::integer(u->endcode));
-    data->set("startstack", SrsJsonAny::integer(u->startstack));
-    data->set("kstkesp", SrsJsonAny::integer(u->kstkesp));
-    data->set("kstkeip", SrsJsonAny::integer(u->kstkeip));
-    data->set("signal", SrsJsonAny::integer(u->signal));
-    data->set("blocked", SrsJsonAny::integer(u->blocked));
-    data->set("sigignore", SrsJsonAny::integer(u->sigignore));
-    data->set("sigcatch", SrsJsonAny::integer(u->sigcatch));
-    data->set("wchan", SrsJsonAny::integer(u->wchan));
-    data->set("nswap", SrsJsonAny::integer(u->nswap));
-    data->set("cnswap", SrsJsonAny::integer(u->cnswap));
-    data->set("exit_signal", SrsJsonAny::integer(u->exit_signal));
-    data->set("processor", SrsJsonAny::integer(u->processor));
-    data->set("rt_priority", SrsJsonAny::integer(u->rt_priority));
-    data->set("policy", SrsJsonAny::integer(u->policy));
-    data->set("delayacct_blkio_ticks", SrsJsonAny::integer(u->delayacct_blkio_ticks));
-    data->set("guest_time", SrsJsonAny::integer(u->guest_time));
-    data->set("cguest_time", SrsJsonAny::integer(u->cguest_time));
+    data->set("ppid", SrsJsonAny::integer(u->ppid_));
+    data->set("pgrp", SrsJsonAny::integer(u->pgrp_));
+    data->set("session", SrsJsonAny::integer(u->session_));
+    data->set("tty_nr", SrsJsonAny::integer(u->tty_nr_));
+    data->set("tpgid", SrsJsonAny::integer(u->tpgid_));
+    data->set("flags", SrsJsonAny::integer(u->flags_));
+    data->set("minflt", SrsJsonAny::integer(u->minflt_));
+    data->set("cminflt", SrsJsonAny::integer(u->cminflt_));
+    data->set("majflt", SrsJsonAny::integer(u->majflt_));
+    data->set("cmajflt", SrsJsonAny::integer(u->cmajflt_));
+    data->set("utime", SrsJsonAny::integer(u->utime_));
+    data->set("stime", SrsJsonAny::integer(u->stime_));
+    data->set("cutime", SrsJsonAny::integer(u->cutime_));
+    data->set("cstime", SrsJsonAny::integer(u->cstime_));
+    data->set("priority", SrsJsonAny::integer(u->priority_));
+    data->set("nice", SrsJsonAny::integer(u->nice_));
+    data->set("num_threads", SrsJsonAny::integer(u->num_threads_));
+    data->set("itrealvalue", SrsJsonAny::integer(u->itrealvalue_));
+    data->set("starttime", SrsJsonAny::integer(u->starttime_));
+    data->set("vsize", SrsJsonAny::integer(u->vsize_));
+    data->set("rss", SrsJsonAny::integer(u->rss_));
+    data->set("rsslim", SrsJsonAny::integer(u->rsslim_));
+    data->set("startcode", SrsJsonAny::integer(u->startcode_));
+    data->set("endcode", SrsJsonAny::integer(u->endcode_));
+    data->set("startstack", SrsJsonAny::integer(u->startstack_));
+    data->set("kstkesp", SrsJsonAny::integer(u->kstkesp_));
+    data->set("kstkeip", SrsJsonAny::integer(u->kstkeip_));
+    data->set("signal", SrsJsonAny::integer(u->signal_));
+    data->set("blocked", SrsJsonAny::integer(u->blocked_));
+    data->set("sigignore", SrsJsonAny::integer(u->sigignore_));
+    data->set("sigcatch", SrsJsonAny::integer(u->sigcatch_));
+    data->set("wchan", SrsJsonAny::integer(u->wchan_));
+    data->set("nswap", SrsJsonAny::integer(u->nswap_));
+    data->set("cnswap", SrsJsonAny::integer(u->cnswap_));
+    data->set("exit_signal", SrsJsonAny::integer(u->exit_signal_));
+    data->set("processor", SrsJsonAny::integer(u->processor_));
+    data->set("rt_priority", SrsJsonAny::integer(u->rt_priority_));
+    data->set("policy", SrsJsonAny::integer(u->policy_));
+    data->set("delayacct_blkio_ticks", SrsJsonAny::integer(u->delayacct_blkio_ticks_));
+    data->set("guest_time", SrsJsonAny::integer(u->guest_time_));
+    data->set("cguest_time", SrsJsonAny::integer(u->cguest_time_));
 
     return srs_api_response(w, r, obj->dumps());
 }
@@ -492,18 +492,18 @@ srs_error_t SrsGoApiSystemProcStats::serve_http(ISrsHttpResponseWriter *w, ISrsH
 
     SrsProcSystemStat *s = srs_get_system_proc_stat();
 
-    data->set("ok", SrsJsonAny::boolean(s->ok));
-    data->set("sample_time", SrsJsonAny::integer(s->sample_time));
-    data->set("percent", SrsJsonAny::number(s->percent));
-    data->set("user", SrsJsonAny::integer(s->user));
-    data->set("nice", SrsJsonAny::integer(s->nice));
-    data->set("sys", SrsJsonAny::integer(s->sys));
-    data->set("idle", SrsJsonAny::integer(s->idle));
-    data->set("iowait", SrsJsonAny::integer(s->iowait));
-    data->set("irq", SrsJsonAny::integer(s->irq));
-    data->set("softirq", SrsJsonAny::integer(s->softirq));
-    data->set("steal", SrsJsonAny::integer(s->steal));
-    data->set("guest", SrsJsonAny::integer(s->guest));
+    data->set("ok", SrsJsonAny::boolean(s->ok_));
+    data->set("sample_time", SrsJsonAny::integer(s->sample_time_));
+    data->set("percent", SrsJsonAny::number(s->percent_));
+    data->set("user", SrsJsonAny::integer(s->user_));
+    data->set("nice", SrsJsonAny::integer(s->nice_));
+    data->set("sys", SrsJsonAny::integer(s->sys_));
+    data->set("idle", SrsJsonAny::integer(s->idle_));
+    data->set("iowait", SrsJsonAny::integer(s->iowait_));
+    data->set("irq", SrsJsonAny::integer(s->irq_));
+    data->set("softirq", SrsJsonAny::integer(s->softirq_));
+    data->set("steal", SrsJsonAny::integer(s->steal_));
+    data->set("guest", SrsJsonAny::integer(s->guest_));
 
     return srs_api_response(w, r, obj->dumps());
 }
@@ -532,19 +532,19 @@ srs_error_t SrsGoApiMemInfos::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMess
 
     SrsMemInfo *m = srs_get_meminfo();
 
-    data->set("ok", SrsJsonAny::boolean(m->ok));
-    data->set("sample_time", SrsJsonAny::integer(m->sample_time));
-    data->set("percent_ram", SrsJsonAny::number(m->percent_ram));
-    data->set("percent_swap", SrsJsonAny::number(m->percent_swap));
-    data->set("MemActive", SrsJsonAny::integer(m->MemActive));
-    data->set("RealInUse", SrsJsonAny::integer(m->RealInUse));
-    data->set("NotInUse", SrsJsonAny::integer(m->NotInUse));
-    data->set("MemTotal", SrsJsonAny::integer(m->MemTotal));
-    data->set("MemFree", SrsJsonAny::integer(m->MemFree));
-    data->set("Buffers", SrsJsonAny::integer(m->Buffers));
-    data->set("Cached", SrsJsonAny::integer(m->Cached));
-    data->set("SwapTotal", SrsJsonAny::integer(m->SwapTotal));
-    data->set("SwapFree", SrsJsonAny::integer(m->SwapFree));
+    data->set("ok", SrsJsonAny::boolean(m->ok_));
+    data->set("sample_time", SrsJsonAny::integer(m->sample_time_));
+    data->set("percent_ram", SrsJsonAny::number(m->percent_ram_));
+    data->set("percent_swap", SrsJsonAny::number(m->percent_swap_));
+    data->set("MemActive", SrsJsonAny::integer(m->MemActive_));
+    data->set("RealInUse", SrsJsonAny::integer(m->RealInUse_));
+    data->set("NotInUse", SrsJsonAny::integer(m->NotInUse_));
+    data->set("MemTotal", SrsJsonAny::integer(m->MemTotal_));
+    data->set("MemFree", SrsJsonAny::integer(m->MemFree_));
+    data->set("Buffers", SrsJsonAny::integer(m->Buffers_));
+    data->set("Cached", SrsJsonAny::integer(m->Cached_));
+    data->set("SwapTotal", SrsJsonAny::integer(m->SwapTotal_));
+    data->set("SwapFree", SrsJsonAny::integer(m->SwapFree_));
 
     return srs_api_response(w, r, obj->dumps());
 }
@@ -870,8 +870,8 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
             return srs_api_response_code(w, r, ERROR_RTMP_CLIENT_NOT_FOUND);
         }
 
-        if (client->conn) {
-            client->conn->expire();
+        if (client->conn_) {
+            client->conn_->expire();
             srs_warn("kickoff client id=%s ok", client_id.c_str());
         } else {
             srs_error("kickoff client id=%s error", client_id.c_str());
@@ -886,12 +886,12 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
 SrsGoApiRaw::SrsGoApiRaw(SrsServer *svr)
 {
-    server = svr;
+    server_ = svr;
 
-    raw_api = _srs_config->get_raw_api();
-    allow_reload = _srs_config->get_raw_api_allow_reload();
-    allow_query = _srs_config->get_raw_api_allow_query();
-    allow_update = _srs_config->get_raw_api_allow_update();
+    raw_api_ = _srs_config->get_raw_api();
+    allow_reload_ = _srs_config->get_raw_api_allow_reload();
+    allow_query_ = _srs_config->get_raw_api_allow_query();
+    allow_update_ = _srs_config->get_raw_api_allow_update();
 
     _srs_config->subscribe(this);
 }
@@ -928,7 +928,7 @@ srs_error_t SrsGoApiRaw::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *
     }
 
     // whether enabled the HTTP RAW API.
-    if (!raw_api) {
+    if (!raw_api_) {
         return srs_api_response_code(w, r, ERROR_SYSTEM_CONFIG_RAW_DISABLED);
     }
 
@@ -941,11 +941,11 @@ srs_error_t SrsGoApiRaw::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *
 
     // for rpc=reload, trigger the server to reload the config.
     if (rpc == "reload") {
-        if (!allow_reload) {
+        if (!allow_reload_) {
             return srs_api_response_code(w, r, ERROR_SYSTEM_CONFIG_RAW_DISABLED);
         }
 
-        server->on_signal(SRS_SIGNAL_RELOAD);
+        server_->on_signal(SRS_SIGNAL_RELOAD);
         return srs_api_response_code(w, r, ERROR_SUCCESS);
     } else if (rpc == "reload-fetch") {
         SrsJsonObject *data = SrsJsonAny::object();
@@ -1314,11 +1314,11 @@ srs_error_t SrsGoApiMetrics::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     ss << "# HELP srs_cpu_percent SRS cpu used percent.\n"
        << "# TYPE srs_cpu_percent gauge\n"
        << "srs_cpu_percent "
-       << u->percent * 100
+       << u->percent_ * 100
        << "\n";
 
     // The memory of proc used.(MBytes)
-    int memory = (int)(u->rss * 4);
+    int memory = (int)(u->rss_ * 4);
     ss << "# HELP srs_memory SRS memory used.\n"
        << "# TYPE srs_memory gauge\n"
        << "srs_memory "

@@ -27,8 +27,8 @@ class SrsMp4M2tsSegmentEncoder;
 class SrsInitMp4 : public SrsFragment
 {
 private:
-    SrsFileWriter *fw;
-    SrsMp4M2tsInitEncoder *init;
+    SrsFileWriter *fw_;
+    SrsMp4M2tsInitEncoder *init_;
 
 public:
     SrsInitMp4();
@@ -43,8 +43,8 @@ public:
 class SrsFragmentedMp4 : public SrsFragment
 {
 private:
-    SrsFileWriter *fw;
-    SrsMp4M2tsSegmentEncoder *enc;
+    SrsFileWriter *fw_;
+    SrsMp4M2tsSegmentEncoder *enc_;
 
 public:
     SrsFragmentedMp4();
@@ -63,19 +63,19 @@ public:
 class SrsMpdWriter
 {
 private:
-    ISrsRequest *req;
+    ISrsRequest *req_;
 
 private:
     // The duration of fragment in srs_utime_t.
-    srs_utime_t fragment;
+    srs_utime_t fragment_;
     // The period to update the mpd in srs_utime_t.
-    srs_utime_t update_period;
+    srs_utime_t update_period_;
     // The timeshift buffer depth in srs_utime_t.
-    srs_utime_t timeshit;
+    srs_utime_t timeshit_;
     // The base or home dir for dash to write files.
-    std::string home;
+    std::string home_;
     // The MPD path template, from which to build the file path.
-    std::string mpd_file;
+    std::string mpd_file_;
     // The number of fragments in MPD file.
     int window_size_;
     // The availabilityStartTime in MPD file.
@@ -87,7 +87,7 @@ private:
 
 private:
     // The home for fragment, relative to home.
-    std::string fragment_home;
+    std::string fragment_home_;
 
 public:
     SrsMpdWriter();
@@ -116,19 +116,19 @@ public:
 class SrsDashController
 {
 private:
-    ISrsRequest *req;
+    ISrsRequest *req_;
     SrsFormat *format_;
-    SrsMpdWriter *mpd;
+    SrsMpdWriter *mpd_;
 
 private:
-    SrsFragmentedMp4 *vcurrent;
-    SrsFragmentWindow *vfragments;
-    SrsFragmentedMp4 *acurrent;
-    SrsFragmentWindow *afragments;
+    SrsFragmentedMp4 *vcurrent_;
+    SrsFragmentWindow *vfragments_;
+    SrsFragmentedMp4 *acurrent_;
+    SrsFragmentWindow *afragments_;
     // Current audio dts.
-    uint64_t audio_dts;
+    uint64_t audio_dts_;
     // Current video dts.
-    uint64_t video_dts;
+    uint64_t video_dts_;
     // First dts of the stream, use to calculate the availabilityStartTime in MPD.
     int64_t first_dts_;
     // Had the video reaped, use to align audio/video segment's timestamp.
@@ -136,12 +136,12 @@ private:
 
 private:
     // The fragment duration in srs_utime_t to reap it.
-    srs_utime_t fragment;
+    srs_utime_t fragment_;
 
 private:
-    std::string home;
-    int video_track_id;
-    int audio_track_id;
+    std::string home_;
+    int video_track_id_;
+    int audio_track_id_;
 
 public:
     SrsDashController();
@@ -166,14 +166,14 @@ private:
 class SrsDash
 {
 private:
-    bool enabled;
+    bool enabled_;
     bool disposable_;
     srs_utime_t last_update_time_;
 
 private:
-    ISrsRequest *req;
-    SrsOriginHub *hub;
-    SrsDashController *controller;
+    ISrsRequest *req_;
+    SrsOriginHub *hub_;
+    SrsDashController *controller_;
 
 public:
     SrsDash();

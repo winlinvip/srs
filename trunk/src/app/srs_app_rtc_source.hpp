@@ -96,13 +96,13 @@ private:
     SrsRtcSource *source_;
 
 private:
-    std::vector<SrsRtpPacket *> queue;
+    std::vector<SrsRtpPacket *> queue_;
     // when source id changed, notice all consumers
-    bool should_update_source_id;
+    bool should_update_source_id_;
     // The cond wait for mw.
-    srs_cond_t mw_wait;
-    bool mw_waiting;
-    int mw_min_msgs;
+    srs_cond_t mw_wait_;
+    bool mw_waiting_;
+    int mw_min_msgs_;
 
 private:
     // The callback for stream change event.
@@ -131,8 +131,8 @@ public:
 class SrsRtcSourceManager : public ISrsHourGlass
 {
 private:
-    srs_mutex_t lock;
-    std::map<std::string, SrsSharedPtr<SrsRtcSource> > pool;
+    srs_mutex_t lock_;
+    std::map<std::string, SrsSharedPtr<SrsRtcSource> > pool_;
     SrsHourGlass *timer_;
 
 public:
@@ -198,7 +198,7 @@ private:
     SrsContextId _source_id;
     // previous source id.
     SrsContextId _pre_source_id;
-    ISrsRequest *req;
+    ISrsRequest *req_;
     ISrsRtcPublishStream *publish_stream_;
     // Steam description for this steam.
     SrsRtcSourceDescription *stream_desc_;
@@ -213,7 +213,7 @@ private:
 
 private:
     // To delivery stream to clients.
-    std::vector<SrsRtcConsumer *> consumers;
+    std::vector<SrsRtcConsumer *> consumers_;
     // Whether stream is created, that is, SDP is done.
     bool is_created_;
     // Whether stream is delivering data, that is, DTLS is done.
@@ -306,22 +306,22 @@ private:
 class SrsRtcRtpBuilder
 {
 private:
-    ISrsRequest *req;
+    ISrsRequest *req_;
     SrsFrameToRtcBridge *bridge_;
     // The format, codec information.
-    SrsRtmpFormat *format;
+    SrsRtmpFormat *format_;
     // The metadata cache.
-    SrsMetaCache *meta;
+    SrsMetaCache *meta_;
     // The video builder, convert frame to RTP packets.
     SrsRtpVideoBuilder *video_builder_;
 
 private:
     SrsAudioCodecId latest_codec_;
     SrsAudioTranscoder *codec_;
-    bool keep_bframe;
-    bool keep_avc_nalu_sei;
-    bool merge_nalus;
-    uint16_t audio_sequence;
+    bool keep_bframe_;
+    bool keep_avc_nalu_sei_;
+    bool merge_nalus_;
+    uint16_t audio_sequence_;
 
 private:
     uint32_t audio_ssrc_;
@@ -375,11 +375,11 @@ class SrsRtcFrameBuilderVideoPacketCache
 private:
     const static uint16_t cache_size_ = 512;
     struct RtcPacketCache {
-        bool in_use;
-        uint16_t sn;
-        uint32_t ts;
-        uint32_t rtp_ts;
-        SrsRtpPacket *pkt;
+        bool in_use_;
+        uint16_t sn_;
+        uint32_t ts_;
+        uint32_t rtp_ts_;
+        SrsRtpPacket *pkt_;
     };
     RtcPacketCache cache_pkts_[cache_size_];
 
@@ -577,17 +577,17 @@ public:
 class SrsAudioPayload : public SrsCodecPayload
 {
     struct SrsOpusParameter {
-        int minptime;
-        bool use_inband_fec;
-        bool stereo;
-        bool usedtx;
+        int minptime_;
+        bool use_inband_fec_;
+        bool stereo_;
+        bool usedtx_;
 
         SrsOpusParameter()
         {
-            minptime = 0;
-            use_inband_fec = false;
-            stereo = false;
-            usedtx = false;
+            minptime_ = 0;
+            use_inband_fec_ = false;
+            stereo_ = false;
+            usedtx_ = false;
         }
     };
 
@@ -969,10 +969,10 @@ public:
 class SrsRtcSSRCGenerator
 {
 private:
-    static SrsRtcSSRCGenerator *_instance;
+    static SrsRtcSSRCGenerator *instance_;
 
 private:
-    uint32_t ssrc_num;
+    uint32_t ssrc_num_;
 
 private:
     SrsRtcSSRCGenerator();

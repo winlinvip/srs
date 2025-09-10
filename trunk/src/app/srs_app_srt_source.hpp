@@ -54,8 +54,8 @@ private:
 class SrsSrtSourceManager : public ISrsHourGlass
 {
 private:
-    srs_mutex_t lock;
-    std::map<std::string, SrsSharedPtr<SrsSrtSource> > pool;
+    srs_mutex_t lock_;
+    std::map<std::string, SrsSharedPtr<SrsSrtSource> > pool_;
     SrsHourGlass *timer_;
 
 public:
@@ -94,13 +94,13 @@ private:
     SrsSrtSource *source_;
 
 private:
-    std::vector<SrsSrtPacket *> queue;
+    std::vector<SrsSrtPacket *> queue_;
     // when source id changed, notice all consumers
-    bool should_update_source_id;
+    bool should_update_source_id_;
     // The cond wait for mw.
-    srs_cond_t mw_wait;
-    bool mw_waiting;
-    int mw_min_msgs;
+    srs_cond_t mw_wait_;
+    bool mw_waiting_;
+    int mw_min_msgs_;
 
 public:
     // When source id changed, notice client to print.
@@ -218,9 +218,9 @@ private:
     SrsContextId _source_id;
     // previous source id.
     SrsContextId _pre_source_id;
-    ISrsRequest *req;
+    ISrsRequest *req_;
     // To delivery packets to clients.
-    std::vector<SrsSrtConsumer *> consumers;
+    std::vector<SrsSrtConsumer *> consumers_;
     bool can_publish_;
     // The last die time, while die means neither publishers nor players.
     srs_utime_t stream_die_at_;

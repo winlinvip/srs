@@ -189,21 +189,21 @@ public:
 class SrsFastCoroutine
 {
 private:
-    std::string name;
-    int stack_size;
-    ISrsCoroutineHandler *handler;
+    std::string name_;
+    int stack_size_;
+    ISrsCoroutineHandler *handler_;
 
 private:
-    srs_thread_t trd;
+    srs_thread_t trd_;
     SrsContextId cid_;
-    srs_error_t trd_err;
+    srs_error_t trd_err_;
 
 private:
-    bool started;
-    bool interrupted;
-    bool disposed;
+    bool started_;
+    bool interrupted_;
+    bool disposed_;
     // Cycle done, no need to interrupt it.
-    bool cycle_done;
+    bool cycle_done_;
 
 private:
     // Sub state in disposed, we need to wait for thread to quit.
@@ -224,10 +224,10 @@ public:
     void interrupt();
     inline srs_error_t pull()
     {
-        if (trd_err == srs_success) {
+        if (trd_err_ == srs_success) {
             return srs_success;
         }
-        return srs_error_copy(trd_err);
+        return srs_error_copy(trd_err_);
     }
     const SrsContextId &cid();
     virtual void set_cid(const SrsContextId &cid);

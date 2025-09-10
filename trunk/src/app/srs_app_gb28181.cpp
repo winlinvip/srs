@@ -653,17 +653,17 @@ srs_error_t SrsGbMediaTcpConn::bind_session(uint32_t ssrc, SrsGbSession **psessi
 
 SrsMpegpsQueue::SrsMpegpsQueue()
 {
-    nb_audios = nb_videos = 0;
+    nb_audios_ = nb_videos_ = 0;
 }
 
 SrsMpegpsQueue::~SrsMpegpsQueue()
 {
     std::map<int64_t, SrsMediaPacket *>::iterator it;
-    for (it = msgs.begin(); it != msgs.end(); ++it) {
+    for (it = msgs_.begin(); it != msgs_.end(); ++it) {
         SrsMediaPacket *msg = it->second;
         srs_freep(msg);
     }
-    msgs.clear();
+    msgs_.clear();
 }
 
 srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
@@ -672,7 +672,7 @@ srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
 
     // TODO: FIXME: use right way.
     for (int i = 0; i < 10; i++) {
-        if (msgs.find(msg->timestamp_) == msgs.end()) {
+        if (msgs_.find(msg->timestamp_) == msgs_.end()) {
             break;
         }
 
@@ -687,14 +687,14 @@ srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
     }
 
     if (msg->is_audio()) {
-        nb_audios++;
+        nb_audios_++;
     }
 
     if (msg->is_video()) {
-        nb_videos++;
+        nb_videos_++;
     }
 
-    msgs[msg->timestamp_] = msg;
+    msgs_[msg->timestamp_] = msg;
 
     return err;
 }
@@ -702,21 +702,21 @@ srs_error_t SrsMpegpsQueue::push(SrsMediaPacket *msg)
 SrsMediaPacket *SrsMpegpsQueue::dequeue()
 {
     // got 2+ videos and audios, ok to dequeue.
-    bool av_ok = nb_videos >= 2 && nb_audios >= 2;
+    bool av_ok = nb_videos_ >= 2 && nb_audios_ >= 2;
     // 100 videos about 30s, while 300 audios about 30s
-    bool av_overflow = nb_videos > 100 || nb_audios > 300;
+    bool av_overflow = nb_videos_ > 100 || nb_audios_ > 300;
 
     if (av_ok || av_overflow) {
-        std::map<int64_t, SrsMediaPacket *>::iterator it = msgs.begin();
+        std::map<int64_t, SrsMediaPacket *>::iterator it = msgs_.begin();
         SrsMediaPacket *msg = it->second;
-        msgs.erase(it);
+        msgs_.erase(it);
 
         if (msg->is_audio()) {
-            nb_audios--;
+            nb_audios_--;
         }
 
         if (msg->is_video()) {
-            nb_videos--;
+            nb_videos_--;
         }
 
         return msg;

@@ -36,17 +36,17 @@ private:
     // Ring bufer.
     SrsRtpPacket **queue_;
     // Increase one when uint16 flip back, for get_extended_highest_sequence.
-    uint64_t nn_seq_flip_backs;
+    uint64_t nn_seq_flip_backs_;
     // Whether initialized, because we use uint16 so we can't use -1.
     bool initialized_;
 
 public:
     // The begin iterator for ring buffer.
     // For example, when got 1 elems, the begin is 0.
-    uint16_t begin;
+    uint16_t begin_;
     // The end iterator for ring buffer.
     // For example, when got 1 elems, the end is 1.
-    uint16_t end;
+    uint16_t end_;
 
 public:
     SrsRtpRingBuffer(int capacity);
@@ -81,14 +81,14 @@ public:
 };
 
 struct SrsNackOption {
-    int max_count;
-    srs_utime_t max_alive_time;
-    srs_utime_t first_nack_interval;
-    srs_utime_t nack_interval;
+    int max_count_;
+    srs_utime_t max_alive_time_;
+    srs_utime_t first_nack_interval_;
+    srs_utime_t nack_interval_;
 
-    srs_utime_t max_nack_interval;
-    srs_utime_t min_nack_interval;
-    srs_utime_t nack_check_interval;
+    srs_utime_t max_nack_interval_;
+    srs_utime_t min_nack_interval_;
+    srs_utime_t nack_check_interval_;
 
     SrsNackOption();
 };

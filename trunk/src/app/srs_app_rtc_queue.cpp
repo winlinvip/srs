@@ -25,8 +25,8 @@ extern SrsPps *_srs_pps_snack4;
 
 SrsRtpRingBuffer::SrsRtpRingBuffer(int capacity)
 {
-    nn_seq_flip_backs = 0;
-    begin = end = 0;
+    nn_seq_flip_backs_ = 0;
+    begin_ = end_ = 0;
     capacity_ = (uint16_t)capacity;
     initialized_ = false;
 
@@ -45,19 +45,19 @@ SrsRtpRingBuffer::~SrsRtpRingBuffer()
 
 bool SrsRtpRingBuffer::empty()
 {
-    return begin == end;
+    return begin_ == end_;
 }
 
 int SrsRtpRingBuffer::size()
 {
-    int size = srs_rtp_seq_distance(begin, end);
+    int size = srs_rtp_seq_distance(begin_, end_);
     srs_assert(size >= 0);
     return size;
 }
 
 void SrsRtpRingBuffer::advance_to(uint16_t seq)
 {
-    begin = seq;
+    begin_ = seq;
 }
 
 void SrsRtpRingBuffer::set(uint16_t at, SrsRtpPacket *pkt)
@@ -75,44 +75,44 @@ void SrsRtpRingBuffer::remove(uint16_t at)
 
 uint32_t SrsRtpRingBuffer::get_extended_highest_sequence()
 {
-    return nn_seq_flip_backs * 65536 + end - 1;
+    return nn_seq_flip_backs_ * 65536 + end_ - 1;
 }
 
 bool SrsRtpRingBuffer::update(uint16_t seq, uint16_t &nack_first, uint16_t &nack_last)
 {
     if (!initialized_) {
         initialized_ = true;
-        begin = seq;
-        end = seq + 1;
+        begin_ = seq;
+        end_ = seq + 1;
         return true;
     }
 
     // Normal sequence, seq follows high_.
-    if (srs_rtp_seq_distance(end, seq) >= 0) {
+    if (srs_rtp_seq_distance(end_, seq) >= 0) {
         // TODO: FIXME: if diff_upper > limit_max_size clear?
-        //  int16_t diff_upper = srs_rtp_seq_distance(end, seq)
+        //  int16_t diff_upper = srs_rtp_seq_distance(end_, seq)
         //  notify_nack_list_full()
-        nack_first = end;
+        nack_first = end_;
         nack_last = seq;
 
         // When distance(seq,high_)>0 and seq<high_, seq must flip back,
         // for example, high_=65535, seq=1, distance(65535,1)>0 and 1<65535.
         // TODO: FIXME: The first flip may be dropped.
-        if (seq < end) {
-            ++nn_seq_flip_backs;
+        if (seq < end_) {
+            ++nn_seq_flip_backs_;
         }
-        end = seq + 1;
+        end_ = seq + 1;
         // TODO: FIXME: check whether is neccessary?
-        // srs_rtp_seq_distance(begin, end) > max_size
-        // advance_to(), srs_rtp_seq_distance(begin, end) < max_size;
+        // srs_rtp_seq_distance(begin_, end_) > max_size
+        // advance_to(), srs_rtp_seq_distance(begin_, end_) < max_size;
         return true;
     }
 
     // Out-of-order sequence, seq before low_.
-    if (srs_rtp_seq_distance(seq, begin) > 0) {
+    if (srs_rtp_seq_distance(seq, begin_) > 0) {
         nack_first = seq;
-        nack_last = begin;
-        begin = seq;
+        nack_last = begin_;
+        begin_ = seq;
 
         // TODO: FIXME: Maybe should support startup drop.
         return true;
@@ -135,7 +135,7 @@ void SrsRtpRingBuffer::notify_nack_list_full()
 {
     clear_all_histroy();
 
-    begin = end = 0;
+    begin_ = end_ = 0;
     initialized_ = false;
 }
 
@@ -170,20 +170,20 @@ void SrsRtpRingBuffer::clear_all_histroy()
 
 SrsNackOption::SrsNackOption()
 {
-    max_count = 15;
-    max_alive_time = 1000 * SRS_UTIME_MILLISECONDS;
-    first_nack_interval = 10 * SRS_UTIME_MILLISECONDS;
-    nack_interval = 50 * SRS_UTIME_MILLISECONDS;
-    max_nack_interval = 500 * SRS_UTIME_MILLISECONDS;
-    min_nack_interval = 20 * SRS_UTIME_MILLISECONDS;
+    max_count_ = 15;
+    max_alive_time_ = 1000 * SRS_UTIME_MILLISECONDS;
+    first_nack_interval_ = 10 * SRS_UTIME_MILLISECONDS;
+    nack_interval_ = 50 * SRS_UTIME_MILLISECONDS;
+    max_nack_interval_ = 500 * SRS_UTIME_MILLISECONDS;
+    min_nack_interval_ = 20 * SRS_UTIME_MILLISECONDS;
 
-    nack_check_interval = 20 * SRS_UTIME_MILLISECONDS;
+    nack_check_interval_ = 20 * SRS_UTIME_MILLISECONDS;
 
     // TODO: FIXME: audio and video using diff nack strategy
     //  video:
-    //  max_alive_time = 1 * SRS_UTIME_SECONDS
-    //  max_count = 15;
-    //  nack_interval = 50 * SRS_UTIME_MILLISECONDS
+    //  max_alive_time_ = 1 * SRS_UTIME_SECONDS
+    //  max_count_ = 15;
+    //  nack_interval_ = 50 * SRS_UTIME_MILLISECONDS
     //
     //  audio:
     //  DefaultRequestNackDelay = 30; //ms
@@ -206,7 +206,7 @@ SrsRtpNackForReceiver::SrsRtpNackForReceiver(SrsRtpRingBuffer *rtp, size_t queue
     rtt_ = 0;
 
     srs_info("max_queue_size=%u, nack opt: max_count=%d, max_alive_time=%us, first_nack_interval=%" PRId64 ", nack_interval=%" PRId64,
-             max_queue_size_, opts_.max_count, opts_.max_alive_time, opts_.first_nack_interval, opts_.nack_interval);
+             max_queue_size_, opts_.max_count_, opts_.max_alive_time_, opts_.first_nack_interval_, opts_.nack_interval_);
 }
 
 SrsRtpNackForReceiver::~SrsRtpNackForReceiver()
@@ -262,7 +262,7 @@ void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack &seqs, uint32_t &timeout_n
     srs_utime_t now = srs_time_now_cached();
 
     srs_utime_t interval = now - pre_check_time_;
-    if (interval < opts_.nack_check_interval) {
+    if (interval < opts_.nack_check_interval_) {
         return;
     }
     pre_check_time_ = now;
@@ -273,7 +273,7 @@ void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack &seqs, uint32_t &timeout_n
         SrsRtpNackInfo &nack_info = iter->second;
 
         int alive_time = now - nack_info.generate_time_;
-        if (alive_time > opts_.max_alive_time || nack_info.req_nack_count_ > opts_.max_count) {
+        if (alive_time > opts_.max_alive_time_ || nack_info.req_nack_count_ > opts_.max_count_) {
             ++timeout_nacks;
             rtp_->notify_drop_seq(seq);
             queue_.erase(iter++);
@@ -281,13 +281,13 @@ void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack &seqs, uint32_t &timeout_n
         }
 
         // TODO:Statistics unorder packet.
-        if (now - nack_info.generate_time_ < opts_.first_nack_interval) {
+        if (now - nack_info.generate_time_ < opts_.first_nack_interval_) {
             break;
         }
 
-        srs_utime_t nack_interval = srs_max(opts_.min_nack_interval, opts_.nack_interval / 3);
-        if (opts_.nack_interval < 50 * SRS_UTIME_MILLISECONDS) {
-            nack_interval = srs_max(opts_.min_nack_interval, opts_.nack_interval);
+        srs_utime_t nack_interval = srs_max(opts_.min_nack_interval_, opts_.nack_interval_ / 3);
+        if (opts_.nack_interval_ < 50 * SRS_UTIME_MILLISECONDS) {
+            nack_interval = srs_max(opts_.min_nack_interval_, opts_.nack_interval_);
         }
 
         if (now - nack_info.pre_req_nack_time_ >= nack_interval) {
@@ -304,11 +304,11 @@ void SrsRtpNackForReceiver::update_rtt(int rtt)
 {
     rtt_ = rtt * SRS_UTIME_MILLISECONDS;
 
-    if (rtt_ > opts_.nack_interval) {
-        opts_.nack_interval = opts_.nack_interval * 0.8 + rtt_ * 0.2;
+    if (rtt_ > opts_.nack_interval_) {
+        opts_.nack_interval_ = opts_.nack_interval_ * 0.8 + rtt_ * 0.2;
     } else {
-        opts_.nack_interval = rtt_;
+        opts_.nack_interval_ = rtt_;
     }
 
-    opts_.nack_interval = srs_min(opts_.nack_interval, opts_.max_nack_interval);
+    opts_.nack_interval_ = srs_min(opts_.nack_interval_, opts_.max_nack_interval_);
 }

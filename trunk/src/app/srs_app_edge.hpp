@@ -80,13 +80,13 @@ class SrsEdgeRtmpUpstream : public SrsEdgeUpstream
 private:
     // For RTMP 302, if not empty,
     // use this <ip[:port]> as upstream.
-    std::string redirect;
-    SrsSimpleRtmpClient *sdk;
+    std::string redirect_;
+    SrsSimpleRtmpClient *sdk_;
 
 private:
     // Current selected server, the ip:port.
-    std::string selected_ip;
-    int selected_port;
+    std::string selected_ip_;
+    int selected_port_;
 
 public:
     // @param rediect, override the server. ignore if empty.
@@ -120,8 +120,8 @@ private:
     // We might modify the request by HTTP redirect.
     ISrsRequest *req_;
     // Current selected server, the ip:port.
-    std::string selected_ip;
-    int selected_port;
+    std::string selected_ip_;
+    int selected_port_;
 
 public:
     SrsEdgeFlvUpstream(std::string schema);
@@ -152,11 +152,11 @@ private:
     SrsLiveSource *source_;
 
 private:
-    SrsPlayEdge *edge;
-    ISrsRequest *req;
-    SrsCoroutine *trd;
-    ISrsLbRoundRobin *lb;
-    SrsEdgeUpstream *upstream;
+    SrsPlayEdge *edge_;
+    ISrsRequest *req_;
+    SrsCoroutine *trd_;
+    ISrsLbRoundRobin *lb_;
+    SrsEdgeUpstream *upstream_;
 
 public:
     SrsEdgeIngester();
@@ -187,18 +187,18 @@ private:
     SrsLiveSource *source_;
 
 private:
-    SrsPublishEdge *edge;
-    ISrsRequest *req;
-    SrsCoroutine *trd;
-    SrsSimpleRtmpClient *sdk;
-    ISrsLbRoundRobin *lb;
+    SrsPublishEdge *edge_;
+    ISrsRequest *req_;
+    SrsCoroutine *trd_;
+    SrsSimpleRtmpClient *sdk_;
+    ISrsLbRoundRobin *lb_;
     // we must ensure one thread one fd principle,
     // that is, a fd must be write/read by the one thread.
     // The publish service thread will proxy(msg), and the edge forward thread
     // will cycle(), so we use queue for cycle to send the msg of proxy.
-    SrsMessageQueue *queue;
+    SrsMessageQueue *queue_;
     // error code of send, for edge proxy thread to query.
-    int send_error_code;
+    int send_error_code_;
 
 public:
     SrsEdgeForwarder();
@@ -226,8 +226,8 @@ public:
 class SrsPlayEdge
 {
 private:
-    SrsEdgeState state;
-    SrsEdgeIngester *ingester;
+    SrsEdgeState state_;
+    SrsEdgeIngester *ingester_;
 
 public:
     SrsPlayEdge();
@@ -252,8 +252,8 @@ public:
 class SrsPublishEdge
 {
 private:
-    SrsEdgeState state;
-    SrsEdgeForwarder *forwarder;
+    SrsEdgeState state_;
+    SrsEdgeForwarder *forwarder_;
 
 public:
     SrsPublishEdge();

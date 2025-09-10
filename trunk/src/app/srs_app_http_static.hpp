@@ -17,10 +17,10 @@ class ISrsFileReaderFactory;
 class SrsHlsVirtualConn : public ISrsExpire
 {
 public:
-    srs_utime_t request_time;
-    ISrsRequest *req;
-    std::string ctx;
-    bool interrupt;
+    srs_utime_t request_time_;
+    ISrsRequest *req_;
+    std::string ctx_;
+    bool interrupt_;
 
 public:
     SrsHlsVirtualConn();
@@ -90,10 +90,10 @@ protected:
 class SrsHttpStaticServer : public ISrsReloadHandler
 {
 private:
-    SrsServer *server;
+    SrsServer *server_;
 
 public:
-    SrsHttpServeMux mux;
+    SrsHttpServeMux mux_;
 
 public:
     SrsHttpStaticServer(SrsServer *svr);

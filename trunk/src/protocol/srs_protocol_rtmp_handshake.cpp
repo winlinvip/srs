@@ -859,14 +859,14 @@ char *SrsC1S1::get_key()
     return payload_->get_key();
 }
 
-srs_error_t SrsC1S1::dump(char *_c1s1, int size)
+srs_error_t SrsC1S1::dump(char *c1s1, int size)
 {
     srs_assert(size == 1536);
     srs_assert(payload_ != NULL);
-    return payload_->dump(this, _c1s1, size);
+    return payload_->dump(this, c1s1, size);
 }
 
-srs_error_t SrsC1S1::parse(char *_c1s1, int size, srs_schema_type schema)
+srs_error_t SrsC1S1::parse(char *c1s1, int size, srs_schema_type schema)
 {
     srs_assert(size == 1536);
 
@@ -874,7 +874,7 @@ srs_error_t SrsC1S1::parse(char *_c1s1, int size, srs_schema_type schema)
         return srs_error_new(ERROR_RTMP_CH_SCHEMA, "parse c1 failed. invalid schema=%d", schema);
     }
 
-    SrsBuffer stream(_c1s1, size);
+    SrsBuffer stream(c1s1, size);
 
     time_ = stream.read_4bytes();
     version_ = stream.read_4bytes(); // client c1 version
@@ -886,7 +886,7 @@ srs_error_t SrsC1S1::parse(char *_c1s1, int size, srs_schema_type schema)
         payload_ = new SrsC1S1StrategySchema1();
     }
 
-    return payload_->parse(_c1s1, size);
+    return payload_->parse(c1s1, size);
 }
 
 srs_error_t SrsC1S1::c1_create(srs_schema_type schema)

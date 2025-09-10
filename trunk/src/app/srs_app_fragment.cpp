@@ -16,9 +16,9 @@ using namespace std;
 
 SrsFragment::SrsFragment()
 {
-    dur = 0;
-    start_dts = -1;
-    sequence_header = false;
+    dur_ = 0;
+    start_dts_ = -1;
+    sequence_header_ = false;
     number_ = 0;
 }
 
@@ -38,51 +38,51 @@ void SrsFragment::append(int64_t dts)
 
     srs_utime_t dts_in_tbn = dts * SRS_UTIME_MILLISECONDS;
 
-    if (start_dts == -1) {
-        start_dts = dts_in_tbn;
+    if (start_dts_ == -1) {
+        start_dts_ = dts_in_tbn;
     }
 
     // TODO: FIXME: Use cumulus dts.
-    start_dts = srs_min(start_dts, dts_in_tbn);
-    dur = dts_in_tbn - start_dts;
+    start_dts_ = srs_min(start_dts_, dts_in_tbn);
+    dur_ = dts_in_tbn - start_dts_;
 }
 
 srs_utime_t SrsFragment::get_start_dts()
 {
-    return start_dts;
+    return start_dts_;
 }
 
 srs_utime_t SrsFragment::duration()
 {
-    return dur;
+    return dur_;
 }
 
 bool SrsFragment::is_sequence_header()
 {
-    return sequence_header;
+    return sequence_header_;
 }
 
 void SrsFragment::set_sequence_header(bool v)
 {
-    sequence_header = v;
+    sequence_header_ = v;
 }
 
 string SrsFragment::fullpath()
 {
-    return filepath;
+    return filepath_;
 }
 
 void SrsFragment::set_path(string v)
 {
-    filepath = v;
+    filepath_ = v;
 }
 
 srs_error_t SrsFragment::unlink_file()
 {
     srs_error_t err = srs_success;
 
-    if (::unlink(filepath.c_str()) < 0) {
-        return srs_error_new(ERROR_SYSTEM_FRAGMENT_UNLINK, "unlink %s", filepath.c_str());
+    if (::unlink(filepath_.c_str()) < 0) {
+        return srs_error_new(ERROR_SYSTEM_FRAGMENT_UNLINK, "unlink %s", filepath_.c_str());
     }
 
     return err;
@@ -92,7 +92,7 @@ srs_error_t SrsFragment::create_dir()
 {
     srs_error_t err = srs_success;
 
-    std::string segment_dir = srs_path_filepath_dir(filepath);
+    std::string segment_dir = srs_path_filepath_dir(filepath_);
 
     if ((err = srs_os_mkdir_all(segment_dir)) != srs_success) {
         return srs_error_wrap(err, "create %s", segment_dir.c_str());
@@ -105,7 +105,7 @@ srs_error_t SrsFragment::create_dir()
 
 string SrsFragment::tmppath()
 {
-    return filepath + ".tmp";
+    return filepath_ + ".tmp";
 }
 
 srs_error_t SrsFragment::unlink_tmpfile()
@@ -138,7 +138,7 @@ srs_error_t SrsFragment::rename()
         return srs_error_new(ERROR_SYSTEM_FRAGMENT_RENAME, "rename %s to %s", tmp_file.c_str(), full_path.c_str());
     }
 
-    filepath = full_path;
+    filepath_ = full_path;
     return err;
 }
 
@@ -160,17 +160,17 @@ SrsFragmentWindow::~SrsFragmentWindow()
 {
     vector<SrsFragment *>::iterator it;
 
-    for (it = fragments.begin(); it != fragments.end(); ++it) {
+    for (it = fragments_.begin(); it != fragments_.end(); ++it) {
         SrsFragment *fragment = *it;
         srs_freep(fragment);
     }
-    fragments.clear();
+    fragments_.clear();
 
-    for (it = expired_fragments.begin(); it != expired_fragments.end(); ++it) {
+    for (it = expired_fragments_.begin(); it != expired_fragments_.end(); ++it) {
         SrsFragment *fragment = *it;
         srs_freep(fragment);
     }
-    expired_fragments.clear();
+    expired_fragments_.clear();
 }
 
 void SrsFragmentWindow::dispose()
@@ -179,7 +179,7 @@ void SrsFragmentWindow::dispose()
 
     std::vector<SrsFragment *>::iterator it;
 
-    for (it = fragments.begin(); it != fragments.end(); ++it) {
+    for (it = fragments_.begin(); it != fragments_.end(); ++it) {
         SrsFragment *fragment = *it;
         if ((err = fragment->unlink_file()) != srs_success) {
             srs_warn("Unlink ts failed %s", srs_error_desc(err).c_str());
@@ -187,9 +187,9 @@ void SrsFragmentWindow::dispose()
         }
         srs_freep(fragment);
     }
-    fragments.clear();
+    fragments_.clear();
 
-    for (it = expired_fragments.begin(); it != expired_fragments.end(); ++it) {
+    for (it = expired_fragments_.begin(); it != expired_fragments_.end(); ++it) {
         SrsFragment *fragment = *it;
         if ((err = fragment->unlink_file()) != srs_success) {
             srs_warn("Unlink ts failed %s", srs_error_desc(err).c_str());
@@ -197,12 +197,12 @@ void SrsFragmentWindow::dispose()
         }
         srs_freep(fragment);
     }
-    expired_fragments.clear();
+    expired_fragments_.clear();
 }
 
 void SrsFragmentWindow::append(SrsFragment *fragment)
 {
-    fragments.push_back(fragment);
+    fragments_.push_back(fragment);
 }
 
 void SrsFragmentWindow::shrink(srs_utime_t window)
@@ -211,8 +211,8 @@ void SrsFragmentWindow::shrink(srs_utime_t window)
 
     int remove_index = -1;
 
-    for (int i = (int)fragments.size() - 1; i >= 0; i--) {
-        SrsFragment *fragment = fragments[i];
+    for (int i = (int)fragments_.size() - 1; i >= 0; i--) {
+        SrsFragment *fragment = fragments_[i];
         duration += fragment->duration();
 
         if (duration > window) {
@@ -221,10 +221,10 @@ void SrsFragmentWindow::shrink(srs_utime_t window)
         }
     }
 
-    for (int i = 0; i < remove_index && !fragments.empty(); i++) {
-        SrsFragment *fragment = *fragments.begin();
-        fragments.erase(fragments.begin());
-        expired_fragments.push_back(fragment);
+    for (int i = 0; i < remove_index && !fragments_.empty(); i++) {
+        SrsFragment *fragment = *fragments_.begin();
+        fragments_.erase(fragments_.begin());
+        expired_fragments_.push_back(fragment);
     }
 }
 
@@ -234,7 +234,7 @@ void SrsFragmentWindow::clear_expired(bool delete_files)
 
     std::vector<SrsFragment *>::iterator it;
 
-    for (it = expired_fragments.begin(); it != expired_fragments.end(); ++it) {
+    for (it = expired_fragments_.begin(); it != expired_fragments_.end(); ++it) {
         SrsFragment *fragment = *it;
         if (delete_files && (err = fragment->unlink_file()) != srs_success) {
             srs_warn("Unlink ts failed, %s", srs_error_desc(err).c_str());
@@ -243,7 +243,7 @@ void SrsFragmentWindow::clear_expired(bool delete_files)
         srs_freep(fragment);
     }
 
-    expired_fragments.clear();
+    expired_fragments_.clear();
 }
 
 srs_utime_t SrsFragmentWindow::max_duration()
@@ -252,7 +252,7 @@ srs_utime_t SrsFragmentWindow::max_duration()
 
     std::vector<SrsFragment *>::iterator it;
 
-    for (it = fragments.begin(); it != fragments.end(); ++it) {
+    for (it = fragments_.begin(); it != fragments_.end(); ++it) {
         SrsFragment *fragment = *it;
         v = srs_max(v, fragment->duration());
     }
@@ -262,20 +262,20 @@ srs_utime_t SrsFragmentWindow::max_duration()
 
 bool SrsFragmentWindow::empty()
 {
-    return fragments.empty();
+    return fragments_.empty();
 }
 
 SrsFragment *SrsFragmentWindow::first()
 {
-    return fragments.at(0);
+    return fragments_.at(0);
 }
 
 int SrsFragmentWindow::size()
 {
-    return (int)fragments.size();
+    return (int)fragments_.size();
 }
 
 SrsFragment *SrsFragmentWindow::at(int index)
 {
-    return fragments.at(index);
+    return fragments_.at(index);
 }

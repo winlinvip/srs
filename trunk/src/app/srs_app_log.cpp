@@ -30,20 +30,20 @@
 SrsFileLog::SrsFileLog()
 {
     level_ = SrsLogLevelTrace;
-    log_data = new char[LOG_MAX_SIZE];
+    log_data_ = new char[LOG_MAX_SIZE];
 
-    fd = -1;
-    log_to_file_tank = false;
-    utc = false;
+    fd_ = -1;
+    log_to_file_tank_ = false;
+    utc_ = false;
 }
 
 SrsFileLog::~SrsFileLog()
 {
-    srs_freepa(log_data);
+    srs_freepa(log_data_);
 
-    if (fd > 0) {
-        ::close(fd);
-        fd = -1;
+    if (fd_ > 0) {
+        ::close(fd_);
+        fd_ = -1;
     }
 
     if (_srs_config) {
@@ -56,8 +56,8 @@ srs_error_t SrsFileLog::initialize()
     if (_srs_config) {
         _srs_config->subscribe(this);
 
-        log_to_file_tank = _srs_config->get_log_tank_file();
-        utc = _srs_config->get_utc_time();
+        log_to_file_tank_ = _srs_config->get_log_tank_file();
+        utc_ = _srs_config->get_utc_time();
 
         std::string level = _srs_config->get_log_level();
         std::string level_v2 = _srs_config->get_log_level_v2();
@@ -69,11 +69,11 @@ srs_error_t SrsFileLog::initialize()
 
 void SrsFileLog::reopen()
 {
-    if (fd > 0) {
-        ::close(fd);
+    if (fd_ > 0) {
+        ::close(fd_);
     }
 
-    if (!log_to_file_tank) {
+    if (!log_to_file_tank_) {
         return;
     }
 
@@ -88,13 +88,13 @@ void SrsFileLog::log(SrsLogLevel level, const char *tag, const SrsContextId &con
 
     int size = 0;
     bool header_ok = srs_log_header(
-        log_data, LOG_MAX_SIZE, utc, level >= SrsLogLevelWarn, tag, context_id, srs_log_level_strings[level], &size);
+        log_data_, LOG_MAX_SIZE, utc_, level >= SrsLogLevelWarn, tag, context_id, srs_log_level_strings[level], &size);
     if (!header_ok) {
         return;
     }
 
     // Something not expected, drop the log.
-    int r0 = vsnprintf(log_data + size, LOG_MAX_SIZE - size, fmt, args);
+    int r0 = vsnprintf(log_data_ + size, LOG_MAX_SIZE - size, fmt, args);
     if (r0 <= 0 || r0 >= LOG_MAX_SIZE - size) {
         return;
     }
@@ -102,7 +102,7 @@ void SrsFileLog::log(SrsLogLevel level, const char *tag, const SrsContextId &con
 
     // Add errno and strerror() if error. Check size to avoid security issue https://github.com/ossrs/srs/issues/1229
     if (level == SrsLogLevelError && errno != 0 && size < LOG_MAX_SIZE) {
-        r0 = snprintf(log_data + size, LOG_MAX_SIZE - size, "(%s)", strerror(errno));
+        r0 = snprintf(log_data_ + size, LOG_MAX_SIZE - size, "(%s)", strerror(errno));
 
         // Something not expected, drop the log.
         if (r0 <= 0 || r0 >= LOG_MAX_SIZE - size) {
@@ -111,7 +111,7 @@ void SrsFileLog::log(SrsLogLevel level, const char *tag, const SrsContextId &con
         size += r0;
     }
 
-    write_log(fd, log_data, size, level);
+    write_log(fd_, log_data_, size, level);
 }
 
 void SrsFileLog::write_log(int &fd, char *str_log, int size, int level)
@@ -125,7 +125,7 @@ void SrsFileLog::write_log(int &fd, char *str_log, int size, int level)
     str_log[size++] = LOG_TAIL;
 
     // if not to file, to console and return.
-    if (!log_to_file_tank) {
+    if (!log_to_file_tank_) {
         // if is error msg, then print color msg.
         // \033[31m : red text code in shell
         // \033[32m : green text code in shell
@@ -166,7 +166,7 @@ void SrsFileLog::open_log_file()
         return;
     }
 
-    fd = ::open(filename.c_str(),
-                O_RDWR | O_CREAT | O_APPEND,
-                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+    fd_ = ::open(filename.c_str(),
+                 O_RDWR | O_CREAT | O_APPEND,
+                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 }

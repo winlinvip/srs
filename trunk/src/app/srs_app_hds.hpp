@@ -37,14 +37,14 @@ private:
     void adjust_windows();
 
 private:
-    std::list<SrsHdsFragment *> fragments;
-    SrsHdsFragment *currentSegment;
-    int fragment_index;
-    SrsMediaPacket *video_sh;
-    SrsMediaPacket *audio_sh;
+    std::list<SrsHdsFragment *> fragments_;
+    SrsHdsFragment *currentSegment_;
+    int fragment_index_;
+    SrsMediaPacket *video_sh_;
+    SrsMediaPacket *audio_sh_;
 
-    ISrsRequest *hds_req;
-    bool hds_enabled;
+    ISrsRequest *hds_req_;
+    bool hds_enabled_;
 };
 
 #endif

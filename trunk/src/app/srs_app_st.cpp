@@ -151,29 +151,29 @@ void SrsSTCoroutine::set_cid(const SrsContextId &cid)
 SrsFastCoroutine::SrsFastCoroutine(string n, ISrsCoroutineHandler *h)
 {
     // TODO: FIXME: Reduce duplicated code.
-    name = n;
-    handler = h;
-    trd = NULL;
-    trd_err = srs_success;
-    started = interrupted = disposed = cycle_done = false;
+    name_ = n;
+    handler_ = h;
+    trd_ = NULL;
+    trd_err_ = srs_success;
+    started_ = interrupted_ = disposed_ = cycle_done_ = false;
     stopping_ = false;
 
     //  0 use default, default is 64K.
-    stack_size = 0;
+    stack_size_ = 0;
 }
 
 SrsFastCoroutine::SrsFastCoroutine(string n, ISrsCoroutineHandler *h, SrsContextId cid)
 {
-    name = n;
-    handler = h;
+    name_ = n;
+    handler_ = h;
     cid_ = cid;
-    trd = NULL;
-    trd_err = srs_success;
-    started = interrupted = disposed = cycle_done = false;
+    trd_ = NULL;
+    trd_err_ = srs_success;
+    started_ = interrupted_ = disposed_ = cycle_done_ = false;
     stopping_ = false;
 
     //  0 use default, default is 64K.
-    stack_size = 0;
+    stack_size_ = 0;
 }
 
 SrsFastCoroutine::~SrsFastCoroutine()
@@ -182,64 +182,64 @@ SrsFastCoroutine::~SrsFastCoroutine()
 
     // TODO: FIXME: We must assert the cycle is done.
 
-    srs_freep(trd_err);
+    srs_freep(trd_err_);
 }
 
 void SrsFastCoroutine::set_stack_size(int v)
 {
-    stack_size = v;
+    stack_size_ = v;
 }
 
 srs_error_t SrsFastCoroutine::start()
 {
     srs_error_t err = srs_success;
 
-    if (started || disposed) {
-        if (disposed) {
+    if (started_ || disposed_) {
+        if (disposed_) {
             err = srs_error_new(ERROR_THREAD_DISPOSED, "disposed");
         } else {
             err = srs_error_new(ERROR_THREAD_STARTED, "started");
         }
 
-        if (trd_err == srs_success) {
-            trd_err = srs_error_copy(err);
+        if (trd_err_ == srs_success) {
+            trd_err_ = srs_error_copy(err);
         }
 
         return err;
     }
 
-    if ((trd = (srs_thread_t)_pfn_st_thread_create(pfn, this, 1, stack_size)) == NULL) {
+    if ((trd_ = (srs_thread_t)_pfn_st_thread_create(pfn, this, 1, stack_size_)) == NULL) {
         err = srs_error_new(ERROR_ST_CREATE_CYCLE_THREAD, "create failed");
 
-        srs_freep(trd_err);
-        trd_err = srs_error_copy(err);
+        srs_freep(trd_err_);
+        trd_err_ = srs_error_copy(err);
 
         return err;
     }
 
-    started = true;
+    started_ = true;
 
     return err;
 }
 
 void SrsFastCoroutine::stop()
 {
-    if (disposed) {
+    if (disposed_) {
         if (stopping_) {
             srs_error("thread is stopping by %s", stopping_cid_.c_str());
             srs_assert(!stopping_);
         }
         return;
     }
-    disposed = true;
+    disposed_ = true;
     stopping_ = true;
 
     interrupt();
 
     // When not started, the trd is NULL.
-    if (trd) {
+    if (trd_) {
         void *res = NULL;
-        int r0 = srs_thread_join(trd, &res);
+        int r0 = srs_thread_join(trd_, &res);
         if (r0) {
             // By st_thread_join
             if (errno == EINVAL)
@@ -259,13 +259,13 @@ void SrsFastCoroutine::stop()
         if (err_res != srs_success) {
             // When worker cycle done, the error has already been overrided,
             // so the trd_err should be equal to err_res.
-            srs_assert(trd_err == err_res);
+            srs_assert(trd_err_ == err_res);
         }
     }
 
     // If there's no error occur from worker, try to set to terminated error.
-    if (trd_err == srs_success && !cycle_done) {
-        trd_err = srs_error_new(ERROR_THREAD_TERMINATED, "terminated");
+    if (trd_err_ == srs_success && !cycle_done_) {
+        trd_err_ = srs_error_new(ERROR_THREAD_TERMINATED, "terminated");
     }
 
     // Now, we'are stopped.
@@ -276,18 +276,18 @@ void SrsFastCoroutine::stop()
 
 void SrsFastCoroutine::interrupt()
 {
-    if (!started || interrupted || cycle_done) {
+    if (!started_ || interrupted_ || cycle_done_) {
         return;
     }
-    interrupted = true;
+    interrupted_ = true;
 
-    if (trd_err == srs_success) {
-        trd_err = srs_error_new(ERROR_THREAD_INTERRUPED, "interrupted");
+    if (trd_err_ == srs_success) {
+        trd_err_ = srs_error_new(ERROR_THREAD_INTERRUPED, "interrupted");
     }
 
     // Note that if another thread is stopping thread and waiting in st_thread_join,
     // the interrupt will make the st_thread_join fail.
-    srs_thread_interrupt(trd);
+    srs_thread_interrupt(trd_);
 }
 
 const SrsContextId &SrsFastCoroutine::cid()
@@ -298,7 +298,7 @@ const SrsContextId &SrsFastCoroutine::cid()
 void SrsFastCoroutine::set_cid(const SrsContextId &cid)
 {
     cid_ = cid;
-    srs_context_set_cid_of(trd, cid);
+    srs_context_set_cid_of(trd_, cid);
 }
 
 srs_error_t SrsFastCoroutine::cycle()
@@ -310,13 +310,13 @@ srs_error_t SrsFastCoroutine::cycle()
         _srs_context->set_id(cid_);
     }
 
-    srs_error_t err = handler->cycle();
+    srs_error_t err = handler_->cycle();
     if (err != srs_success) {
         return srs_error_wrap(err, "coroutine cycle");
     }
 
     // Set cycle done, no need to interrupt it.
-    cycle_done = true;
+    cycle_done_ = true;
 
     return err;
 }
@@ -330,9 +330,9 @@ void *SrsFastCoroutine::pfn(void *arg)
     // Set the err for function pull to fetch it.
     // @see https://github.com/ossrs/srs/pull/1304#issuecomment-480484151
     if (err != srs_success) {
-        srs_freep(p->trd_err);
+        srs_freep(p->trd_err_);
         // It's ok to directly use it, because it's returned by st_thread_join.
-        p->trd_err = err;
+        p->trd_err_ = err;
     }
 
     return (void *)err;

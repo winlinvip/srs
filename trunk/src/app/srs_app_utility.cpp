@@ -217,9 +217,9 @@ static SrsRusage _srs_system_rusage;
 
 SrsRusage::SrsRusage()
 {
-    ok = false;
-    sample_time = 0;
-    memset(&r, 0, sizeof(rusage));
+    ok_ = false;
+    sample_time_ = 0;
+    memset(&r_, 0, sizeof(rusage));
 }
 
 SrsRusage *srs_get_system_rusage()
@@ -229,14 +229,14 @@ SrsRusage *srs_get_system_rusage()
 
 void srs_update_system_rusage()
 {
-    if (getrusage(RUSAGE_SELF, &_srs_system_rusage.r) < 0) {
+    if (getrusage(RUSAGE_SELF, &_srs_system_rusage.r_) < 0) {
         srs_warn("getrusage failed, ignore");
         return;
     }
 
-    _srs_system_rusage.sample_time = srsu2ms(srs_time_now_realtime());
+    _srs_system_rusage.sample_time_ = srsu2ms(srs_time_now_realtime());
 
-    _srs_system_rusage.ok = true;
+    _srs_system_rusage.ok_ = true;
 }
 
 static SrsProcSelfStat _srs_system_cpu_self_stat;
@@ -244,76 +244,76 @@ static SrsProcSystemStat _srs_system_cpu_system_stat;
 
 SrsProcSelfStat::SrsProcSelfStat()
 {
-    ok = false;
-    sample_time = 0;
-    percent = 0;
+    ok_ = false;
+    sample_time_ = 0;
+    percent_ = 0;
 
-    pid = 0;
-    memset(comm, 0, sizeof(comm));
-    state = '0';
-    ppid = 0;
-    pgrp = 0;
-    session = 0;
-    tty_nr = 0;
-    tpgid = 0;
-    flags = 0;
-    minflt = 0;
-    cminflt = 0;
-    majflt = 0;
-    cmajflt = 0;
-    utime = 0;
-    stime = 0;
-    cutime = 0;
-    cstime = 0;
-    priority = 0;
-    nice = 0;
-    num_threads = 0;
-    itrealvalue = 0;
-    starttime = 0;
-    vsize = 0;
-    rss = 0;
-    rsslim = 0;
-    startcode = 0;
-    endcode = 0;
-    startstack = 0;
-    kstkesp = 0;
-    kstkeip = 0;
-    signal = 0;
-    blocked = 0;
-    sigignore = 0;
-    sigcatch = 0;
-    wchan = 0;
-    nswap = 0;
-    cnswap = 0;
-    exit_signal = 0;
-    processor = 0;
-    rt_priority = 0;
-    policy = 0;
-    delayacct_blkio_ticks = 0;
-    guest_time = 0;
-    cguest_time = 0;
+    pid_ = 0;
+    memset(comm_, 0, sizeof(comm_));
+    state_ = '0';
+    ppid_ = 0;
+    pgrp_ = 0;
+    session_ = 0;
+    tty_nr_ = 0;
+    tpgid_ = 0;
+    flags_ = 0;
+    minflt_ = 0;
+    cminflt_ = 0;
+    majflt_ = 0;
+    cmajflt_ = 0;
+    utime_ = 0;
+    stime_ = 0;
+    cutime_ = 0;
+    cstime_ = 0;
+    priority_ = 0;
+    nice_ = 0;
+    num_threads_ = 0;
+    itrealvalue_ = 0;
+    starttime_ = 0;
+    vsize_ = 0;
+    rss_ = 0;
+    rsslim_ = 0;
+    startcode_ = 0;
+    endcode_ = 0;
+    startstack_ = 0;
+    kstkesp_ = 0;
+    kstkeip_ = 0;
+    signal_ = 0;
+    blocked_ = 0;
+    sigignore_ = 0;
+    sigcatch_ = 0;
+    wchan_ = 0;
+    nswap_ = 0;
+    cnswap_ = 0;
+    exit_signal_ = 0;
+    processor_ = 0;
+    rt_priority_ = 0;
+    policy_ = 0;
+    delayacct_blkio_ticks_ = 0;
+    guest_time_ = 0;
+    cguest_time_ = 0;
 }
 
 SrsProcSystemStat::SrsProcSystemStat()
 {
-    ok = false;
-    sample_time = 0;
-    percent = 0;
-    total_delta = 0;
-    user = 0;
-    nice = 0;
-    sys = 0;
-    idle = 0;
-    iowait = 0;
-    irq = 0;
-    softirq = 0;
-    steal = 0;
-    guest = 0;
+    ok_ = false;
+    sample_time_ = 0;
+    percent_ = 0;
+    total_delta_ = 0;
+    user_ = 0;
+    nice_ = 0;
+    sys_ = 0;
+    idle_ = 0;
+    iowait_ = 0;
+    irq_ = 0;
+    softirq_ = 0;
+    steal_ = 0;
+    guest_ = 0;
 }
 
 int64_t SrsProcSystemStat::total()
 {
-    return user + nice + sys + idle + iowait + irq + softirq + steal + guest;
+    return user_ + nice_ + sys_ + idle_ + iowait_ + irq_ + softirq_ + steal_ + guest_;
 }
 
 SrsProcSelfStat *srs_get_self_proc_stat()
@@ -344,15 +344,15 @@ bool get_proc_system_stat(SrsProcSystemStat &r)
         // @see: read_stat_cpu() from https://github.com/sysstat/sysstat/blob/master/rd_stats.c#L88
         // @remark, ignore the filed 10 cpu_guest_nice
         sscanf(buf + 5, "%llu %llu %llu %llu %llu %llu %llu %llu %llu\n",
-               &r.user,
-               &r.nice,
-               &r.sys,
-               &r.idle,
-               &r.iowait,
-               &r.irq,
-               &r.softirq,
-               &r.steal,
-               &r.guest);
+               &r.user_,
+               &r.nice_,
+               &r.sys_,
+               &r.idle_,
+               &r.iowait_,
+               &r.irq_,
+               &r.softirq_,
+               &r.steal_,
+               &r.guest_);
 
         break;
     }
@@ -360,7 +360,7 @@ bool get_proc_system_stat(SrsProcSystemStat &r)
     fclose(f);
 #endif
 
-    r.ok = true;
+    r.ok_ = true;
 
     return true;
 }
@@ -374,7 +374,7 @@ bool get_proc_self_stat(SrsProcSelfStat &r)
         return false;
     }
 
-    // Note that we must read less than the size of r.comm, such as %31s for r.comm is char[32].
+    // Note that we must read less than the size of r.comm_, such as %31s for r.comm_ is char[32].
     fscanf(f, "%d %31s %c %d %d %d %d "
               "%d %u %lu %lu %lu %lu "
               "%lu %lu %ld %ld %ld %ld "
@@ -384,20 +384,20 @@ bool get_proc_self_stat(SrsProcSelfStat &r)
               "%lu %lu %lu %d %d "
               "%u %u %llu "
               "%lu %ld",
-           &r.pid, r.comm, &r.state, &r.ppid, &r.pgrp, &r.session, &r.tty_nr,
-           &r.tpgid, &r.flags, &r.minflt, &r.cminflt, &r.majflt, &r.cmajflt,
-           &r.utime, &r.stime, &r.cutime, &r.cstime, &r.priority, &r.nice,
-           &r.num_threads, &r.itrealvalue, &r.starttime, &r.vsize, &r.rss,
-           &r.rsslim, &r.startcode, &r.endcode, &r.startstack, &r.kstkesp,
-           &r.kstkeip, &r.signal, &r.blocked, &r.sigignore, &r.sigcatch,
-           &r.wchan, &r.nswap, &r.cnswap, &r.exit_signal, &r.processor,
-           &r.rt_priority, &r.policy, &r.delayacct_blkio_ticks,
-           &r.guest_time, &r.cguest_time);
+           &r.pid_, r.comm_, &r.state_, &r.ppid_, &r.pgrp_, &r.session_, &r.tty_nr_,
+           &r.tpgid_, &r.flags_, &r.minflt_, &r.cminflt_, &r.majflt_, &r.cmajflt_,
+           &r.utime_, &r.stime_, &r.cutime_, &r.cstime_, &r.priority_, &r.nice_,
+           &r.num_threads_, &r.itrealvalue_, &r.starttime_, &r.vsize_, &r.rss_,
+           &r.rsslim_, &r.startcode_, &r.endcode_, &r.startstack_, &r.kstkesp_,
+           &r.kstkeip_, &r.signal_, &r.blocked_, &r.sigignore_, &r.sigcatch_,
+           &r.wchan_, &r.nswap_, &r.cnswap_, &r.exit_signal_, &r.processor_,
+           &r.rt_priority_, &r.policy_, &r.delayacct_blkio_ticks_,
+           &r.guest_time_, &r.cguest_time_);
 
     fclose(f);
 #endif
 
-    r.ok = true;
+    r.ok_ = true;
 
     return true;
 }
@@ -420,7 +420,7 @@ void srs_update_proc_stat()
             return;
         }
 
-        r.sample_time = srsu2ms(srs_time_now_realtime());
+        r.sample_time_ = srsu2ms(srs_time_now_realtime());
 
         // calc usage in percent
         SrsProcSystemStat &o = _srs_system_cpu_system_stat;
@@ -428,11 +428,11 @@ void srs_update_proc_stat()
         // @see: http://blog.csdn.net/nineday/article/details/1928847
         // @see: http://stackoverflow.com/questions/16011677/calculating-cpu-usage-using-proc-files
         if (o.total() > 0) {
-            r.total_delta = r.total() - o.total();
+            r.total_delta_ = r.total() - o.total();
         }
-        if (r.total_delta > 0) {
-            int64_t idle = r.idle - o.idle;
-            r.percent = (float)(1 - idle / (double)r.total_delta);
+        if (r.total_delta_ > 0) {
+            int64_t idle = r.idle_ - o.idle_;
+            r.percent_ = (float)(1 - idle / (double)r.total_delta_);
         }
 
         // upate cache.
@@ -446,16 +446,16 @@ void srs_update_proc_stat()
             return;
         }
 
-        r.sample_time = srsu2ms(srs_time_now_realtime());
+        r.sample_time_ = srsu2ms(srs_time_now_realtime());
 
         // calc usage in percent
         SrsProcSelfStat &o = _srs_system_cpu_self_stat;
 
         // @see: http://stackoverflow.com/questions/16011677/calculating-cpu-usage-using-proc-files
-        int64_t total = r.sample_time - o.sample_time;
-        int64_t usage = (r.utime + r.stime) - (o.utime + o.stime);
+        int64_t total = r.sample_time_ - o.sample_time_;
+        int64_t usage = (r.utime_ + r.stime_) - (o.utime_ + o.stime_);
         if (total > 0) {
-            r.percent = (float)(usage * 1000 / (double)total / user_hz);
+            r.percent_ = (float)(usage * 1000 / (double)total / user_hz);
         }
 
         // upate cache.
@@ -465,21 +465,21 @@ void srs_update_proc_stat()
 
 SrsDiskStat::SrsDiskStat()
 {
-    ok = false;
-    sample_time = 0;
-    in_KBps = out_KBps = 0;
-    busy = 0;
+    ok_ = false;
+    sample_time_ = 0;
+    in_KBps_ = out_KBps_ = 0;
+    busy_ = 0;
 
-    pgpgin = 0;
-    pgpgout = 0;
+    pgpgin_ = 0;
+    pgpgout_ = 0;
 
-    rd_ios = rd_merges = 0;
-    rd_sectors = 0;
-    rd_ticks = 0;
+    rd_ios_ = rd_merges_ = 0;
+    rd_sectors_ = 0;
+    rd_ticks_ = 0;
 
-    wr_ios = wr_merges = 0;
-    wr_sectors = 0;
-    wr_ticks = nb_current = ticks = aveq = 0;
+    wr_ios_ = wr_merges_ = 0;
+    wr_sectors_ = 0;
+    wr_ticks_ = nb_current_ = ticks_ = aveq_ = 0;
 }
 
 static SrsDiskStat _srs_disk_stat;
@@ -513,15 +513,15 @@ bool srs_get_disk_vmstat_stat(SrsDiskStat &r)
     fclose(f);
 #endif
 
-    r.ok = true;
+    r.ok_ = true;
 
     return true;
 }
 
 bool srs_get_disk_diskstats_stat(SrsDiskStat &r)
 {
-    r.ok = true;
-    r.sample_time = srsu2ms(srs_time_now_realtime());
+    r.ok_ = true;
+    r.sample_time_ = srsu2ms(srs_time_now_realtime());
 
 #if !defined(SRS_OSX)
     // if disabled, ignore all devices.
@@ -596,7 +596,7 @@ bool srs_get_disk_diskstats_stat(SrsDiskStat &r)
     fclose(f);
 #endif
 
-    r.ok = true;
+    r.ok_ = true;
 
     return true;
 }
@@ -610,44 +610,44 @@ void srs_update_disk_stat()
     if (!srs_get_disk_diskstats_stat(r)) {
         return;
     }
-    if (!get_proc_system_stat(r.cpu)) {
+    if (!get_proc_system_stat(r.cpu_)) {
         return;
     }
 
     SrsDiskStat &o = _srs_disk_stat;
-    if (!o.ok) {
+    if (!o.ok_) {
         _srs_disk_stat = r;
         return;
     }
 
     // vmstat
     if (true) {
-        int64_t duration_ms = r.sample_time - o.sample_time;
+        int64_t duration_ms = r.sample_time_ - o.sample_time_;
 
-        if (o.pgpgin > 0 && r.pgpgin > o.pgpgin && duration_ms > 0) {
+        if (o.pgpgin_ > 0 && r.pgpgin_ > o.pgpgin_ && duration_ms > 0) {
             // KBps = KB * 1000 / ms = KB/s
-            r.in_KBps = (int)((r.pgpgin - o.pgpgin) * 1000 / duration_ms);
+            r.in_KBps_ = (int)((r.pgpgin_ - o.pgpgin_) * 1000 / duration_ms);
         }
 
-        if (o.pgpgout > 0 && r.pgpgout > o.pgpgout && duration_ms > 0) {
+        if (o.pgpgout_ > 0 && r.pgpgout_ > o.pgpgout_ && duration_ms > 0) {
             // KBps = KB * 1000 / ms = KB/s
-            r.out_KBps = (int)((r.pgpgout - o.pgpgout) * 1000 / duration_ms);
+            r.out_KBps_ = (int)((r.pgpgout_ - o.pgpgout_) * 1000 / duration_ms);
         }
     }
 
     // diskstats
-    if (r.cpu.ok && o.cpu.ok) {
+    if (r.cpu_.ok_ && o.cpu_.ok_) {
         SrsCpuInfo *cpuinfo = srs_get_cpuinfo();
-        r.cpu.total_delta = r.cpu.total() - o.cpu.total();
+        r.cpu_.total_delta_ = r.cpu_.total() - o.cpu_.total();
 
-        if (r.cpu.ok && r.cpu.total_delta > 0 && cpuinfo->ok && cpuinfo->nb_processors > 0 && o.ticks < r.ticks) {
+        if (r.cpu_.ok_ && r.cpu_.total_delta_ > 0 && cpuinfo->ok_ && cpuinfo->nb_processors_ > 0 && o.ticks_ < r.ticks_) {
             // @see: write_ext_stat() from https://github.com/sysstat/sysstat/blob/master/iostat.c#L979
             // TODO: FIXME: the USER_HZ assert to 100, so the total_delta ticks *10 is ms.
-            double delta_ms = r.cpu.total_delta * 10 / cpuinfo->nb_processors;
-            unsigned int ticks = r.ticks - o.ticks;
+            double delta_ms = r.cpu_.total_delta_ * 10 / cpuinfo->nb_processors_;
+            unsigned int ticks = r.ticks_ - o.ticks_;
 
             // busy in [0, 1], where 0.1532 means 15.32%
-            r.busy = (float)(ticks / delta_ms);
+            r.busy_ = (float)(ticks / delta_ms);
         }
     }
 
@@ -656,21 +656,21 @@ void srs_update_disk_stat()
 
 SrsMemInfo::SrsMemInfo()
 {
-    ok = false;
-    sample_time = 0;
+    ok_ = false;
+    sample_time_ = 0;
 
-    percent_ram = 0;
-    percent_swap = 0;
+    percent_ram_ = 0;
+    percent_swap_ = 0;
 
-    MemActive = 0;
-    RealInUse = 0;
-    NotInUse = 0;
-    MemTotal = 0;
-    MemFree = 0;
-    Buffers = 0;
-    Cached = 0;
-    SwapTotal = 0;
-    SwapFree = 0;
+    MemActive_ = 0;
+    RealInUse_ = 0;
+    NotInUse_ = 0;
+    MemTotal_ = 0;
+    MemFree_ = 0;
+    Buffers_ = 0;
+    Cached_ = 0;
+    SwapTotal_ = 0;
+    SwapFree_ = 0;
 }
 
 static SrsMemInfo _srs_system_meminfo;
@@ -695,44 +695,44 @@ void srs_update_meminfo()
     while (fgets(buf, sizeof(buf), f)) {
         // @see: read_meminfo() from https://github.com/sysstat/sysstat/blob/master/rd_stats.c#L227
         if (strncmp(buf, "MemTotal:", 9) == 0) {
-            sscanf(buf + 9, "%lu", &r.MemTotal);
+            sscanf(buf + 9, "%lu", &r.MemTotal_);
         } else if (strncmp(buf, "MemFree:", 8) == 0) {
-            sscanf(buf + 8, "%lu", &r.MemFree);
+            sscanf(buf + 8, "%lu", &r.MemFree_);
         } else if (strncmp(buf, "Buffers:", 8) == 0) {
-            sscanf(buf + 8, "%lu", &r.Buffers);
+            sscanf(buf + 8, "%lu", &r.Buffers_);
         } else if (strncmp(buf, "Cached:", 7) == 0) {
-            sscanf(buf + 7, "%lu", &r.Cached);
+            sscanf(buf + 7, "%lu", &r.Cached_);
         } else if (strncmp(buf, "SwapTotal:", 10) == 0) {
-            sscanf(buf + 10, "%lu", &r.SwapTotal);
+            sscanf(buf + 10, "%lu", &r.SwapTotal_);
         } else if (strncmp(buf, "SwapFree:", 9) == 0) {
-            sscanf(buf + 9, "%lu", &r.SwapFree);
+            sscanf(buf + 9, "%lu", &r.SwapFree_);
         }
     }
 
     fclose(f);
 #endif
 
-    r.sample_time = srsu2ms(srs_time_now_realtime());
-    r.MemActive = r.MemTotal - r.MemFree;
-    r.RealInUse = r.MemActive - r.Buffers - r.Cached;
-    r.NotInUse = r.MemTotal - r.RealInUse;
+    r.sample_time_ = srsu2ms(srs_time_now_realtime());
+    r.MemActive_ = r.MemTotal_ - r.MemFree_;
+    r.RealInUse_ = r.MemActive_ - r.Buffers_ - r.Cached_;
+    r.NotInUse_ = r.MemTotal_ - r.RealInUse_;
 
-    if (r.MemTotal > 0) {
-        r.percent_ram = (float)(r.RealInUse / (double)r.MemTotal);
+    if (r.MemTotal_ > 0) {
+        r.percent_ram_ = (float)(r.RealInUse_ / (double)r.MemTotal_);
     }
-    if (r.SwapTotal > 0) {
-        r.percent_swap = (float)((r.SwapTotal - r.SwapFree) / (double)r.SwapTotal);
+    if (r.SwapTotal_ > 0) {
+        r.percent_swap_ = (float)((r.SwapTotal_ - r.SwapFree_) / (double)r.SwapTotal_);
     }
 
-    r.ok = true;
+    r.ok_ = true;
 }
 
 SrsCpuInfo::SrsCpuInfo()
 {
-    ok = false;
+    ok_ = false;
 
-    nb_processors = 0;
-    nb_processors_online = 0;
+    nb_processors_ = 0;
+    nb_processors_online_ = 0;
 }
 
 SrsCpuInfo *srs_get_cpuinfo()
@@ -744,25 +744,25 @@ SrsCpuInfo *srs_get_cpuinfo()
 
     // initialize cpu info.
     cpu = new SrsCpuInfo();
-    cpu->ok = true;
-    cpu->nb_processors = (int)sysconf(_SC_NPROCESSORS_CONF);
-    cpu->nb_processors_online = (int)sysconf(_SC_NPROCESSORS_ONLN);
+    cpu->ok_ = true;
+    cpu->nb_processors_ = (int)sysconf(_SC_NPROCESSORS_CONF);
+    cpu->nb_processors_online_ = (int)sysconf(_SC_NPROCESSORS_ONLN);
 
     return cpu;
 }
 
 SrsPlatformInfo::SrsPlatformInfo()
 {
-    ok = false;
+    ok_ = false;
 
-    srs_startup_time = 0;
+    srs_startup_time_ = 0;
 
-    os_uptime = 0;
-    os_ilde_time = 0;
+    os_uptime_ = 0;
+    os_ilde_time_ = 0;
 
-    load_one_minutes = 0;
-    load_five_minutes = 0;
-    load_fifteen_minutes = 0;
+    load_one_minutes_ = 0;
+    load_five_minutes_ = 0;
+    load_fifteen_minutes_ = 0;
 }
 
 static SrsPlatformInfo _srs_system_platform_info;
@@ -776,7 +776,7 @@ void srs_update_platform_info()
 {
     SrsPlatformInfo &r = _srs_system_platform_info;
 
-    r.srs_startup_time = srsu2ms(srs_time_since_startup());
+    r.srs_startup_time_ = srsu2ms(srs_time_since_startup());
 
 #if !defined(SRS_OSX)
     if (true) {
@@ -823,7 +823,7 @@ void srs_update_platform_info()
 
         time_t bsec = tv.tv_sec;
         time_t csec = ::time(NULL);
-        r.os_uptime = difftime(csec, bsec);
+        r.os_uptime_ = difftime(csec, bsec);
     }
 
     // man 3 sysctl
@@ -839,29 +839,29 @@ void srs_update_platform_info()
             return;
         }
 
-        r.load_one_minutes = (double)la.ldavg[0] / la.fscale;
-        r.load_five_minutes = (double)la.ldavg[1] / la.fscale;
-        r.load_fifteen_minutes = (double)la.ldavg[2] / la.fscale;
+        r.load_one_minutes_ = (double)la.ldavg[0] / la.fscale;
+        r.load_five_minutes_ = (double)la.ldavg[1] / la.fscale;
+        r.load_fifteen_minutes_ = (double)la.ldavg[2] / la.fscale;
     }
 #endif
 
-    r.ok = true;
+    r.ok_ = true;
 }
 
 SrsSnmpUdpStat::SrsSnmpUdpStat()
 {
-    ok = false;
+    ok_ = false;
 
-    in_datagrams = 0;
-    no_ports = 0;
-    in_errors = 0;
-    out_datagrams = 0;
-    rcv_buf_errors = 0;
-    snd_buf_errors = 0;
-    in_csum_errors = 0;
+    in_datagrams_ = 0;
+    no_ports_ = 0;
+    in_errors_ = 0;
+    out_datagrams_ = 0;
+    rcv_buf_errors_ = 0;
+    snd_buf_errors_ = 0;
+    in_csum_errors_ = 0;
 
-    rcv_buf_errors_delta = 0;
-    snd_buf_errors_delta = 0;
+    rcv_buf_errors_delta_ = 0;
+    snd_buf_errors_delta_ = 0;
 }
 
 SrsSnmpUdpStat::~SrsSnmpUdpStat()
@@ -894,20 +894,20 @@ bool get_udp_snmp_statistic(SrsSnmpUdpStat &r)
                 // parse tcp stat data
                 if (strncmp(buf, "Udp: ", 5) == 0) {
                     sscanf(buf + 5, "%llu %llu %llu %llu %llu %llu %llu\n",
-                           &r.in_datagrams,
-                           &r.no_ports,
-                           &r.in_errors,
-                           &r.out_datagrams,
-                           &r.rcv_buf_errors,
-                           &r.snd_buf_errors,
-                           &r.in_csum_errors);
+                           &r.in_datagrams_,
+                           &r.no_ports_,
+                           &r.in_errors_,
+                           &r.out_datagrams_,
+                           &r.rcv_buf_errors_,
+                           &r.snd_buf_errors_,
+                           &r.in_csum_errors_);
                 }
             }
         }
         fclose(f);
     }
 #endif
-    r.ok = true;
+    r.ok_ = true;
 
     return true;
 }
@@ -925,12 +925,12 @@ void srs_update_udp_snmp_statistic()
     }
 
     SrsSnmpUdpStat &o = _srs_snmp_udp_stat;
-    if (o.rcv_buf_errors > 0) {
-        r.rcv_buf_errors_delta = int(r.rcv_buf_errors - o.rcv_buf_errors);
+    if (o.rcv_buf_errors_ > 0) {
+        r.rcv_buf_errors_delta_ = int(r.rcv_buf_errors_ - o.rcv_buf_errors_);
     }
 
-    if (o.snd_buf_errors > 0) {
-        r.snd_buf_errors_delta = int(r.snd_buf_errors - o.snd_buf_errors);
+    if (o.snd_buf_errors_ > 0) {
+        r.snd_buf_errors_delta_ = int(r.snd_buf_errors_ - o.snd_buf_errors_);
     }
 
     _srs_snmp_udp_stat = r;
@@ -938,28 +938,28 @@ void srs_update_udp_snmp_statistic()
 
 SrsNetworkDevices::SrsNetworkDevices()
 {
-    ok = false;
+    ok_ = false;
 
-    memset(name, 0, sizeof(name));
-    sample_time = 0;
+    memset(name_, 0, sizeof(name_));
+    sample_time_ = 0;
 
-    rbytes = 0;
-    rpackets = 0;
-    rerrs = 0;
-    rdrop = 0;
-    rfifo = 0;
-    rframe = 0;
-    rcompressed = 0;
-    rmulticast = 0;
+    rbytes_ = 0;
+    rpackets_ = 0;
+    rerrs_ = 0;
+    rdrop_ = 0;
+    rfifo_ = 0;
+    rframe_ = 0;
+    rcompressed_ = 0;
+    rmulticast_ = 0;
 
-    sbytes = 0;
-    spackets = 0;
-    serrs = 0;
-    sdrop = 0;
-    sfifo = 0;
-    scolls = 0;
-    scarrier = 0;
-    scompressed = 0;
+    sbytes_ = 0;
+    spackets_ = 0;
+    serrs_ = 0;
+    sdrop_ = 0;
+    sfifo_ = 0;
+    scolls_ = 0;
+    scarrier_ = 0;
+    scompressed_ = 0;
 }
 
 #define MAX_NETWORK_DEVICES_COUNT 16
@@ -1020,14 +1020,14 @@ void srs_update_network_devices()
 
 SrsNetworkRtmpServer::SrsNetworkRtmpServer()
 {
-    ok = false;
-    sample_time = rbytes = sbytes = 0;
-    nb_conn_sys = nb_conn_srs = 0;
-    nb_conn_sys_et = nb_conn_sys_tw = 0;
-    nb_conn_sys_udp = 0;
-    rkbps = skbps = 0;
-    rkbps_30s = skbps_30s = 0;
-    rkbps_5m = skbps_5m = 0;
+    ok_ = false;
+    sample_time_ = rbytes_ = sbytes_ = 0;
+    nb_conn_sys_ = nb_conn_srs_ = 0;
+    nb_conn_sys_et_ = nb_conn_sys_tw_ = 0;
+    nb_conn_sys_udp_ = 0;
+    rkbps_ = skbps_ = 0;
+    rkbps_30s_ = skbps_30s_ = 0;
+    rkbps_5m_ = skbps_5m_ = 0;
 }
 
 static SrsNetworkRtmpServer _srs_network_rtmp_server;
@@ -1150,27 +1150,27 @@ void srs_update_rtmp_server(int nb_conn, SrsKbps *kbps)
     // TODO: FIXME: ignore the slabstat, @see: get_slabstat()
     if (true) {
         // @see: print_summary()
-        r.nb_conn_sys = nb_tcp_total + nb_tcp_tws;
-        r.nb_conn_sys_et = nb_tcp_estab;
-        r.nb_conn_sys_tw = nb_tcp_tws;
-        r.nb_conn_sys_udp = nb_udp4;
+        r.nb_conn_sys_ = nb_tcp_total + nb_tcp_tws;
+        r.nb_conn_sys_et_ = nb_tcp_estab;
+        r.nb_conn_sys_tw_ = nb_tcp_tws;
+        r.nb_conn_sys_udp_ = nb_udp4;
     }
 
     if (true) {
-        r.ok = true;
+        r.ok_ = true;
 
-        r.nb_conn_srs = nb_conn;
-        r.sample_time = srsu2ms(srs_time_now_realtime());
+        r.nb_conn_srs_ = nb_conn;
+        r.sample_time_ = srsu2ms(srs_time_now_realtime());
 
-        r.rbytes = kbps->get_recv_bytes();
-        r.rkbps = kbps->get_recv_kbps();
-        r.rkbps_30s = kbps->get_recv_kbps_30s();
-        r.rkbps_5m = kbps->get_recv_kbps_5m();
+        r.rbytes_ = kbps->get_recv_bytes();
+        r.rkbps_ = kbps->get_recv_kbps();
+        r.rkbps_30s_ = kbps->get_recv_kbps_30s();
+        r.rkbps_5m_ = kbps->get_recv_kbps_5m();
 
-        r.sbytes = kbps->get_send_bytes();
-        r.skbps = kbps->get_send_kbps();
-        r.skbps_30s = kbps->get_send_kbps_30s();
-        r.skbps_5m = kbps->get_send_kbps_5m();
+        r.sbytes_ = kbps->get_send_bytes();
+        r.skbps_ = kbps->get_send_kbps();
+        r.skbps_30s_ = kbps->get_send_kbps_30s();
+        r.skbps_5m_ = kbps->get_send_kbps_5m();
     }
 }
 
@@ -1276,12 +1276,12 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
     SrsDiskStat *d = srs_get_disk_stat();
 
     float self_mem_percent = 0;
-    if (m->MemTotal > 0) {
-        self_mem_percent = (float)(r->r.ru_maxrss / (double)m->MemTotal);
+    if (m->MemTotal_ > 0) {
+        self_mem_percent = (float)(r->r_.ru_maxrss / (double)m->MemTotal_);
     }
 
     int64_t now = srsu2ms(srs_time_now_realtime());
-    double srs_uptime = (now - p->srs_startup_time) / 100 / 10.0;
+    double srs_uptime = (now - p->srs_startup_time_) / 100 / 10.0;
 
     int64_t n_sample_time = 0;
     int64_t nr_bytes = 0;
@@ -1293,27 +1293,27 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
         SrsNetworkDevices &o = n[i];
 
         // ignore the lo interface.
-        std::string inter = o.name;
-        if (!o.ok) {
+        std::string inter = o.name_;
+        if (!o.ok_) {
             continue;
         }
 
         // update the sample time.
-        n_sample_time = o.sample_time;
+        n_sample_time = o.sample_time_;
 
         // stat the intranet bytes.
         if (inter == "lo" || !srs_net_device_is_internet(inter)) {
-            nri_bytes += o.rbytes;
-            nsi_bytes += o.sbytes;
+            nri_bytes += o.rbytes_;
+            nsi_bytes += o.sbytes_;
             continue;
         }
 
-        nr_bytes += o.rbytes;
-        ns_bytes += o.sbytes;
+        nr_bytes += o.rbytes_;
+        ns_bytes += o.sbytes_;
     }
 
     // all data is ok?
-    bool ok = (r->ok && u->ok && s->ok && c->ok && d->ok && m->ok && p->ok && nrs->ok);
+    bool ok = (r->ok_ && u->ok_ && s->ok_ && c->ok_ && d->ok_ && m->ok_ && p->ok_ && nrs->ok_);
 
     SrsJsonObject *data = SrsJsonAny::object();
     obj->set("data", data);
@@ -1327,33 +1327,33 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
 
     self->set("version", SrsJsonAny::str(RTMP_SIG_SRS_VERSION));
     self->set("pid", SrsJsonAny::integer(getpid()));
-    self->set("ppid", SrsJsonAny::integer(u->ppid));
+    self->set("ppid", SrsJsonAny::integer(u->ppid_));
     self->set("argv", SrsJsonAny::str(_srs_config->argv().c_str()));
     self->set("cwd", SrsJsonAny::str(_srs_config->cwd().c_str()));
-    self->set("mem_kbyte", SrsJsonAny::integer(r->r.ru_maxrss));
+    self->set("mem_kbyte", SrsJsonAny::integer(r->r_.ru_maxrss));
     self->set("mem_percent", SrsJsonAny::number(self_mem_percent));
-    self->set("cpu_percent", SrsJsonAny::number(u->percent));
+    self->set("cpu_percent", SrsJsonAny::number(u->percent_));
     self->set("srs_uptime", SrsJsonAny::integer(srs_uptime));
 
     // system
     SrsJsonObject *sys = SrsJsonAny::object();
     data->set("system", sys);
 
-    sys->set("cpu_percent", SrsJsonAny::number(s->percent));
-    sys->set("disk_read_KBps", SrsJsonAny::integer(d->in_KBps));
-    sys->set("disk_write_KBps", SrsJsonAny::integer(d->out_KBps));
-    sys->set("disk_busy_percent", SrsJsonAny::number(d->busy));
-    sys->set("mem_ram_kbyte", SrsJsonAny::integer(m->MemTotal));
-    sys->set("mem_ram_percent", SrsJsonAny::number(m->percent_ram));
-    sys->set("mem_swap_kbyte", SrsJsonAny::integer(m->SwapTotal));
-    sys->set("mem_swap_percent", SrsJsonAny::number(m->percent_swap));
-    sys->set("cpus", SrsJsonAny::integer(c->nb_processors));
-    sys->set("cpus_online", SrsJsonAny::integer(c->nb_processors_online));
-    sys->set("uptime", SrsJsonAny::number(p->os_uptime));
-    sys->set("ilde_time", SrsJsonAny::number(p->os_ilde_time));
-    sys->set("load_1m", SrsJsonAny::number(p->load_one_minutes));
-    sys->set("load_5m", SrsJsonAny::number(p->load_five_minutes));
-    sys->set("load_15m", SrsJsonAny::number(p->load_fifteen_minutes));
+    sys->set("cpu_percent", SrsJsonAny::number(s->percent_));
+    sys->set("disk_read_KBps", SrsJsonAny::integer(d->in_KBps_));
+    sys->set("disk_write_KBps", SrsJsonAny::integer(d->out_KBps_));
+    sys->set("disk_busy_percent", SrsJsonAny::number(d->busy_));
+    sys->set("mem_ram_kbyte", SrsJsonAny::integer(m->MemTotal_));
+    sys->set("mem_ram_percent", SrsJsonAny::number(m->percent_ram_));
+    sys->set("mem_swap_kbyte", SrsJsonAny::integer(m->SwapTotal_));
+    sys->set("mem_swap_percent", SrsJsonAny::number(m->percent_swap_));
+    sys->set("cpus", SrsJsonAny::integer(c->nb_processors_));
+    sys->set("cpus_online", SrsJsonAny::integer(c->nb_processors_online_));
+    sys->set("uptime", SrsJsonAny::number(p->os_uptime_));
+    sys->set("ilde_time", SrsJsonAny::number(p->os_ilde_time_));
+    sys->set("load_1m", SrsJsonAny::number(p->load_one_minutes_));
+    sys->set("load_5m", SrsJsonAny::number(p->load_five_minutes_));
+    sys->set("load_15m", SrsJsonAny::number(p->load_fifteen_minutes_));
     // system network bytes stat.
     sys->set("net_sample_time", SrsJsonAny::integer(n_sample_time));
     // internet public address network device bytes.
@@ -1363,14 +1363,14 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
     sys->set("net_recvi_bytes", SrsJsonAny::integer(nri_bytes));
     sys->set("net_sendi_bytes", SrsJsonAny::integer(nsi_bytes));
     // srs network bytes stat.
-    sys->set("srs_sample_time", SrsJsonAny::integer(nrs->sample_time));
-    sys->set("srs_recv_bytes", SrsJsonAny::integer(nrs->rbytes));
-    sys->set("srs_send_bytes", SrsJsonAny::integer(nrs->sbytes));
-    sys->set("conn_sys", SrsJsonAny::integer(nrs->nb_conn_sys));
-    sys->set("conn_sys_et", SrsJsonAny::integer(nrs->nb_conn_sys_et));
-    sys->set("conn_sys_tw", SrsJsonAny::integer(nrs->nb_conn_sys_tw));
-    sys->set("conn_sys_udp", SrsJsonAny::integer(nrs->nb_conn_sys_udp));
-    sys->set("conn_srs", SrsJsonAny::integer(nrs->nb_conn_srs));
+    sys->set("srs_sample_time", SrsJsonAny::integer(nrs->sample_time_));
+    sys->set("srs_recv_bytes", SrsJsonAny::integer(nrs->rbytes_));
+    sys->set("srs_send_bytes", SrsJsonAny::integer(nrs->sbytes_));
+    sys->set("conn_sys", SrsJsonAny::integer(nrs->nb_conn_sys_));
+    sys->set("conn_sys_et", SrsJsonAny::integer(nrs->nb_conn_sys_et_));
+    sys->set("conn_sys_tw", SrsJsonAny::integer(nrs->nb_conn_sys_tw_));
+    sys->set("conn_sys_udp", SrsJsonAny::integer(nrs->nb_conn_sys_udp_));
+    sys->set("conn_srs", SrsJsonAny::integer(nrs->nb_conn_srs_));
 }
 
 string srs_getenv(const string &key)

@@ -24,12 +24,12 @@ class SrsFFMPEG;
 class SrsEncoder : public ISrsCoroutineHandler
 {
 private:
-    std::string input_stream_name;
-    std::vector<SrsFFMPEG *> ffmpegs;
+    std::string input_stream_name_;
+    std::vector<SrsFFMPEG *> ffmpegs_;
 
 private:
-    SrsCoroutine *trd;
-    SrsPithyPrint *pprint;
+    SrsCoroutine *trd_;
+    SrsPithyPrint *pprint_;
 
 public:
     SrsEncoder();

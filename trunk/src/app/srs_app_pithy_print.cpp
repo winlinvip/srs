@@ -16,11 +16,11 @@ using namespace std;
 
 SrsStageInfo::SrsStageInfo(int _stage_id, double ratio)
 {
-    stage_id = _stage_id;
-    nb_clients = 0;
-    age = 0;
-    nn_count = 0;
-    interval_ratio = ratio;
+    stage_id_ = _stage_id;
+    nb_clients_ = 0;
+    age_ = 0;
+    nn_count_ = 0;
+    interval_ratio_ = ratio;
 
     update_print_time();
 
@@ -34,21 +34,21 @@ SrsStageInfo::~SrsStageInfo()
 
 void SrsStageInfo::update_print_time()
 {
-    interval = _srs_config->get_pithy_print();
+    interval_ = _srs_config->get_pithy_print();
 }
 
 void SrsStageInfo::elapse(srs_utime_t diff)
 {
-    age += diff;
+    age_ += diff;
 }
 
 bool SrsStageInfo::can_print()
 {
-    srs_utime_t can_print_age = nb_clients * (srs_utime_t)(interval_ratio * interval);
+    srs_utime_t can_print_age = nb_clients_ * (srs_utime_t)(interval_ratio_ * interval_);
 
-    bool can_print = age >= can_print_age;
+    bool can_print = age_ >= can_print_age;
     if (can_print) {
-        age = 0;
+        age_ = 0;
     }
 
     return can_print;
@@ -61,7 +61,7 @@ SrsStageManager::SrsStageManager()
 SrsStageManager::~SrsStageManager()
 {
     map<int, SrsStageInfo *>::iterator it;
-    for (it = stages.begin(); it != stages.end(); ++it) {
+    for (it = stages_.begin(); it != stages_.end(); ++it) {
         SrsStageInfo *stage = it->second;
         srs_freep(stage);
     }
@@ -69,12 +69,12 @@ SrsStageManager::~SrsStageManager()
 
 SrsStageInfo *SrsStageManager::fetch_or_create(int stage_id, bool *pnew)
 {
-    std::map<int, SrsStageInfo *>::iterator it = stages.find(stage_id);
+    std::map<int, SrsStageInfo *>::iterator it = stages_.find(stage_id);
 
     // Create one if not exists.
-    if (it == stages.end()) {
+    if (it == stages_.end()) {
         SrsStageInfo *stage = new SrsStageInfo(stage_id);
-        stages[stage_id] = stage;
+        stages_[stage_id] = stage;
 
         if (pnew) {
             *pnew = true;
@@ -95,7 +95,7 @@ SrsStageInfo *SrsStageManager::fetch_or_create(int stage_id, bool *pnew)
 
 SrsErrorPithyPrint::SrsErrorPithyPrint(double ratio)
 {
-    nn_count = 0;
+    nn_count_ = 0;
     ratio_ = ratio;
 }
 
@@ -112,32 +112,32 @@ bool SrsErrorPithyPrint::can_print(srs_error_t err, uint32_t *pnn)
 bool SrsErrorPithyPrint::can_print(int error_code, uint32_t *pnn)
 {
     bool new_stage = false;
-    SrsStageInfo *stage = stages.fetch_or_create(error_code, &new_stage);
+    SrsStageInfo *stage = stages_.fetch_or_create(error_code, &new_stage);
 
     // Increase the count.
-    stage->nn_count++;
-    nn_count++;
+    stage->nn_count_++;
+    nn_count_++;
 
     if (pnn) {
-        *pnn = stage->nn_count;
+        *pnn = stage->nn_count_;
     }
 
     // Always and only one client.
     if (new_stage) {
-        stage->nb_clients = 1;
-        stage->interval_ratio = ratio_;
+        stage->nb_clients_ = 1;
+        stage->interval_ratio_ = ratio_;
     }
 
-    srs_utime_t tick = ticks[error_code];
+    srs_utime_t tick = ticks_[error_code];
     if (!tick) {
-        ticks[error_code] = tick = srs_time_now_cached();
+        ticks_[error_code] = tick = srs_time_now_cached();
     }
 
     srs_utime_t diff = srs_time_now_cached() - tick;
     diff = srs_max(0, diff);
 
     stage->elapse(diff);
-    ticks[error_code] = srs_time_now_cached();
+    ticks_[error_code] = srs_time_now_cached();
 
     return new_stage || stage->can_print();
 }
@@ -145,7 +145,7 @@ bool SrsErrorPithyPrint::can_print(int error_code, uint32_t *pnn)
 SrsAlonePithyPrint::SrsAlonePithyPrint() : info_(0)
 {
     // stage work for one print
-    info_.nb_clients = 1;
+    info_.nb_clients_ = 1;
 
     previous_tick_ = srs_time_now_cached();
 }
@@ -174,11 +174,11 @@ SrsStageManager *_srs_stages = NULL;
 
 SrsPithyPrint::SrsPithyPrint(int _stage_id)
 {
-    stage_id = _stage_id;
+    stage_id_ = _stage_id;
     cache_ = NULL;
-    client_id = enter_stage();
-    previous_tick = srs_time_now_cached();
-    _age = 0;
+    client_id_ = enter_stage();
+    previous_tick_ = srs_time_now_cached();
+    age_ = 0;
 }
 
 ///////////////////////////////////////////////////////////
@@ -305,48 +305,48 @@ SrsPithyPrint::~SrsPithyPrint()
 
 int SrsPithyPrint::enter_stage()
 {
-    SrsStageInfo *stage = _srs_stages->fetch_or_create(stage_id);
+    SrsStageInfo *stage = _srs_stages->fetch_or_create(stage_id_);
     srs_assert(stage != NULL);
-    client_id = stage->nb_clients++;
+    client_id_ = stage->nb_clients_++;
 
     srs_verbose("enter stage, stage_id=%d, client_id=%d, nb_clients=%d",
-                stage->stage_id, client_id, stage->nb_clients);
+                stage->stage_id_, client_id_, stage->nb_clients_);
 
-    return client_id;
+    return client_id_;
 }
 
 void SrsPithyPrint::leave_stage()
 {
-    SrsStageInfo *stage = _srs_stages->fetch_or_create(stage_id);
+    SrsStageInfo *stage = _srs_stages->fetch_or_create(stage_id_);
     srs_assert(stage != NULL);
 
-    stage->nb_clients--;
+    stage->nb_clients_--;
 
     srs_verbose("leave stage, stage_id=%d, client_id=%d, nb_clients=%d",
-                stage->stage_id, client_id, stage->nb_clients);
+                stage->stage_id_, client_id_, stage->nb_clients_);
 }
 
 void SrsPithyPrint::elapse()
 {
     SrsStageInfo *stage = cache_;
     if (!stage) {
-        stage = cache_ = _srs_stages->fetch_or_create(stage_id);
+        stage = cache_ = _srs_stages->fetch_or_create(stage_id_);
     }
     srs_assert(stage != NULL);
 
-    srs_utime_t diff = srs_time_now_cached() - previous_tick;
+    srs_utime_t diff = srs_time_now_cached() - previous_tick_;
     diff = srs_max(0, diff);
 
     stage->elapse(diff);
-    _age += diff;
-    previous_tick = srs_time_now_cached();
+    age_ += diff;
+    previous_tick_ = srs_time_now_cached();
 }
 
 bool SrsPithyPrint::can_print()
 {
     SrsStageInfo *stage = cache_;
     if (!stage) {
-        stage = cache_ = _srs_stages->fetch_or_create(stage_id);
+        stage = cache_ = _srs_stages->fetch_or_create(stage_id_);
     }
     srs_assert(stage != NULL);
 
@@ -355,5 +355,5 @@ bool SrsPithyPrint::can_print()
 
 srs_utime_t SrsPithyPrint::age()
 {
-    return _age;
+    return age_;
 }

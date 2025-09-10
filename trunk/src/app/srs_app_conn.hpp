@@ -47,21 +47,21 @@ class SrsResourceFastIdItem
 {
 public:
     // If available, use the resource in item.
-    bool available;
+    bool available_;
     // How many resource have the same fast-id, which contribute a collision.
-    int nn_collisions;
+    int nn_collisions_;
     // The first fast-id of resources.
-    uint64_t fast_id;
+    uint64_t fast_id_;
     // The first resource object.
-    ISrsResource *impl;
+    ISrsResource *impl_;
 
 public:
     SrsResourceFastIdItem()
     {
-        available = false;
-        nn_collisions = 0;
-        fast_id = 0;
-        impl = NULL;
+        available_ = false;
+        nn_collisions_ = 0;
+        fast_id_ = 0;
+        impl_ = NULL;
     }
 };
 
@@ -74,8 +74,8 @@ private:
     bool verbose_;
 
 private:
-    SrsCoroutine *trd;
-    srs_cond_t cond;
+    SrsCoroutine *trd_;
+    srs_cond_t cond_;
     // Callback handlers.
     std::vector<ISrsDisposingHandler *> handlers_;
     // Unsubscribing handlers, skip it for notifying.
@@ -231,9 +231,9 @@ class SrsTcpConnection : public ISrsProtocolReadWriter
 {
 private:
     // The underlayer st fd handler.
-    srs_netfd_t stfd;
+    srs_netfd_t stfd_;
     // The underlayer socket.
-    SrsStSocket *skt;
+    SrsStSocket *skt_;
 
 public:
     SrsTcpConnection(srs_netfd_t c);
@@ -300,13 +300,13 @@ class SrsSslConnection : public ISrsProtocolReadWriter
 {
 private:
     // The under-layer plaintext transport.
-    ISrsProtocolReadWriter *transport;
+    ISrsProtocolReadWriter *transport_;
 
 private:
-    SSL_CTX *ssl_ctx;
-    SSL *ssl;
-    BIO *bio_in;
-    BIO *bio_out;
+    SSL_CTX *ssl_ctx_;
+    SSL *ssl_;
+    BIO *bio_in_;
+    BIO *bio_out_;
 
 public:
     SrsSslConnection(ISrsProtocolReadWriter *c);

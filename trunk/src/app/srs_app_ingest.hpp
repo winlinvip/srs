@@ -22,10 +22,10 @@ class SrsPithyPrint;
 class SrsIngesterFFMPEG
 {
 private:
-    std::string vhost;
-    std::string id;
-    SrsFFMPEG *ffmpeg;
-    srs_utime_t starttime;
+    std::string vhost_;
+    std::string id_;
+    SrsFFMPEG *ffmpeg_;
+    srs_utime_t starttime_;
 
 public:
     SrsIngesterFFMPEG();
@@ -55,16 +55,16 @@ public:
 class SrsIngester : public ISrsCoroutineHandler, public ISrsReloadHandler
 {
 private:
-    std::vector<SrsIngesterFFMPEG *> ingesters;
+    std::vector<SrsIngesterFFMPEG *> ingesters_;
 
 private:
-    SrsCoroutine *trd;
+    SrsCoroutine *trd_;
     SrsPithyPrint *pprint_;
     // Whether the ingesters are expired, for example, the listen port changed,
     // all ingesters must be restart.
-    bool expired;
+    bool expired_;
     // Whether already disposed.
-    bool disposed;
+    bool disposed_;
 
 public:
     SrsIngester();

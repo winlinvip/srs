@@ -81,17 +81,17 @@ class SrsUdpListener : public ISrsCoroutineHandler
 {
 protected:
     std::string label_;
-    srs_netfd_t lfd;
-    SrsCoroutine *trd;
+    srs_netfd_t lfd_;
+    SrsCoroutine *trd_;
 
 protected:
-    char *buf;
-    int nb_buf;
+    char *buf_;
+    int nb_buf_;
 
 protected:
-    ISrsUdpHandler *handler;
-    std::string ip;
-    int port;
+    ISrsUdpHandler *handler_;
+    std::string ip_;
+    int port_;
 
 public:
     SrsUdpListener(ISrsUdpHandler *h);
@@ -124,12 +124,12 @@ class SrsTcpListener : public ISrsCoroutineHandler, public ISrsListener
 {
 private:
     std::string label_;
-    srs_netfd_t lfd;
-    SrsCoroutine *trd;
+    srs_netfd_t lfd_;
+    SrsCoroutine *trd_;
 
 private:
-    ISrsTcpHandler *handler;
-    std::string ip;
+    ISrsTcpHandler *handler_;
+    std::string ip_;
     int port_;
 
 public:
@@ -186,16 +186,16 @@ private:
     SrsBuffer *cache_buffer_;
 
 private:
-    char *buf;
-    int nb_buf;
-    int nread;
-    srs_netfd_t lfd;
-    sockaddr_storage from;
-    int fromlen;
+    char *buf_;
+    int nb_buf_;
+    int nread_;
+    srs_netfd_t lfd_;
+    sockaddr_storage from_;
+    int fromlen_;
 
 private:
-    std::string peer_ip;
-    int peer_port;
+    std::string peer_ip_;
+    int peer_port_;
 
 private:
     // Cache for peer id.
@@ -228,18 +228,18 @@ public:
 class SrsUdpMuxListener : public ISrsCoroutineHandler
 {
 private:
-    srs_netfd_t lfd;
-    SrsCoroutine *trd;
-    SrsContextId cid;
+    srs_netfd_t lfd_;
+    SrsCoroutine *trd_;
+    SrsContextId cid_;
 
 private:
-    char *buf;
-    int nb_buf;
+    char *buf_;
+    int nb_buf_;
 
 private:
-    ISrsUdpMuxHandler *handler;
-    std::string ip;
-    int port;
+    ISrsUdpMuxHandler *handler_;
+    std::string ip_;
+    int port_;
 
 public:
     SrsUdpMuxListener(ISrsUdpMuxHandler *h, std::string i, int p);

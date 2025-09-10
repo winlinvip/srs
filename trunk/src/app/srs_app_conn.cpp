@@ -38,8 +38,8 @@ SrsResourceManager::SrsResourceManager(const std::string &label, bool verbose)
 {
     verbose_ = verbose;
     label_ = label;
-    cond = srs_cond_new();
-    trd = NULL;
+    cond_ = srs_cond_new();
+    trd_ = NULL;
     p_disposing_ = NULL;
     removing_ = false;
 
@@ -49,13 +49,13 @@ SrsResourceManager::SrsResourceManager(const std::string &label, bool verbose)
 
 SrsResourceManager::~SrsResourceManager()
 {
-    if (trd) {
-        srs_cond_signal(cond);
-        trd->stop();
+    if (trd_) {
+        srs_cond_signal(cond_);
+        trd_->stop();
 
-        srs_freep(trd);
+        srs_freep(trd_);
     }
-    srs_cond_destroy(cond);
+    srs_cond_destroy(cond_);
 
     clear();
 
@@ -74,9 +74,9 @@ srs_error_t SrsResourceManager::start()
     srs_error_t err = srs_success;
 
     cid_ = _srs_context->generate_id();
-    trd = new SrsSTCoroutine("manager", this, cid_);
+    trd_ = new SrsSTCoroutine("manager", this, cid_);
 
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "conn manager");
     }
 
@@ -100,7 +100,7 @@ srs_error_t SrsResourceManager::cycle()
     srs_trace("%s: connection manager run, conns=%d", label_.c_str(), (int)conns_.size());
 
     while (true) {
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             return srs_error_wrap(err, "conn manager");
         }
 
@@ -110,7 +110,7 @@ srs_error_t SrsResourceManager::cycle()
             clear();
         }
 
-        srs_cond_wait(cond);
+        srs_cond_wait(cond_);
     }
 
     return err;
@@ -147,22 +147,22 @@ void SrsResourceManager::add_with_fast_id(uint64_t id, ISrsResource *conn)
     SrsResourceFastIdItem *item = &conns_level0_cache_[(id | id >> 32) % nn_level0_cache_];
 
     // Ignore if exits item.
-    if (item->fast_id && item->fast_id == id) {
+    if (item->fast_id_ && item->fast_id_ == id) {
         return;
     }
 
     // Fresh one, create the item.
-    if (!item->fast_id) {
-        item->fast_id = id;
-        item->impl = conn;
-        item->nn_collisions = 1;
-        item->available = true;
+    if (!item->fast_id_) {
+        item->fast_id_ = id;
+        item->impl_ = conn;
+        item->nn_collisions_ = 1;
+        item->available_ = true;
     }
 
     // Collision, increase the collisions.
-    if (item->fast_id != id) {
-        item->nn_collisions++;
-        item->available = false;
+    if (item->fast_id_ != id) {
+        item->nn_collisions_++;
+        item->available_ = false;
     }
 }
 
@@ -187,9 +187,9 @@ ISrsResource *SrsResourceManager::find_by_id(std::string id)
 ISrsResource *SrsResourceManager::find_by_fast_id(uint64_t id)
 {
     SrsResourceFastIdItem *item = &conns_level0_cache_[(id | id >> 32) % nn_level0_cache_];
-    if (item->available && item->fast_id == id) {
+    if (item->available_ && item->fast_id_ == id) {
         ++_srs_pps_fids_level0->sugar_;
-        return item->impl;
+        return item->impl_;
     }
 
     ++_srs_pps_fids->sugar_;
@@ -277,7 +277,7 @@ void SrsResourceManager::do_remove(ISrsResource *c)
     }
 
     // Notify the coroutine to free it.
-    srs_cond_signal(cond);
+    srs_cond_signal(cond_);
 }
 
 void SrsResourceManager::check_remove(ISrsResource *c, bool &in_zombie, bool &in_disposing)
@@ -379,10 +379,10 @@ void SrsResourceManager::dispose(ISrsResource *c)
             // Update the level-0 cache for fast-id.
             uint64_t id = it->first;
             SrsResourceFastIdItem *item = &conns_level0_cache_[(id | id >> 32) % nn_level0_cache_];
-            item->nn_collisions--;
-            if (!item->nn_collisions) {
-                item->fast_id = 0;
-                item->available = false;
+            item->nn_collisions_--;
+            if (!item->nn_collisions_) {
+                item->fast_id_ = 0;
+                item->available_ = false;
             }
 
             // Use C++98 style: https://stackoverflow.com/a/4636230
@@ -423,14 +423,14 @@ ISrsExpire::~ISrsExpire()
 
 SrsTcpConnection::SrsTcpConnection(srs_netfd_t c)
 {
-    stfd = c;
-    skt = new SrsStSocket(c);
+    stfd_ = c;
+    skt_ = new SrsStSocket(c);
 }
 
 SrsTcpConnection::~SrsTcpConnection()
 {
-    srs_freep(skt);
-    srs_close_stfd(stfd);
+    srs_freep(skt_);
+    srs_close_stfd(stfd_);
 }
 
 srs_error_t SrsTcpConnection::set_tcp_nodelay(bool v)
@@ -439,7 +439,7 @@ srs_error_t SrsTcpConnection::set_tcp_nodelay(bool v)
 
     int r0 = 0;
     socklen_t nb_v = sizeof(int);
-    int fd = srs_netfd_fileno(stfd);
+    int fd = srs_netfd_fileno(stfd_);
 
     int ov = 0;
     if ((r0 = getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &ov, &nb_v)) != 0) {
@@ -469,7 +469,7 @@ srs_error_t SrsTcpConnection::set_socket_buffer(srs_utime_t buffer_v)
     srs_error_t err = srs_success;
 
     int r0 = 0;
-    int fd = srs_netfd_fileno(stfd);
+    int fd = srs_netfd_fileno(stfd_);
     socklen_t nb_v = sizeof(int);
 
     int ov = 0;
@@ -518,52 +518,52 @@ srs_error_t SrsTcpConnection::set_socket_buffer(srs_utime_t buffer_v)
 
 void SrsTcpConnection::set_recv_timeout(srs_utime_t tm)
 {
-    skt->set_recv_timeout(tm);
+    skt_->set_recv_timeout(tm);
 }
 
 srs_utime_t SrsTcpConnection::get_recv_timeout()
 {
-    return skt->get_recv_timeout();
+    return skt_->get_recv_timeout();
 }
 
 srs_error_t SrsTcpConnection::read_fully(void *buf, size_t size, ssize_t *nread)
 {
-    return skt->read_fully(buf, size, nread);
+    return skt_->read_fully(buf, size, nread);
 }
 
 int64_t SrsTcpConnection::get_recv_bytes()
 {
-    return skt->get_recv_bytes();
+    return skt_->get_recv_bytes();
 }
 
 int64_t SrsTcpConnection::get_send_bytes()
 {
-    return skt->get_send_bytes();
+    return skt_->get_send_bytes();
 }
 
 srs_error_t SrsTcpConnection::read(void *buf, size_t size, ssize_t *nread)
 {
-    return skt->read(buf, size, nread);
+    return skt_->read(buf, size, nread);
 }
 
 void SrsTcpConnection::set_send_timeout(srs_utime_t tm)
 {
-    skt->set_send_timeout(tm);
+    skt_->set_send_timeout(tm);
 }
 
 srs_utime_t SrsTcpConnection::get_send_timeout()
 {
-    return skt->get_send_timeout();
+    return skt_->get_send_timeout();
 }
 
 srs_error_t SrsTcpConnection::write(void *buf, size_t size, ssize_t *nwrite)
 {
-    return skt->write(buf, size, nwrite);
+    return skt_->write(buf, size, nwrite);
 }
 
 srs_error_t SrsTcpConnection::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
 {
-    return skt->writev(iov, iov_size, nwrite);
+    return skt_->writev(iov, iov_size, nwrite);
 }
 
 SrsBufferedReadWriter::SrsBufferedReadWriter(ISrsProtocolReadWriter *io)
@@ -692,22 +692,22 @@ srs_error_t SrsBufferedReadWriter::writev(const iovec *iov, int iov_size, ssize_
 
 SrsSslConnection::SrsSslConnection(ISrsProtocolReadWriter *c)
 {
-    transport = c;
-    ssl_ctx = NULL;
-    ssl = NULL;
+    transport_ = c;
+    ssl_ctx_ = NULL;
+    ssl_ = NULL;
 }
 
 SrsSslConnection::~SrsSslConnection()
 {
-    if (ssl) {
-        // this function will free bio_in and bio_out
-        SSL_free(ssl);
-        ssl = NULL;
+    if (ssl_) {
+        // this function will free bio_in_ and bio_out_
+        SSL_free(ssl_);
+        ssl_ = NULL;
     }
 
-    if (ssl_ctx) {
-        SSL_CTX_free(ssl_ctx);
-        ssl_ctx = NULL;
+    if (ssl_ctx_) {
+        SSL_CTX_free(ssl_ctx_);
+        ssl_ctx_ = NULL;
     }
 }
 
@@ -719,46 +719,46 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
 
     // For HTTPS, try to connect over security transport.
 #if (OPENSSL_VERSION_NUMBER < 0x10002000L) // v1.0.2
-    ssl_ctx = SSL_CTX_new(TLS_method());
+    ssl_ctx_ = SSL_CTX_new(TLS_method());
 #else
-    ssl_ctx = SSL_CTX_new(TLSv1_2_method());
+    ssl_ctx_ = SSL_CTX_new(TLSv1_2_method());
 #endif
-    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, NULL);
-    srs_assert(SSL_CTX_set_cipher_list(ssl_ctx, "ALL") == 1);
+    SSL_CTX_set_verify(ssl_ctx_, SSL_VERIFY_NONE, NULL);
+    srs_assert(SSL_CTX_set_cipher_list(ssl_ctx_, "ALL") == 1);
 
     // TODO: Setup callback, see SSL_set_ex_data and SSL_set_info_callback
-    if ((ssl = SSL_new(ssl_ctx)) == NULL) {
+    if ((ssl_ = SSL_new(ssl_ctx_)) == NULL) {
         return srs_error_new(ERROR_TLS_HANDSHAKE, "SSL_new ssl");
     }
 
-    if ((bio_in = BIO_new(BIO_s_mem())) == NULL) {
+    if ((bio_in_ = BIO_new(BIO_s_mem())) == NULL) {
         return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_new in");
     }
 
-    if ((bio_out = BIO_new(BIO_s_mem())) == NULL) {
-        BIO_free(bio_in);
+    if ((bio_out_ = BIO_new(BIO_s_mem())) == NULL) {
+        BIO_free(bio_in_);
         return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_new out");
     }
 
-    SSL_set_bio(ssl, bio_in, bio_out);
+    SSL_set_bio(ssl_, bio_in_, bio_out_);
 
     // SSL setup active, as server role.
-    SSL_set_accept_state(ssl);
-    SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+    SSL_set_accept_state(ssl_);
+    SSL_set_mode(ssl_, SSL_MODE_ENABLE_PARTIAL_WRITE);
 
     uint8_t *data = NULL;
     int r0, r1, size;
 
     // Setup the key and cert file for server.
-    if ((r0 = SSL_use_certificate_chain_file(ssl, crt_file.c_str())) != 1) {
+    if ((r0 = SSL_use_certificate_chain_file(ssl_, crt_file.c_str())) != 1) {
         return srs_error_new(ERROR_TLS_KEY_CRT, "use cert %s", crt_file.c_str());
     }
 
-    if ((r0 = SSL_use_RSAPrivateKey_file(ssl, key_file.c_str(), SSL_FILETYPE_PEM)) != 1) {
+    if ((r0 = SSL_use_RSAPrivateKey_file(ssl_, key_file.c_str(), SSL_FILETYPE_PEM)) != 1) {
         return srs_error_new(ERROR_TLS_KEY_CRT, "use key %s", key_file.c_str());
     }
 
-    if ((r0 = SSL_check_private_key(ssl)) != 1) {
+    if ((r0 = SSL_check_private_key(ssl_)) != 1) {
         return srs_error_new(ERROR_TLS_KEY_CRT, "check key %s with cert %s",
                              key_file.c_str(), crt_file.c_str());
     }
@@ -768,25 +768,25 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
     while (true) {
         char buf[1024];
         ssize_t nn = 0;
-        if ((err = transport->read(buf, sizeof(buf), &nn)) != srs_success) {
+        if ((err = transport_->read(buf, sizeof(buf), &nn)) != srs_success) {
             return srs_error_wrap(err, "handshake: read");
         }
 
-        if ((r0 = BIO_write(bio_in, buf, nn)) <= 0) {
+        if ((r0 = BIO_write(bio_in_, buf, nn)) <= 0) {
             // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
             return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_write r0=%d, data=%p, size=%d", r0, buf, nn);
         }
 
-        r0 = SSL_do_handshake(ssl);
-        r1 = SSL_get_error(ssl, r0);
+        r0 = SSL_do_handshake(ssl_);
+        r1 = SSL_get_error(ssl_, r0);
         ERR_clear_error();
         if (r0 != -1 || r1 != SSL_ERROR_WANT_READ) {
             return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
         }
 
-        if ((size = BIO_get_mem_data(bio_out, &data)) > 0) {
+        if ((size = BIO_get_mem_data(bio_out_, &data)) > 0) {
             // OK, reset it for the next write.
-            if ((r0 = BIO_reset(bio_in)) != 1) {
+            if ((r0 = BIO_reset(bio_in_)) != 1) {
                 return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
             }
             break;
@@ -796,14 +796,14 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
     srs_info("tls: ClientHello done");
 
     // Send ServerHello, Certificate, Server Key Exchange, Server Hello Done
-    size = BIO_get_mem_data(bio_out, &data);
+    size = BIO_get_mem_data(bio_out_, &data);
     if (!data || size <= 0) {
         return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake data=%p, size=%d", data, size);
     }
-    if ((err = transport->write(data, size, NULL)) != srs_success) {
+    if ((err = transport_->write(data, size, NULL)) != srs_success) {
         return srs_error_wrap(err, "handshake: write data=%p, size=%d", data, size);
     }
-    if ((r0 = BIO_reset(bio_out)) != 1) {
+    if ((r0 = BIO_reset(bio_out_)) != 1) {
         return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
     }
 
@@ -813,17 +813,17 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
     while (true) {
         char buf[1024];
         ssize_t nn = 0;
-        if ((err = transport->read(buf, sizeof(buf), &nn)) != srs_success) {
+        if ((err = transport_->read(buf, sizeof(buf), &nn)) != srs_success) {
             return srs_error_wrap(err, "handshake: read");
         }
 
-        if ((r0 = BIO_write(bio_in, buf, nn)) <= 0) {
+        if ((r0 = BIO_write(bio_in_, buf, nn)) <= 0) {
             // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
             return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_write r0=%d, data=%p, size=%d", r0, buf, nn);
         }
 
-        r0 = SSL_do_handshake(ssl);
-        r1 = SSL_get_error(ssl, r0);
+        r0 = SSL_do_handshake(ssl_);
+        r1 = SSL_get_error(ssl_, r0);
         ERR_clear_error();
         if (r0 == 1 && r1 == SSL_ERROR_NONE) {
             break;
@@ -833,9 +833,9 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
             return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake r0=%d, r1=%d", r0, r1);
         }
 
-        if ((size = BIO_get_mem_data(bio_out, &data)) > 0) {
+        if ((size = BIO_get_mem_data(bio_out_, &data)) > 0) {
             // OK, reset it for the next write.
-            if ((r0 = BIO_reset(bio_in)) != 1) {
+            if ((r0 = BIO_reset(bio_in_)) != 1) {
                 return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
             }
             break;
@@ -845,14 +845,14 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
     srs_info("tls: Client done");
 
     // Send New Session Ticket, Change Cipher Spec, Encrypted Handshake Message
-    size = BIO_get_mem_data(bio_out, &data);
+    size = BIO_get_mem_data(bio_out_, &data);
     if (!data || size <= 0) {
         return srs_error_new(ERROR_TLS_HANDSHAKE, "handshake data=%p, size=%d", data, size);
     }
-    if ((err = transport->write(data, size, NULL)) != srs_success) {
+    if ((err = transport_->write(data, size, NULL)) != srs_success) {
         return srs_error_wrap(err, "handshake: write data=%p, size=%d", data, size);
     }
-    if ((r0 = BIO_reset(bio_out)) != 1) {
+    if ((r0 = BIO_reset(bio_out_)) != 1) {
         return srs_error_new(ERROR_TLS_HANDSHAKE, "BIO_reset r0=%d", r0);
     }
 
@@ -864,12 +864,12 @@ srs_error_t SrsSslConnection::handshake(string key_file, string crt_file)
 
 void SrsSslConnection::set_recv_timeout(srs_utime_t tm)
 {
-    transport->set_recv_timeout(tm);
+    transport_->set_recv_timeout(tm);
 }
 
 srs_utime_t SrsSslConnection::get_recv_timeout()
 {
-    return transport->get_recv_timeout();
+    return transport_->get_recv_timeout();
 }
 
 srs_error_t SrsSslConnection::read_fully(void *buf, size_t size, ssize_t *nread)
@@ -894,12 +894,12 @@ srs_error_t SrsSslConnection::read_fully(void *buf, size_t size, ssize_t *nread)
 
 int64_t SrsSslConnection::get_recv_bytes()
 {
-    return transport->get_recv_bytes();
+    return transport_->get_recv_bytes();
 }
 
 int64_t SrsSslConnection::get_send_bytes()
 {
-    return transport->get_send_bytes();
+    return transport_->get_send_bytes();
 }
 
 srs_error_t SrsSslConnection::read(void *plaintext, size_t nn_plaintext, ssize_t *nread)
@@ -907,11 +907,11 @@ srs_error_t SrsSslConnection::read(void *plaintext, size_t nn_plaintext, ssize_t
     srs_error_t err = srs_success;
 
     while (true) {
-        int r0 = SSL_read(ssl, plaintext, nn_plaintext);
-        int r1 = SSL_get_error(ssl, r0);
+        int r0 = SSL_read(ssl_, plaintext, nn_plaintext);
+        int r1 = SSL_get_error(ssl_, r0);
         ERR_clear_error();
-        int r2 = BIO_ctrl_pending(bio_in);
-        int r3 = SSL_is_init_finished(ssl);
+        int r2 = BIO_ctrl_pending(bio_in_);
+        int r3 = SSL_is_init_finished(ssl_);
 
         // OK, got data.
         if (r0 > 0) {
@@ -930,11 +930,11 @@ srs_error_t SrsSslConnection::read(void *plaintext, size_t nn_plaintext, ssize_t
 
             // Read the cipher from SSL.
             ssize_t nn = 0;
-            if ((err = transport->read(cipher.get(), nn_cipher, &nn)) != srs_success) {
+            if ((err = transport_->read(cipher.get(), nn_cipher, &nn)) != srs_success) {
                 return srs_error_wrap(err, "tls: read");
             }
 
-            int r0 = BIO_write(bio_in, cipher.get(), nn);
+            int r0 = BIO_write(bio_in_, cipher.get(), nn);
             if (r0 <= 0) {
                 // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
                 return srs_error_new(ERROR_TLS_READ, "BIO_write r0=%d, cipher=%p, size=%d", r0, cipher.get(), nn);
@@ -952,12 +952,12 @@ srs_error_t SrsSslConnection::read(void *plaintext, size_t nn_plaintext, ssize_t
 
 void SrsSslConnection::set_send_timeout(srs_utime_t tm)
 {
-    transport->set_send_timeout(tm);
+    transport_->set_send_timeout(tm);
 }
 
 srs_utime_t SrsSslConnection::get_send_timeout()
 {
-    return transport->get_send_timeout();
+    return transport_->get_send_timeout();
 }
 
 srs_error_t SrsSslConnection::write(void *plaintext, size_t nn_plaintext, ssize_t *nwrite)
@@ -966,8 +966,8 @@ srs_error_t SrsSslConnection::write(void *plaintext, size_t nn_plaintext, ssize_
 
     for (char *p = (char *)plaintext; p < (char *)plaintext + nn_plaintext;) {
         int left = (int)nn_plaintext - (p - (char *)plaintext);
-        int r0 = SSL_write(ssl, (const void *)p, left);
-        int r1 = SSL_get_error(ssl, r0);
+        int r0 = SSL_write(ssl_, (const void *)p, left);
+        int r1 = SSL_get_error(ssl_, r0);
         ERR_clear_error();
         if (r0 <= 0) {
             return srs_error_new(ERROR_TLS_WRITE, "tls: write data=%p, size=%d, r0=%d, r1=%d", p, left, r0, r1);
@@ -980,11 +980,11 @@ srs_error_t SrsSslConnection::write(void *plaintext, size_t nn_plaintext, ssize_
         }
 
         uint8_t *data = NULL;
-        int size = BIO_get_mem_data(bio_out, &data);
-        if ((err = transport->write(data, size, NULL)) != srs_success) {
+        int size = BIO_get_mem_data(bio_out_, &data);
+        if ((err = transport_->write(data, size, NULL)) != srs_success) {
             return srs_error_wrap(err, "tls: write data=%p, size=%d", data, size);
         }
-        if ((r0 = BIO_reset(bio_out)) != 1) {
+        if ((r0 = BIO_reset(bio_out_)) != 1) {
             return srs_error_new(ERROR_TLS_WRITE, "BIO_reset r0=%d", r0);
         }
     }

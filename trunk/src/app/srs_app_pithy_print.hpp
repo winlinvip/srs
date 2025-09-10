@@ -17,16 +17,16 @@
 class SrsStageInfo : public ISrsReloadHandler
 {
 public:
-    int stage_id;
-    srs_utime_t interval;
-    int nb_clients;
+    int stage_id_;
+    srs_utime_t interval_;
+    int nb_clients_;
     // The number of call of can_print().
-    uint32_t nn_count;
+    uint32_t nn_count_;
     // The ratio for interval, 1.0 means no change.
-    double interval_ratio;
+    double interval_ratio_;
 
 public:
-    srs_utime_t age;
+    srs_utime_t age_;
 
 public:
     SrsStageInfo(int _stage_id, double ratio = 1.0);
@@ -43,7 +43,7 @@ public:
 class SrsStageManager
 {
 private:
-    std::map<int, SrsStageInfo *> stages;
+    std::map<int, SrsStageInfo *> stages_;
 
 public:
     SrsStageManager();
@@ -60,12 +60,12 @@ class SrsErrorPithyPrint
 {
 public:
     // The number of call of can_print().
-    uint32_t nn_count;
+    uint32_t nn_count_;
 
 private:
     double ratio_;
-    SrsStageManager stages;
-    std::map<int, srs_utime_t> ticks;
+    SrsStageManager stages_;
+    std::map<int, srs_utime_t> ticks_;
 
 public:
     SrsErrorPithyPrint(double ratio = 1.0);
@@ -114,11 +114,11 @@ public:
 class SrsPithyPrint
 {
 private:
-    int client_id;
+    int client_id_;
     SrsStageInfo *cache_;
-    int stage_id;
-    srs_utime_t _age;
-    srs_utime_t previous_tick;
+    int stage_id_;
+    srs_utime_t age_;
+    srs_utime_t previous_tick_;
 
 private:
     SrsPithyPrint(int _stage_id);

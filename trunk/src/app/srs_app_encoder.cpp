@@ -23,16 +23,16 @@ static std::vector<std::string> _transcoded_url;
 
 SrsEncoder::SrsEncoder()
 {
-    trd = new SrsDummyCoroutine();
-    pprint = SrsPithyPrint::create_encoder();
+    trd_ = new SrsDummyCoroutine();
+    pprint_ = SrsPithyPrint::create_encoder();
 }
 
 SrsEncoder::~SrsEncoder()
 {
     on_unpublish();
 
-    srs_freep(trd);
-    srs_freep(pprint);
+    srs_freep(trd_);
+    srs_freep(pprint_);
 }
 
 srs_error_t SrsEncoder::on_publish(ISrsRequest *req)
@@ -50,14 +50,14 @@ srs_error_t SrsEncoder::on_publish(ISrsRequest *req)
     }
 
     // return for error or no engine.
-    if (err != srs_success || ffmpegs.empty()) {
+    if (err != srs_success || ffmpegs_.empty()) {
         return err;
     }
 
     // start thread to run all encoding engines.
-    srs_freep(trd);
-    trd = new SrsSTCoroutine("encoder", this, _srs_context->get_id());
-    if ((err = trd->start()) != srs_success) {
+    srs_freep(trd_);
+    trd_ = new SrsSTCoroutine("encoder", this, _srs_context->get_id());
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "start encoder");
     }
 
@@ -66,7 +66,7 @@ srs_error_t SrsEncoder::on_publish(ISrsRequest *req)
 
 void SrsEncoder::on_unpublish()
 {
-    trd->stop();
+    trd_->stop();
     clear_engines();
 }
 
@@ -80,7 +80,7 @@ srs_error_t SrsEncoder::cycle()
     while (true) {
         // We always check status first.
         // @see https://github.com/ossrs/srs/issues/1634#issuecomment-597571561
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             err = srs_error_wrap(err, "encoder");
             break;
         }
@@ -96,7 +96,7 @@ srs_error_t SrsEncoder::cycle()
     // kill ffmpeg when finished and it alive
     std::vector<SrsFFMPEG *>::iterator it;
 
-    for (it = ffmpegs.begin(); it != ffmpegs.end(); ++it) {
+    for (it = ffmpegs_.begin(); it != ffmpegs_.end(); ++it) {
         SrsFFMPEG *ffmpeg = *it;
         ffmpeg->stop();
     }
@@ -109,7 +109,7 @@ srs_error_t SrsEncoder::do_cycle()
     srs_error_t err = srs_success;
 
     std::vector<SrsFFMPEG *>::iterator it;
-    for (it = ffmpegs.begin(); it != ffmpegs.end(); ++it) {
+    for (it = ffmpegs_.begin(); it != ffmpegs_.end(); ++it) {
         SrsFFMPEG *ffmpeg = *it;
 
         // start all ffmpegs.
@@ -133,7 +133,7 @@ void SrsEncoder::clear_engines()
 {
     std::vector<SrsFFMPEG *>::iterator it;
 
-    for (it = ffmpegs.begin(); it != ffmpegs.end(); ++it) {
+    for (it = ffmpegs_.begin(); it != ffmpegs_.end(); ++it) {
         SrsFFMPEG *ffmpeg = *it;
 
         std::string output = ffmpeg->output();
@@ -147,12 +147,12 @@ void SrsEncoder::clear_engines()
         srs_freep(ffmpeg);
     }
 
-    ffmpegs.clear();
+    ffmpegs_.clear();
 }
 
 SrsFFMPEG *SrsEncoder::at(int index)
 {
-    return ffmpegs[index];
+    return ffmpegs_[index];
 }
 
 srs_error_t SrsEncoder::parse_scope_engines(ISrsRequest *req)
@@ -228,7 +228,7 @@ srs_error_t SrsEncoder::parse_ffmpeg(ISrsRequest *req, SrsConfDirective *conf)
             return srs_error_wrap(err, "init ffmpeg");
         }
 
-        ffmpegs.push_back(ffmpeg);
+        ffmpegs_.push_back(ffmpeg);
     }
 
     return err;
@@ -253,11 +253,11 @@ srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, S
     input += req->vhost_;
 
     // stream name: vhost/app/stream for print
-    input_stream_name = req->vhost_;
-    input_stream_name += "/";
-    input_stream_name += req->app_;
-    input_stream_name += "/";
-    input_stream_name += req->stream_;
+    input_stream_name_ = req->vhost_;
+    input_stream_name_ += "/";
+    input_stream_name_ += req->app_;
+    input_stream_name_ += "/";
+    input_stream_name_ += req->stream_;
 
     std::string output = _srs_config->get_engine_output(engine);
     // output stream, to other/self server
@@ -309,12 +309,12 @@ srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, S
 
 void SrsEncoder::show_encode_log_message()
 {
-    pprint->elapse();
+    pprint_->elapse();
 
     // reportable
-    if (pprint->can_print()) {
+    if (pprint_->can_print()) {
         // TODO: FIXME: show more info.
         srs_trace("-> " SRS_CONSTS_LOG_ENCODER " time=%" PRId64 ", encoders=%d, input=%s",
-                  pprint->age(), (int)ffmpegs.size(), input_stream_name.c_str());
+                  pprint_->age(), (int)ffmpegs_.size(), input_stream_name_.c_str());
     }
 }

@@ -24,13 +24,13 @@ class SrsAsyncCallWorker;
 class SrsBufferCache : public ISrsCoroutineHandler
 {
 private:
-    srs_utime_t fast_cache;
+    srs_utime_t fast_cache_;
     SrsServer *server_;
 
 private:
-    SrsMessageQueue *queue;
-    ISrsRequest *req;
-    SrsCoroutine *trd;
+    SrsMessageQueue *queue_;
+    ISrsRequest *req_;
+    SrsCoroutine *trd_;
 
 public:
     SrsBufferCache(SrsServer *s, ISrsRequest *r);
@@ -77,8 +77,8 @@ public:
 class SrsFlvStreamEncoder : public ISrsBufferEncoder
 {
 private:
-    SrsFlvTransmuxer *enc;
-    bool header_written;
+    SrsFlvTransmuxer *enc_;
+    bool header_written_;
     bool has_audio_;
     bool has_video_;
     bool guess_has_av_;
@@ -115,7 +115,7 @@ private:
 class SrsTsStreamEncoder : public ISrsBufferEncoder
 {
 private:
-    SrsTsTransmuxer *enc;
+    SrsTsTransmuxer *enc_;
 
 public:
     SrsTsStreamEncoder();
@@ -141,8 +141,8 @@ public:
 class SrsAacStreamEncoder : public ISrsBufferEncoder
 {
 private:
-    SrsAacTransmuxer *enc;
-    SrsBufferCache *cache;
+    SrsAacTransmuxer *enc_;
+    SrsBufferCache *cache_;
 
 public:
     SrsAacStreamEncoder();
@@ -163,8 +163,8 @@ public:
 class SrsMp3StreamEncoder : public ISrsBufferEncoder
 {
 private:
-    SrsMp3Transmuxer *enc;
-    SrsBufferCache *cache;
+    SrsMp3Transmuxer *enc_;
+    SrsBufferCache *cache_;
 
 public:
     SrsMp3StreamEncoder();
@@ -185,7 +185,7 @@ public:
 class SrsBufferWriter : public SrsFileWriter
 {
 private:
-    ISrsHttpResponseWriter *writer;
+    ISrsHttpResponseWriter *writer_;
 
 public:
     SrsBufferWriter(ISrsHttpResponseWriter *w);
@@ -209,8 +209,8 @@ public:
 class SrsLiveStream : public ISrsHttpHandler, public ISrsExpire
 {
 private:
-    ISrsRequest *req;
-    SrsBufferCache *cache;
+    ISrsRequest *req_;
+    SrsBufferCache *cache_;
     SrsSecurity *security_;
     SrsServer *server_;
     // For multiple viewers, which means there will more than one alive viewers for a live stream, so we must
@@ -245,25 +245,25 @@ private:
 // The Live Entry, to handle HTTP Live Streaming.
 struct SrsLiveEntry {
 private:
-    bool _is_flv;
-    bool _is_ts;
-    bool _is_aac;
-    bool _is_mp3;
+    bool is_flv_;
+    bool is_ts_;
+    bool is_aac_;
+    bool is_mp3_;
 
 public:
     // We will free the request.
-    ISrsRequest *req;
+    ISrsRequest *req_;
 
 public:
     // For template, the mount contains variables.
     // For concrete stream, the mount is url to access.
-    std::string mount;
+    std::string mount_;
 
-    SrsLiveStream *stream;
-    SrsBufferCache *cache;
+    SrsLiveStream *stream_;
+    SrsBufferCache *cache_;
 
     // Whether is disposing the entry.
-    bool disposing;
+    bool disposing_;
 
     SrsLiveEntry(std::string m);
     virtual ~SrsLiveEntry();
@@ -279,15 +279,15 @@ public:
 class SrsHttpStreamServer : public ISrsReloadHandler, public ISrsHttpDynamicMatcher
 {
 private:
-    SrsServer *server;
+    SrsServer *server_;
     SrsAsyncCallWorker *async_;
 
 public:
-    SrsHttpServeMux mux;
+    SrsHttpServeMux mux_;
     // The http live streaming template, to create streams.
-    std::map<std::string, SrsLiveEntry *> templateHandlers;
+    std::map<std::string, SrsLiveEntry *> templateHandlers_;
     // The http live streaming streams, created by template.
-    std::map<std::string, SrsLiveEntry *> streamHandlers;
+    std::map<std::string, SrsLiveEntry *> streamHandlers_;
 
 public:
     SrsHttpStreamServer(SrsServer *svr);

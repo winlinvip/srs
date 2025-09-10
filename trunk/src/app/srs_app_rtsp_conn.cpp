@@ -249,7 +249,7 @@ srs_error_t SrsRtspPlayStream::cycle()
         if ((err = send_packet(pkt)) != srs_success) {
             uint32_t nn = 0;
             if (epp->can_print(err, &nn)) {
-                srs_warn("play send packets=%u, nn=%u/%u, err: %s", 1, epp->nn_count, nn, srs_error_desc(err).c_str());
+                srs_warn("play send packets=%u, nn=%u/%u, err: %s", 1, epp->nn_count_, nn, srs_error_desc(err).c_str());
             }
             srs_freep(err);
         }

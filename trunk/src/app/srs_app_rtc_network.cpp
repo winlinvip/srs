@@ -246,7 +246,7 @@ srs_error_t SrsRtcUdpNetwork::on_rtcp(char *data, int nb_data)
     }
 
     char *unprotected_buf = data;
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(unprotected_buf, nb_unprotected_buf);
     }
 
@@ -289,7 +289,7 @@ srs_error_t SrsRtcUdpNetwork::on_rtp(char *data, int nb_data)
     }
 
     char *unprotected_buf = data;
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(unprotected_buf, nb_unprotected_buf);
     }
 
@@ -356,7 +356,7 @@ void SrsRtcUdpNetwork::update_sendonly_socket(SrsUdpMuxSocket *skt)
         uint32_t nn = 0;
         if (pp_address_change_->can_print(skt->get_peer_port(), &nn)) {
             srs_trace("RTC: session address change %s -> %s, cached=%d, nn_change=%u/%u, nn_address=%u", prev_peer_id.c_str(),
-                      peer_id.c_str(), (addr_cache ? 1 : 0), pp_address_change_->nn_count, nn, peer_addresses_.size());
+                      peer_id.c_str(), (addr_cache ? 1 : 0), pp_address_change_->nn_count_, nn, peer_addresses_.size());
         }
     }
 
@@ -380,7 +380,7 @@ srs_error_t SrsRtcUdpNetwork::on_stun(SrsStunPacket *r, char *data, int nb_data)
     srs_error_t err = srs_success;
 
     // Write STUN messages to blackhole.
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(data, nb_data);
     }
 
@@ -434,7 +434,7 @@ srs_error_t SrsRtcUdpNetwork::on_binding_request(SrsStunPacket *r, string ice_pw
         }
     }
 
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(stream->data(), stream->pos());
     }
 
@@ -509,7 +509,7 @@ srs_error_t SrsRtcTcpNetwork::on_stun(SrsStunPacket *r, char *data, int nb_data)
     srs_error_t err = srs_success;
 
     // Write STUN messages to blackhole.
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(data, nb_data);
     }
 
@@ -563,7 +563,7 @@ srs_error_t SrsRtcTcpNetwork::on_binding_request(SrsStunPacket *r, std::string i
         }
     }
 
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(stream->data(), stream->pos());
     }
 
@@ -611,7 +611,7 @@ srs_error_t SrsRtcTcpNetwork::on_rtcp(char *data, int nb_data)
     }
 
     char *unprotected_buf = data;
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(unprotected_buf, nb_unprotected_buf);
     }
 
@@ -639,7 +639,7 @@ srs_error_t SrsRtcTcpNetwork::on_rtp(char *data, int nb_data)
     }
 
     char *unprotected_buf = data;
-    if (_srs_blackhole->blackhole) {
+    if (_srs_blackhole->blackhole_) {
         _srs_blackhole->sendto(unprotected_buf, nb_unprotected_buf);
     }
 

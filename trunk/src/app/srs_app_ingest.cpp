@@ -20,80 +20,80 @@ using namespace std;
 
 SrsIngesterFFMPEG::SrsIngesterFFMPEG()
 {
-    ffmpeg = NULL;
-    starttime = 0;
+    ffmpeg_ = NULL;
+    starttime_ = 0;
 }
 
 SrsIngesterFFMPEG::~SrsIngesterFFMPEG()
 {
-    srs_freep(ffmpeg);
+    srs_freep(ffmpeg_);
 }
 
 srs_error_t SrsIngesterFFMPEG::initialize(SrsFFMPEG *ff, string v, string i)
 {
     srs_error_t err = srs_success;
 
-    ffmpeg = ff;
-    vhost = v;
-    id = i;
-    starttime = srs_time_now_cached();
+    ffmpeg_ = ff;
+    vhost_ = v;
+    id_ = i;
+    starttime_ = srs_time_now_cached();
 
     return err;
 }
 
 string SrsIngesterFFMPEG::uri()
 {
-    return vhost + "/" + id;
+    return vhost_ + "/" + id_;
 }
 
 srs_utime_t SrsIngesterFFMPEG::alive()
 {
-    return srs_time_now_cached() - starttime;
+    return srs_time_now_cached() - starttime_;
 }
 
 bool SrsIngesterFFMPEG::equals(string v)
 {
-    return vhost == v;
+    return vhost_ == v;
 }
 
 bool SrsIngesterFFMPEG::equals(string v, string i)
 {
-    return vhost == v && id == i;
+    return vhost_ == v && id_ == i;
 }
 
 srs_error_t SrsIngesterFFMPEG::start()
 {
-    return ffmpeg->start();
+    return ffmpeg_->start();
 }
 
 void SrsIngesterFFMPEG::stop()
 {
-    ffmpeg->stop();
+    ffmpeg_->stop();
 }
 
 srs_error_t SrsIngesterFFMPEG::cycle()
 {
-    return ffmpeg->cycle();
+    return ffmpeg_->cycle();
 }
 
 void SrsIngesterFFMPEG::fast_stop()
 {
-    ffmpeg->fast_stop();
+    ffmpeg_->fast_stop();
 }
 
 void SrsIngesterFFMPEG::fast_kill()
 {
-    ffmpeg->fast_kill();
+    ffmpeg_->fast_kill();
 }
 
 SrsIngester::SrsIngester()
 {
     _srs_config->subscribe(this);
 
-    expired = false;
-    disposed = false;
+    expired_ = false;
+    disposed_ = false;
 
-    trd = new SrsDummyCoroutine();
+    trd_ = new SrsDummyCoroutine();
     pprint_ = SrsPithyPrint::create_ingester();
 }
 
@@ -101,17 +101,17 @@ SrsIngester::~SrsIngester()
 {
     _srs_config->unsubscribe(this);
 
-    srs_freep(trd);
+    srs_freep(trd_);
     clear_engines();
     srs_freep(pprint_);
 }
 
 void SrsIngester::dispose()
 {
-    if (disposed) {
+    if (disposed_) {
         return;
     }
-    disposed = true;
+    disposed_ = true;
 
     // first, use fast stop to notice all FFMPEG to quit gracefully.
     fast_stop();
@@ -135,10 +135,10 @@ srs_error_t SrsIngester::start()
     // for the reload may add more ingesters.
 
     // start thread to run all encoding engines.
-    srs_freep(trd);
-    trd = new SrsSTCoroutine("ingest", this, _srs_context->get_id());
+    srs_freep(trd_);
+    trd_ = new SrsSTCoroutine("ingest", this, _srs_context->get_id());
 
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "start coroutine");
     }
 
@@ -147,19 +147,19 @@ srs_error_t SrsIngester::start()
 
 void SrsIngester::stop()
 {
-    trd->stop();
+    trd_->stop();
     clear_engines();
 }
 
 void SrsIngester::fast_stop()
 {
     std::vector<SrsIngesterFFMPEG *>::iterator it;
-    for (it = ingesters.begin(); it != ingesters.end(); ++it) {
+    for (it = ingesters_.begin(); it != ingesters_.end(); ++it) {
         SrsIngesterFFMPEG *ingester = *it;
         ingester->fast_stop();
     }
 
-    if (!ingesters.empty()) {
+    if (!ingesters_.empty()) {
         srs_trace("fast stop all ingesters ok.");
     }
 }
@@ -167,12 +167,12 @@ void SrsIngester::fast_stop()
 void SrsIngester::fast_kill()
 {
     std::vector<SrsIngesterFFMPEG *>::iterator it;
-    for (it = ingesters.begin(); it != ingesters.end(); ++it) {
+    for (it = ingesters_.begin(); it != ingesters_.end(); ++it) {
         SrsIngesterFFMPEG *ingester = *it;
         ingester->fast_kill();
     }
 
-    if (!ingesters.empty()) {
+    if (!ingesters_.empty()) {
         srs_trace("fast kill all ingesters ok.");
     }
 }
@@ -185,10 +185,10 @@ srs_error_t SrsIngester::cycle()
 {
     srs_error_t err = srs_success;
 
-    while (!disposed) {
+    while (!disposed_) {
         // We always check status first.
         // @see https://github.com/ossrs/srs/issues/1634#issuecomment-597571561
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             return srs_error_wrap(err, "ingester");
         }
 
@@ -208,8 +208,8 @@ srs_error_t SrsIngester::do_cycle()
     srs_error_t err = srs_success;
 
     // when expired, restart all ingesters.
-    if (expired) {
-        expired = false;
+    if (expired_) {
+        expired_ = false;
 
         // stop current ingesters.
         fast_stop();
@@ -223,7 +223,7 @@ srs_error_t SrsIngester::do_cycle()
 
     // cycle exists ingesters.
     std::vector<SrsIngesterFFMPEG *>::iterator it;
-    for (it = ingesters.begin(); it != ingesters.end(); ++it) {
+    for (it = ingesters_.begin(); it != ingesters_.end(); ++it) {
         SrsIngesterFFMPEG *ingester = *it;
 
         // start all ffmpegs.
@@ -247,12 +247,12 @@ void SrsIngester::clear_engines()
 {
     std::vector<SrsIngesterFFMPEG *>::iterator it;
 
-    for (it = ingesters.begin(); it != ingesters.end(); ++it) {
+    for (it = ingesters_.begin(); it != ingesters_.end(); ++it) {
         SrsIngesterFFMPEG *ingester = *it;
         srs_freep(ingester);
     }
 
-    ingesters.clear();
+    ingesters_.clear();
 }
 
 srs_error_t SrsIngester::parse()
@@ -325,7 +325,7 @@ srs_error_t SrsIngester::parse_engines(SrsConfDirective *vhost, SrsConfDirective
             return srs_error_wrap(err, "init ingester");
         }
 
-        ingesters.push_back(ingester);
+        ingesters_.push_back(ingester);
         return err;
     }
 
@@ -344,7 +344,7 @@ srs_error_t SrsIngester::parse_engines(SrsConfDirective *vhost, SrsConfDirective
             return srs_error_wrap(err, "init ingester");
         }
 
-        ingesters.push_back(ingester);
+        ingesters_.push_back(ingester);
     }
 
     return err;
@@ -469,17 +469,17 @@ void SrsIngester::show_ingest_log_message()
 {
     pprint_->elapse();
 
-    if ((int)ingesters.size() <= 0) {
+    if ((int)ingesters_.size() <= 0) {
         return;
     }
 
     // random choose one ingester to report.
-    int index = srs_rand_integer() % (int)ingesters.size();
-    SrsIngesterFFMPEG *ingester = ingesters.at(index);
+    int index = srs_rand_integer() % (int)ingesters_.size();
+    SrsIngesterFFMPEG *ingester = ingesters_.at(index);
 
     // reportable
     if (pprint_->can_print()) {
         srs_trace("-> " SRS_CONSTS_LOG_INGESTER " time=%dms, ingesters=%d, #%d(alive=%dms, %s)",
-                  srsu2msi(pprint_->age()), (int)ingesters.size(), index, srsu2msi(ingester->alive()), ingester->uri().c_str());
+                  srsu2msi(pprint_->age()), (int)ingesters_.size(), index, srsu2msi(ingester->alive()), ingester->uri().c_str());
     }
 }

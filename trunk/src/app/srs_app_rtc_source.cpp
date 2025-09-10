@@ -153,12 +153,12 @@ ISrsRtcSourceChangeCallback::~ISrsRtcSourceChangeCallback()
 SrsRtcConsumer::SrsRtcConsumer(SrsRtcSource *s)
 {
     source_ = s;
-    should_update_source_id = false;
+    should_update_source_id_ = false;
     handler_ = NULL;
 
-    mw_wait = srs_cond_new();
-    mw_min_msgs = 0;
-    mw_waiting = false;
+    mw_wait_ = srs_cond_new();
+    mw_min_msgs_ = 0;
+    mw_waiting_ = false;
 }
 
 SrsRtcConsumer::~SrsRtcConsumer()
@@ -166,29 +166,29 @@ SrsRtcConsumer::~SrsRtcConsumer()
     source_->on_consumer_destroy(this);
 
     vector<SrsRtpPacket *>::iterator it;
-    for (it = queue.begin(); it != queue.end(); ++it) {
+    for (it = queue_.begin(); it != queue_.end(); ++it) {
         SrsRtpPacket *pkt = *it;
         srs_freep(pkt);
     }
 
-    srs_cond_destroy(mw_wait);
+    srs_cond_destroy(mw_wait_);
 }
 
 void SrsRtcConsumer::update_source_id()
 {
-    should_update_source_id = true;
+    should_update_source_id_ = true;
 }
 
 srs_error_t SrsRtcConsumer::enqueue(SrsRtpPacket *pkt)
 {
     srs_error_t err = srs_success;
 
-    queue.push_back(pkt);
+    queue_.push_back(pkt);
 
-    if (mw_waiting) {
-        if ((int)queue.size() > mw_min_msgs) {
-            srs_cond_signal(mw_wait);
-            mw_waiting = false;
+    if (mw_waiting_) {
+        if ((int)queue_.size() > mw_min_msgs_) {
+            srs_cond_signal(mw_wait_);
+            mw_waiting_ = false;
             return err;
         }
     }
@@ -200,15 +200,15 @@ srs_error_t SrsRtcConsumer::dump_packet(SrsRtpPacket **ppkt)
 {
     srs_error_t err = srs_success;
 
-    if (should_update_source_id) {
+    if (should_update_source_id_) {
         srs_trace("update source_id=%s/%s", source_->source_id().c_str(), source_->pre_source_id().c_str());
-        should_update_source_id = false;
+        should_update_source_id_ = false;
     }
 
     // TODO: FIXME: Refine performance by ring buffer.
-    if (!queue.empty()) {
-        *ppkt = queue.front();
-        queue.erase(queue.begin());
+    if (!queue_.empty()) {
+        *ppkt = queue_.front();
+        queue_.erase(queue_.begin());
     }
 
     return err;
@@ -216,18 +216,18 @@ srs_error_t SrsRtcConsumer::dump_packet(SrsRtpPacket **ppkt)
 
 void SrsRtcConsumer::wait(int nb_msgs)
 {
-    mw_min_msgs = nb_msgs;
+    mw_min_msgs_ = nb_msgs;
 
     // when duration ok, signal to flush.
-    if ((int)queue.size() > mw_min_msgs) {
+    if ((int)queue_.size() > mw_min_msgs_) {
         return;
     }
 
     // the enqueue will notify this cond.
-    mw_waiting = true;
+    mw_waiting_ = true;
 
     // use cond block wait for high performance mode.
-    srs_cond_wait(mw_wait);
+    srs_cond_wait(mw_wait_);
 }
 
 void SrsRtcConsumer::on_stream_change(SrsRtcSourceDescription *desc)
@@ -239,13 +239,13 @@ void SrsRtcConsumer::on_stream_change(SrsRtcSourceDescription *desc)
 
 SrsRtcSourceManager::SrsRtcSourceManager()
 {
-    lock = srs_mutex_new();
+    lock_ = srs_mutex_new();
     timer_ = new SrsHourGlass("sources", this, 1 * SRS_UTIME_SECONDS);
 }
 
 SrsRtcSourceManager::~SrsRtcSourceManager()
 {
-    srs_mutex_destroy(lock);
+    srs_mutex_destroy(lock_);
     srs_freep(timer_);
 }
 
@@ -274,7 +274,7 @@ srs_error_t SrsRtcSourceManager::notify(int event, srs_utime_t interval, srs_uti
     srs_error_t err = srs_success;
 
     std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it;
-    for (it = pool.begin(); it != pool.end();) {
+    for (it = pool_.begin(); it != pool_.end();) {
         SrsSharedPtr<SrsRtcSource> &source = it->second;
 
         // When source expired, remove it.
@@ -283,8 +283,8 @@ srs_error_t SrsRtcSourceManager::notify(int event, srs_utime_t interval, srs_uti
             SrsContextId cid = source->source_id();
             if (cid.empty())
                 cid = source->pre_source_id();
-            srs_trace("RTC: cleanup die source, id=[%s], total=%d", cid.c_str(), (int)pool.size());
-            pool.erase(it++);
+            srs_trace("RTC: cleanup die source, id=[%s], total=%d", cid.c_str(), (int)pool_.size());
+            pool_.erase(it++);
         } else {
             ++it;
         }
@@ -302,12 +302,12 @@ srs_error_t SrsRtcSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<Sr
     if (true) {
         // Use lock to protect coroutine switch.
         // @bug https://github.com/ossrs/srs/issues/1230
-        SrsLocker(&lock);
+        SrsLocker(&lock_);
 
         string stream_url = r->get_stream_url();
-        std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool.find(stream_url);
+        std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool_.find(stream_url);
 
-        if (it != pool.end()) {
+        if (it != pool_.end()) {
             SrsSharedPtr<SrsRtcSource> source = it->second;
             pps = source;
         } else {
@@ -315,7 +315,7 @@ srs_error_t SrsRtcSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<Sr
             srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
             pps = source;
 
-            pool[stream_url] = source;
+            pool_[stream_url] = source;
             created = true;
         }
     }
@@ -339,13 +339,13 @@ SrsSharedPtr<SrsRtcSource> SrsRtcSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
-    SrsLocker(&lock);
+    SrsLocker(&lock_);
 
     string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool.find(stream_url);
+    std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool_.find(stream_url);
 
     SrsSharedPtr<SrsRtcSource> source;
-    if (it == pool.end()) {
+    if (it == pool_.end()) {
         return source;
     }
 
@@ -379,7 +379,7 @@ SrsRtcSource::SrsRtcSource()
     publish_stream_ = NULL;
     stream_desc_ = NULL;
 
-    req = NULL;
+    req_ = NULL;
     bridge_ = NULL;
 #ifdef SRS_FFMPEG_FIT
     frame_builder_ = NULL;
@@ -393,13 +393,13 @@ SrsRtcSource::~SrsRtcSource()
 {
     // never free the consumers,
     // for all consumers are auto free.
-    consumers.clear();
+    consumers_.clear();
 
 #ifdef SRS_FFMPEG_FIT
     srs_freep(frame_builder_);
 #endif
     srs_freep(bridge_);
-    srs_freep(req);
+    srs_freep(req_);
     srs_freep(stream_desc_);
 
     SrsContextId cid = _source_id;
@@ -424,7 +424,7 @@ srs_error_t SrsRtcSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    req = r->copy();
+    req_ = r->copy();
 
     // Create default relations to allow play before publishing.
     // @see https://github.com/ossrs/srs/issues/2362
@@ -441,7 +441,7 @@ bool SrsRtcSource::stream_is_dead()
     }
 
     // has any consumers?
-    if (!consumers.empty()) {
+    if (!consumers_.empty()) {
         return false;
     }
 
@@ -528,7 +528,7 @@ void SrsRtcSource::init_for_play_before_publishing()
 
 void SrsRtcSource::update_auth(ISrsRequest *r)
 {
-    req->update_auth(r);
+    req_->update_auth(r);
 }
 
 srs_error_t SrsRtcSource::on_source_changed()
@@ -549,7 +549,7 @@ srs_error_t SrsRtcSource::on_source_changed()
 
     // Notify all consumers.
     std::vector<SrsRtcConsumer *>::iterator it;
-    for (it = consumers.begin(); it != consumers.end(); ++it) {
+    for (it = consumers_.begin(); it != consumers_.end(); ++it) {
         SrsRtcConsumer *consumer = *it;
 
         // Notify if context id changed.
@@ -590,7 +590,7 @@ srs_error_t SrsRtcSource::create_consumer(SrsRtcConsumer *&consumer)
     srs_error_t err = srs_success;
 
     consumer = new SrsRtcConsumer(this);
-    consumers.push_back(consumer);
+    consumers_.push_back(consumer);
 
     stream_die_at_ = 0;
 
@@ -612,13 +612,13 @@ srs_error_t SrsRtcSource::consumer_dumps(SrsRtcConsumer *consumer, bool ds, bool
 void SrsRtcSource::on_consumer_destroy(SrsRtcConsumer *consumer)
 {
     std::vector<SrsRtcConsumer *>::iterator it;
-    it = std::find(consumers.begin(), consumers.end(), consumer);
-    if (it != consumers.end()) {
-        it = consumers.erase(it);
+    it = std::find(consumers_.begin(), consumers_.end(), consumer);
+    if (it != consumers_.end()) {
+        it = consumers_.erase(it);
     }
 
     // When all consumers finished, notify publisher to handle it.
-    if (publish_stream_ && consumers.empty()) {
+    if (publish_stream_ && consumers_.empty()) {
         for (size_t i = 0; i < event_handlers_.size(); i++) {
             ISrsRtcSourceEventHandler *h = event_handlers_.at(i);
             h->on_consumers_finished();
@@ -626,7 +626,7 @@ void SrsRtcSource::on_consumer_destroy(SrsRtcConsumer *consumer)
     }
 
     // Destroy and cleanup source when no publishers and consumers.
-    if (!is_created_ && consumers.empty()) {
+    if (!is_created_ && consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
 }
@@ -649,7 +649,7 @@ srs_error_t SrsRtcSource::on_publish()
     srs_error_t err = srs_success;
 
     // update the request object.
-    srs_assert(req);
+    srs_assert(req_);
 
     // For RTC, DTLS is done, and we are ready to deliver packets.
     // @note For compatible with RTMP, we also set the is_created_, it MUST be created here.
@@ -675,7 +675,7 @@ srs_error_t SrsRtcSource::on_publish()
             video_codec = SrsVideoCodecId(track_desc->media_->codec(true));
         }
 
-        if ((err = frame_builder_->initialize(req, audio_codec, video_codec)) != srs_success) {
+        if ((err = frame_builder_->initialize(req_, audio_codec, video_codec)) != srs_success) {
             return srs_error_wrap(err, "frame builder initialize");
         }
 
@@ -689,14 +689,14 @@ srs_error_t SrsRtcSource::on_publish()
         }
 
         // The PLI interval for RTC2RTMP.
-        pli_for_rtmp_ = _srs_config->get_rtc_pli_for_rtmp(req->vhost_);
+        pli_for_rtmp_ = _srs_config->get_rtc_pli_for_rtmp(req_->vhost_);
 
         // @see SrsRtcSource::on_timer()
         _srs_shared_timer->timer100ms()->subscribe(this);
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_stream_publish(req, _source_id.c_str());
+    stat->on_stream_publish(req_, _source_id.c_str());
 
     return err;
 }
@@ -738,10 +738,10 @@ void SrsRtcSource::on_unpublish()
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_stream_close(req);
+    stat->on_stream_close(req_);
 
     // Destroy and cleanup source when no publishers and consumers.
-    if (consumers.empty()) {
+    if (consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
 }
@@ -778,12 +778,12 @@ srs_error_t SrsRtcSource::on_rtp(SrsRtpPacket *pkt)
 
     // If circuit-breaker is dying, drop packet.
     if (_srs_circuit_breaker->hybrid_dying_water_level()) {
-        _srs_pps_aloss2->sugar_ += (int64_t)consumers.size();
+        _srs_pps_aloss2->sugar_ += (int64_t)consumers_.size();
         return err;
     }
 
-    for (int i = 0; i < (int)consumers.size(); i++) {
-        SrsRtcConsumer *consumer = consumers.at(i);
+    for (int i = 0; i < (int)consumers_.size(); i++) {
+        SrsRtcConsumer *consumer = consumers_.at(i);
         if ((err = consumer->enqueue(pkt->copy())) != srs_success) {
             return srs_error_wrap(err, "consume message");
         }
@@ -882,15 +882,15 @@ SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<Srs
     bridge_ = bridge;
     source_ = source;
 
-    req = NULL;
-    format = new SrsRtmpFormat();
+    req_ = NULL;
+    format_ = new SrsRtmpFormat();
     codec_ = new SrsAudioTranscoder();
     latest_codec_ = SrsAudioCodecIdForbidden;
-    keep_bframe = false;
-    keep_avc_nalu_sei = true;
-    merge_nalus = false;
-    meta = new SrsMetaCache();
-    audio_sequence = 0;
+    keep_bframe_ = false;
+    keep_avc_nalu_sei_ = true;
+    merge_nalus_ = false;
+    meta_ = new SrsMetaCache();
+    audio_sequence_ = 0;
     video_builder_ = new SrsRtpVideoBuilder();
 
     // Initialize with default values - will be set during lazy initialization
@@ -904,9 +904,9 @@ SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<Srs
 
 SrsRtcRtpBuilder::~SrsRtcRtpBuilder()
 {
-    srs_freep(format);
+    srs_freep(format_);
     srs_freep(codec_);
-    srs_freep(meta);
+    srs_freep(meta_);
     srs_freep(video_builder_);
 }
 
@@ -953,7 +953,7 @@ srs_error_t SrsRtcRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
         video_payload_type = kVideoPayloadType;
     }
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if ((err = video_builder_->initialize(format, video_ssrc, video_payload_type)) != srs_success) {
         return srs_error_wrap(err, "initialize video builder");
     }
@@ -968,20 +968,20 @@ srs_error_t SrsRtcRtpBuilder::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    req = r;
+    req_ = r;
 
-    if ((err = format->initialize()) != srs_success) {
+    if ((err = format_->initialize()) != srs_success) {
         return srs_error_wrap(err, "format initialize");
     }
 
     // Setup the SPS/PPS parsing strategy.
-    format->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost_);
+    format_->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost_);
 
-    keep_bframe = _srs_config->get_rtc_keep_bframe(req->vhost_);
-    keep_avc_nalu_sei = _srs_config->get_rtc_keep_avc_nalu_sei(req->vhost_);
-    merge_nalus = _srs_config->get_rtc_server_merge_nalus();
+    keep_bframe_ = _srs_config->get_rtc_keep_bframe(req_->vhost_);
+    keep_avc_nalu_sei_ = _srs_config->get_rtc_keep_avc_nalu_sei(req_->vhost_);
+    merge_nalus_ = _srs_config->get_rtc_server_merge_nalus();
     srs_trace("RTC bridge from RTMP, keep_bframe=%d, keep_avc_nalu_sei=%d, merge_nalus=%d",
-              keep_bframe, keep_avc_nalu_sei, merge_nalus);
+              keep_bframe_, keep_avc_nalu_sei_, merge_nalus_);
 
     return err;
 }
@@ -992,7 +992,7 @@ srs_error_t SrsRtcRtpBuilder::on_publish()
 
     // Reset the metadata cache, to make VLC happy when disable/enable stream.
     // @see https://github.com/ossrs/srs/issues/1630#issuecomment-597979448
-    meta->clear();
+    meta_->clear();
 
     return err;
 }
@@ -1001,8 +1001,8 @@ void SrsRtcRtpBuilder::on_unpublish()
 {
     // Reset the metadata cache, to make VLC happy when disable/enable stream.
     // @see https://github.com/ossrs/srs/issues/1630#issuecomment-597979448
-    meta->update_previous_vsh();
-    meta->update_previous_ash();
+    meta_->update_previous_vsh();
+    meta_->update_previous_ash();
 }
 
 srs_error_t SrsRtcRtpBuilder::on_frame(SrsMediaPacket *frame)
@@ -1020,23 +1020,23 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsMediaPacket *msg)
     srs_error_t err = srs_success;
 
     // TODO: FIXME: Support parsing OPUS for RTC.
-    if ((err = format->on_audio(msg)) != srs_success) {
+    if ((err = format_->on_audio(msg)) != srs_success) {
         return srs_error_wrap(err, "format consume audio");
     }
 
     // Try to init codec when startup or codec changed.
-    if (format->acodec_ && (err = init_codec(format->acodec_->id_)) != srs_success) {
+    if (format_->acodec_ && (err = init_codec(format_->acodec_->id_)) != srs_success) {
         return srs_error_wrap(err, "init codec");
     }
 
     // Ignore if no format->acodec, it means the codec is not parsed, or unknown codec.
     // @issue https://github.com/ossrs/srs/issues/1506#issuecomment-562079474
-    if (!format->acodec_) {
+    if (!format_->acodec_) {
         return err;
     }
 
     // support audio codec: aac/mp3
-    SrsAudioCodecId acodec = format->acodec_->id_;
+    SrsAudioCodecId acodec = format_->acodec_->id_;
     if (acodec != SrsAudioCodecIdAAC && acodec != SrsAudioCodecIdMP3) {
         return err;
     }
@@ -1050,10 +1050,10 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsMediaPacket *msg)
     }
 
     // ignore sequence header
-    srs_assert(format->audio_);
+    srs_assert(format_->audio_);
 
-    if (format->acodec_->id_ == SrsAudioCodecIdMP3) {
-        return transcode(format->audio_);
+    if (format_->acodec_->id_ == SrsAudioCodecIdMP3) {
+        return transcode(format_->audio_);
     }
 
     // When drop aac audio packet, never transcode.
@@ -1064,7 +1064,7 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsMediaPacket *msg)
     char *adts_audio = NULL;
     int nn_adts_audio = 0;
     // TODO: FIXME: Reserve 7 bytes header when create shared message.
-    if ((err = aac_raw_append_adts_header(msg, format, &adts_audio, &nn_adts_audio)) != srs_success) {
+    if ((err = aac_raw_append_adts_header(msg, format_, &adts_audio, &nn_adts_audio)) != srs_success) {
         return srs_error_wrap(err, "aac append header");
     }
 
@@ -1073,8 +1073,8 @@ srs_error_t SrsRtcRtpBuilder::on_audio(SrsMediaPacket *msg)
     }
 
     SrsParsedAudioPacket aac;
-    aac.dts_ = format->audio_->dts_;
-    aac.cts_ = format->audio_->cts_;
+    aac.dts_ = format_->audio_->dts_;
+    aac.cts_ = format_->audio_->cts_;
     if ((err = aac.add_sample(adts_audio, nn_adts_audio)) == srs_success) {
         // If OK, transcode the AAC to Opus and consume it.
         err = transcode(&aac);
@@ -1098,7 +1098,7 @@ srs_error_t SrsRtcRtpBuilder::init_codec(SrsAudioCodecId codec)
     codec_ = new SrsAudioTranscoder();
 
     // Initialize the codec according to the codec in stream.
-    int bitrate = _srs_config->get_rtc_opus_bitrate(req->vhost_); // The output bitrate in bps.
+    int bitrate = _srs_config->get_rtc_opus_bitrate(req_->vhost_); // The output bitrate in bps.
     if ((err = codec_->initialize(codec, SrsAudioCodecIdOpus, kAudioChannel, kAudioSamplerate, bitrate)) != srs_success) {
         return srs_error_wrap(err, "init codec=%d", codec);
     }
@@ -1157,7 +1157,7 @@ srs_error_t SrsRtcRtpBuilder::package_opus(SrsParsedAudioPacket *audio, SrsRtpPa
     pkt->header.set_ssrc(audio_ssrc_);
     pkt->frame_type_ = SrsFrameTypeAudio;
     pkt->header.set_marker(true);
-    pkt->header.set_sequence(audio_sequence++);
+    pkt->header.set_sequence(audio_sequence_++);
     pkt->header.set_timestamp(audio->dts_ * 48);
 
     SrsRtpRawPayload *raw = new SrsRtpRawPayload();
@@ -1187,22 +1187,22 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsMediaPacket *msg)
 
     // cache the sequence header if h264
     bool is_sequence_header = SrsFlvVideo::sh(msg->payload(), msg->size());
-    if (is_sequence_header && (err = meta->update_vsh(msg)) != srs_success) {
+    if (is_sequence_header && (err = meta_->update_vsh(msg)) != srs_success) {
         return srs_error_wrap(err, "meta update video");
     }
 
-    if ((err = format->on_video(msg)) != srs_success) {
+    if ((err = format_->on_video(msg)) != srs_success) {
         return srs_error_wrap(err, "format consume video");
     }
 
     // Ignore if no format->vcodec, it means the codec is not parsed, or unsupport/unknown codec
     // such as H.263 codec
-    if (!format->vcodec_) {
+    if (!format_->vcodec_) {
         return err;
     }
 
     // support video codec: h264/h265
-    SrsVideoCodecId vcodec = format->vcodec_->id_;
+    SrsVideoCodecId vcodec = format_->vcodec_->id_;
     if (vcodec != SrsVideoCodecIdAVC && vcodec != SrsVideoCodecIdHEVC) {
         return err;
     }
@@ -1217,7 +1217,7 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsMediaPacket *msg)
 
     bool has_idr = false;
     vector<SrsNaluSample *> samples;
-    if ((err = filter(msg, format, has_idr, samples)) != srs_success) {
+    if ((err = filter(msg, format_, has_idr, samples)) != srs_success) {
         return srs_error_wrap(err, "filter video");
     }
     int nn_samples = (int)samples.size();
@@ -1240,7 +1240,7 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsMediaPacket *msg)
     // TODO: FIXME: Should rename to pkts_disposer.
     SrsUniquePtr<vector<SrsRtpPacket *> > pkts_ptr(&pkts, free_packets);
 
-    if (merge_nalus && nn_samples > 1) {
+    if (merge_nalus_ && nn_samples > 1) {
         if ((err = package_nalus(msg, samples, pkts)) != srs_success) {
             return srs_error_wrap(err, "package nalus as one");
         }
@@ -1281,7 +1281,7 @@ srs_error_t SrsRtcRtpBuilder::filter(SrsMediaPacket *msg, SrsFormat *format, boo
     for (int i = 0; i < format->video_->nb_samples_; ++i) {
         SrsNaluSample *sample = &format->video_->samples_[i];
 
-        if (!keep_avc_nalu_sei && format->vcodec_->id_ == SrsVideoCodecIdAVC) {
+        if (!keep_avc_nalu_sei_ && format_->vcodec_->id_ == SrsVideoCodecIdAVC) {
             SrsAvcNaluType avc_nalu_type;
 
             if ((err = SrsParsedVideoPacket::parse_avc_nalu_type(sample, avc_nalu_type)) != srs_success) {
@@ -1295,7 +1295,7 @@ srs_error_t SrsRtcRtpBuilder::filter(SrsMediaPacket *msg, SrsFormat *format, boo
 
         // Because RTC does not support B-frame, so we will drop them.
         // TODO: Drop B-frame in better way, which not cause picture corruption.
-        if (!keep_bframe) {
+        if (!keep_bframe_) {
             bool is_b_frame = false;
             if (format->vcodec_->id_ == SrsVideoCodecIdAVC) {
                 if ((err = SrsParsedVideoPacket::parse_avc_bframe(sample, is_b_frame)) != srs_success) {
@@ -1321,7 +1321,7 @@ srs_error_t SrsRtcRtpBuilder::package_stap_a(SrsMediaPacket *msg, SrsRtpPacket *
 {
     srs_error_t err = srs_success;
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if (!format || !format->vcodec_) {
         return err;
     }
@@ -1333,7 +1333,7 @@ srs_error_t SrsRtcRtpBuilder::package_nalus(SrsMediaPacket *msg, const vector<Sr
 {
     srs_error_t err = srs_success;
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if (!format || !format->vcodec_) {
         return err;
     }
@@ -1351,7 +1351,7 @@ srs_error_t SrsRtcRtpBuilder::package_fu_a(SrsMediaPacket *msg, SrsNaluSample *s
 {
     srs_error_t err = srs_success;
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if (!format || !format->vcodec_) {
         return err;
     }
@@ -1392,11 +1392,11 @@ SrsRtpPacket *SrsRtcFrameBuilderVideoPacketCache::get_packet(uint16_t sequence_n
 
     // Since cache uses modulo indexing, different sequence numbers can map to the
     // same cache slot, so we must verify the stored sn matches the requested one.
-    if (!cache.in_use || cache.sn != sequence_number) {
+    if (!cache.in_use_ || cache.sn_ != sequence_number) {
         return NULL;
     }
 
-    return cache.pkt;
+    return cache.pkt_;
 }
 
 void SrsRtcFrameBuilderVideoPacketCache::store_packet(SrsRtpPacket *pkt)
@@ -1408,38 +1408,38 @@ void SrsRtcFrameBuilderVideoPacketCache::store_packet(SrsRtpPacket *pkt)
     uint16_t index = cache_index(pkt->header.get_sequence());
     RtcPacketCache &cache = cache_pkts_[index];
 
-    cache.in_use = true;
-    srs_freep(cache.pkt);
-    cache.pkt = pkt;
-    cache.sn = pkt->header.get_sequence();
-    cache.ts = pkt->get_avsync_time();
-    cache.rtp_ts = pkt->header.get_timestamp();
+    cache.in_use_ = true;
+    srs_freep(cache.pkt_);
+    cache.pkt_ = pkt;
+    cache.sn_ = pkt->header.get_sequence();
+    cache.ts_ = pkt->get_avsync_time();
+    cache.rtp_ts_ = pkt->header.get_timestamp();
 }
 
 bool SrsRtcFrameBuilderVideoPacketCache::is_slot_in_use(uint16_t sequence_number)
 {
     uint16_t index = cache_index(sequence_number);
     const RtcPacketCache &cache = cache_pkts_[index];
-    return cache.in_use;
+    return cache.in_use_;
 }
 
 uint32_t SrsRtcFrameBuilderVideoPacketCache::get_rtp_timestamp(uint16_t sequence_number)
 {
     uint16_t index = cache_index(sequence_number);
     const RtcPacketCache &cache = cache_pkts_[index];
-    return cache.rtp_ts;
+    return cache.rtp_ts_;
 }
 
 void SrsRtcFrameBuilderVideoPacketCache::clear_all()
 {
     for (size_t i = 0; i < cache_size_; i++) {
         RtcPacketCache &cache = cache_pkts_[i];
-        if (cache.in_use) {
-            srs_freep(cache.pkt);
-            cache.sn = 0;
-            cache.ts = 0;
-            cache.rtp_ts = 0;
-            cache.in_use = false;
+        if (cache.in_use_) {
+            srs_freep(cache.pkt_);
+            cache.sn_ = 0;
+            cache.ts_ = 0;
+            cache.rtp_ts_ = 0;
+            cache.in_use_ = false;
         }
     }
 }
@@ -1451,19 +1451,19 @@ SrsRtpPacket *SrsRtcFrameBuilderVideoPacketCache::take_packet(uint16_t sequence_
 
     // Since cache uses modulo indexing, different sequence numbers can map to the
     // same cache slot, so we must verify the stored sn matches the requested one.
-    if (!cache.in_use || cache.sn != sequence_number) {
+    if (!cache.in_use_ || cache.sn_ != sequence_number) {
         return NULL;
     }
 
-    SrsRtpPacket *pkt = cache.pkt;
+    SrsRtpPacket *pkt = cache.pkt_;
 
     // Clear the slot after taking the packet
-    cache.in_use = false;
+    cache.in_use_ = false;
     // Note: No memory leak here - the packet ownership is transferred to caller
-    cache.pkt = NULL;
-    cache.ts = 0;
-    cache.rtp_ts = 0;
-    cache.sn = 0;
+    cache.pkt_ = NULL;
+    cache.ts_ = 0;
+    cache.rtp_ts_ = 0;
+    cache.sn_ = 0;
 
     return pkt;
 }
@@ -2522,9 +2522,9 @@ SrsVideoPayload::SrsVideoPayload(uint8_t pt, std::string encode_name, int sample
     : SrsCodecPayload(pt, encode_name, sample)
 {
     type_ = "video";
-    h264_param_.profile_level_id = "";
-    h264_param_.packetization_mode = "";
-    h264_param_.level_asymmetry_allow = "";
+    h264_param_.profile_level_id_ = "";
+    h264_param_.packetization_mode_ = "";
+    h264_param_.level_asymmetry_allow_ = "";
 }
 
 SrsVideoPayload::~SrsVideoPayload()
@@ -2558,20 +2558,20 @@ SrsMediaPayloadType SrsVideoPayload::generate_media_payload_type()
     std::ostringstream format_specific_param;
     bool has_param = false;
 
-    if (!h264_param_.level_asymmetry_allow.empty()) {
-        format_specific_param << "level-asymmetry-allowed=" << h264_param_.level_asymmetry_allow;
+    if (!h264_param_.level_asymmetry_allow_.empty()) {
+        format_specific_param << "level-asymmetry-allowed=" << h264_param_.level_asymmetry_allow_;
         has_param = true;
     }
-    if (!h264_param_.packetization_mode.empty()) {
+    if (!h264_param_.packetization_mode_.empty()) {
         if (has_param)
             format_specific_param << ";";
-        format_specific_param << "packetization-mode=" << h264_param_.packetization_mode;
+        format_specific_param << "packetization-mode=" << h264_param_.packetization_mode_;
         has_param = true;
     }
-    if (!h264_param_.profile_level_id.empty()) {
+    if (!h264_param_.profile_level_id_.empty()) {
         if (has_param)
             format_specific_param << ";";
-        format_specific_param << "profile-level-id=" << h264_param_.profile_level_id;
+        format_specific_param << "profile-level-id=" << h264_param_.profile_level_id_;
     }
 
     media_payload_type.format_specific_param_ = format_specific_param.str();
@@ -2590,26 +2590,26 @@ SrsMediaPayloadType SrsVideoPayload::generate_media_payload_type_h265()
     std::ostringstream format_specific_param;
     bool has_param = false;
 
-    if (!h265_param_.level_id.empty()) {
-        format_specific_param << "level-id=" << h265_param_.level_id;
+    if (!h265_param_.level_id_.empty()) {
+        format_specific_param << "level-id=" << h265_param_.level_id_;
         has_param = true;
     }
-    if (!h265_param_.profile_id.empty()) {
+    if (!h265_param_.profile_id_.empty()) {
         if (has_param)
             format_specific_param << ";";
-        format_specific_param << "profile-id=" << h265_param_.profile_id;
+        format_specific_param << "profile-id=" << h265_param_.profile_id_;
         has_param = true;
     }
-    if (!h265_param_.tier_flag.empty()) {
+    if (!h265_param_.tier_flag_.empty()) {
         if (has_param)
             format_specific_param << ";";
-        format_specific_param << "tier-flag=" << h265_param_.tier_flag;
+        format_specific_param << "tier-flag=" << h265_param_.tier_flag_;
         has_param = true;
     }
-    if (!h265_param_.tx_mode.empty()) {
+    if (!h265_param_.tx_mode_.empty()) {
         if (has_param)
             format_specific_param << ";";
-        format_specific_param << "tx-mode=" << h265_param_.tx_mode;
+        format_specific_param << "tx-mode=" << h265_param_.tx_mode_;
     }
 
     media_payload_type.format_specific_param_ = format_specific_param.str();
@@ -2633,7 +2633,7 @@ srs_error_t SrsVideoPayload::set_h264_param_desc(std::string fmtp)
         }
 
         if (kv[0] == "profile-level-id") {
-            h264_param_.profile_level_id = kv[1];
+            h264_param_.profile_level_id_ = kv[1];
         } else if (kv[0] == "packetization-mode") {
             // 6.3.  Non-Interleaved Mode
             // This mode is in use when the value of the OPTIONAL packetization-mode
@@ -2643,9 +2643,9 @@ srs_error_t SrsVideoPayload::set_h264_param_desc(std::string fmtp)
             // MTAPs, and FU-Bs MUST NOT be used.  The transmission order of NAL
             // units MUST comply with the NAL unit decoding order.
             // @see https://tools.ietf.org/html/rfc6184#section-6.3
-            h264_param_.packetization_mode = kv[1];
+            h264_param_.packetization_mode_ = kv[1];
         } else if (kv[0] == "level-asymmetry-allowed") {
-            h264_param_.level_asymmetry_allow = kv[1];
+            h264_param_.level_asymmetry_allow_ = kv[1];
         } else {
             return srs_error_new(ERROR_RTC_SDP_DECODE, "invalid h264 param=%s", kv[0].c_str());
         }
@@ -2665,13 +2665,13 @@ srs_error_t SrsVideoPayload::set_h265_param_desc(std::string fmtp)
             return srs_error_new(ERROR_RTC_SDP_DECODE, "invalid h265 param=%s", attribute.c_str());
         }
         if (kv[0] == "level-id") {
-            h265_param_.level_id = kv[1];
+            h265_param_.level_id_ = kv[1];
         } else if (kv[0] == "profile-id") {
-            h265_param_.profile_id = kv[1];
+            h265_param_.profile_id_ = kv[1];
         } else if (kv[0] == "tier-flag") {
-            h265_param_.tier_flag = kv[1];
+            h265_param_.tier_flag_ = kv[1];
         } else if (kv[0] == "tx-mode") {
-            h265_param_.tx_mode = kv[1];
+            h265_param_.tx_mode_ = kv[1];
         } else {
             return srs_error_new(ERROR_RTC_SDP_DECODE, "invalid h265 param=%s", kv[0].c_str());
         }
@@ -2689,10 +2689,10 @@ SrsAudioPayload::SrsAudioPayload(uint8_t pt, std::string encode_name, int sample
 {
     type_ = "audio";
     channel_ = channel;
-    opus_param_.minptime = 0;
-    opus_param_.use_inband_fec = false;
-    opus_param_.stereo = false;
-    opus_param_.usedtx = false;
+    opus_param_.minptime_ = 0;
+    opus_param_.use_inband_fec_ = false;
+    opus_param_.stereo_ = false;
+    opus_param_.usedtx_ = false;
 }
 
 SrsAudioPayload::~SrsAudioPayload()
@@ -2728,16 +2728,16 @@ SrsMediaPayloadType SrsAudioPayload::generate_media_payload_type()
     media_payload_type.rtcp_fb_ = rtcp_fbs_;
 
     std::ostringstream format_specific_param;
-    if (opus_param_.minptime) {
-        format_specific_param << "minptime=" << opus_param_.minptime;
+    if (opus_param_.minptime_) {
+        format_specific_param << "minptime=" << opus_param_.minptime_;
     }
-    if (opus_param_.use_inband_fec) {
+    if (opus_param_.use_inband_fec_) {
         format_specific_param << ";useinbandfec=1";
     }
-    if (opus_param_.stereo) {
+    if (opus_param_.stereo_) {
         format_specific_param << ";stereo=1";
     }
-    if (opus_param_.usedtx) {
+    if (opus_param_.usedtx_) {
         format_specific_param << ";usedtx=1";
     }
     media_payload_type.format_specific_param_ = format_specific_param.str();
@@ -2753,13 +2753,13 @@ srs_error_t SrsAudioPayload::set_opus_param_desc(std::string fmtp)
         std::vector<std::string> kv = split_str(vec[i], "=");
         if (kv.size() == 2) {
             if (kv[0] == "minptime") {
-                opus_param_.minptime = (int)::atol(kv[1].c_str());
+                opus_param_.minptime_ = (int)::atol(kv[1].c_str());
             } else if (kv[0] == "useinbandfec") {
-                opus_param_.use_inband_fec = (kv[1] == "1") ? true : false;
+                opus_param_.use_inband_fec_ = (kv[1] == "1") ? true : false;
             } else if (kv[0] == "stereo") {
-                opus_param_.stereo = (kv[1] == "1") ? true : false;
+                opus_param_.stereo_ = (kv[1] == "1") ? true : false;
             } else if (kv[0] == "usedtx") {
-                opus_param_.usedtx = (kv[1] == "1") ? true : false;
+                opus_param_.usedtx_ = (kv[1] == "1") ? true : false;
             }
         } else {
             return srs_error_new(ERROR_RTC_SDP_DECODE, "invalid opus param=%s", vec[i].c_str());
@@ -3179,8 +3179,8 @@ srs_error_t SrsRtcRecvTrack::on_nack(SrsRtpPacket **ppkt)
         // insert check nack list
         uint16_t nack_first = 0, nack_last = 0;
         if (!rtp_queue_->update(seq, nack_first, nack_last)) {
-            srs_warn("NACK: too old seq %u, range [%u, %u]", seq, rtp_queue_->begin,
-                     rtp_queue_->end);
+            srs_warn("NACK: too old seq %u, range [%u, %u]", seq, rtp_queue_->begin_,
+                     rtp_queue_->end_);
         }
         if (srs_rtp_seq_distance(nack_first, nack_last) > 0) {
             srs_trace("NACK: update seq=%u, nack range [%u, %u]", seq, nack_first,
@@ -3431,7 +3431,7 @@ SrsRtpPacket *SrsRtcSendTrack::fetch_rtp_packet(uint16_t seq)
     uint32_t nn = 0;
     if (nack_epp->can_print(pkt->header.get_ssrc(), &nn)) {
         srs_trace("RTC: NACK miss seq=%u, require_seq=%u, ssrc=%u, ts=%u, count=%u/%u, %d bytes", seq, pkt->header.get_sequence(),
-                  pkt->header.get_ssrc(), pkt->header.get_timestamp(), nn, nack_epp->nn_count, pkt->nb_bytes());
+                  pkt->header.get_ssrc(), pkt->header.get_timestamp(), nn, nack_epp->nn_count_, pkt->nb_bytes());
     }
     return NULL;
 }
@@ -3502,7 +3502,7 @@ srs_error_t SrsRtcSendTrack::on_recv_nack(const vector<uint16_t> &lost_seqs)
         uint32_t nn = 0;
         if (nack_epp->can_print(pkt->header.get_ssrc(), &nn)) {
             srs_trace("RTC: NACK ARQ seq=%u, ssrc=%u, ts=%u, count=%u/%u, %d bytes", pkt->header.get_sequence(),
-                      pkt->header.get_ssrc(), pkt->header.get_timestamp(), nn, nack_epp->nn_count, pkt->nb_bytes());
+                      pkt->header.get_ssrc(), pkt->header.get_timestamp(), nn, nack_epp->nn_count_, pkt->nb_bytes());
         }
 
         // By default, we send packets by sendmmsg.
@@ -3614,11 +3614,11 @@ srs_error_t SrsRtcVideoSendTrack::on_rtcp(SrsRtpPacket *pkt)
     return err;
 }
 
-SrsRtcSSRCGenerator *SrsRtcSSRCGenerator::_instance = NULL;
+SrsRtcSSRCGenerator *SrsRtcSSRCGenerator::instance_ = NULL;
 
 SrsRtcSSRCGenerator::SrsRtcSSRCGenerator()
 {
-    ssrc_num = 0;
+    ssrc_num_ = 0;
 }
 
 SrsRtcSSRCGenerator::~SrsRtcSSRCGenerator()
@@ -3627,17 +3627,17 @@ SrsRtcSSRCGenerator::~SrsRtcSSRCGenerator()
 
 SrsRtcSSRCGenerator *SrsRtcSSRCGenerator::instance()
 {
-    if (!_instance) {
-        _instance = new SrsRtcSSRCGenerator();
+    if (!instance_) {
+        instance_ = new SrsRtcSSRCGenerator();
     }
-    return _instance;
+    return instance_;
 }
 
 uint32_t SrsRtcSSRCGenerator::generate_ssrc()
 {
-    if (!ssrc_num) {
-        ssrc_num = ::getpid() * 10000 + ::getpid() * 100 + ::getpid();
+    if (!ssrc_num_) {
+        ssrc_num_ = ::getpid() * 10000 + ::getpid() * 100 + ::getpid();
     }
 
-    return ++ssrc_num;
+    return ++ssrc_num_;
 }

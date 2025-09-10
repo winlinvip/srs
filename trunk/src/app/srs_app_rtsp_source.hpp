@@ -36,13 +36,13 @@ private:
     SrsRtspSource *source_;
 
 private:
-    std::vector<SrsRtpPacket *> queue;
+    std::vector<SrsRtpPacket *> queue_;
     // when source id changed, notice all consumers
-    bool should_update_source_id;
+    bool should_update_source_id_;
     // The cond wait for mw.
-    srs_cond_t mw_wait;
-    bool mw_waiting;
-    int mw_min_msgs;
+    srs_cond_t mw_wait_;
+    bool mw_waiting_;
+    int mw_min_msgs_;
 
 private:
     // The callback for stream change event.
@@ -71,8 +71,8 @@ public:
 class SrsRtspSourceManager : public ISrsHourGlass
 {
 private:
-    srs_mutex_t lock;
-    std::map<std::string, SrsSharedPtr<SrsRtspSource> > pool;
+    srs_mutex_t lock_;
+    std::map<std::string, SrsSharedPtr<SrsRtspSource> > pool_;
     SrsHourGlass *timer_;
 
 public:
@@ -113,14 +113,14 @@ private:
     SrsContextId _source_id;
     // previous source id.
     SrsContextId _pre_source_id;
-    ISrsRequest *req;
+    ISrsRequest *req_;
     // Steam description for this steam.
     SrsRtcTrackDescription *audio_desc_;
     SrsRtcTrackDescription *video_desc_;
 
 private:
     // To delivery stream to clients.
-    std::vector<SrsRtspConsumer *> consumers;
+    std::vector<SrsRtspConsumer *> consumers_;
     // Whether stream is created, that is, SDP is done.
     bool is_created_;
     // Whether stream is delivering data, that is, DTLS is done.
@@ -189,17 +189,17 @@ public:
 class SrsRtspRtpBuilder
 {
 private:
-    ISrsRequest *req;
+    ISrsRequest *req_;
     SrsFrameToRtspBridge *bridge_;
     // The format, codec information.
-    SrsRtmpFormat *format;
+    SrsRtmpFormat *format_;
     // The metadata cache.
-    SrsMetaCache *meta;
+    SrsMetaCache *meta_;
     // The video builder, convert frame to RTP packets.
     SrsRtpVideoBuilder *video_builder_;
 
 private:
-    uint16_t audio_sequence;
+    uint16_t audio_sequence_;
     uint32_t audio_ssrc_;
     uint8_t audio_payload_type_;
     int audio_sample_rate_;

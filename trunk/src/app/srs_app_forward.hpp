@@ -30,24 +30,24 @@ class SrsForwarder : public ISrsCoroutineHandler
 {
 private:
     // The ep to forward, server[:port].
-    std::string ep_forward;
-    ISrsRequest *req;
+    std::string ep_forward_;
+    ISrsRequest *req_;
 
 private:
     // The source or stream context id to bind to.
     SrsContextId source_cid_;
 
 private:
-    SrsCoroutine *trd;
+    SrsCoroutine *trd_;
 
 private:
-    SrsOriginHub *hub;
-    SrsSimpleRtmpClient *sdk;
-    SrsRtmpJitter *jitter;
-    SrsMessageQueue *queue;
+    SrsOriginHub *hub_;
+    SrsSimpleRtmpClient *sdk_;
+    SrsRtmpJitter *jitter_;
+    SrsMessageQueue *queue_;
     // Cache the sequence header for retry when slave is failed.
-    SrsMediaPacket *sh_audio;
-    SrsMediaPacket *sh_video;
+    SrsMediaPacket *sh_audio_;
+    SrsMediaPacket *sh_video_;
 
 public:
     SrsForwarder(SrsOriginHub *h);

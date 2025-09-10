@@ -96,21 +96,21 @@ srs_error_t SrsCircuitBreaker::on_timer(srs_utime_t interval)
     SrsProcSelfStat *stat = srs_get_self_proc_stat();
 
     // Reset the high water-level when CPU is low for N times.
-    if (stat->percent * 100 > high_threshold_) {
+    if (stat->percent_ * 100 > high_threshold_) {
         hybrid_high_water_level_ = high_pulse_;
     } else if (hybrid_high_water_level_ > 0) {
         hybrid_high_water_level_--;
     }
 
     // Reset the critical water-level when CPU is low for N times.
-    if (stat->percent * 100 > critical_threshold_) {
+    if (stat->percent_ * 100 > critical_threshold_) {
         hybrid_critical_water_level_ = critical_pulse_;
     } else if (hybrid_critical_water_level_ > 0) {
         hybrid_critical_water_level_--;
     }
 
     // Reset the dying water-level when CPU is low for N times.
-    if (stat->percent * 100 > dying_threshold_) {
+    if (stat->percent_ * 100 > dying_threshold_) {
         hybrid_dying_water_level_ = srs_min(dying_pulse_ + 1, hybrid_dying_water_level_ + 1);
     } else if (hybrid_dying_water_level_ > 0) {
         hybrid_dying_water_level_ = 0;
@@ -119,10 +119,10 @@ srs_error_t SrsCircuitBreaker::on_timer(srs_utime_t interval)
     // Show statistics for RTC server.
     SrsProcSelfStat *u = srs_get_self_proc_stat();
     // Resident Set Size: number of pages the process has in real memory.
-    int memory = (int)(u->rss * 4 / 1024);
+    int memory = (int)(u->rss_ * 4 / 1024);
 
     // The hybrid thread cpu and memory.
-    float thread_percent = stat->percent * 100;
+    float thread_percent = stat->percent_ * 100;
 
     string snk_desc;
     static char buf[128];
@@ -135,7 +135,7 @@ srs_error_t SrsCircuitBreaker::on_timer(srs_utime_t interval)
 
     if (enabled_ && (hybrid_high_water_level() || hybrid_critical_water_level())) {
         srs_trace("CircuitBreaker: cpu=%.2f%%,%dMB, break=%d,%d,%d, cond=%.2f%%%s",
-                  u->percent * 100, memory,
+                  u->percent_ * 100, memory,
                   hybrid_high_water_level(), hybrid_critical_water_level(), hybrid_dying_water_level(), // Whether Circuit-Break is enable.
                   thread_percent,                                                                       // The conditions to enable Circuit-Breaker.
                   snk_desc.c_str());

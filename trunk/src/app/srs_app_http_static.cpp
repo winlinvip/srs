@@ -41,22 +41,22 @@ using namespace std;
 
 SrsHlsVirtualConn::SrsHlsVirtualConn()
 {
-    req = NULL;
-    interrupt = false;
+    req_ = NULL;
+    interrupt_ = false;
 }
 
 SrsHlsVirtualConn::~SrsHlsVirtualConn()
 {
-    srs_freep(req);
+    srs_freep(req_);
 }
 
 void SrsHlsVirtualConn::expire()
 {
-    interrupt = true;
+    interrupt_ = true;
 
     // remove statistic quickly
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_disconnect(ctx, srs_success);
+    stat->on_disconnect(ctx_, srs_success);
 }
 
 SrsHlsStream::SrsHlsStream()
@@ -286,16 +286,16 @@ void SrsHlsStream::alive(std::string ctx, ISrsRequest *req)
     // Create new context.
     if (it == map_ctx_info_.end()) {
         SrsHlsVirtualConn *conn = new SrsHlsVirtualConn();
-        conn->req = req->copy();
-        conn->ctx = ctx;
-        conn->request_time = srs_time_now_cached();
+        conn->req_ = req->copy();
+        conn->ctx_ = ctx;
+        conn->request_time_ = srs_time_now_cached();
         map_ctx_info_.insert(make_pair(ctx, conn));
 
         // Update the conn of stat client, which is used for receiving the event of kickoff.
         SrsStatistic *stat = SrsStatistic::instance();
         SrsStatisticClient *client = stat->find_client(ctx);
         if (client) {
-            client->conn = conn;
+            client->conn_ = conn;
         }
 
         return;
@@ -303,8 +303,8 @@ void SrsHlsStream::alive(std::string ctx, ISrsRequest *req)
 
     // Update alive time of context for virtual connection.
     SrsHlsVirtualConn *conn = it->second;
-    if (!conn->interrupt) {
-        conn->request_time = srs_time_now_cached();
+    if (!conn->interrupt_) {
+        conn->request_time_ = srs_time_now_cached();
     }
 }
 
@@ -380,12 +380,12 @@ srs_error_t SrsHlsStream::on_timer(srs_utime_t interval)
         string ctx = it->first;
         SrsHlsVirtualConn *info = it->second;
 
-        srs_utime_t hls_window = _srs_config->get_hls_window(info->req->vhost_);
-        if (info->request_time + (2 * hls_window) < srs_time_now_cached()) {
+        srs_utime_t hls_window = _srs_config->get_hls_window(info->req_->vhost_);
+        if (info->request_time_ + (2 * hls_window) < srs_time_now_cached()) {
             SrsContextRestore(_srs_context->get_id());
             _srs_context->set_id(SrsContextId().set_value(ctx));
 
-            http_hooks_on_stop(info->req);
+            http_hooks_on_stop(info->req_);
 
             SrsStatistic *stat = SrsStatistic::instance();
             // TODO: FIXME: Should finger out the err.
@@ -405,7 +405,7 @@ bool SrsHlsStream::is_interrupt(std::string id)
 {
     std::map<std::string, SrsHlsVirtualConn *>::iterator it = map_ctx_info_.find(id);
     if (it != map_ctx_info_.end()) {
-        return it->second->interrupt;
+        return it->second->interrupt_;
     }
     return false;
 }
@@ -599,7 +599,7 @@ srs_error_t SrsVodStream::serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessag
 
 SrsHttpStaticServer::SrsHttpStaticServer(SrsServer *svr)
 {
-    server = svr;
+    server_ = svr;
     _srs_config->subscribe(this);
 }
 
@@ -639,7 +639,7 @@ srs_error_t SrsHttpStaticServer::initialize()
     if (!default_root_exists) {
         // add root
         std::string dir = _srs_config->get_http_stream_dir();
-        if ((err = mux.handle("/", new SrsVodStream(dir))) != srs_success) {
+        if ((err = mux_.handle("/", new SrsVodStream(dir))) != srs_success) {
             return srs_error_wrap(err, "mount root dir=%s", dir.c_str());
         }
         srs_trace("http: root mount to %s", dir.c_str());
@@ -678,7 +678,7 @@ srs_error_t SrsHttpStaticServer::mount_vhost(string vhost, string &pmount)
     }
 
     // mount the http of vhost.
-    if ((err = mux.handle(mount, new SrsVodStream(dir))) != srs_success) {
+    if ((err = mux_.handle(mount, new SrsVodStream(dir))) != srs_success) {
         return srs_error_wrap(err, "mux handle");
     }
     srs_trace("http: vhost=%s mount to %s at %s", vhost.c_str(), mount.c_str(), dir.c_str());

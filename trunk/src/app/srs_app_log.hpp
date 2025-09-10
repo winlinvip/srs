@@ -33,13 +33,13 @@ private:
     SrsLogLevel level_;
 
 private:
-    char *log_data;
+    char *log_data_;
     // Log to file if specified srs_log_file
-    int fd;
+    int fd_;
     // Whether log to file tank
-    bool log_to_file_tank;
+    bool log_to_file_tank_;
     // Whether use utc time.
-    bool utc;
+    bool utc_;
 
 public:
     SrsFileLog();

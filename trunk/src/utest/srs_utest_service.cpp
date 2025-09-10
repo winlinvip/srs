@@ -97,7 +97,7 @@ VOID TEST(TCPServerTest, PingPong)
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 
         HELPER_EXPECT_SUCCESS(l.listen());
-        EXPECT_TRUE(srs_netfd_fileno(l.lfd) > 0);
+        EXPECT_TRUE(srs_netfd_fileno(l.lfd_) > 0);
     }
 
     if (true) {
@@ -1592,7 +1592,7 @@ public:
     }
     virtual srs_error_t cycle()
     {
-        r0 = st_thread_join((st_thread_t)trd.trd, NULL);
+        r0 = st_thread_join((st_thread_t)trd.trd_, NULL);
         r1 = errno;
         return srs_success;
     }

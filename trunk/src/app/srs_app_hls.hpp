@@ -44,17 +44,17 @@ class SrsHlsSegment : public SrsFragment
 {
 public:
     // sequence number in m3u8.
-    int sequence_no;
+    int sequence_no_;
     // ts uri in m3u8.
-    std::string uri;
+    std::string uri_;
     // The underlayer file writer.
-    SrsFileWriter *writer;
+    SrsFileWriter *writer_;
     // The TS context writer to write TS to file.
-    SrsTsContextWriter *tscw;
+    SrsTsContextWriter *tscw_;
     // Will be saved in m3u8 file.
-    unsigned char iv[16];
+    unsigned char iv_[16];
     // The full key path.
-    std::string keypath;
+    std::string keypath_;
 
 public:
     SrsHlsSegment(SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc, SrsFileWriter *w);
@@ -104,11 +104,11 @@ private:
 
 public:
     // m4s uri in m3u8.
-    std::string uri;
+    std::string uri_;
     // sequence number in m3u8.
-    int sequence_no;
+    int sequence_no_;
     // IV for encryption, saved in m3u8 file.
-    unsigned char iv[16];
+    unsigned char iv_[16];
 
 public:
     SrsHlsM4sSegment(SrsFileWriter *fw);
@@ -126,14 +126,14 @@ public:
 class SrsDvrAsyncCallOnHls : public ISrsAsyncCallTask
 {
 private:
-    SrsContextId cid;
-    std::string path;
-    std::string ts_url;
-    std::string m3u8;
-    std::string m3u8_url;
-    int seq_no;
-    ISrsRequest *req;
-    srs_utime_t duration;
+    SrsContextId cid_;
+    std::string path_;
+    std::string ts_url_;
+    std::string m3u8_;
+    std::string m3u8_url_;
+    int seq_no_;
+    ISrsRequest *req_;
+    srs_utime_t duration_;
 
 public:
     // TODO: FIXME: Use TBN 1000.
@@ -149,9 +149,9 @@ public:
 class SrsDvrAsyncCallOnHlsNotify : public ISrsAsyncCallTask
 {
 private:
-    SrsContextId cid;
-    std::string ts_url;
-    ISrsRequest *req;
+    SrsContextId cid_;
+    std::string ts_url_;
+    ISrsRequest *req_;
 
 public:
     SrsDvrAsyncCallOnHlsNotify(SrsContextId c, ISrsRequest *r, std::string u);
@@ -172,61 +172,61 @@ public:
 class SrsHlsMuxer
 {
 private:
-    ISrsRequest *req;
+    ISrsRequest *req_;
 
 private:
-    std::string hls_entry_prefix;
-    std::string hls_path;
-    std::string hls_ts_file;
-    bool hls_cleanup;
-    bool hls_wait_keyframe;
-    std::string m3u8_dir;
-    double hls_aof_ratio;
+    std::string hls_entry_prefix_;
+    std::string hls_path_;
+    std::string hls_ts_file_;
+    bool hls_cleanup_;
+    bool hls_wait_keyframe_;
+    std::string m3u8_dir_;
+    double hls_aof_ratio_;
     // TODO: FIXME: Use TBN 1000.
-    srs_utime_t hls_fragment;
-    srs_utime_t hls_window;
-    SrsAsyncCallWorker *async;
+    srs_utime_t hls_fragment_;
+    srs_utime_t hls_window_;
+    SrsAsyncCallWorker *async_;
 
 private:
     // Whether use floor algorithm for timestamp.
-    bool hls_ts_floor;
+    bool hls_ts_floor_;
     // The deviation in piece to adjust the fragment to be more
     // bigger or smaller.
-    int deviation_ts;
+    int deviation_ts_;
     // The previous reap floor timestamp,
     // used to detect the dup or jmp or ts.
-    int64_t accept_floor_ts;
-    int64_t previous_floor_ts;
+    int64_t accept_floor_ts_;
+    int64_t previous_floor_ts_;
 
 private:
     // Whether encrypted or not
-    bool hls_keys;
-    int hls_fragments_per_key;
+    bool hls_keys_;
+    int hls_fragments_per_key_;
     // The key file name
-    std::string hls_key_file;
+    std::string hls_key_file_;
     // The key file path
-    std::string hls_key_file_path;
+    std::string hls_key_file_path_;
     // The key file url
-    std::string hls_key_url;
+    std::string hls_key_url_;
     // The key and iv.
-    unsigned char key[16];
-    unsigned char iv[16];
+    unsigned char key_[16];
+    unsigned char iv_[16];
     // The underlayer file writer.
-    SrsFileWriter *writer;
+    SrsFileWriter *writer_;
 
 private:
-    int _sequence_no;
-    srs_utime_t max_td;
-    std::string m3u8;
-    std::string m3u8_url;
+    int sequence_no_;
+    srs_utime_t max_td_;
+    std::string m3u8_;
+    std::string m3u8_url_;
 
 private:
     // The available cached segments in m3u8.
-    SrsFragmentWindow *segments;
+    SrsFragmentWindow *segments_;
     // The current writing segment.
-    SrsHlsSegment *current;
+    SrsHlsSegment *current_;
     // The ts context, to keep cc continous between ts.
-    SrsTsContext *context;
+    SrsTsContext *context_;
 
 private:
     // Latest audio codec, parsed from stream.
@@ -492,17 +492,17 @@ class SrsHlsController : public ISrsHlsController
 private:
     // The HLS muxer to reap ts and m3u8.
     // The TS is cached to SrsTsMessageCache then flush to ts segment.
-    SrsHlsMuxer *muxer;
+    SrsHlsMuxer *muxer_;
     // The TS cache
-    SrsTsMessageCache *tsmc;
+    SrsTsMessageCache *tsmc_;
 
     // If the diff=dts-previous_audio_dts is about 23,
     // that's the AAC samples is 1024, and we use the samples to calc the dts.
-    int64_t previous_audio_dts;
+    int64_t previous_audio_dts_;
     // The total aac samples.
-    uint64_t aac_samples;
+    uint64_t aac_samples_;
     // Whether directly turn FLV timestamp to TS DTS.
-    bool hls_dts_directly;
+    bool hls_dts_directly_;
 
 public:
     SrsHlsController();
@@ -588,26 +588,26 @@ public:
 class SrsHls
 {
 private:
-    ISrsHlsController *controller;
+    ISrsHlsController *controller_;
 
 private:
-    ISrsRequest *req;
+    ISrsRequest *req_;
     // Whether the HLS is enabled.
-    bool enabled;
+    bool enabled_;
     // Whether the HLS stream is able to be disposed.
-    bool disposable;
+    bool disposable_;
     // Whether the HLS stream is unpublishing.
     bool unpublishing_;
     // Whether requires HLS to do reload asynchronously.
     bool async_reload_;
     bool reloading_;
     // To detect heartbeat and dispose it if configured.
-    srs_utime_t last_update_time;
+    srs_utime_t last_update_time_;
 
 private:
-    SrsOriginHub *hub;
-    SrsRtmpJitter *jitter;
-    SrsPithyPrint *pprint;
+    SrsOriginHub *hub_;
+    SrsRtmpJitter *jitter_;
+    SrsPithyPrint *pprint_;
 
 public:
     SrsHls();

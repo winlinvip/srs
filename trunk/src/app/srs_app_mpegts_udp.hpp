@@ -56,9 +56,9 @@ class SrsMpegtsQueue
 {
 private:
     // The key: dts, value: msg.
-    std::map<int64_t, SrsMediaPacket *> msgs;
-    int nb_audios;
-    int nb_videos;
+    std::map<int64_t, SrsMediaPacket *> msgs_;
+    int nb_audios_;
+    int nb_videos_;
 
 public:
     SrsMpegtsQueue();
@@ -73,28 +73,28 @@ public:
 class SrsMpegtsOverUdp : public ISrsTsHandler, public ISrsUdpHandler
 {
 private:
-    SrsTsContext *context;
-    SrsSimpleStream *buffer;
-    std::string output;
+    SrsTsContext *context_;
+    SrsSimpleStream *buffer_;
+    std::string output_;
 
 private:
-    SrsSimpleRtmpClient *sdk;
+    SrsSimpleRtmpClient *sdk_;
 
 private:
-    SrsRawH264Stream *avc;
-    std::string h264_sps;
-    bool h264_sps_changed;
-    std::string h264_pps;
-    bool h264_pps_changed;
-    bool h264_sps_pps_sent;
+    SrsRawH264Stream *avc_;
+    std::string h264_sps_;
+    bool h264_sps_changed_;
+    std::string h264_pps_;
+    bool h264_pps_changed_;
+    bool h264_sps_pps_sent_;
 
 private:
-    SrsRawAacStream *aac;
-    std::string aac_specific_config;
+    SrsRawAacStream *aac_;
+    std::string aac_specific_config_;
 
 private:
-    SrsMpegtsQueue *queue;
-    SrsPithyPrint *pprint;
+    SrsMpegtsQueue *queue_;
+    SrsPithyPrint *pprint_;
 
 public:
     SrsMpegtsOverUdp();

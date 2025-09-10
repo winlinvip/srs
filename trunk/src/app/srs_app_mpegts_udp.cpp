@@ -79,17 +79,17 @@ void SrsUdpCasterListener::close()
 
 SrsMpegtsQueue::SrsMpegtsQueue()
 {
-    nb_audios = nb_videos = 0;
+    nb_audios_ = nb_videos_ = 0;
 }
 
 SrsMpegtsQueue::~SrsMpegtsQueue()
 {
     std::map<int64_t, SrsMediaPacket *>::iterator it;
-    for (it = msgs.begin(); it != msgs.end(); ++it) {
+    for (it = msgs_.begin(); it != msgs_.end(); ++it) {
         SrsMediaPacket *msg = it->second;
         srs_freep(msg);
     }
-    msgs.clear();
+    msgs_.clear();
 }
 
 srs_error_t SrsMpegtsQueue::push(SrsMediaPacket *msg)
@@ -98,7 +98,7 @@ srs_error_t SrsMpegtsQueue::push(SrsMediaPacket *msg)
 
     // TODO: FIXME: use right way.
     for (int i = 0; i < 10; i++) {
-        if (msgs.find(msg->timestamp_) == msgs.end()) {
+        if (msgs_.find(msg->timestamp_) == msgs_.end()) {
             break;
         }
 
@@ -113,14 +113,14 @@ srs_error_t SrsMpegtsQueue::push(SrsMediaPacket *msg)
     }
 
     if (msg->is_audio()) {
-        nb_audios++;
+        nb_audios_++;
     }
 
     if (msg->is_video()) {
-        nb_videos++;
+        nb_videos_++;
     }
 
-    msgs[msg->timestamp_] = msg;
+    msgs_[msg->timestamp_] = msg;
 
     return err;
 }
@@ -128,21 +128,21 @@ srs_error_t SrsMpegtsQueue::push(SrsMediaPacket *msg)
 SrsMediaPacket *SrsMpegtsQueue::dequeue()
 {
     // got 2+ videos and audios, ok to dequeue.
-    bool av_ok = nb_videos >= 2 && nb_audios >= 2;
+    bool av_ok = nb_videos_ >= 2 && nb_audios_ >= 2;
     // 100 videos about 30s, while 300 audios about 30s
-    bool av_overflow = nb_videos > 100 || nb_audios > 300;
+    bool av_overflow = nb_videos_ > 100 || nb_audios_ > 300;
 
     if (av_ok || av_overflow) {
-        std::map<int64_t, SrsMediaPacket *>::iterator it = msgs.begin();
+        std::map<int64_t, SrsMediaPacket *>::iterator it = msgs_.begin();
         SrsMediaPacket *msg = it->second;
-        msgs.erase(it);
+        msgs_.erase(it);
 
         if (msg->is_audio()) {
-            nb_audios--;
+            nb_audios_--;
         }
 
         if (msg->is_video()) {
-            nb_videos--;
+            nb_videos_--;
         }
 
         return msg;
@@ -153,35 +153,35 @@ SrsMediaPacket *SrsMpegtsQueue::dequeue()
 
 SrsMpegtsOverUdp::SrsMpegtsOverUdp()
 {
-    context = new SrsTsContext();
-    buffer = new SrsSimpleStream();
+    context_ = new SrsTsContext();
+    buffer_ = new SrsSimpleStream();
 
-    sdk = NULL;
+    sdk_ = NULL;
 
-    avc = new SrsRawH264Stream();
-    aac = new SrsRawAacStream();
-    h264_sps_changed = false;
-    h264_pps_changed = false;
-    h264_sps_pps_sent = false;
-    queue = new SrsMpegtsQueue();
-    pprint = SrsPithyPrint::create_caster();
+    avc_ = new SrsRawH264Stream();
+    aac_ = new SrsRawAacStream();
+    h264_sps_changed_ = false;
+    h264_pps_changed_ = false;
+    h264_sps_pps_sent_ = false;
+    queue_ = new SrsMpegtsQueue();
+    pprint_ = SrsPithyPrint::create_caster();
 }
 
 SrsMpegtsOverUdp::~SrsMpegtsOverUdp()
 {
     close();
 
-    srs_freep(buffer);
-    srs_freep(context);
-    srs_freep(avc);
-    srs_freep(aac);
-    srs_freep(queue);
-    srs_freep(pprint);
+    srs_freep(buffer_);
+    srs_freep(context_);
+    srs_freep(avc_);
+    srs_freep(aac_);
+    srs_freep(queue_);
+    srs_freep(pprint_);
 }
 
 srs_error_t SrsMpegtsOverUdp::initialize(SrsConfDirective *c)
 {
-    output = _srs_config->get_stream_caster_output(c);
+    output_ = _srs_config->get_stream_caster_output(c);
     return srs_success;
 }
 
@@ -199,7 +199,7 @@ srs_error_t SrsMpegtsOverUdp::on_udp_packet(const sockaddr *from, const int from
     int peer_port = atoi(port_string);
 
     // append to buffer.
-    buffer->append(buf, nb_buf);
+    buffer_->append(buf, nb_buf);
 
     srs_error_t err = on_udp_bytes(peer_ip, peer_port, buf, nb_buf);
     if (err != srs_success) {
@@ -221,7 +221,7 @@ srs_error_t SrsMpegtsOverUdp::on_udp_bytes(string host, int port, char *buf, int
     if ((err = fw.open("latest.ts")) != srs_success) {
         return srs_error_wrap(err, "open file");
     }
-    if ((err = fw.write(buffer->bytes(), buffer->length(), NULL)) != srs_success) {
+    if ((err = fw.write(buffer_->bytes(), buffer_->length(), NULL)) != srs_success) {
         return srs_error_wrap(err, "write data");
     }
     fw.close();
@@ -231,43 +231,43 @@ srs_error_t SrsMpegtsOverUdp::on_udp_bytes(string host, int port, char *buf, int
     if ((err = fr.open("latest.ts")) != srs_success) {
         return srs_error_wrap(err, "open file");
     }
-    buffer->erase(buffer->length());
+    buffer_->erase(buffer_->length());
     int nb_fbuf = fr.filesize();
     SrsUniquePtr<char[]> fbuf(new char[nb_fbuf]);
     if ((err = fr.read(fbuf.get(), nb_fbuf, NULL)) != srs_success) {
         return srs_error_wrap(err, "read data");
     }
     fr.close();
-    buffer->append(fbuf.get(), nb_fbuf);
+    buffer_->append(fbuf.get(), nb_fbuf);
 #endif
 
     // find the sync byte of mpegts.
-    char *p = buffer->bytes();
-    for (int i = 0; i < buffer->length(); i++) {
+    char *p = buffer_->bytes();
+    for (int i = 0; i < buffer_->length(); i++) {
         if (p[i] != 0x47) {
             continue;
         }
 
         if (i > 0) {
-            buffer->erase(i);
+            buffer_->erase(i);
         }
         break;
     }
 
     // drop ts packet when size not modulus by 188
-    if (buffer->length() < SRS_TS_PACKET_SIZE) {
-        srs_warn("udp: wait %s:%d packet %d/%d bytes", host.c_str(), port, nb_buf, buffer->length());
+    if (buffer_->length() < SRS_TS_PACKET_SIZE) {
+        srs_warn("udp: wait %s:%d packet %d/%d bytes", host.c_str(), port, nb_buf, buffer_->length());
         return err;
     }
 
     // use stream to parse ts packet.
-    int nb_packet = buffer->length() / SRS_TS_PACKET_SIZE;
+    int nb_packet = buffer_->length() / SRS_TS_PACKET_SIZE;
     for (int i = 0; i < nb_packet; i++) {
-        char *p = buffer->bytes() + (i * SRS_TS_PACKET_SIZE);
+        char *p = buffer_->bytes() + (i * SRS_TS_PACKET_SIZE);
         SrsUniquePtr<SrsBuffer> stream(new SrsBuffer(p, SRS_TS_PACKET_SIZE));
 
         // process each ts packet
-        if ((err = context->decode(stream.get(), this)) != srs_success) {
+        if ((err = context_->decode(stream.get(), this)) != srs_success) {
             srs_info("parse ts packet err=%s", srs_error_desc(err).c_str());
             srs_error_reset(err);
             continue;
@@ -276,7 +276,7 @@ srs_error_t SrsMpegtsOverUdp::on_udp_bytes(string host, int port, char *buf, int
 
     // erase consumed bytes
     if (nb_packet > 0) {
-        buffer->erase(nb_packet * SRS_TS_PACKET_SIZE);
+        buffer_->erase(nb_packet * SRS_TS_PACKET_SIZE);
     }
 
     return err;
@@ -286,7 +286,7 @@ srs_error_t SrsMpegtsOverUdp::on_ts_message(SrsTsMessage *msg)
 {
     srs_error_t err = srs_success;
 
-    pprint->elapse();
+    pprint_->elapse();
 
     // about the bytes of msg, specified by elementary stream which indicates by PES_packet_data_byte and stream_id
     // for example, when SrsTsStream of SrsTsChannel indicates stream_type is SrsTsStreamVideoMpeg4 and SrsTsStreamAudioMpeg4,
@@ -325,9 +325,9 @@ srs_error_t SrsMpegtsOverUdp::on_ts_message(SrsTsMessage *msg)
     // 14496-2 video stream number xxxx
     // ((stream_id >> 4) & 0x0f) == SrsTsPESStreamIdVideo
 
-    if (pprint->can_print()) {
+    if (pprint_->can_print()) {
         srs_trace("<- " SRS_CONSTS_LOG_STREAM_CASTER " mpegts: got %s age=%d stream=%s, dts=%" PRId64 ", pts=%" PRId64 ", size=%d, us=%d, cc=%d, sid=%#x(%s-%d)",
-                  (msg->channel_->apply_ == SrsTsPidApplyVideo) ? "Video" : "Audio", pprint->age(), srs_ts_stream2string(msg->channel_->stream_).c_str(),
+                  (msg->channel_->apply_ == SrsTsPidApplyVideo) ? "Video" : "Audio", pprint_->age(), srs_ts_stream2string(msg->channel_->stream_).c_str(),
                   msg->dts_, msg->pts_, msg->payload_->length(), msg->packet_->payload_unit_start_indicator_, msg->continuity_counter_, msg->sid_,
                   msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                           : "N",
@@ -389,7 +389,7 @@ srs_error_t SrsMpegtsOverUdp::on_ts_video(SrsTsMessage *msg, SrsBuffer *avs)
     while (!avs->empty()) {
         char *frame = NULL;
         int frame_size = 0;
-        if ((err = avc->annexb_demux(avs, &frame, &frame_size)) != srs_success) {
+        if ((err = avc_->annexb_demux(avs, &frame, &frame_size)) != srs_success) {
             return srs_error_wrap(err, "demux annexb");
         }
 
@@ -404,17 +404,17 @@ srs_error_t SrsMpegtsOverUdp::on_ts_video(SrsTsMessage *msg, SrsBuffer *avs)
         }
 
         // for sps
-        if (avc->is_sps(frame, frame_size)) {
+        if (avc_->is_sps(frame, frame_size)) {
             std::string sps;
-            if ((err = avc->sps_demux(frame, frame_size, sps)) != srs_success) {
+            if ((err = avc_->sps_demux(frame, frame_size, sps)) != srs_success) {
                 return srs_error_wrap(err, "demux sps");
             }
 
-            if (h264_sps == sps) {
+            if (h264_sps_ == sps) {
                 continue;
             }
-            h264_sps_changed = true;
-            h264_sps = sps;
+            h264_sps_changed_ = true;
+            h264_sps_ = sps;
 
             if ((err = write_h264_sps_pps(dts, pts)) != srs_success) {
                 return srs_error_wrap(err, "write sps/pps");
@@ -423,17 +423,17 @@ srs_error_t SrsMpegtsOverUdp::on_ts_video(SrsTsMessage *msg, SrsBuffer *avs)
         }
 
         // for pps
-        if (avc->is_pps(frame, frame_size)) {
+        if (avc_->is_pps(frame, frame_size)) {
             std::string pps;
-            if ((err = avc->pps_demux(frame, frame_size, pps)) != srs_success) {
+            if ((err = avc_->pps_demux(frame, frame_size, pps)) != srs_success) {
                 return srs_error_wrap(err, "demux pps");
             }
 
-            if (h264_pps == pps) {
+            if (h264_pps_ == pps) {
                 continue;
             }
-            h264_pps_changed = true;
-            h264_pps = pps;
+            h264_pps_changed_ = true;
+            h264_pps_ = pps;
 
             if ((err = write_h264_sps_pps(dts, pts)) != srs_success) {
                 return srs_error_wrap(err, "write sps/pps");
@@ -460,13 +460,13 @@ srs_error_t SrsMpegtsOverUdp::write_h264_sps_pps(uint32_t dts, uint32_t pts)
     // when sps or pps changed, update the sequence header,
     // for the pps maybe not changed while sps changed.
     // so, we must check when each video ts message frame parsed.
-    if (!h264_sps_changed || !h264_pps_changed) {
+    if (!h264_sps_changed_ || !h264_pps_changed_) {
         return err;
     }
 
     // h264 raw to h264 packet.
     std::string sh;
-    if ((err = avc->mux_sequence_header(h264_sps, h264_pps, sh)) != srs_success) {
+    if ((err = avc_->mux_sequence_header(h264_sps_, h264_pps_, sh)) != srs_success) {
         return srs_error_wrap(err, "mux sequence header");
     }
 
@@ -475,7 +475,7 @@ srs_error_t SrsMpegtsOverUdp::write_h264_sps_pps(uint32_t dts, uint32_t pts)
     int8_t avc_packet_type = SrsVideoAvcFrameTraitSequenceHeader;
     char *flv = NULL;
     int nb_flv = 0;
-    if ((err = avc->mux_avc2flv(sh, frame_type, avc_packet_type, dts, pts, &flv, &nb_flv)) != srs_success) {
+    if ((err = avc_->mux_avc2flv(sh, frame_type, avc_packet_type, dts, pts, &flv, &nb_flv)) != srs_success) {
         return srs_error_wrap(err, "avc to flv");
     }
 
@@ -486,9 +486,9 @@ srs_error_t SrsMpegtsOverUdp::write_h264_sps_pps(uint32_t dts, uint32_t pts)
     }
 
     // reset sps and pps.
-    h264_sps_changed = false;
-    h264_pps_changed = false;
-    h264_sps_pps_sent = true;
+    h264_sps_changed_ = false;
+    h264_pps_changed_ = false;
+    h264_sps_pps_sent_ = true;
 
     return err;
 }
@@ -498,7 +498,7 @@ srs_error_t SrsMpegtsOverUdp::write_h264_ipb_frame(char *frame, int frame_size, 
     srs_error_t err = srs_success;
 
     // when sps or pps not sent, ignore the packet.
-    if (!h264_sps_pps_sent) {
+    if (!h264_sps_pps_sent_) {
         return srs_error_new(ERROR_H264_DROP_BEFORE_SPS_PPS, "drop sps/pps");
     }
 
@@ -514,14 +514,14 @@ srs_error_t SrsMpegtsOverUdp::write_h264_ipb_frame(char *frame, int frame_size, 
     }
 
     std::string ibp;
-    if ((err = avc->mux_ipb_frame(frame, frame_size, ibp)) != srs_success) {
+    if ((err = avc_->mux_ipb_frame(frame, frame_size, ibp)) != srs_success) {
         return srs_error_wrap(err, "mux frame");
     }
 
     int8_t avc_packet_type = SrsVideoAvcFrameTraitNALU;
     char *flv = NULL;
     int nb_flv = 0;
-    if ((err = avc->mux_avc2flv(ibp, frame_type, avc_packet_type, dts, pts, &flv, &nb_flv)) != srs_success) {
+    if ((err = avc_->mux_avc2flv(ibp, frame_type, avc_packet_type, dts, pts, &flv, &nb_flv)) != srs_success) {
         return srs_error_wrap(err, "mux avc to flv");
     }
 
@@ -547,7 +547,7 @@ srs_error_t SrsMpegtsOverUdp::on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs)
         char *frame = NULL;
         int frame_size = 0;
         SrsRawAacStreamCodec codec;
-        if ((err = aac->adts_demux(avs, &frame, &frame_size, codec)) != srs_success) {
+        if ((err = aac_->adts_demux(avs, &frame, &frame_size, codec)) != srs_success) {
             return srs_error_wrap(err, "demux adts");
         }
 
@@ -559,12 +559,12 @@ srs_error_t SrsMpegtsOverUdp::on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs)
         srs_info("mpegts: demux aac frame size=%d, dts=%d", frame_size, dts);
 
         // generate sh.
-        if (aac_specific_config.empty()) {
+        if (aac_specific_config_.empty()) {
             std::string sh;
-            if ((err = aac->mux_sequence_header(&codec, sh)) != srs_success) {
+            if ((err = aac_->mux_sequence_header(&codec, sh)) != srs_success) {
                 return srs_error_wrap(err, "mux sequence header");
             }
-            aac_specific_config = sh;
+            aac_specific_config_ = sh;
 
             codec.aac_packet_type_ = 0;
 
@@ -589,7 +589,7 @@ srs_error_t SrsMpegtsOverUdp::write_audio_raw_frame(char *frame, int frame_size,
 
     char *data = NULL;
     int size = 0;
-    if ((err = aac->mux_aac2flv(frame, frame_size, codec, dts, &data, &size)) != srs_success) {
+    if ((err = aac_->mux_aac2flv(frame, frame_size, codec, dts, &data, &size)) != srs_success) {
         return srs_error_wrap(err, "mux aac to flv");
     }
 
@@ -605,7 +605,7 @@ srs_error_t SrsMpegtsOverUdp::rtmp_write_packet(char type, uint32_t timestamp, c
     }
 
     SrsRtmpCommonMessage *cmsg = NULL;
-    if ((err = srs_rtmp_create_msg(type, timestamp, data, size, sdk->sid(), &cmsg)) != srs_success) {
+    if ((err = srs_rtmp_create_msg(type, timestamp, data, size, sdk_->sid(), &cmsg)) != srs_success) {
         return srs_error_wrap(err, "create message");
     }
     srs_assert(cmsg);
@@ -615,25 +615,25 @@ srs_error_t SrsMpegtsOverUdp::rtmp_write_packet(char type, uint32_t timestamp, c
     srs_freep(cmsg);
 
     // push msg to queue.
-    if ((err = queue->push(msg)) != srs_success) {
+    if ((err = queue_->push(msg)) != srs_success) {
         return srs_error_wrap(err, "push to queue");
     }
 
     // for all ready msg, dequeue and send out.
     for (;;) {
-        if ((msg = queue->dequeue()) == NULL) {
+        if ((msg = queue_->dequeue()) == NULL) {
             break;
         }
 
-        if (pprint->can_print()) {
+        if (pprint_->can_print()) {
             srs_trace("mpegts: send msg %s age=%d, dts=%" PRId64 ", size=%d",
                       msg->is_audio() ? "A" : msg->is_video() ? "V"
                                                               : "N",
-                      pprint->age(), msg->timestamp_, msg->size());
+                      pprint_->age(), msg->timestamp_, msg->size());
         }
 
         // send out encoded msg.
-        if ((err = sdk->send_and_free_message(msg)) != srs_success) {
+        if ((err = sdk_->send_and_free_message(msg)) != srs_success) {
             close();
             return srs_error_wrap(err, "send messages");
         }
@@ -647,20 +647,20 @@ srs_error_t SrsMpegtsOverUdp::connect()
     srs_error_t err = srs_success;
 
     // Ignore when connected.
-    if (sdk) {
+    if (sdk_) {
         return err;
     }
 
     srs_utime_t cto = SRS_CONSTS_RTMP_TIMEOUT;
     srs_utime_t sto = SRS_CONSTS_RTMP_PULSE;
-    sdk = new SrsSimpleRtmpClient(output, cto, sto);
+    sdk_ = new SrsSimpleRtmpClient(output_, cto, sto);
 
-    if ((err = sdk->connect()) != srs_success) {
+    if ((err = sdk_->connect()) != srs_success) {
         close();
-        return srs_error_wrap(err, "connect %s failed, cto=%dms, sto=%dms.", output.c_str(), srsu2msi(cto), srsu2msi(sto));
+        return srs_error_wrap(err, "connect %s failed, cto=%dms, sto=%dms.", output_.c_str(), srsu2msi(cto), srsu2msi(sto));
     }
 
-    if ((err = sdk->publish(SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE)) != srs_success) {
+    if ((err = sdk_->publish(SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE)) != srs_success) {
         close();
         return srs_error_wrap(err, "publish");
     }
@@ -670,5 +670,5 @@ srs_error_t SrsMpegtsOverUdp::connect()
 
 void SrsMpegtsOverUdp::close()
 {
-    srs_freep(sdk);
+    srs_freep(sdk_);
 }

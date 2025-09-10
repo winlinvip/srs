@@ -97,13 +97,13 @@ int SrsSrtPacket::size()
 
 SrsSrtSourceManager::SrsSrtSourceManager()
 {
-    lock = srs_mutex_new();
+    lock_ = srs_mutex_new();
     timer_ = new SrsHourGlass("sources", this, 1 * SRS_UTIME_SECONDS);
 }
 
 SrsSrtSourceManager::~SrsSrtSourceManager()
 {
-    srs_mutex_destroy(lock);
+    srs_mutex_destroy(lock_);
     srs_freep(timer_);
 }
 
@@ -132,7 +132,7 @@ srs_error_t SrsSrtSourceManager::notify(int event, srs_utime_t interval, srs_uti
     srs_error_t err = srs_success;
 
     std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it;
-    for (it = pool.begin(); it != pool.end();) {
+    for (it = pool_.begin(); it != pool_.end();) {
         SrsSharedPtr<SrsSrtSource> &source = it->second;
 
         // When source expired, remove it.
@@ -141,8 +141,8 @@ srs_error_t SrsSrtSourceManager::notify(int event, srs_utime_t interval, srs_uti
             SrsContextId cid = source->source_id();
             if (cid.empty())
                 cid = source->pre_source_id();
-            srs_trace("SRT: cleanup die source, id=[%s], total=%d", cid.c_str(), (int)pool.size());
-            pool.erase(it++);
+            srs_trace("SRT: cleanup die source, id=[%s], total=%d", cid.c_str(), (int)pool_.size());
+            pool_.erase(it++);
         } else {
             ++it;
         }
@@ -160,11 +160,11 @@ srs_error_t SrsSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<Sr
     if (true) {
         // Use lock to protect coroutine switch.
         // @bug https://github.com/ossrs/srs/issues/1230
-        SrsLocker(&lock);
+        SrsLocker(&lock_);
 
         string stream_url = r->get_stream_url();
-        std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);
-        if (it != pool.end()) {
+        std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool_.find(stream_url);
+        if (it != pool_.end()) {
             SrsSharedPtr<SrsSrtSource> source = it->second;
             pps = source;
         } else {
@@ -172,7 +172,7 @@ srs_error_t SrsSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<Sr
             srs_trace("new srt source, stream_url=%s", stream_url.c_str());
             pps = source;
 
-            pool[stream_url] = source;
+            pool_[stream_url] = source;
             created = true;
         }
     }
@@ -196,13 +196,13 @@ SrsSharedPtr<SrsSrtSource> SrsSrtSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
-    SrsLocker(&lock);
+    SrsLocker(&lock_);
 
     string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);
+    std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool_.find(stream_url);
 
     SrsSharedPtr<SrsSrtSource> source;
-    if (it == pool.end()) {
+    if (it == pool_.end()) {
         return source;
     }
 
@@ -215,11 +215,11 @@ SrsSrtSourceManager *_srs_srt_sources = NULL;
 SrsSrtConsumer::SrsSrtConsumer(SrsSrtSource *s)
 {
     source_ = s;
-    should_update_source_id = false;
+    should_update_source_id_ = false;
 
-    mw_wait = srs_cond_new();
-    mw_min_msgs = 0;
-    mw_waiting = false;
+    mw_wait_ = srs_cond_new();
+    mw_min_msgs_ = 0;
+    mw_waiting_ = false;
 }
 
 SrsSrtConsumer::~SrsSrtConsumer()
@@ -227,29 +227,29 @@ SrsSrtConsumer::~SrsSrtConsumer()
     source_->on_consumer_destroy(this);
 
     vector<SrsSrtPacket *>::iterator it;
-    for (it = queue.begin(); it != queue.end(); ++it) {
+    for (it = queue_.begin(); it != queue_.end(); ++it) {
         SrsSrtPacket *pkt = *it;
         srs_freep(pkt);
     }
 
-    srs_cond_destroy(mw_wait);
+    srs_cond_destroy(mw_wait_);
 }
 
 void SrsSrtConsumer::update_source_id()
 {
-    should_update_source_id = true;
+    should_update_source_id_ = true;
 }
 
 srs_error_t SrsSrtConsumer::enqueue(SrsSrtPacket *packet)
 {
     srs_error_t err = srs_success;
 
-    queue.push_back(packet);
+    queue_.push_back(packet);
 
-    if (mw_waiting) {
-        if ((int)queue.size() > mw_min_msgs) {
-            srs_cond_signal(mw_wait);
-            mw_waiting = false;
+    if (mw_waiting_) {
+        if ((int)queue_.size() > mw_min_msgs_) {
+            srs_cond_signal(mw_wait_);
+            mw_waiting_ = false;
             return err;
         }
     }
@@ -261,15 +261,15 @@ srs_error_t SrsSrtConsumer::dump_packet(SrsSrtPacket **ppkt)
 {
     srs_error_t err = srs_success;
 
-    if (should_update_source_id) {
+    if (should_update_source_id_) {
         srs_trace("update source_id=%s/%s", source_->source_id().c_str(), source_->pre_source_id().c_str());
-        should_update_source_id = false;
+        should_update_source_id_ = false;
     }
 
     // TODO: FIXME: Refine performance by ring buffer.
-    if (!queue.empty()) {
-        *ppkt = queue.front();
-        queue.erase(queue.begin());
+    if (!queue_.empty()) {
+        *ppkt = queue_.front();
+        queue_.erase(queue_.begin());
     }
 
     return err;
@@ -277,18 +277,18 @@ srs_error_t SrsSrtConsumer::dump_packet(SrsSrtPacket **ppkt)
 
 void SrsSrtConsumer::wait(int nb_msgs, srs_utime_t timeout)
 {
-    mw_min_msgs = nb_msgs;
+    mw_min_msgs_ = nb_msgs;
 
     // when duration ok, signal to flush.
-    if ((int)queue.size() > mw_min_msgs) {
+    if ((int)queue_.size() > mw_min_msgs_) {
         return;
     }
 
     // the enqueue will notify this cond.
-    mw_waiting = true;
+    mw_waiting_ = true;
 
     // use cond block wait for high performance mode.
-    srs_cond_timedwait(mw_wait, timeout);
+    srs_cond_timedwait(mw_wait_, timeout);
 }
 
 SrsSrtFrameBuilder::SrsSrtFrameBuilder(ISrsStreamBridge *bridge)
@@ -910,7 +910,7 @@ srs_error_t SrsSrtFrameBuilder::on_aac_frame(SrsTsMessage *msg, uint32_t pts, ch
 
 SrsSrtSource::SrsSrtSource()
 {
-    req = NULL;
+    req_ = NULL;
     can_publish_ = true;
     frame_builder_ = NULL;
     bridge_ = NULL;
@@ -921,11 +921,11 @@ SrsSrtSource::~SrsSrtSource()
 {
     // never free the consumers,
     // for all consumers are auto free.
-    consumers.clear();
+    consumers_.clear();
 
     srs_freep(frame_builder_);
     srs_freep(bridge_);
-    srs_freep(req);
+    srs_freep(req_);
 
     SrsContextId cid = _source_id;
     if (cid.empty())
@@ -949,7 +949,7 @@ srs_error_t SrsSrtSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    req = r->copy();
+    req_ = r->copy();
 
     return err;
 }
@@ -962,7 +962,7 @@ bool SrsSrtSource::stream_is_dead()
     }
 
     // has any consumers?
-    if (!consumers.empty()) {
+    if (!consumers_.empty()) {
         return false;
     }
 
@@ -990,7 +990,7 @@ srs_error_t SrsSrtSource::on_source_id_changed(SrsContextId id)
 
     // notice all consumer
     std::vector<SrsSrtConsumer *>::iterator it;
-    for (it = consumers.begin(); it != consumers.end(); ++it) {
+    for (it = consumers_.begin(); it != consumers_.end(); ++it) {
         SrsSrtConsumer *consumer = *it;
         consumer->update_source_id();
     }
@@ -1010,7 +1010,7 @@ SrsContextId SrsSrtSource::pre_source_id()
 
 void SrsSrtSource::update_auth(ISrsRequest *r)
 {
-    req->update_auth(r);
+    req_->update_auth(r);
 }
 
 void SrsSrtSource::set_bridge(ISrsStreamBridge *bridge)
@@ -1027,7 +1027,7 @@ srs_error_t SrsSrtSource::create_consumer(SrsSrtConsumer *&consumer)
     srs_error_t err = srs_success;
 
     consumer = new SrsSrtConsumer(this);
-    consumers.push_back(consumer);
+    consumers_.push_back(consumer);
 
     stream_die_at_ = 0;
 
@@ -1047,13 +1047,13 @@ srs_error_t SrsSrtSource::consumer_dumps(SrsSrtConsumer *consumer)
 void SrsSrtSource::on_consumer_destroy(SrsSrtConsumer *consumer)
 {
     std::vector<SrsSrtConsumer *>::iterator it;
-    it = std::find(consumers.begin(), consumers.end(), consumer);
-    if (it != consumers.end()) {
-        it = consumers.erase(it);
+    it = std::find(consumers_.begin(), consumers_.end(), consumer);
+    if (it != consumers_.end()) {
+        it = consumers_.erase(it);
     }
 
     // Destroy and cleanup source when no publishers and consumers.
-    if (can_publish_ && consumers.empty()) {
+    if (can_publish_ && consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
 }
@@ -1074,7 +1074,7 @@ srs_error_t SrsSrtSource::on_publish()
     }
 
     if (bridge_) {
-        if ((err = frame_builder_->initialize(req)) != srs_success) {
+        if ((err = frame_builder_->initialize(req_)) != srs_success) {
             return srs_error_wrap(err, "frame builder initialize");
         }
 
@@ -1088,7 +1088,7 @@ srs_error_t SrsSrtSource::on_publish()
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_stream_publish(req, _source_id.c_str());
+    stat->on_stream_publish(req_, _source_id.c_str());
 
     return err;
 }
@@ -1103,7 +1103,7 @@ void SrsSrtSource::on_unpublish()
     can_publish_ = true;
 
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_stream_close(req);
+    stat->on_stream_close(req_);
 
     if (bridge_) {
         frame_builder_->on_unpublish();
@@ -1114,7 +1114,7 @@ void SrsSrtSource::on_unpublish()
     }
 
     // Destroy and cleanup source when no publishers and consumers.
-    if (consumers.empty()) {
+    if (consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
 }
@@ -1123,8 +1123,8 @@ srs_error_t SrsSrtSource::on_packet(SrsSrtPacket *packet)
 {
     srs_error_t err = srs_success;
 
-    for (int i = 0; i < (int)consumers.size(); i++) {
-        SrsSrtConsumer *consumer = consumers.at(i);
+    for (int i = 0; i < (int)consumers_.size(); i++) {
+        SrsSrtConsumer *consumer = consumers_.at(i);
         if ((err = consumer->enqueue(packet->copy())) != srs_success) {
             return srs_error_wrap(err, "consume ts packet");
         }

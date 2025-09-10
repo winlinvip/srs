@@ -92,14 +92,14 @@ const char *_srs_version = "XCORE-" RTMP_SIG_SRS_SERVER;
         if (!dir && !srs_getenv(key).empty()) {                                \
             std::vector<string> vec = srs_strings_split(srs_getenv(key), " "); \
             dir = new SrsConfDirective();                                      \
-            dir->name_ = key;                                                   \
+            dir->name_ = key;                                                  \
             for (size_t i = 0; i < vec.size(); ++i) {                          \
                 std::string value = vec[i];                                    \
                 if (!value.empty()) {                                          \
-                    dir->args_.push_back(value);                                \
+                    dir->args_.push_back(value);                               \
                 }                                                              \
             }                                                                  \
-            env_cache_->directives_.push_back(dir);                             \
+            env_cache_->directives_.push_back(dir);                            \
         }                                                                      \
         if (dir)                                                               \
             return dir;                                                        \

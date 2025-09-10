@@ -64,12 +64,12 @@ public:
 class SrsRecvThread : public ISrsCoroutineHandler
 {
 protected:
-    SrsCoroutine *trd;
-    ISrsMessagePumper *pumper;
-    SrsRtmpServer *rtmp;
+    SrsCoroutine *trd_;
+    ISrsMessagePumper *pumper_;
+    SrsRtmpServer *rtmp_;
     SrsContextId _parent_cid;
     // The recv timeout in srs_utime_t.
-    srs_utime_t timeout;
+    srs_utime_t timeout_;
 
 public:
     // Constructor.
@@ -99,11 +99,11 @@ private:
 class SrsQueueRecvThread : public ISrsMessagePumper
 {
 private:
-    std::vector<SrsRtmpCommonMessage *> queue;
-    SrsRecvThread trd;
-    SrsRtmpServer *rtmp;
+    std::vector<SrsRtmpCommonMessage *> queue_;
+    SrsRecvThread trd_;
+    SrsRtmpServer *rtmp_;
     // The recv thread error code.
-    srs_error_t recv_error;
+    srs_error_t recv_error_;
     SrsLiveConsumer *_consumer;
 
 public:
@@ -139,30 +139,30 @@ class SrsPublishRecvThread : public ISrsMessagePumper, public ISrsReloadHandler
 {
 private:
     uint32_t nn_msgs_for_yield_;
-    SrsRecvThread trd;
-    SrsRtmpServer *rtmp;
-    ISrsRequest *req;
+    SrsRecvThread trd_;
+    SrsRtmpServer *rtmp_;
+    ISrsRequest *req_;
     // The msgs already got.
     int64_t _nb_msgs;
     // The video frames we got.
-    uint64_t video_frames;
+    uint64_t video_frames_;
     // For mr(merged read),
-    bool mr;
-    int mr_fd;
-    srs_utime_t mr_sleep;
+    bool mr_;
+    int mr_fd_;
+    srs_utime_t mr_sleep_;
     // For realtime
     // @see https://github.com/ossrs/srs/issues/257
-    bool realtime;
+    bool realtime_;
     // The recv thread error code.
-    srs_error_t recv_error;
+    srs_error_t recv_error_;
     SrsRtmpConn *_conn;
     // The params for conn callback.
     SrsSharedPtr<SrsLiveSource> source_;
     // The error timeout cond
-    srs_cond_t error;
+    srs_cond_t error_;
     // The merged context id.
-    SrsContextId cid;
-    SrsContextId ncid;
+    SrsContextId cid_;
+    SrsContextId ncid_;
 
 public:
     SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
@@ -205,8 +205,8 @@ private:
 class SrsHttpRecvThread : public ISrsCoroutineHandler
 {
 private:
-    SrsHttpxConn *conn;
-    SrsCoroutine *trd;
+    SrsHttpxConn *conn_;
+    SrsCoroutine *trd_;
 
 public:
     SrsHttpRecvThread(SrsHttpxConn *c);

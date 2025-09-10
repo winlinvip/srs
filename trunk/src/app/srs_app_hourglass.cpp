@@ -40,22 +40,22 @@ ISrsHourGlass::~ISrsHourGlass()
 SrsHourGlass::SrsHourGlass(string label, ISrsHourGlass *h, srs_utime_t resolution)
 {
     label_ = label;
-    handler = h;
-    _resolution = resolution;
-    total_elapse = 0;
-    trd = new SrsSTCoroutine("timer-" + label, this, _srs_context->get_id());
+    handler_ = h;
+    resolution_ = resolution;
+    total_elapse_ = 0;
+    trd_ = new SrsSTCoroutine("timer-" + label, this, _srs_context->get_id());
 }
 
 SrsHourGlass::~SrsHourGlass()
 {
-    srs_freep(trd);
+    srs_freep(trd_);
 }
 
 srs_error_t SrsHourGlass::start()
 {
     srs_error_t err = srs_success;
 
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "start timer");
     }
 
@@ -64,7 +64,7 @@ srs_error_t SrsHourGlass::start()
 
 void SrsHourGlass::stop()
 {
-    trd->stop();
+    trd_->stop();
 }
 
 srs_error_t SrsHourGlass::tick(srs_utime_t interval)
@@ -76,21 +76,21 @@ srs_error_t SrsHourGlass::tick(int event, srs_utime_t interval)
 {
     srs_error_t err = srs_success;
 
-    if (_resolution > 0 && (interval % _resolution) != 0) {
+    if (resolution_ > 0 && (interval % resolution_) != 0) {
         return srs_error_new(ERROR_SYSTEM_HOURGLASS_RESOLUTION,
-                             "invalid interval=%dms, resolution=%dms", srsu2msi(interval), srsu2msi(_resolution));
+                             "invalid interval=%dms, resolution=%dms", srsu2msi(interval), srsu2msi(resolution_));
     }
 
-    ticks[event] = interval;
+    ticks_[event] = interval;
 
     return err;
 }
 
 void SrsHourGlass::untick(int event)
 {
-    map<int, srs_utime_t>::iterator it = ticks.find(event);
-    if (it != ticks.end()) {
-        ticks.erase(it);
+    map<int, srs_utime_t>::iterator it = ticks_.find(event);
+    if (it != ticks_.end()) {
+        ticks_.erase(it);
     }
 }
 
@@ -99,27 +99,27 @@ srs_error_t SrsHourGlass::cycle()
     srs_error_t err = srs_success;
 
     while (true) {
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             return srs_error_wrap(err, "quit");
         }
 
         map<int, srs_utime_t>::iterator it;
-        for (it = ticks.begin(); it != ticks.end(); ++it) {
+        for (it = ticks_.begin(); it != ticks_.end(); ++it) {
             int event = it->first;
             srs_utime_t interval = it->second;
 
-            if (interval == 0 || (total_elapse % interval) == 0) {
+            if (interval == 0 || (total_elapse_ % interval) == 0) {
                 ++_srs_pps_timer->sugar_;
 
-                if ((err = handler->notify(event, interval, total_elapse)) != srs_success) {
+                if ((err = handler_->notify(event, interval, total_elapse_)) != srs_success) {
                     return srs_error_wrap(err, "notify");
                 }
             }
         }
 
         // TODO: FIXME: Maybe we should use wallclock.
-        total_elapse += _resolution;
-        srs_usleep(_resolution);
+        total_elapse_ += resolution_;
+        srs_usleep(resolution_);
     }
 
     return err;

@@ -264,12 +264,12 @@ class SrsSignalManager : public ISrsCoroutineHandler
 private:
     // Per-process pipe which is used as a signal queue.
     // Up to PIPE_BUF/sizeof(int) signals can be queued up.
-    int sig_pipe[2];
-    srs_netfd_t signal_read_stfd;
+    int sig_pipe_[2];
+    srs_netfd_t signal_read_stfd_;
 
 private:
-    SrsServer *server;
-    SrsCoroutine *trd;
+    SrsServer *server_;
+    SrsCoroutine *trd_;
 
 public:
     SrsSignalManager(SrsServer *s);
@@ -295,9 +295,9 @@ private:
 class SrsInotifyWorker : public ISrsCoroutineHandler
 {
 private:
-    SrsServer *server;
-    SrsCoroutine *trd;
-    srs_netfd_t inotify_fd;
+    SrsServer *server_;
+    SrsCoroutine *trd_;
+    srs_netfd_t inotify_fd_;
 
 public:
     SrsInotifyWorker(SrsServer *s);

@@ -2062,10 +2062,10 @@ VOID TEST(KernelRTCTest, H265SDPParsing)
         string fmtp = "level-id=180;profile-id=1;tier-flag=0;tx-mode=SRST";
 
         HELPER_EXPECT_SUCCESS(srs_parse_h265_fmtp(fmtp, h265_param));
-        EXPECT_STREQ("180", h265_param.level_id.c_str());
-        EXPECT_STREQ("1", h265_param.profile_id.c_str());
-        EXPECT_STREQ("0", h265_param.tier_flag.c_str());
-        EXPECT_STREQ("SRST", h265_param.tx_mode.c_str());
+        EXPECT_STREQ("180", h265_param.level_id_.c_str());
+        EXPECT_STREQ("1", h265_param.profile_id_.c_str());
+        EXPECT_STREQ("0", h265_param.tier_flag_.c_str());
+        EXPECT_STREQ("SRST", h265_param.tx_mode_.c_str());
     }
 
     // Test srs_parse_h265_fmtp with different parameter order
@@ -2074,10 +2074,10 @@ VOID TEST(KernelRTCTest, H265SDPParsing)
         string fmtp = "profile-id=2;tier-flag=1;level-id=93;tx-mode=MCTS";
 
         HELPER_EXPECT_SUCCESS(srs_parse_h265_fmtp(fmtp, h265_param));
-        EXPECT_STREQ("93", h265_param.level_id.c_str());
-        EXPECT_STREQ("2", h265_param.profile_id.c_str());
-        EXPECT_STREQ("1", h265_param.tier_flag.c_str());
-        EXPECT_STREQ("MCTS", h265_param.tx_mode.c_str());
+        EXPECT_STREQ("93", h265_param.level_id_.c_str());
+        EXPECT_STREQ("2", h265_param.profile_id_.c_str());
+        EXPECT_STREQ("1", h265_param.tier_flag_.c_str());
+        EXPECT_STREQ("MCTS", h265_param.tx_mode_.c_str());
     }
 
     // Test srs_parse_h265_fmtp with missing level-id (should fail)
@@ -2126,10 +2126,10 @@ VOID TEST(KernelRTCTest, H265SDPParsing)
         string fmtp = "level-id=180;profile-id=1;tier-flag=0;tx-mode=SRST;unknown-param=value";
 
         HELPER_EXPECT_SUCCESS(srs_parse_h265_fmtp(fmtp, h265_param));
-        EXPECT_STREQ("180", h265_param.level_id.c_str());
-        EXPECT_STREQ("1", h265_param.profile_id.c_str());
-        EXPECT_STREQ("0", h265_param.tier_flag.c_str());
-        EXPECT_STREQ("SRST", h265_param.tx_mode.c_str());
+        EXPECT_STREQ("180", h265_param.level_id_.c_str());
+        EXPECT_STREQ("1", h265_param.profile_id_.c_str());
+        EXPECT_STREQ("0", h265_param.tier_flag_.c_str());
+        EXPECT_STREQ("SRST", h265_param.tx_mode_.c_str());
     }
 }
 
@@ -2242,10 +2242,10 @@ VOID TEST(KernelRTCTest, H265VideoPayload)
         string fmtp = "level-id=180;profile-id=1;tier-flag=0;tx-mode=SRST";
 
         HELPER_EXPECT_SUCCESS(payload.set_h265_param_desc(fmtp));
-        EXPECT_STREQ("180", payload.h265_param_.level_id.c_str());
-        EXPECT_STREQ("1", payload.h265_param_.profile_id.c_str());
-        EXPECT_STREQ("0", payload.h265_param_.tier_flag.c_str());
-        EXPECT_STREQ("SRST", payload.h265_param_.tx_mode.c_str());
+        EXPECT_STREQ("180", payload.h265_param_.level_id_.c_str());
+        EXPECT_STREQ("1", payload.h265_param_.profile_id_.c_str());
+        EXPECT_STREQ("0", payload.h265_param_.tier_flag_.c_str());
+        EXPECT_STREQ("SRST", payload.h265_param_.tx_mode_.c_str());
     }
 
     // Test SrsVideoPayload::set_h265_param_desc with different order
@@ -2254,10 +2254,10 @@ VOID TEST(KernelRTCTest, H265VideoPayload)
         string fmtp = "tx-mode=MCTS;tier-flag=1;profile-id=2;level-id=93";
 
         HELPER_EXPECT_SUCCESS(payload.set_h265_param_desc(fmtp));
-        EXPECT_STREQ("93", payload.h265_param_.level_id.c_str());
-        EXPECT_STREQ("2", payload.h265_param_.profile_id.c_str());
-        EXPECT_STREQ("1", payload.h265_param_.tier_flag.c_str());
-        EXPECT_STREQ("MCTS", payload.h265_param_.tx_mode.c_str());
+        EXPECT_STREQ("93", payload.h265_param_.level_id_.c_str());
+        EXPECT_STREQ("2", payload.h265_param_.profile_id_.c_str());
+        EXPECT_STREQ("1", payload.h265_param_.tier_flag_.c_str());
+        EXPECT_STREQ("MCTS", payload.h265_param_.tx_mode_.c_str());
     }
 
     // Test SrsVideoPayload::set_h265_param_desc with invalid parameter format
@@ -2282,10 +2282,10 @@ VOID TEST(KernelRTCTest, H265VideoPayload)
         payload.pt_ = 96;
         payload.name_ = "H265";
         payload.sample_ = 90000;
-        payload.h265_param_.level_id = "180";
-        payload.h265_param_.profile_id = "1";
-        payload.h265_param_.tier_flag = "0";
-        payload.h265_param_.tx_mode = "SRST";
+        payload.h265_param_.level_id_ = "180";
+        payload.h265_param_.profile_id_ = "1";
+        payload.h265_param_.tier_flag_ = "0";
+        payload.h265_param_.tx_mode_ = "SRST";
 
         SrsMediaPayloadType media_type = payload.generate_media_payload_type_h265();
         EXPECT_EQ(96, media_type.payload_type_);
@@ -2300,8 +2300,8 @@ VOID TEST(KernelRTCTest, H265VideoPayload)
         payload.pt_ = 97;
         payload.name_ = "H265";
         payload.sample_ = 90000;
-        payload.h265_param_.level_id = "93";
-        payload.h265_param_.profile_id = "2";
+        payload.h265_param_.level_id_ = "93";
+        payload.h265_param_.profile_id_ = "2";
         // tier_flag and tx_mode are empty
 
         SrsMediaPayloadType media_type = payload.generate_media_payload_type_h265();
@@ -2317,10 +2317,10 @@ VOID TEST(KernelRTCTest, H265VideoPayload)
         original.pt_ = 96;
         original.name_ = "H265";
         original.sample_ = 90000;
-        original.h265_param_.level_id = "180";
-        original.h265_param_.profile_id = "1";
-        original.h265_param_.tier_flag = "0";
-        original.h265_param_.tx_mode = "SRST";
+        original.h265_param_.level_id_ = "180";
+        original.h265_param_.profile_id_ = "1";
+        original.h265_param_.tier_flag_ = "0";
+        original.h265_param_.tx_mode_ = "SRST";
 
         SrsVideoPayload *copied = original.copy();
         SrsUniquePtr<SrsVideoPayload> copied_uptr(copied);
@@ -2328,10 +2328,10 @@ VOID TEST(KernelRTCTest, H265VideoPayload)
         EXPECT_EQ(original.pt_, copied->pt_);
         EXPECT_STREQ(original.name_.c_str(), copied->name_.c_str());
         EXPECT_EQ(original.sample_, copied->sample_);
-        EXPECT_STREQ(original.h265_param_.level_id.c_str(), copied->h265_param_.level_id.c_str());
-        EXPECT_STREQ(original.h265_param_.profile_id.c_str(), copied->h265_param_.profile_id.c_str());
-        EXPECT_STREQ(original.h265_param_.tier_flag.c_str(), copied->h265_param_.tier_flag.c_str());
-        EXPECT_STREQ(original.h265_param_.tx_mode.c_str(), copied->h265_param_.tx_mode.c_str());
+        EXPECT_STREQ(original.h265_param_.level_id_.c_str(), copied->h265_param_.level_id_.c_str());
+        EXPECT_STREQ(original.h265_param_.profile_id_.c_str(), copied->h265_param_.profile_id_.c_str());
+        EXPECT_STREQ(original.h265_param_.tier_flag_.c_str(), copied->h265_param_.tier_flag_.c_str());
+        EXPECT_STREQ(original.h265_param_.tx_mode_.c_str(), copied->h265_param_.tx_mode_.c_str());
     }
 }
 

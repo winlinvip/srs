@@ -186,13 +186,13 @@ public:
 class SrsGoApiRaw : public ISrsHttpHandler, public ISrsReloadHandler
 {
 private:
-    SrsServer *server;
+    SrsServer *server_;
 
 private:
-    bool raw_api;
-    bool allow_reload;
-    bool allow_query;
-    bool allow_update;
+    bool raw_api_;
+    bool allow_reload_;
+    bool allow_query_;
+    bool allow_update_;
 
 public:
     SrsGoApiRaw(SrsServer *svr);

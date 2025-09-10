@@ -64,7 +64,7 @@ srs_error_t srs_parse_h264_fmtp(const std::string &fmtp, H264SpecificParam &h264
             continue;
 
         if (kv[0] == "profile-level-id") {
-            h264_param.profile_level_id = kv[1];
+            h264_param.profile_level_id_ = kv[1];
         } else if (kv[0] == "packetization-mode") {
             // 6.3.  Non-Interleaved Mode
             // This mode is in use when the value of the OPTIONAL packetization-mode
@@ -74,19 +74,19 @@ srs_error_t srs_parse_h264_fmtp(const std::string &fmtp, H264SpecificParam &h264
             // MTAPs, and FU-Bs MUST NOT be used.  The transmission order of NAL
             // units MUST comply with the NAL unit decoding order.
             // @see https://tools.ietf.org/html/rfc6184#section-6.3
-            h264_param.packetization_mode = kv[1];
+            h264_param.packetization_mode_ = kv[1];
         } else if (kv[0] == "level-asymmetry-allowed") {
-            h264_param.level_asymmetry_allow = kv[1];
+            h264_param.level_asymmetry_allow_ = kv[1];
         }
     }
 
-    if (h264_param.profile_level_id.empty()) {
+    if (h264_param.profile_level_id_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h264 param: profile-level-id");
     }
-    if (h264_param.packetization_mode.empty()) {
+    if (h264_param.packetization_mode_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h264 param: packetization-mode");
     }
-    if (h264_param.level_asymmetry_allow.empty()) {
+    if (h264_param.level_asymmetry_allow_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h264 param: level-asymmetry-allowed");
     }
 
@@ -104,26 +104,26 @@ srs_error_t srs_parse_h265_fmtp(const std::string &fmtp, H265SpecificParam &h265
             continue;
 
         if (kv[0] == "level-id") {
-            h265_param.level_id = kv[1];
+            h265_param.level_id_ = kv[1];
         } else if (kv[0] == "profile-id") {
-            h265_param.profile_id = kv[1];
+            h265_param.profile_id_ = kv[1];
         } else if (kv[0] == "tier-flag") {
-            h265_param.tier_flag = kv[1];
+            h265_param.tier_flag_ = kv[1];
         } else if (kv[0] == "tx-mode") {
-            h265_param.tx_mode = kv[1];
+            h265_param.tx_mode_ = kv[1];
         }
     }
 
-    if (h265_param.level_id.empty()) {
+    if (h265_param.level_id_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h265 param: level-id");
     }
-    if (h265_param.profile_id.empty()) {
+    if (h265_param.profile_id_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h265 param: profile-id");
     }
-    if (h265_param.tier_flag.empty()) {
+    if (h265_param.tier_flag_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h265 param: tier-flag");
     }
-    if (h265_param.tx_mode.empty()) {
+    if (h265_param.tx_mode_.empty()) {
         return srs_error_new(ERROR_RTC_SDP_DECODE, "no h265 param: tx-mode");
     }
 

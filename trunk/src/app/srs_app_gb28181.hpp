@@ -281,9 +281,9 @@ class SrsMpegpsQueue
 {
 private:
     // The key: dts, value: msg.
-    std::map<int64_t, SrsMediaPacket *> msgs;
-    int nb_audios;
-    int nb_videos;
+    std::map<int64_t, SrsMediaPacket *> msgs_;
+    int nb_audios_;
+    int nb_videos_;
 
 public:
     SrsMpegpsQueue();

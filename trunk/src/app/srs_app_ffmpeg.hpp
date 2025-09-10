@@ -22,35 +22,35 @@ class SrsProcess;
 class SrsFFMPEG
 {
 private:
-    SrsProcess *process;
-    std::vector<std::string> params;
+    SrsProcess *process_;
+    std::vector<std::string> params_;
 
 private:
-    std::string log_file;
+    std::string log_file_;
 
 private:
-    std::string ffmpeg;
-    std::vector<std::string> iparams;
-    std::vector<std::string> perfile;
-    std::string iformat;
-    std::string input;
-    std::vector<std::string> vfilter;
-    std::string vcodec;
-    int vbitrate;
-    double vfps;
-    int vwidth;
-    int vheight;
-    int vthreads;
-    std::string vprofile;
-    std::string vpreset;
-    std::vector<std::string> vparams;
-    std::string acodec;
-    int abitrate;
-    int asample_rate;
-    int achannels;
-    std::vector<std::string> aparams;
-    std::string oformat;
-    std::string _output;
+    std::string ffmpeg_;
+    std::vector<std::string> iparams_;
+    std::vector<std::string> perfile_;
+    std::string iformat_;
+    std::string input_;
+    std::vector<std::string> vfilter_;
+    std::string vcodec_;
+    int vbitrate_;
+    double vfps_;
+    int vwidth_;
+    int vheight_;
+    int vthreads_;
+    std::string vprofile_;
+    std::string vpreset_;
+    std::vector<std::string> vparams_;
+    std::string acodec_;
+    int abitrate_;
+    int asample_rate_;
+    int achannels_;
+    std::vector<std::string> aparams_;
+    std::string oformat_;
+    std::string output_;
 
 public:
     SrsFFMPEG(std::string ffmpeg_bin);

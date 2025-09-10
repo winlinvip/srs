@@ -189,24 +189,24 @@ SSL_CTX *srs_build_dtls_ctx(SrsDtlsVersion version, std::string role)
 
 SrsDtlsCertificate::SrsDtlsCertificate()
 {
-    ecdsa_mode = true;
-    dtls_cert = NULL;
-    dtls_pkey = NULL;
-    eckey = NULL;
+    ecdsa_mode_ = true;
+    dtls_cert_ = NULL;
+    dtls_pkey_ = NULL;
+    eckey_ = NULL;
 }
 
 SrsDtlsCertificate::~SrsDtlsCertificate()
 {
-    if (eckey) {
-        EC_KEY_free(eckey);
+    if (eckey_) {
+        EC_KEY_free(eckey_);
     }
 
-    if (dtls_pkey) {
-        EVP_PKEY_free(dtls_pkey);
+    if (dtls_pkey_) {
+        EVP_PKEY_free(dtls_pkey_);
     }
 
-    if (dtls_cert) {
-        X509_free(dtls_cert);
+    if (dtls_cert_) {
+        X509_free(dtls_cert_);
     }
 }
 
@@ -215,7 +215,7 @@ srs_error_t SrsDtlsCertificate::initialize()
     srs_error_t err = srs_success;
 
     // Initialize once.
-    if (dtls_cert) {
+    if (dtls_cert_) {
         return err;
     }
 
@@ -236,12 +236,12 @@ srs_error_t SrsDtlsCertificate::initialize()
     srs_assert(srtp_init() == 0);
 
     // Whether use ECDSA certificate.
-    ecdsa_mode = _srs_config->get_rtc_server_ecdsa();
+    ecdsa_mode_ = _srs_config->get_rtc_server_ecdsa();
 
     // Create keys by RSA or ECDSA.
-    dtls_pkey = EVP_PKEY_new();
-    srs_assert(dtls_pkey);
-    if (!ecdsa_mode) { // By RSA
+    dtls_pkey_ = EVP_PKEY_new();
+    srs_assert(dtls_pkey_);
+    if (!ecdsa_mode_) { // By RSA
         RSA *rsa = RSA_new();
         srs_assert(rsa);
 
@@ -256,14 +256,14 @@ srs_error_t SrsDtlsCertificate::initialize()
         RSA_generate_key_ex(rsa, key_bits, exponent, NULL);
 
         // @see https://www.openssl.org/docs/man1.1.0/man3/EVP_PKEY_type.html
-        srs_assert(EVP_PKEY_set1_RSA(dtls_pkey, rsa) == 1);
+        srs_assert(EVP_PKEY_set1_RSA(dtls_pkey_, rsa) == 1);
 
         RSA_free(rsa);
         BN_free(exponent);
     }
-    if (ecdsa_mode) { // By ECDSA, https://stackoverflow.com/a/6006898
-        eckey = EC_KEY_new();
-        srs_assert(eckey);
+    if (ecdsa_mode_) { // By ECDSA, https://stackoverflow.com/a/6006898
+        eckey_ = EC_KEY_new();
+        srs_assert(eckey_);
 
         // Should use the curves in ClientHello.supported_groups
         // For example:
@@ -283,41 +283,41 @@ srs_error_t SrsDtlsCertificate::initialize()
         EC_GROUP_set_asn1_flag(ecgroup, OPENSSL_EC_NAMED_CURVE);
 #endif
 
-        srs_assert(EC_KEY_set_group(eckey, ecgroup) == 1);
-        srs_assert(EC_KEY_generate_key(eckey) == 1);
+        srs_assert(EC_KEY_set_group(eckey_, ecgroup) == 1);
+        srs_assert(EC_KEY_generate_key(eckey_) == 1);
 
         // @see https://www.openssl.org/docs/man1.1.0/man3/EVP_PKEY_type.html
-        srs_assert(EVP_PKEY_set1_EC_KEY(dtls_pkey, eckey) == 1);
+        srs_assert(EVP_PKEY_set1_EC_KEY(dtls_pkey_, eckey_) == 1);
 
         EC_GROUP_free(ecgroup);
     }
 
     // Create certificate, from previous generated pkey.
     // TODO: Support ECDSA certificate.
-    dtls_cert = X509_new();
-    srs_assert(dtls_cert);
+    dtls_cert_ = X509_new();
+    srs_assert(dtls_cert_);
     if (true) {
         X509_NAME *subject = X509_NAME_new();
         srs_assert(subject);
 
         int serial = (int)srs_rand_integer();
-        ASN1_INTEGER_set(X509_get_serialNumber(dtls_cert), serial);
+        ASN1_INTEGER_set(X509_get_serialNumber(dtls_cert_), serial);
 
         const std::string &aor = RTMP_SIG_SRS_DOMAIN;
         X509_NAME_add_entry_by_txt(subject, "CN", MBSTRING_ASC, (unsigned char *)aor.data(), aor.size(), -1, 0);
 
-        X509_set_issuer_name(dtls_cert, subject);
-        X509_set_subject_name(dtls_cert, subject);
+        X509_set_issuer_name(dtls_cert_, subject);
+        X509_set_subject_name(dtls_cert_, subject);
 
         int expire_day = 365;
         const long cert_duration = 60 * 60 * 24 * expire_day;
 
-        X509_gmtime_adj(X509_get_notBefore(dtls_cert), 0);
-        X509_gmtime_adj(X509_get_notAfter(dtls_cert), cert_duration);
+        X509_gmtime_adj(X509_get_notBefore(dtls_cert_), 0);
+        X509_gmtime_adj(X509_get_notAfter(dtls_cert_), cert_duration);
 
-        X509_set_version(dtls_cert, 2);
-        srs_assert(X509_set_pubkey(dtls_cert, dtls_pkey) == 1);
-        srs_assert(X509_sign(dtls_cert, dtls_pkey, EVP_sha1()) != 0);
+        X509_set_version(dtls_cert_, 2);
+        srs_assert(X509_set_pubkey(dtls_cert_, dtls_pkey_) == 1);
+        srs_assert(X509_sign(dtls_cert_, dtls_pkey_, EVP_sha1()) != 0);
 
         X509_NAME_free(subject);
     }
@@ -328,7 +328,7 @@ srs_error_t SrsDtlsCertificate::initialize()
         unsigned int n = 0;
 
         // TODO: FIXME: Unused variable.
-        /*int r = */ X509_digest(dtls_cert, EVP_sha256(), md, &n);
+        /*int r = */ X509_digest(dtls_cert_, EVP_sha256(), md, &n);
 
         SrsUniquePtr<char[]> fp(new char[3 * n]);
         char *p = fp.get();
@@ -345,8 +345,8 @@ srs_error_t SrsDtlsCertificate::initialize()
             }
         }
 
-        fingerprint.assign(fp.get(), strlen(fp.get()));
-        srs_trace("fingerprint=%s", fingerprint.c_str());
+        fingerprint_.assign(fp.get(), strlen(fp.get()));
+        srs_trace("fingerprint=%s", fingerprint_.c_str());
     }
 
     return err;
@@ -354,27 +354,27 @@ srs_error_t SrsDtlsCertificate::initialize()
 
 X509 *SrsDtlsCertificate::get_cert()
 {
-    return dtls_cert;
+    return dtls_cert_;
 }
 
 EVP_PKEY *SrsDtlsCertificate::get_public_key()
 {
-    return dtls_pkey;
+    return dtls_pkey_;
 }
 
 EC_KEY *SrsDtlsCertificate::get_ecdsa_key()
 {
-    return eckey;
+    return eckey_;
 }
 
 std::string SrsDtlsCertificate::get_fingerprint()
 {
-    return fingerprint;
+    return fingerprint_;
 }
 
 bool SrsDtlsCertificate::is_ecdsa()
 {
-    return ecdsa_mode;
+    return ecdsa_mode_;
 }
 
 ISrsDtlsCallback::ISrsDtlsCallback()
@@ -387,36 +387,36 @@ ISrsDtlsCallback::~ISrsDtlsCallback()
 
 SrsDtlsImpl::SrsDtlsImpl(ISrsDtlsCallback *callback)
 {
-    dtls_ctx = NULL;
-    dtls = NULL;
-    bio_in = NULL;
-    bio_out = NULL;
+    dtls_ctx_ = NULL;
+    dtls_ = NULL;
+    bio_in_ = NULL;
+    bio_out_ = NULL;
 
     callback_ = callback;
-    handshake_done_for_us = false;
-    nn_arq_packets = 0;
-    last_handshake_type = 0;
-    last_content_type = 0;
+    handshake_done_for_us_ = false;
+    nn_arq_packets_ = 0;
+    last_handshake_type_ = 0;
+    last_content_type_ = 0;
 
     version_ = SrsDtlsVersionAuto;
 }
 
 SrsDtlsImpl::~SrsDtlsImpl()
 {
-    if (!handshake_done_for_us) {
-        srs_warn2(TAG_DTLS_HANG, "DTLS: Hang, done=%u, version=%d, arq=%u", handshake_done_for_us,
-                  version_, nn_arq_packets);
+    if (!handshake_done_for_us_) {
+        srs_warn2(TAG_DTLS_HANG, "DTLS: Hang, done=%u, version=%d, arq=%u", handshake_done_for_us_,
+                  version_, nn_arq_packets_);
     }
 
-    if (dtls_ctx) {
-        SSL_CTX_free(dtls_ctx);
-        dtls_ctx = NULL;
+    if (dtls_ctx_) {
+        SSL_CTX_free(dtls_ctx_);
+        dtls_ctx_ = NULL;
     }
 
-    if (dtls) {
-        // this function will free bio_in and bio_out
-        SSL_free(dtls);
-        dtls = NULL;
+    if (dtls_) {
+        // this function will free bio_in_ and bio_out_
+        SSL_free(dtls_);
+        dtls_ = NULL;
     }
 }
 
@@ -447,11 +447,11 @@ srs_error_t SrsDtlsImpl::write_dtls_data(void *data, int size)
     // @see https://tools.ietf.org/html/rfc2246#section-6.2.1
     uint8_t content_type = size >= 1 ? ((uint8_t *)data)[0] : 0;
     uint8_t handshake_type = size >= 14 ? ((uint8_t *)data)[13] : 0;
-    if (content_type && handshake_type && last_content_type == content_type && last_handshake_type == handshake_type) {
-        nn_arq_packets++;
+    if (content_type && handshake_type && last_content_type_ == content_type && last_handshake_type_ == handshake_type) {
+        nn_arq_packets_++;
     }
-    last_content_type = content_type;
-    last_handshake_type = handshake_type;
+    last_content_type_ = content_type;
+    last_handshake_type_ = handshake_type;
 
     // Logging when got SSL original data.
     state_trace((uint8_t *)data, size, false, 0);
@@ -471,22 +471,22 @@ srs_error_t SrsDtlsImpl::initialize(std::string version, std::string role)
         version_ = SrsDtlsVersionAuto;
     }
 
-    dtls_ctx = srs_build_dtls_ctx(version_, role);
+    dtls_ctx_ = srs_build_dtls_ctx(version_, role);
 
-    if ((dtls = SSL_new(dtls_ctx)) == NULL) {
+    if ((dtls_ = SSL_new(dtls_ctx_)) == NULL) {
         return srs_error_new(ERROR_OpenSslCreateSSL, "SSL_new dtls");
     }
 
-    SSL_set_ex_data(dtls, 0, this);
-    SSL_set_info_callback(dtls, ssl_on_info);
+    SSL_set_ex_data(dtls_, 0, this);
+    SSL_set_info_callback(dtls_, ssl_on_info);
 
     // We have set the MTU to fragment the DTLS packet. It is important to note that the packet is split
     // to ensure that each handshake packet is smaller than the MTU.
     // @see https://stackoverflow.com/questions/62413602/openssl-server-packets-get-fragmented-into-270-bytes-per-packet
-    SSL_set_options(dtls, SSL_OP_NO_QUERY_MTU);
-    SSL_set_mtu(dtls, DTLS_FRAGMENT_MAX_SIZE);
+    SSL_set_options(dtls_, SSL_OP_NO_QUERY_MTU);
+    SSL_set_mtu(dtls_, DTLS_FRAGMENT_MAX_SIZE);
     // See https://github.com/versatica/mediasoup/pull/217
-    DTLS_set_link_mtu(dtls, DTLS_FRAGMENT_MAX_SIZE);
+    DTLS_set_link_mtu(dtls_, DTLS_FRAGMENT_MAX_SIZE);
 
     // @see https://linux.die.net/man/3/openssl_version_number
     //                MM NN FF PP S
@@ -498,16 +498,16 @@ srs_error_t SrsDtlsImpl::initialize(std::string version, std::string role)
     //              S(status) = 0xf = release   // 1.1.1b release
     // @note Status 0 for development, 1 to e for betas 1 to 14, and f for release.
 #if OPENSSL_VERSION_NUMBER >= 0x1010102fL // 1.1.1b
-    DTLS_set_timer_cb(dtls, dtls_timer_cb);
+    DTLS_set_timer_cb(dtls_, dtls_timer_cb);
 #endif
 
     // Setup memory BIO.
-    if ((bio_in = BIO_new(BIO_s_mem())) == NULL) {
+    if ((bio_in_ = BIO_new(BIO_s_mem())) == NULL) {
         return srs_error_new(ERROR_OpenSslBIONew, "BIO_new in");
     }
 
-    if ((bio_out = BIO_new(BIO_s_mem())) == NULL) {
-        BIO_free(bio_in);
+    if ((bio_out_ = BIO_new(BIO_s_mem())) == NULL) {
+        BIO_free(bio_in_);
         return srs_error_new(ERROR_OpenSslBIONew, "BIO_new out");
     }
 
@@ -523,10 +523,10 @@ srs_error_t SrsDtlsImpl::initialize(std::string version, std::string role)
     //      Certificate(Fragment) = 143bytes.
     // Note that there should be more packets in real world, like ServerKeyExchange, CertificateRequest,
     // and ServerHelloDone. Here we just use two packets for example.
-    BIO_set_callback(bio_out, srs_dtls_bio_out_callback);
-    BIO_set_callback_arg(bio_out, (char *)this);
+    BIO_set_callback(bio_out_, srs_dtls_bio_out_callback);
+    BIO_set_callback_arg(bio_out_, (char *)this);
 
-    SSL_set_bio(dtls, bio_in, bio_out);
+    SSL_set_bio(dtls_, bio_in_, bio_out_);
 
     return err;
 }
@@ -542,8 +542,8 @@ srs_error_t SrsDtlsImpl::start_active_handshake()
     // although the DTLS server may receive the ClientHello immediately after sending out the ICE
     // response, this shouldn't be an issue as the handshake function is called before any DTLS
     // packets are received.
-    int r0 = SSL_do_handshake(dtls);
-    int r1 = SSL_get_error(dtls, r0);
+    int r0 = SSL_do_handshake(dtls_);
+    int r1 = SSL_get_error(dtls_, r0);
     ERR_clear_error();
     // Fatal SSL error, for example, no available suite when peer is DTLS 1.0 while we are DTLS 1.2.
     if (r0 < 0 && (r1 != SSL_ERROR_NONE && r1 != SSL_ERROR_WANT_READ && r1 != SSL_ERROR_WANT_WRITE)) {
@@ -575,13 +575,13 @@ srs_error_t SrsDtlsImpl::do_on_dtls(char *data, int nb_data)
 
     // When already done, only for us, we still got message from client,
     // it might be our response is lost, or application data.
-    if (handshake_done_for_us) {
+    if (handshake_done_for_us_) {
         srs_trace("DTLS: After done, got %d bytes", nb_data);
     }
 
     // Feed the received DTLS packets to BIO; we will consume them later.
     int r0 = 0;
-    if ((r0 = BIO_write(bio_in, data, nb_data)) <= 0) {
+    if ((r0 = BIO_write(bio_in_, data, nb_data)) <= 0) {
         // TODO: 0 or -1 maybe block, use BIO_should_retry to check.
         return srs_error_new(ERROR_OpenSslBIOWrite, "BIO_write r0=%d", r0);
     }
@@ -593,26 +593,26 @@ srs_error_t SrsDtlsImpl::do_on_dtls(char *data, int nb_data)
     //  fragmented. This fragmentation should be done at the application level. However, I'm not certain about this
     //  and will leave it to the developer who is responsible for developing the DataChannel.
     char buf[kRtpPacketSize];
-    r0 = SSL_read(dtls, buf, sizeof(buf));
-    int r1 = SSL_get_error(dtls, r0);
+    r0 = SSL_read(dtls_, buf, sizeof(buf));
+    int r1 = SSL_get_error(dtls_, r0);
     ERR_clear_error();
     if (r0 <= 0) {
         if (r1 != SSL_ERROR_WANT_READ && r1 != SSL_ERROR_WANT_WRITE && r1 != SSL_ERROR_ZERO_RETURN) {
-            return srs_error_new(ERROR_RTC_DTLS, "DTLS: read r0=%d, r1=%d, done=%d", r0, r1, handshake_done_for_us);
+            return srs_error_new(ERROR_RTC_DTLS, "DTLS: read r0=%d, r1=%d, done=%d", r0, r1, handshake_done_for_us_);
         }
     } else {
         srs_trace("DTLS: read r0=%d, r1=%d, padding=%d, done=%d, data=[%s]",
-                  r0, r1, BIO_ctrl_pending(bio_in), handshake_done_for_us, srs_strings_dumps_hex(buf, r0, 32).c_str());
+                  r0, r1, BIO_ctrl_pending(bio_in_), handshake_done_for_us_, srs_strings_dumps_hex(buf, r0, 32).c_str());
 
         if ((err = callback_->on_dtls_application_data(buf, r0)) != srs_success) {
-            return srs_error_wrap(err, "on DTLS data, done=%d, r1=%d, size=%u, data=[%s]", handshake_done_for_us,
+            return srs_error_wrap(err, "on DTLS data, done=%d, r1=%d, size=%u, data=[%s]", handshake_done_for_us_,
                                   r1, r0, srs_strings_dumps_hex(buf, r0, 32).c_str());
         }
     }
 
     // Check whether the DTLS is completed.
-    if (!handshake_done_for_us && SSL_is_init_finished(dtls) == 1) {
-        handshake_done_for_us = true;
+    if (!handshake_done_for_us_ && SSL_is_init_finished(dtls_) == 1) {
+        handshake_done_for_us_ = true;
         if (((err = on_handshake_done()) != srs_success)) {
             return srs_error_wrap(err, "done");
         }
@@ -641,8 +641,8 @@ void SrsDtlsImpl::state_trace(uint8_t *data, int length, bool incoming, int r0)
     }
 
     srs_trace("DTLS: State %s %s, done=%u, arq=%u, r0=%d, len=%u, cnt=%u, size=%u, hs=%u",
-              (is_dtls_client() ? "Active" : "Passive"), (incoming ? "RECV" : "SEND"), handshake_done_for_us,
-              nn_arq_packets, r0, length, content_type, size, handshake_type);
+              (is_dtls_client() ? "Active" : "Passive"), (incoming ? "RECV" : "SEND"), handshake_done_for_us_,
+              nn_arq_packets_, r0, length, content_type, size, handshake_type);
 }
 
 const int SRTP_MASTER_KEY_KEY_LEN = 16;
@@ -653,7 +653,7 @@ srs_error_t SrsDtlsImpl::get_srtp_key(std::string &recv_key, std::string &send_k
 
     unsigned char material[SRTP_MASTER_KEY_LEN * 2] = {0}; // client(SRTP_MASTER_KEY_KEY_LEN + SRTP_MASTER_KEY_SALT_LEN) + server
     static const string dtls_srtp_lable = "EXTRACTOR-dtls_srtp";
-    if (!SSL_export_keying_material(dtls, material, sizeof(material), dtls_srtp_lable.c_str(), dtls_srtp_lable.size(), NULL, 0, 0)) {
+    if (!SSL_export_keying_material(dtls_, material, sizeof(material), dtls_srtp_lable.c_str(), dtls_srtp_lable.size(), NULL, 0, 0)) {
         return srs_error_new(ERROR_RTC_SRTP_INIT, "SSL export key r0=%lu", ERR_get_error());
     }
 
@@ -689,16 +689,16 @@ void SrsDtlsImpl::callback_by_ssl(std::string type, std::string desc)
 
 SrsDtlsClientImpl::SrsDtlsClientImpl(ISrsDtlsCallback *callback) : SrsDtlsImpl(callback)
 {
-    trd = NULL;
+    trd_ = NULL;
     state_ = SrsDtlsStateInit;
 
     // the max dtls retry num is 12 in openssl.
-    arq_max_retry = 12 * 2; // Max ARQ limit shared for ClientHello and Certificate.
+    arq_max_retry_ = 12 * 2; // Max ARQ limit shared for ClientHello and Certificate.
 }
 
 SrsDtlsClientImpl::~SrsDtlsClientImpl()
 {
-    srs_freep(trd);
+    srs_freep(trd_);
 }
 
 srs_error_t SrsDtlsClientImpl::initialize(std::string version, std::string role)
@@ -710,7 +710,7 @@ srs_error_t SrsDtlsClientImpl::initialize(std::string version, std::string role)
     }
 
     // Dtls setup active, as client role.
-    SSL_set_connect_state(dtls);
+    SSL_set_connect_state(dtls_);
 
     return err;
 }
@@ -748,11 +748,11 @@ srs_error_t SrsDtlsClientImpl::start_arq()
     srs_error_t err = srs_success;
 
     // Dispose the previous ARQ thread.
-    srs_freep(trd);
-    trd = new SrsSTCoroutine("dtls", this, _srs_context->get_id());
+    srs_freep(trd_);
+    trd_ = new SrsSTCoroutine("dtls", this, _srs_context->get_id());
 
     // We should start the ARQ thread for DTLS client.
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "arq start");
     }
 
@@ -761,7 +761,7 @@ srs_error_t SrsDtlsClientImpl::start_arq()
 
 void SrsDtlsClientImpl::stop_arq()
 {
-    srs_freep(trd);
+    srs_freep(trd_);
 }
 
 // The timeout is set by dtls_timer_cb.
@@ -779,22 +779,22 @@ srs_error_t SrsDtlsClientImpl::cycle()
     const int max_loop = 512;
 
     int arq_count = 0;
-    for (int i = 0; arq_count < arq_max_retry && i < max_loop; i++) {
+    for (int i = 0; arq_count < arq_max_retry_ && i < max_loop; i++) {
         // We ignore any error for ARQ thread.
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             srs_freep(err);
             return err;
         }
 
         // If done, should stop ARQ.
-        if (handshake_done_for_us) {
+        if (handshake_done_for_us_) {
             return err;
         }
 
         // If there is a timeout in progress, it sets *out to the time remaining
         // and returns one. Otherwise, it returns zero.
         timeval to = {0};
-        int r0 = DTLSv1_get_timeout(dtls, &to);
+        int r0 = DTLSv1_get_timeout(dtls_, &to);
         srs_utime_t timeout = r0 == 1 ? to.tv_sec + to.tv_usec : 0;
 
         // There is timeout to wait, so we should wait, because there is no packet in openssl.
@@ -813,9 +813,9 @@ srs_error_t SrsDtlsClientImpl::cycle()
         // had expired, it returns 0. Otherwise, it retransmits the previous flight of handshake
         // messages and returns 1. If too many timeouts had expired without progress or an error
         // occurs, it returns -1.
-        r0 = DTLSv1_handle_timeout(dtls);
+        r0 = DTLSv1_handle_timeout(dtls_);
         if (r0 != 0 && r0 != 1) {
-            int r1 = SSL_get_error(dtls, r0);
+            int r1 = SSL_get_error(dtls_, r0);
             ERR_clear_error();
             return srs_error_new(ERROR_RTC_DTLS, "ARQ r0=%d, r1=%d", r0, r1);
         }
@@ -841,7 +841,7 @@ srs_error_t SrsDtlsServerImpl::initialize(std::string version, std::string role)
     }
 
     // Dtls setup passive, as server role.
-    SSL_set_accept_state(dtls);
+    SSL_set_accept_state(dtls_);
 
     return err;
 }
@@ -871,7 +871,7 @@ srs_error_t SrsDtlsServerImpl::start_arq()
 
 SrsDtlsEmptyImpl::SrsDtlsEmptyImpl() : SrsDtlsImpl(NULL)
 {
-    handshake_done_for_us = true;
+    handshake_done_for_us_ = true;
 }
 
 SrsDtlsEmptyImpl::~SrsDtlsEmptyImpl()
@@ -915,39 +915,39 @@ srs_error_t SrsDtlsEmptyImpl::start_arq()
 SrsDtls::SrsDtls(ISrsDtlsCallback *callback)
 {
     callback_ = callback;
-    impl = new SrsDtlsEmptyImpl();
+    impl_ = new SrsDtlsEmptyImpl();
 }
 
 SrsDtls::~SrsDtls()
 {
-    srs_freep(impl);
+    srs_freep(impl_);
 }
 
 srs_error_t SrsDtls::initialize(std::string role, std::string version)
 {
-    srs_freep(impl);
+    srs_freep(impl_);
     if (role == "active") {
-        impl = new SrsDtlsClientImpl(callback_);
+        impl_ = new SrsDtlsClientImpl(callback_);
     } else {
-        impl = new SrsDtlsServerImpl(callback_);
+        impl_ = new SrsDtlsServerImpl(callback_);
     }
 
-    return impl->initialize(version, role);
+    return impl_->initialize(version, role);
 }
 
 srs_error_t SrsDtls::start_active_handshake()
 {
-    return impl->start_active_handshake();
+    return impl_->start_active_handshake();
 }
 
 srs_error_t SrsDtls::on_dtls(char *data, int nb_data)
 {
-    return impl->on_dtls(data, nb_data);
+    return impl_->on_dtls(data, nb_data);
 }
 
 srs_error_t SrsDtls::get_srtp_key(std::string &recv_key, std::string &send_key)
 {
-    return impl->get_srtp_key(recv_key, send_key);
+    return impl_->get_srtp_key(recv_key, send_key);
 }
 
 SrsSRTP::SrsSRTP()

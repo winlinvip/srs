@@ -35,11 +35,11 @@ class SrsAsyncCallWorker;
 class SrsRtcBlackhole
 {
 public:
-    bool blackhole;
+    bool blackhole_;
 
 private:
-    sockaddr_in *blackhole_addr;
-    srs_netfd_t blackhole_stfd;
+    sockaddr_in *blackhole_addr_;
+    srs_netfd_t blackhole_stfd_;
 
 public:
     SrsRtcBlackhole();

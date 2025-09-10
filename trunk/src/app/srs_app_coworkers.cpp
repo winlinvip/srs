@@ -16,7 +16,7 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 
-SrsCoWorkers *SrsCoWorkers::_instance = NULL;
+SrsCoWorkers *SrsCoWorkers::instance_ = NULL;
 
 SrsCoWorkers::SrsCoWorkers()
 {
@@ -25,19 +25,19 @@ SrsCoWorkers::SrsCoWorkers()
 SrsCoWorkers::~SrsCoWorkers()
 {
     map<string, ISrsRequest *>::iterator it;
-    for (it = streams.begin(); it != streams.end(); ++it) {
+    for (it = streams_.begin(); it != streams_.end(); ++it) {
         ISrsRequest *r = it->second;
         srs_freep(r);
     }
-    streams.clear();
+    streams_.clear();
 }
 
 SrsCoWorkers *SrsCoWorkers::instance()
 {
-    if (!_instance) {
-        _instance = new SrsCoWorkers();
+    if (!instance_) {
+        instance_ = new SrsCoWorkers();
     }
-    return _instance;
+    return instance_;
 }
 
 SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, string stream)
@@ -113,8 +113,8 @@ ISrsRequest *SrsCoWorkers::find_stream_info(string vhost, string app, string str
 
     // Get stream information from local cache.
     string url = srs_net_url_encode_sid(conf->arg0(), app, stream);
-    map<string, ISrsRequest *>::iterator it = streams.find(url);
-    if (it == streams.end()) {
+    map<string, ISrsRequest *>::iterator it = streams_.find(url);
+    if (it == streams_.end()) {
         return NULL;
     }
 
@@ -128,13 +128,13 @@ srs_error_t SrsCoWorkers::on_publish(ISrsRequest *r)
     string url = r->get_stream_url();
 
     // Delete the previous stream informations.
-    map<string, ISrsRequest *>::iterator it = streams.find(url);
-    if (it != streams.end()) {
+    map<string, ISrsRequest *>::iterator it = streams_.find(url);
+    if (it != streams_.end()) {
         srs_freep(it->second);
     }
 
     // Always use the latest one.
-    streams[url] = r->copy();
+    streams_[url] = r->copy();
 
     return err;
 }
@@ -143,9 +143,9 @@ void SrsCoWorkers::on_unpublish(ISrsRequest *r)
 {
     string url = r->get_stream_url();
 
-    map<string, ISrsRequest *>::iterator it = streams.find(url);
-    if (it != streams.end()) {
+    map<string, ISrsRequest *>::iterator it = streams_.find(url);
+    if (it != streams_.end()) {
         srs_freep(it->second);
-        streams.erase(it);
+        streams_.erase(it);
     }
 }

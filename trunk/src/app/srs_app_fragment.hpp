@@ -18,13 +18,13 @@ class SrsFragment
 {
 private:
     // The duration in srs_utime_t.
-    srs_utime_t dur;
+    srs_utime_t dur_;
     // The full file path of fragment.
-    std::string filepath;
+    std::string filepath_;
     // The start DTS in srs_utime_t of segment.
-    srs_utime_t start_dts;
+    srs_utime_t start_dts_;
     // Whether current segement contains sequence header.
-    bool sequence_header;
+    bool sequence_header_;
     // The number of this segment, use in dash mpd.
     uint64_t number_;
 
@@ -72,9 +72,9 @@ public:
 class SrsFragmentWindow
 {
 private:
-    std::vector<SrsFragment *> fragments;
+    std::vector<SrsFragment *> fragments_;
     // The expired fragments, need to be free in future.
-    std::vector<SrsFragment *> expired_fragments;
+    std::vector<SrsFragment *> expired_fragments_;
 
 public:
     SrsFragmentWindow();

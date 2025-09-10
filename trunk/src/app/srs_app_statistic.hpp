@@ -30,14 +30,14 @@ class SrsPps;
 
 struct SrsStatisticVhost {
 public:
-    std::string id;
-    std::string vhost;
-    int nb_streams;
-    int nb_clients;
+    std::string id_;
+    std::string vhost_;
+    int nb_streams_;
+    int nb_clients_;
 
 public:
     // The vhost total kbps.
-    SrsKbps *kbps;
+    SrsKbps *kbps_;
 
 public:
     SrsStatisticVhost();
@@ -49,48 +49,48 @@ public:
 
 struct SrsStatisticStream {
 public:
-    std::string id;
-    SrsStatisticVhost *vhost;
-    std::string app;
-    std::string stream;
-    std::string url;
-    std::string tcUrl;
-    bool active;
+    std::string id_;
+    SrsStatisticVhost *vhost_;
+    std::string app_;
+    std::string stream_;
+    std::string url_;
+    std::string tcUrl_;
+    bool active_;
     // The publisher connection id.
-    std::string publisher_id;
-    int nb_clients;
+    std::string publisher_id_;
+    int nb_clients_;
 
 public:
     // The stream total kbps.
-    SrsKbps *kbps;
+    SrsKbps *kbps_;
     // The fps of stream.
-    SrsPps *frames;
+    SrsPps *frames_;
 
 public:
-    bool has_video;
-    SrsVideoCodecId vcodec;
+    bool has_video_;
+    SrsVideoCodecId vcodec_;
     // The profile_idc, ISO_IEC_14496-10-AVC-2003.pdf, page 45.
-    SrsAvcProfile avc_profile;
+    SrsAvcProfile avc_profile_;
     // The level_idc, ISO_IEC_14496-10-AVC-2003.pdf, page 45.
-    SrsAvcLevel avc_level;
+    SrsAvcLevel avc_level_;
     // The profile_idc, ITU-T-H.265-2021.pdf, page 62.
-    SrsHevcProfile hevc_profile;
+    SrsHevcProfile hevc_profile_;
     // The level_idc, ITU-T-H.265-2021.pdf, page 63.
-    SrsHevcLevel hevc_level;
+    SrsHevcLevel hevc_level_;
     // The width and height in codec info.
-    int width;
-    int height;
+    int width_;
+    int height_;
 
 public:
-    bool has_audio;
-    SrsAudioCodecId acodec;
-    SrsAudioSampleRate asample_rate;
-    SrsAudioChannels asound_type;
+    bool has_audio_;
+    SrsAudioCodecId acodec_;
+    SrsAudioSampleRate asample_rate_;
+    SrsAudioChannels asound_type_;
     // The audio specified
     // audioObjectType, in 1.6.2.1 AudioSpecificConfig, page 33,
     // 1.5.1.1 Audio object type definition, page 23,
     //           in ISO_IEC_14496-3-AAC-2001.pdf.
-    SrsAacObjectType aac_object;
+    SrsAacObjectType aac_object_;
 
 public:
     SrsStatisticStream();
@@ -109,18 +109,18 @@ public:
 struct SrsStatisticClient {
 public:
     // For HTTP-API to kickoff this connection by expiring it.
-    ISrsExpire *conn;
+    ISrsExpire *conn_;
 
 public:
-    SrsStatisticStream *stream;
-    ISrsRequest *req;
-    SrsRtmpConnType type;
-    std::string id;
-    srs_utime_t create;
+    SrsStatisticStream *stream_;
+    ISrsRequest *req_;
+    SrsRtmpConnType type_;
+    std::string id_;
+    srs_utime_t create_;
 
 public:
     // The stream total kbps.
-    SrsKbps *kbps;
+    SrsKbps *kbps_;
 
 public:
     SrsStatisticClient();
@@ -133,7 +133,7 @@ public:
 class SrsStatistic
 {
 private:
-    static SrsStatistic *_instance;
+    static SrsStatistic *instance_;
     // The id to identify the sever.
     std::string server_id_;
     // The id to identify the service.
@@ -143,23 +143,23 @@ private:
 
 private:
     // The key: vhost id, value: vhost object.
-    std::map<std::string, SrsStatisticVhost *> vhosts;
+    std::map<std::string, SrsStatisticVhost *> vhosts_;
     // The key: vhost url, value: vhost Object.
     // @remark a fast index for vhosts.
-    std::map<std::string, SrsStatisticVhost *> rvhosts;
+    std::map<std::string, SrsStatisticVhost *> rvhosts_;
 
 private:
     // The key: stream id, value: stream Object.
-    std::map<std::string, SrsStatisticStream *> streams;
+    std::map<std::string, SrsStatisticStream *> streams_;
     // The key: stream url, value: stream Object.
     // @remark a fast index for streams.
-    std::map<std::string, SrsStatisticStream *> rstreams;
+    std::map<std::string, SrsStatisticStream *> rstreams_;
 
 private:
     // The key: client id, value: stream object.
-    std::map<std::string, SrsStatisticClient *> clients;
+    std::map<std::string, SrsStatisticClient *> clients_;
     // The server total kbps.
-    SrsKbps *kbps;
+    SrsKbps *kbps_;
 
 private:
     // The total of clients connections.

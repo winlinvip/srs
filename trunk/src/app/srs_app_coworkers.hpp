@@ -20,10 +20,10 @@ class SrsLiveSource;
 class SrsCoWorkers
 {
 private:
-    static SrsCoWorkers *_instance;
+    static SrsCoWorkers *instance_;
 
 private:
-    std::map<std::string, ISrsRequest *> streams;
+    std::map<std::string, ISrsRequest *> streams_;
 
 private:
     SrsCoWorkers();

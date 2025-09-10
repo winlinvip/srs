@@ -22,11 +22,11 @@ class ISrsRequest;
 class SrsDtlsCertificate
 {
 private:
-    std::string fingerprint;
-    bool ecdsa_mode;
-    X509 *dtls_cert;
-    EVP_PKEY *dtls_pkey;
-    EC_KEY *eckey;
+    std::string fingerprint_;
+    bool ecdsa_mode_;
+    X509 *dtls_cert_;
+    EVP_PKEY *dtls_pkey_;
+    EC_KEY *eckey_;
 
 public:
     SrsDtlsCertificate();
@@ -92,10 +92,10 @@ enum SrsDtlsState {
 class SrsDtlsImpl
 {
 protected:
-    SSL_CTX *dtls_ctx;
-    SSL *dtls;
-    BIO *bio_in;
-    BIO *bio_out;
+    SSL_CTX *dtls_ctx_;
+    SSL *dtls_;
+    BIO *bio_in_;
+    BIO *bio_out_;
     ISrsDtlsCallback *callback_;
     // @remark: dtls_version_ default value is SrsDtlsVersionAuto.
     SrsDtlsVersion version_;
@@ -103,11 +103,11 @@ protected:
 protected:
     // Whether the handshake is done, for us only.
     // @remark For us only, means peer maybe not done, we also need to handle the DTLS packet.
-    bool handshake_done_for_us;
+    bool handshake_done_for_us_;
     // The stat for ARQ packets.
-    int nn_arq_packets;
-    uint8_t last_handshake_type;
-    uint8_t last_content_type;
+    int nn_arq_packets_;
+    uint8_t last_handshake_type_;
+    uint8_t last_content_type_;
 
 public:
     SrsDtlsImpl(ISrsDtlsCallback *callback);
@@ -141,11 +141,11 @@ class SrsDtlsClientImpl : public SrsDtlsImpl, public ISrsCoroutineHandler
 private:
     // ARQ thread, for role active(DTLS client).
     // @note If passive(DTLS server), the ARQ is driven by DTLS client.
-    SrsCoroutine *trd;
+    SrsCoroutine *trd_;
     // The DTLS-client state to drive the ARQ thread.
     SrsDtlsState state_;
     // The max ARQ retry.
-    int arq_max_retry;
+    int arq_max_retry_;
 
 public:
     SrsDtlsClientImpl(ISrsDtlsCallback *callback);
@@ -204,7 +204,7 @@ protected:
 class SrsDtls
 {
 private:
-    SrsDtlsImpl *impl;
+    SrsDtlsImpl *impl_;
     ISrsDtlsCallback *callback_;
 
 public:

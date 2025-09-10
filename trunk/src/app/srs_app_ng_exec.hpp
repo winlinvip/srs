@@ -24,10 +24,10 @@ class SrsProcess;
 class SrsNgExec : public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd;
-    SrsPithyPrint *pprint;
-    std::string input_stream_name;
-    std::vector<SrsProcess *> exec_publishs;
+    SrsCoroutine *trd_;
+    SrsPithyPrint *pprint_;
+    std::string input_stream_name_;
+    std::vector<SrsProcess *> exec_publishs_;
 
 public:
     SrsNgExec();

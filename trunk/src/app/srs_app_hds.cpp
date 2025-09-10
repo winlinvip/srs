@@ -71,18 +71,18 @@ class SrsHdsFragment
 {
 public:
     SrsHdsFragment(ISrsRequest *r)
-        : req(r), index(-1), start_time(0), videoSh(NULL), audioSh(NULL)
+        : req_(r), index_(-1), start_time_(0), video_sh_(NULL), audio_sh_(NULL)
     {
     }
 
     ~SrsHdsFragment()
     {
-        srs_freep(videoSh);
-        srs_freep(audioSh);
+        srs_freep(video_sh_);
+        srs_freep(audio_sh_);
 
         // clean msgs
         list<SrsMediaPacket *>::iterator iter;
-        for (iter = msgs.begin(); iter != msgs.end(); ++iter) {
+        for (iter = msgs_.begin(); iter != msgs_.end(); ++iter) {
             SrsMediaPacket *msg = *iter;
             srs_freep(msg);
         }
@@ -91,13 +91,13 @@ public:
     void on_video(SrsMediaPacket *msg)
     {
         SrsMediaPacket *_msg = msg->copy();
-        msgs.push_back(_msg);
+        msgs_.push_back(_msg);
     }
 
     void on_audio(SrsMediaPacket *msg)
     {
         SrsMediaPacket *_msg = msg->copy();
-        msgs.push_back(_msg);
+        msgs_.push_back(_msg);
     }
 
     /*!
@@ -106,18 +106,18 @@ public:
     srs_error_t flush()
     {
         string data;
-        if (videoSh) {
-            videoSh->timestamp = start_time;
-            data.append(serialFlv(videoSh));
+        if (video_sh_) {
+            video_sh_->timestamp_ = start_time_;
+            data.append(serialFlv(video_sh_));
         }
 
-        if (audioSh) {
-            audioSh->timestamp = start_time;
-            data.append(serialFlv(audioSh));
+        if (audio_sh_) {
+            audio_sh_->timestamp_ = start_time_;
+            data.append(serialFlv(audio_sh_));
         }
 
         list<SrsMediaPacket *>::iterator iter;
-        for (iter = msgs.begin(); iter != msgs.end(); ++iter) {
+        for (iter = msgs_.begin(); iter != msgs_.end(); ++iter) {
             SrsMediaPacket *msg = *iter;
             data.append(serialFlv(msg));
         }
@@ -129,7 +129,7 @@ public:
 
         data = string(ss.data(), ss.size()) + data;
 
-        const char *file_path = path.c_str();
+        const char *file_path = path_.c_str();
         int fd = open(file_path, O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP | S_IROTH);
         if (fd < 0) {
             return srs_error_new(-1, "open fragment file failed, path=%s", file_path);
@@ -157,12 +157,12 @@ public:
         long long first_msg_ts = 0;
         long long last_msg_ts = 0;
 
-        if (msgs.size() >= 2) {
-            SrsMediaPacket *first_msg = msgs.front();
-            first_msg_ts = first_msg->timestamp;
+        if (msgs_.size() >= 2) {
+            SrsMediaPacket *first_msg = msgs_.front();
+            first_msg_ts = first_msg->timestamp_;
 
-            SrsMediaPacket *last_msg = msgs.back();
-            last_msg_ts = last_msg->timestamp;
+            SrsMediaPacket *last_msg = msgs_.back();
+            last_msg_ts = last_msg->timestamp_;
 
             duration_ms = (int)(last_msg_ts - first_msg_ts);
         }
@@ -176,15 +176,15 @@ public:
     inline void set_index(int idx)
     {
         char file_path[1024] = {0};
-        snprintf(file_path, 1024, "%s/%s/%sSeg1-Frag%d", _srs_config->get_hds_path(req->vhost).c_str(), req->app.c_str(), req->stream.c_str(), idx);
+        snprintf(file_path, 1024, "%s/%s/%sSeg1-Frag%d", _srs_config->get_hds_path(req_->vhost_).c_str(), req_->app_.c_str(), req_->stream_.c_str(), idx);
 
-        path = file_path;
-        index = idx;
+        path_ = file_path;
+        index_ = idx;
     }
 
     inline int get_index()
     {
-        return index;
+        return index_;
     }
 
     /*!
@@ -192,48 +192,48 @@ public:
      */
     inline void set_start_time(long long st)
     {
-        start_time = st;
+        start_time_ = st;
     }
 
     inline long long get_start_time()
     {
-        return start_time;
+        return start_time_;
     }
 
     void set_video_sh(SrsMediaPacket *msg)
     {
-        srs_freep(videoSh);
-        videoSh = msg->copy();
+        srs_freep(video_sh_);
+        video_sh_ = msg->copy();
     }
 
     void set_audio_sh(SrsMediaPacket *msg)
     {
-        srs_freep(audioSh);
-        audioSh = msg->copy();
+        srs_freep(audio_sh_);
+        audio_sh_ = msg->copy();
     }
 
     string fragment_path()
     {
-        return path;
+        return path_;
     }
 
 private:
-    ISrsRequest *req;
-    list<SrsMediaPacket *> msgs;
+    ISrsRequest *req_;
+    list<SrsMediaPacket *> msgs_;
 
     /*!
      the index of this fragment
      */
-    int index;
-    long long start_time;
+    int index_;
+    long long start_time_;
 
-    SrsMediaPacket *videoSh;
-    SrsMediaPacket *audioSh;
-    string path;
+    SrsMediaPacket *video_sh_;
+    SrsMediaPacket *audio_sh_;
+    string path_;
 };
 
 SrsHds::SrsHds()
-    : currentSegment(NULL), fragment_index(1), video_sh(NULL), audio_sh(NULL), hds_req(NULL), hds_enabled(false)
+    : currentSegment_(NULL), fragment_index_(1), video_sh_(NULL), audio_sh_(NULL), hds_req_(NULL), hds_enabled_(false)
 {
 }
 
@@ -245,18 +245,18 @@ srs_error_t SrsHds::on_publish(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
-    if (hds_enabled) {
+    if (hds_enabled_) {
         return err;
     }
 
-    std::string vhost = req->vhost;
+    std::string vhost = req->vhost_;
     if (!_srs_config->get_hds_enabled(vhost)) {
-        hds_enabled = false;
+        hds_enabled_ = false;
         return err;
     }
-    hds_enabled = true;
+    hds_enabled_ = true;
 
-    hds_req = req->copy();
+    hds_req_ = req->copy();
 
     return flush_mainfest();
 }
@@ -265,25 +265,25 @@ srs_error_t SrsHds::on_unpublish()
 {
     srs_error_t err = srs_success;
 
-    if (!hds_enabled) {
+    if (!hds_enabled_) {
         return err;
     }
 
-    hds_enabled = false;
+    hds_enabled_ = false;
 
-    srs_freep(video_sh);
-    srs_freep(audio_sh);
-    srs_freep(hds_req);
+    srs_freep(video_sh_);
+    srs_freep(audio_sh_);
+    srs_freep(hds_req_);
 
     // clean fragments
     list<SrsHdsFragment *>::iterator iter;
-    for (iter = fragments.begin(); iter != fragments.end(); ++iter) {
+    for (iter = fragments_.begin(); iter != fragments_.end(); ++iter) {
         SrsHdsFragment *st = *iter;
         srs_freep(st);
     }
-    fragments.clear();
+    fragments_.clear();
 
-    srs_freep(currentSegment);
+    srs_freep(currentSegment_);
 
     srs_trace("HDS un-published");
 
@@ -294,39 +294,39 @@ srs_error_t SrsHds::on_video(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
-    if (!hds_enabled) {
+    if (!hds_enabled_) {
         return err;
     }
 
     if (SrsFlvVideo::sh(msg->payload(), msg->size())) {
-        srs_freep(video_sh);
-        video_sh = msg->copy();
+        srs_freep(video_sh_);
+        video_sh_ = msg->copy();
     }
 
-    if (!currentSegment) {
-        currentSegment = new SrsHdsFragment(hds_req);
-        currentSegment->set_index(fragment_index++);
-        currentSegment->set_start_time(msg->timestamp);
+    if (!currentSegment_) {
+        currentSegment_ = new SrsHdsFragment(hds_req_);
+        currentSegment_->set_index(fragment_index_++);
+        currentSegment_->set_start_time(msg->timestamp_);
 
-        if (video_sh)
-            currentSegment->set_video_sh(video_sh);
+        if (video_sh_)
+            currentSegment_->set_video_sh(video_sh_);
 
-        if (audio_sh)
-            currentSegment->set_audio_sh(audio_sh);
+        if (audio_sh_)
+            currentSegment_->set_audio_sh(audio_sh_);
     }
 
-    currentSegment->on_video(msg);
+    currentSegment_->on_video(msg);
 
-    double fragment_duration = srsu2ms(_srs_config->get_hds_fragment(hds_req->vhost));
-    if (currentSegment->duration() >= fragment_duration) {
+    double fragment_duration = srsu2ms(_srs_config->get_hds_fragment(hds_req_->vhost_));
+    if (currentSegment_->duration() >= fragment_duration) {
         // flush segment
-        if ((err = currentSegment->flush()) != srs_success) {
+        if ((err = currentSegment_->flush()) != srs_success) {
             return srs_error_wrap(err, "flush segment");
         }
 
         srs_trace("flush Segment success.");
-        fragments.push_back(currentSegment);
-        currentSegment = NULL;
+        fragments_.push_back(currentSegment_);
+        currentSegment_ = NULL;
         adjust_windows();
 
         // flush bootstrap
@@ -344,41 +344,41 @@ srs_error_t SrsHds::on_audio(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
-    if (!hds_enabled) {
+    if (!hds_enabled_) {
         return err;
     }
 
     if (SrsFlvAudio::sh(msg->payload(), msg->size())) {
-        srs_freep(audio_sh);
-        audio_sh = msg->copy();
+        srs_freep(audio_sh_);
+        audio_sh_ = msg->copy();
     }
 
-    if (!currentSegment) {
-        currentSegment = new SrsHdsFragment(hds_req);
-        currentSegment->set_index(fragment_index++);
-        currentSegment->set_start_time(msg->timestamp);
+    if (!currentSegment_) {
+        currentSegment_ = new SrsHdsFragment(hds_req_);
+        currentSegment_->set_index(fragment_index_++);
+        currentSegment_->set_start_time(msg->timestamp_);
 
-        if (video_sh)
-            currentSegment->set_video_sh(video_sh);
+        if (video_sh_)
+            currentSegment_->set_video_sh(video_sh_);
 
-        if (audio_sh)
-            currentSegment->set_audio_sh(audio_sh);
+        if (audio_sh_)
+            currentSegment_->set_audio_sh(audio_sh_);
     }
 
-    currentSegment->on_audio(msg);
+    currentSegment_->on_audio(msg);
 
-    double fragment_duration = srsu2ms(_srs_config->get_hds_fragment(hds_req->vhost));
-    if (currentSegment->duration() >= fragment_duration) {
+    double fragment_duration = srsu2ms(_srs_config->get_hds_fragment(hds_req_->vhost_));
+    if (currentSegment_->duration() >= fragment_duration) {
         // flush segment
-        if ((err = currentSegment->flush()) != srs_success) {
+        if ((err = currentSegment_->flush()) != srs_success) {
             return srs_error_wrap(err, "flush segment");
         }
 
         srs_info("flush Segment success.");
 
         // reset the current segment
-        fragments.push_back(currentSegment);
-        currentSegment = NULL;
+        fragments_.push_back(currentSegment_);
+        currentSegment_ = NULL;
         adjust_windows();
 
         // flush bootstrap
@@ -405,13 +405,13 @@ srs_error_t SrsHds::flush_mainfest()
                         "<bootstrapInfo profile=\"named\" url=\"%s.abst\" id=\"bootstrap0\" />\n\t"
                         "<media bitrate=\"0\" url=\"%s\" bootstrapInfoId=\"bootstrap0\"></media>\n"
                         "</manifest>",
-             hds_req->stream.c_str(), hds_req->stream.c_str(), hds_req->stream.c_str());
+             hds_req_->stream_.c_str(), hds_req_->stream_.c_str(), hds_req_->stream_.c_str());
 
-    string dir = _srs_config->get_hds_path(hds_req->vhost) + "/" + hds_req->app;
+    string dir = _srs_config->get_hds_path(hds_req_->vhost_) + "/" + hds_req_->app_;
     if ((err = srs_os_mkdir_all(dir)) != srs_success) {
         return srs_error_wrap(err, "hds create dir failed");
     }
-    string path = dir + "/" + hds_req->stream + ".f4m";
+    string path = dir + "/" + hds_req_->stream_ + ".f4m";
 
     int fd = open(path.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP | S_IROTH);
     if (fd < 0) {
@@ -460,7 +460,7 @@ srs_error_t SrsHds::flush_bootstrap()
      indicates the version number that is being updated.
      we assume this is the last.
      */
-    abst.write_4bytes(fragment_index - 1); // BootstrapinfoVersion
+    abst.write_4bytes(fragment_index_ - 1); // BootstrapinfoVersion
 
     abst.write_1bytes(0x20); // profile, live, update
     abst.write_4bytes(1000); // TimeScale Typically, the value is 1000, for a unit of milliseconds
@@ -471,7 +471,7 @@ srs_error_t SrsHds::flush_bootstrap()
      The CurrentMedia Time can be the total duration.
      For media presentations that are not live, CurrentMediaTime can be 0.
      */
-    SrsHdsFragment *st = fragments.back();
+    SrsHdsFragment *st = fragments_.back();
     abst.write_8bytes(st->get_start_time());
 
     // SmpteTimeCodeOffset
@@ -591,7 +591,7 @@ srs_error_t SrsHds::flush_bootstrap()
          @FragmentsPerSegment        UI32
          The number of fragments in each segment in this run.
          */
-        abst.write_4bytes(fragment_index - 1);
+        abst.write_4bytes(fragment_index_ - 1);
         size_asrt += 8;
     }
 
@@ -643,11 +643,11 @@ srs_error_t SrsHds::flush_bootstrap()
      The number of items in this FragmentRunEntryTable.
      The minimum value is 1.
      */
-    abst.write_4bytes((int32_t)fragments.size());
+    abst.write_4bytes((int32_t)fragments_.size());
     size_afrt += 4;
 
     list<SrsHdsFragment *>::iterator iter;
-    for (iter = fragments.begin(); iter != fragments.end(); ++iter) {
+    for (iter = fragments_.begin(); iter != fragments_.end(); ++iter) {
         SrsHdsFragment *st = *iter;
         abst.write_4bytes(st->get_index());
         abst.write_8bytes(st->get_start_time());
@@ -659,7 +659,7 @@ srs_error_t SrsHds::flush_bootstrap()
     size_abst += size_afrt;
     update_box(start_abst.get(), size_abst);
 
-    string path = _srs_config->get_hds_path(hds_req->vhost) + "/" + hds_req->app + "/" + hds_req->stream + ".abst";
+    string path = _srs_config->get_hds_path(hds_req_->vhost_) + "/" + hds_req_->app_ + "/" + hds_req_->stream_ + ".abst";
 
     int fd = open(path.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP | S_IROTH);
     if (fd < 0) {
@@ -681,16 +681,16 @@ void SrsHds::adjust_windows()
 {
     int windows_size = 0;
     list<SrsHdsFragment *>::iterator iter;
-    for (iter = fragments.begin(); iter != fragments.end(); ++iter) {
+    for (iter = fragments_.begin(); iter != fragments_.end(); ++iter) {
         SrsHdsFragment *fragment = *iter;
         windows_size += fragment->duration();
     }
 
-    double windows_size_limit = srsu2ms(_srs_config->get_hds_window(hds_req->vhost));
+    double windows_size_limit = srsu2ms(_srs_config->get_hds_window(hds_req_->vhost_));
     if (windows_size > windows_size_limit) {
-        SrsHdsFragment *fragment = fragments.front();
+        SrsHdsFragment *fragment = fragments_.front();
         unlink(fragment->fragment_path().c_str());
-        fragments.erase(fragments.begin());
+        fragments_.erase(fragments_.begin());
         srs_freep(fragment);
     }
 }

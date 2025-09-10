@@ -13,8 +13,11 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 
 #include <srs_app_conn.hpp>
+#include <srs_app_mpegts_udp.hpp>
 #include <srs_app_st.hpp>
+#include <srs_kernel_buffer.hpp>
 #include <srs_protocol_conn.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 
 class MockIDResource : public ISrsResource
 {
@@ -463,9 +466,9 @@ VOID TEST(AppFragmentTest, CheckDuration)
 {
     if (true) {
         SrsFragment frg;
-        EXPECT_EQ(-1, frg.start_dts);
-        EXPECT_EQ(0, frg.dur);
-        EXPECT_FALSE(frg.sequence_header);
+        EXPECT_EQ(-1, frg.start_dts_);
+        EXPECT_EQ(0, frg.dur_);
+        EXPECT_FALSE(frg.sequence_header_);
     }
 
     if (true) {

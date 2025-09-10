@@ -23,8 +23,8 @@ extern std::vector<std::string> split_str(const std::string &str, const std::str
 class SrsSessionConfig
 {
 public:
-    std::string dtls_role;
-    std::string dtls_version;
+    std::string dtls_role_;
+    std::string dtls_version_;
 };
 
 class SrsSessionInfo
@@ -96,16 +96,16 @@ public:
 };
 
 struct H264SpecificParam {
-    std::string profile_level_id;
-    std::string packetization_mode;
-    std::string level_asymmetry_allow;
+    std::string profile_level_id_;
+    std::string packetization_mode_;
+    std::string level_asymmetry_allow_;
 };
 
 struct H265SpecificParam {
-    std::string level_id;
-    std::string profile_id;
-    std::string tier_flag;
-    std::string tx_mode;
+    std::string level_id_;
+    std::string profile_id_;
+    std::string tier_flag_;
+    std::string tx_mode_;
 };
 
 extern srs_error_t srs_parse_h264_fmtp(const std::string &fmtp, H264SpecificParam &h264_param);

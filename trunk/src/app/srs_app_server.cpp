@@ -1356,13 +1356,13 @@ srs_error_t SrsServer::srs_update_server_statistics()
     // Show statistics for RTC server.
     SrsProcSelfStat *u = srs_get_self_proc_stat();
     // Resident Set Size: number of pages the process has in real memory.
-    int memory = (int)(u->rss * 4 / 1024);
+    int memory = (int)(u->rss_ * 4 / 1024);
 
     SrsKbpsStats stats;
     srs_global_kbps_update(&stats);
 
     srs_trace("SRS: cpu=%.2f%%,%dMB%s%s%s%s%s%s%s%s%s%s%s",
-              u->percent * 100, memory,
+              u->percent_ * 100, memory,
               stats.cid_desc_.c_str(), stats.timer_desc_.c_str(),
               stats.recvfrom_desc_.c_str(), stats.io_desc_.c_str(), stats.msg_desc_.c_str(),
               stats.epoll_desc_.c_str(), stats.sched_desc_.c_str(), stats.clock_desc_.c_str(),
@@ -1559,34 +1559,34 @@ SrsSignalManager::SrsSignalManager(SrsServer *s)
 {
     SrsSignalManager::instance = this;
 
-    server = s;
-    sig_pipe[0] = sig_pipe[1] = -1;
-    trd = new SrsSTCoroutine("signal", this, _srs_context->get_id());
-    signal_read_stfd = NULL;
+    server_ = s;
+    sig_pipe_[0] = sig_pipe_[1] = -1;
+    trd_ = new SrsSTCoroutine("signal", this, _srs_context->get_id());
+    signal_read_stfd_ = NULL;
 }
 
 SrsSignalManager::~SrsSignalManager()
 {
-    srs_freep(trd);
+    srs_freep(trd_);
 
-    srs_close_stfd(signal_read_stfd);
+    srs_close_stfd(signal_read_stfd_);
 
-    if (sig_pipe[0] > 0) {
-        ::close(sig_pipe[0]);
+    if (sig_pipe_[0] > 0) {
+        ::close(sig_pipe_[0]);
     }
-    if (sig_pipe[1] > 0) {
-        ::close(sig_pipe[1]);
+    if (sig_pipe_[1] > 0) {
+        ::close(sig_pipe_[1]);
     }
 }
 
 srs_error_t SrsSignalManager::initialize()
 {
     /* Create signal pipe */
-    if (pipe(sig_pipe) < 0) {
+    if (pipe(sig_pipe_) < 0) {
         return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "create pipe");
     }
 
-    if ((signal_read_stfd = srs_netfd_open(sig_pipe[0])) == NULL) {
+    if ((signal_read_stfd_ = srs_netfd_open(sig_pipe_[0])) == NULL) {
         return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "open pipe");
     }
 
@@ -1638,7 +1638,7 @@ srs_error_t SrsSignalManager::start()
     srs_trace("signal installed, reload=%d, reopen=%d, fast_quit=%d, grace_quit=%d",
               SRS_SIGNAL_RELOAD, SRS_SIGNAL_REOPEN_LOG, SRS_SIGNAL_FAST_QUIT, SRS_SIGNAL_GRACEFULLY_QUIT);
 
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "signal manager");
     }
 
@@ -1650,17 +1650,17 @@ srs_error_t SrsSignalManager::cycle()
     srs_error_t err = srs_success;
 
     while (true) {
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             return srs_error_wrap(err, "signal manager");
         }
 
         int signo;
 
         /* Read the next signal from the pipe */
-        srs_read(signal_read_stfd, &signo, sizeof(int), SRS_UTIME_NO_TIMEOUT);
+        srs_read(signal_read_stfd_, &signo, sizeof(int), SRS_UTIME_NO_TIMEOUT);
 
         /* Process signal synchronously */
-        server->on_signal(signo);
+        server_->on_signal(signo);
     }
 
     return err;
@@ -1674,7 +1674,7 @@ void SrsSignalManager::sig_catcher(int signo)
     err = errno;
 
     /* write() is reentrant/async-safe */
-    int fd = SrsSignalManager::instance->sig_pipe[1];
+    int fd = SrsSignalManager::instance->sig_pipe_[1];
     write(fd, &signo, sizeof(int));
 
     errno = err;
@@ -1685,15 +1685,15 @@ extern bool _srs_in_docker;
 
 SrsInotifyWorker::SrsInotifyWorker(SrsServer *s)
 {
-    server = s;
-    trd = new SrsSTCoroutine("inotify", this);
-    inotify_fd = NULL;
+    server_ = s;
+    trd_ = new SrsSTCoroutine("inotify", this);
+    inotify_fd_ = NULL;
 }
 
 SrsInotifyWorker::~SrsInotifyWorker()
 {
-    srs_freep(trd);
-    srs_close_stfd(inotify_fd);
+    srs_freep(trd_);
+    srs_close_stfd(inotify_fd_);
 }
 
 srs_error_t SrsInotifyWorker::start()
@@ -1719,7 +1719,7 @@ srs_error_t SrsInotifyWorker::start()
     }
 
     // Open as stfd to read by ST.
-    if ((inotify_fd = srs_netfd_open(fd)) == NULL) {
+    if ((inotify_fd_ = srs_netfd_open(fd)) == NULL) {
         ::close(fd);
         return srs_error_new(ERROR_INOTIFY_OPENFD, "open fd=%d", fd);
     }
@@ -1769,7 +1769,7 @@ srs_error_t SrsInotifyWorker::start()
     }
     srs_trace("auto reload watching fd=%d, watch=%d, file=%s", fd, watch_conf, config_dir.c_str());
 
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "inotify");
     }
 #endif
@@ -1788,7 +1788,7 @@ srs_error_t SrsInotifyWorker::cycle()
 
     while (true) {
         char buf[4096];
-        ssize_t nn = srs_read(inotify_fd, buf, (size_t)sizeof(buf), SRS_UTIME_NO_TIMEOUT);
+        ssize_t nn = srs_read(inotify_fd_, buf, (size_t)sizeof(buf), SRS_UTIME_NO_TIMEOUT);
         if (nn < 0) {
             srs_warn("inotify ignore read failed, nn=%d", (int)nn);
             break;

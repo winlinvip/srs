@@ -651,3 +651,55 @@ VOID TEST(KernelPSTest, PsPacketDecodePrivateStream)
     ASSERT_EQ((size_t)0, handler.msgs_.size()); // Drop Private Stream message.
     EXPECT_EQ(0, context.recover_);
 }
+
+VOID TEST(KernelPSTest, MpegpsQueueFieldNaming)
+{
+    srs_error_t err = srs_success;
+
+    SrsMpegpsQueue queue;
+
+    // Test that the queue starts with zero counts
+    SrsMediaPacket *msg = queue.dequeue();
+    EXPECT_TRUE(msg == NULL);
+
+    // Create a mock audio packet
+    SrsMediaPacket *audio_msg = new SrsMediaPacket();
+    audio_msg->timestamp_ = 1000;
+    audio_msg->message_type_ = SrsFrameTypeAudio;
+
+    // Push audio packet
+    HELPER_EXPECT_SUCCESS(queue.push(audio_msg));
+
+    // Create a mock video packet
+    SrsMediaPacket *video_msg = new SrsMediaPacket();
+    video_msg->timestamp_ = 2000;
+    video_msg->message_type_ = SrsFrameTypeVideo;
+
+    // Push video packet
+    HELPER_EXPECT_SUCCESS(queue.push(video_msg));
+
+    // Should not dequeue yet (need at least 2 of each type)
+    msg = queue.dequeue();
+    EXPECT_TRUE(msg == NULL);
+
+    // Add more packets to meet the dequeue threshold
+    for (int i = 0; i < 3; i++) {
+        SrsMediaPacket *audio = new SrsMediaPacket();
+        audio->timestamp_ = 3000 + i;
+        audio->message_type_ = SrsFrameTypeAudio;
+        HELPER_EXPECT_SUCCESS(queue.push(audio));
+
+        SrsMediaPacket *video = new SrsMediaPacket();
+        video->timestamp_ = 4000 + i;
+        video->message_type_ = SrsFrameTypeVideo;
+        HELPER_EXPECT_SUCCESS(queue.push(video));
+    }
+
+    // Now should be able to dequeue
+    msg = queue.dequeue();
+    EXPECT_TRUE(msg != NULL);
+    if (msg) {
+        EXPECT_EQ(1000, msg->timestamp_);
+        srs_freep(msg);
+    }
+}

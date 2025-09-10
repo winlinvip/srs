@@ -200,8 +200,8 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     SrsSdp local_sdp;
 
     // Config for SDP and session.
-    local_sdp.session_config_.dtls_role = _srs_config->get_rtc_dtls_role(ruc->req_->vhost_);
-    local_sdp.session_config_.dtls_version = _srs_config->get_rtc_dtls_version(ruc->req_->vhost_);
+    local_sdp.session_config_.dtls_role_ = _srs_config->get_rtc_dtls_role(ruc->req_->vhost_);
+    local_sdp.session_config_.dtls_version_ = _srs_config->get_rtc_dtls_version(ruc->req_->vhost_);
 
     // Whether enabled.
     bool server_enabled = _srs_config->get_rtc_server_enabled();
@@ -488,8 +488,8 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // TODO: FIXME: move to create_session.
     // Config for SDP and session.
-    local_sdp.session_config_.dtls_role = _srs_config->get_rtc_dtls_role(ruc->req_->vhost_);
-    local_sdp.session_config_.dtls_version = _srs_config->get_rtc_dtls_version(ruc->req_->vhost_);
+    local_sdp.session_config_.dtls_role_ = _srs_config->get_rtc_dtls_role(ruc->req_->vhost_);
+    local_sdp.session_config_.dtls_version_ = _srs_config->get_rtc_dtls_version(ruc->req_->vhost_);
 
     // Whether enabled.
     bool server_enabled = _srs_config->get_rtc_server_enabled();

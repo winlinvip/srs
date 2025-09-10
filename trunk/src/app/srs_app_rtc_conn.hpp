@@ -99,7 +99,7 @@ private:
     ISrsRtcNetwork *network_;
     SrsDtls *dtls_;
     SrsSRTP *srtp_;
-    bool handshake_done;
+    bool handshake_done_;
 
 public:
     SrsSecurityTransport(ISrsRtcNetwork *s);
@@ -209,8 +209,8 @@ public:
 class SrsRtcAsyncCallOnStop : public ISrsAsyncCallTask
 {
 private:
-    SrsContextId cid;
-    ISrsRequest *req;
+    SrsContextId cid_;
+    ISrsRequest *req_;
 
 public:
     SrsRtcAsyncCallOnStop(SrsContextId c, ISrsRequest *r);
@@ -237,7 +237,7 @@ private:
     std::map<uint32_t, SrsRtcAudioSendTrack *> audio_tracks_;
     std::map<uint32_t, SrsRtcVideoSendTrack *> video_tracks_;
     // The pithy print for special stage.
-    SrsErrorPithyPrint *nack_epp;
+    SrsErrorPithyPrint *nack_epp_;
 
 private:
     // Fast cache for tracks.
@@ -250,15 +250,15 @@ private:
 
 private:
     // For merged-write messages.
-    int mw_msgs;
-    bool realtime;
+    int mw_msgs_;
+    bool realtime_;
     // Whether enabled nack.
     bool nack_enabled_;
     bool nack_no_copy_;
 
 private:
     // Whether player started.
-    bool is_started;
+    bool is_started_;
 
 public:
     SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid);
@@ -335,8 +335,8 @@ private:
 class SrsRtcAsyncCallOnUnpublish : public ISrsAsyncCallTask
 {
 private:
-    SrsContextId cid;
-    ISrsRequest *req;
+    SrsContextId cid_;
+    ISrsRequest *req_;
 
 public:
     SrsRtcAsyncCallOnUnpublish(SrsContextId c, ISrsRequest *r);
@@ -358,7 +358,7 @@ private:
 
 private:
     SrsContextId cid_;
-    uint64_t nn_audio_frames;
+    uint64_t nn_audio_frames_;
     SrsRtcPLIWorker *pli_worker_;
     SrsErrorPithyPrint *twcc_epp_;
 
@@ -372,13 +372,13 @@ private:
 
 private:
     bool request_keyframe_;
-    SrsErrorPithyPrint *pli_epp;
+    SrsErrorPithyPrint *pli_epp_;
 
 private:
     ISrsRequest *req_;
     SrsSharedPtr<SrsRtcSource> source_;
     // Simulators.
-    int nn_simulate_nack_drop;
+    int nn_simulate_nack_drop_;
 
 private:
     // track vector
@@ -390,7 +390,7 @@ private:
     uint8_t twcc_fb_count_;
     SrsRtcpTWCC rtcp_twcc_;
     SrsRtpExtensionTypes extension_types_;
-    bool is_started;
+    bool is_started_;
     srs_utime_t last_time_send_twcc_;
 
 public:
@@ -520,24 +520,24 @@ private:
 private:
     // TODO: FIXME: Rename it.
     // The timeout of session, keep alive by STUN ping pong.
-    srs_utime_t session_timeout;
+    srs_utime_t session_timeout_;
     // TODO: FIXME: Rename it.
-    srs_utime_t last_stun_time;
+    srs_utime_t last_stun_time_;
 
 private:
     // For each RTC session, we use a specified cid for debugging logs.
     SrsContextId cid_;
     ISrsRequest *req_;
-    SrsSdp remote_sdp;
-    SrsSdp local_sdp;
+    SrsSdp remote_sdp_;
+    SrsSdp local_sdp_;
 
 private:
     // twcc handler
     int twcc_id_;
     // Simulators.
-    int nn_simulate_player_nack_drop;
+    int nn_simulate_player_nack_drop_;
     // Pithy print for PLI request.
-    SrsErrorPithyPrint *pli_epp;
+    SrsErrorPithyPrint *pli_epp_;
 
 private:
     bool nack_enabled_;

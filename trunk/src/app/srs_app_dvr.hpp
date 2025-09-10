@@ -37,19 +37,19 @@ class SrsDvrSegmenter : public ISrsReloadHandler
 {
 protected:
     // The underlayer file object.
-    SrsFileWriter *fs;
+    SrsFileWriter *fs_;
     // Whether wait keyframe to reap segment.
-    bool wait_keyframe;
+    bool wait_keyframe_;
     // The FLV/MP4 fragment file.
-    SrsFragment *fragment;
+    SrsFragment *fragment_;
 
 private:
-    ISrsRequest *req;
-    SrsDvrPlan *plan;
+    ISrsRequest *req_;
+    SrsDvrPlan *plan_;
 
 private:
-    SrsRtmpJitter *jitter;
-    SrsRtmpJitterAlgorithm jitter_algorithm;
+    SrsRtmpJitter *jitter_;
+    SrsRtmpJitterAlgorithm jitter_algorithm_;
 
 public:
     SrsDvrSegmenter();
@@ -99,17 +99,17 @@ class SrsDvrFlvSegmenter : public SrsDvrSegmenter
 {
 private:
     // The FLV encoder, for FLV target.
-    SrsFlvTransmuxer *enc;
+    SrsFlvTransmuxer *enc_;
 
 private:
     // The offset of file for duration value.
     // The next 8 bytes is the double value.
-    int64_t duration_offset;
+    int64_t duration_offset_;
     // The offset of file for filesize value.
     // The next 8 bytes is the double value.
-    int64_t filesize_offset;
+    int64_t filesize_offset_;
     // Whether current segment has keyframe.
-    bool has_keyframe;
+    bool has_keyframe_;
 
 public:
     SrsDvrFlvSegmenter();
@@ -131,7 +131,7 @@ class SrsDvrMp4Segmenter : public SrsDvrSegmenter
 {
 private:
     // The MP4 encoder, for MP4 target.
-    SrsMp4Encoder *enc;
+    SrsMp4Encoder *enc_;
 
 public:
     SrsDvrMp4Segmenter();
@@ -152,9 +152,9 @@ protected:
 class SrsDvrAsyncCallOnDvr : public ISrsAsyncCallTask
 {
 private:
-    SrsContextId cid;
-    std::string path;
-    ISrsRequest *req;
+    SrsContextId cid_;
+    std::string path_;
+    ISrsRequest *req_;
 
 public:
     SrsDvrAsyncCallOnDvr(SrsContextId c, ISrsRequest *r, std::string p);
@@ -169,12 +169,12 @@ public:
 class SrsDvrPlan : public ISrsReloadHandler
 {
 public:
-    ISrsRequest *req;
+    ISrsRequest *req_;
 
 protected:
-    SrsOriginHub *hub;
-    SrsDvrSegmenter *segment;
-    bool dvr_enabled;
+    SrsOriginHub *hub_;
+    SrsDvrSegmenter *segment_;
+    bool dvr_enabled_;
 
 public:
     SrsDvrPlan();
@@ -213,8 +213,8 @@ class SrsDvrSegmentPlan : public SrsDvrPlan
 {
 private:
     // in config, in srs_utime_t
-    srs_utime_t cduration;
-    bool wait_keyframe;
+    srs_utime_t cduration_;
+    bool wait_keyframe_;
     // Whether reopening the DVR file.
     bool reopening_segment_;
 
@@ -237,15 +237,15 @@ private:
 class SrsDvr : public ISrsReloadHandler
 {
 private:
-    SrsOriginHub *hub;
-    SrsDvrPlan *plan;
-    ISrsRequest *req;
+    SrsOriginHub *hub_;
+    SrsDvrPlan *plan_;
+    ISrsRequest *req_;
 
 private:
     // whether the dvr is actived by filter, which is specified by dvr_apply.
     // we always initialize the dvr, which crote plan and segment object,
     // but they never create actual piece of file util the apply active it.
-    bool actived;
+    bool actived_;
 
 public:
     SrsDvr();

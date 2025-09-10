@@ -58,13 +58,13 @@ class SrsClientInfo
 {
 public:
     // The type of client, play or publish.
-    SrsRtmpConnType type;
+    SrsRtmpConnType type_;
     // Whether the client connected at the edge server.
-    bool edge;
+    bool edge_;
     // Original request object from client.
-    ISrsRequest *req;
+    ISrsRequest *req_;
     // Response object to client.
-    SrsResponse *res;
+    SrsResponse *res_;
 
 public:
     SrsClientInfo();
@@ -125,50 +125,50 @@ class SrsRtmpConn : public ISrsConnection, public ISrsStartable, public ISrsRelo
     friend class SrsPublishRecvThread;
 
 private:
-    SrsServer *server;
-    SrsRtmpServer *rtmp;
-    SrsRefer *refer;
-    SrsBandwidth *bandwidth;
-    SrsSecurity *security;
+    SrsServer *server_;
+    SrsRtmpServer *rtmp_;
+    SrsRefer *refer_;
+    SrsBandwidth *bandwidth_;
+    SrsSecurity *security_;
     // The wakable handler, maybe NULL.
     // TODO: FIXME: Should refine the state for receiving thread.
-    ISrsWakable *wakable;
+    ISrsWakable *wakable_;
     // The elapsed duration in srs_utime_t
     // For live play duration, for instance, rtmpdump to record.
-    srs_utime_t duration;
+    srs_utime_t duration_;
     // The MR(merged-write) sleep time in srs_utime_t.
-    srs_utime_t mw_sleep;
-    int mw_msgs;
+    srs_utime_t mw_sleep_;
+    int mw_msgs_;
     // For realtime
     // @see https://github.com/ossrs/srs/issues/257
-    bool realtime;
+    bool realtime_;
     // The minimal interval in srs_utime_t for delivery stream.
-    srs_utime_t send_min_interval;
+    srs_utime_t send_min_interval_;
     // The publish 1st packet timeout in srs_utime_t
-    srs_utime_t publish_1stpkt_timeout;
+    srs_utime_t publish_1stpkt_timeout_;
     // The publish normal packet timeout in srs_utime_t
-    srs_utime_t publish_normal_timeout;
+    srs_utime_t publish_normal_timeout_;
     // Whether enable the tcp_nodelay.
-    bool tcp_nodelay;
+    bool tcp_nodelay_;
     // About the rtmp client.
-    SrsClientInfo *info;
+    SrsClientInfo *info_;
 
 private:
     SrsRtmpTransport *transport_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
-    SrsCoroutine *trd;
+    SrsCoroutine *trd_;
     // The manager object to manage the connection.
-    ISrsResourceManager *manager;
+    ISrsResourceManager *manager_;
     // The ip and port of client.
-    std::string ip;
-    int port;
+    std::string ip_;
+    int port_;
     // The delta for statistic.
     SrsNetworkDelta *delta_;
-    SrsNetworkKbps *kbps;
+    SrsNetworkKbps *kbps_;
     // The create time in milliseconds.
     // for current connection to log self create time and calculate the living time.
-    int64_t create_time;
+    int64_t create_time_;
 
 public:
     SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, std::string cip, int port);

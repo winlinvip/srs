@@ -63,27 +63,27 @@ public:
 class SrsHttpConn : public ISrsConnection, public ISrsStartable, public ISrsCoroutineHandler, public ISrsExpire
 {
 protected:
-    SrsHttpParser *parser;
-    ISrsHttpServeMux *http_mux;
-    SrsHttpCorsMux *cors;
-    SrsHttpAuthMux *auth;
+    SrsHttpParser *parser_;
+    ISrsHttpServeMux *http_mux_;
+    SrsHttpCorsMux *cors_;
+    SrsHttpAuthMux *auth_;
     ISrsHttpConnOwner *handler_;
 
 protected:
-    ISrsProtocolReadWriter *skt;
+    ISrsProtocolReadWriter *skt_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
-    SrsCoroutine *trd;
+    SrsCoroutine *trd_;
     // The ip and port of client.
-    std::string ip;
-    int port;
+    std::string ip_;
+    int port_;
 
 private:
     // The delta for statistic.
     SrsNetworkDelta *delta_;
-    // The create time in milliseconds.
+    // The create time in microseconds.
     // for current connection to log self create time and calculate the living time.
-    int64_t create_time;
+    srs_utime_t create_time_;
 
 public:
     SrsHttpConn(ISrsHttpConnOwner *handler, ISrsProtocolReadWriter *fd, ISrsHttpServeMux *m, std::string cip, int port);
@@ -135,10 +135,10 @@ class SrsHttpxConn : public ISrsConnection, public ISrsStartable, public ISrsHtt
 {
 private:
     // The manager object to manage the connection.
-    ISrsResourceManager *manager;
+    ISrsResourceManager *manager_;
     ISrsProtocolReadWriter *io_;
-    SrsSslConnection *ssl;
-    SrsHttpConn *conn;
+    SrsSslConnection *ssl_;
+    SrsHttpConn *conn_;
     // We should never enable the stat, unless HTTP stream connection requires.
     bool enable_stat_;
     // ssl key & cert file
@@ -183,9 +183,9 @@ public:
 class SrsHttpServer : public ISrsHttpServeMux
 {
 private:
-    SrsServer *server;
-    SrsHttpStaticServer *http_static;
-    SrsHttpStreamServer *http_stream;
+    SrsServer *server_;
+    SrsHttpStaticServer *http_static_;
+    SrsHttpStreamServer *http_stream_;
 
 public:
     SrsHttpServer(SrsServer *svr);

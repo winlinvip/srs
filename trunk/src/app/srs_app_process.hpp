@@ -28,19 +28,19 @@
 class SrsProcess
 {
 private:
-    bool is_started;
+    bool is_started_;
     // Whether SIGTERM send but need to wait or SIGKILL.
-    bool fast_stopped;
-    pid_t pid;
+    bool fast_stopped_;
+    pid_t pid_;
 
 private:
-    std::string bin;
-    std::string stdout_file;
-    std::string stderr_file;
-    std::vector<std::string> params;
+    std::string bin_;
+    std::string stdout_file_;
+    std::string stderr_file_;
+    std::vector<std::string> params_;
     // The cli to fork process.
-    std::string cli;
-    std::string actual_cli;
+    std::string cli_;
+    std::string actual_cli_;
 
 public:
     SrsProcess();

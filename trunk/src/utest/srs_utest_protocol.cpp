@@ -5288,12 +5288,12 @@ VOID TEST(ProtocolRTSPTest, RTSPRequest)
 
         SrsRtspDescribeResponse *res = new SrsRtspDescribeResponse(req->seq_);
         res->sdp_ = "v=0\r\n"
-                   "o=- 123456 0 IN IP4 127.0.0.1\r\n"
-                   "s=SRS RTSP Server\r\n"
-                   "c=IN IP4 127.0.0.1\r\n"
-                   "t=0 0\r\n"
-                   "m=video 0 RTP/AVP 96\r\n"
-                   "a=rtpmap:96 H264/90000\r\n";
+                    "o=- 123456 0 IN IP4 127.0.0.1\r\n"
+                    "s=SRS RTSP Server\r\n"
+                    "c=IN IP4 127.0.0.1\r\n"
+                    "t=0 0\r\n"
+                    "m=video 0 RTP/AVP 96\r\n"
+                    "a=rtpmap:96 H264/90000\r\n";
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());

@@ -57,16 +57,16 @@ class SrsHourGlass : public ISrsCoroutineHandler
 {
 private:
     std::string label_;
-    SrsCoroutine *trd;
-    ISrsHourGlass *handler;
-    srs_utime_t _resolution;
+    SrsCoroutine *trd_;
+    ISrsHourGlass *handler_;
+    srs_utime_t resolution_;
     // The ticks:
     //      key: the event of tick.
     //      value: the interval of tick.
-    std::map<int, srs_utime_t> ticks;
+    std::map<int, srs_utime_t> ticks_;
     // The total elapsed time,
     // for each cycle, we increase it with a resolution.
-    srs_utime_t total_elapse;
+    srs_utime_t total_elapse_;
 
 public:
     // TODO: FIMXE: Refine to SrsHourGlass(std::string label);

@@ -63,8 +63,8 @@ int srs_time_jitter_string2int(std::string time_jitter);
 class SrsRtmpJitter
 {
 private:
-    int64_t last_pkt_time;
-    int64_t last_pkt_correct_time;
+    int64_t last_pkt_time_;
+    int64_t last_pkt_correct_time_;
 
 public:
     SrsRtmpJitter();
@@ -83,9 +83,9 @@ public:
 class SrsFastVector
 {
 private:
-    SrsMediaPacket **msgs;
-    int nb_msgs;
-    int count;
+    SrsMediaPacket **msgs_;
+    int nb_msgs_;
+    int count_;
 
 public:
     SrsFastVector();
@@ -110,18 +110,18 @@ class SrsMessageQueue
 {
 private:
     // The start and end time.
-    srs_utime_t av_start_time;
-    srs_utime_t av_end_time;
+    srs_utime_t av_start_time_;
+    srs_utime_t av_end_time_;
 
 private:
     // Whether do logging when shrinking.
     bool _ignore_shrink;
     // The max queue size, shrink if exceed it.
-    srs_utime_t max_queue_size;
+    srs_utime_t max_queue_size_;
 #ifdef SRS_PERF_QUEUE_FAST_VECTOR
-    SrsFastVector msgs;
+    SrsFastVector msgs_;
 #else
-    std::vector<SrsMediaPacket *> msgs;
+    std::vector<SrsMediaPacket *> msgs_;
 #endif
 public:
     SrsMessageQueue(bool ignore_shrink = false);
@@ -183,17 +183,17 @@ private:
     SrsLiveSource *source_;
 
 private:
-    SrsRtmpJitter *jitter;
-    SrsMessageQueue *queue;
-    bool paused;
+    SrsRtmpJitter *jitter_;
+    SrsMessageQueue *queue_;
+    bool paused_;
     // when source id changed, notice all consumers
-    bool should_update_source_id;
+    bool should_update_source_id_;
 #ifdef SRS_PERF_QUEUE_COND_WAIT
     // The cond wait for mw.
-    srs_cond_t mw_wait;
-    bool mw_waiting;
-    int mw_min_msgs;
-    srs_utime_t mw_duration;
+    srs_cond_t mw_wait_;
+    bool mw_waiting_;
+    int mw_min_msgs_;
+    srs_utime_t mw_duration_;
 #endif
 public:
     SrsLiveConsumer(SrsLiveSource *s);
@@ -243,13 +243,13 @@ private:
     // if disabled the gop cache,
     // The client will wait for the next keyframe for h264,
     // and will be black-screen.
-    bool enable_gop_cache;
+    bool enable_gop_cache_;
     // to limit the max gop cache frames
     // without this limit, if ingest stream always has no IDR frame
     // it will cause srs run out of memory
     int gop_cache_max_frames_;
     // The video frame count, avoid cache for pure audio stream.
-    int cached_video_count;
+    int cached_video_count_;
     // when user disabled video when publishing, and gop cache enalbed,
     // We will cache the audio/video for we already got video, but we never
     // know when to clear the gop cache, for there is no video in future,
@@ -260,9 +260,9 @@ private:
     // @remark, it is ok for performance, for when we clear the gop cache,
     //       gop cache is disabled for pure audio stream.
     // @see: https://github.com/ossrs/srs/issues/124
-    int audio_after_last_video_count;
+    int audio_after_last_video_count_;
     // cached gop.
-    std::vector<SrsMediaPacket *> gop_cache;
+    std::vector<SrsMediaPacket *> gop_cache_;
 
 public:
     SrsGopCache();
@@ -315,9 +315,9 @@ public:
 class SrsMixQueue
 {
 private:
-    uint32_t nb_videos;
-    uint32_t nb_audios;
-    std::multimap<int64_t, SrsMediaPacket *> msgs;
+    uint32_t nb_videos_;
+    uint32_t nb_audios_;
+    std::multimap<int64_t, SrsMediaPacket *> msgs_;
 
 public:
     SrsMixQueue();
@@ -340,25 +340,25 @@ private:
 
 private:
     ISrsRequest *req_;
-    bool is_active;
+    bool is_active_;
 
 private:
     // hls handler.
-    SrsHls *hls;
+    SrsHls *hls_;
     // The DASH encoder.
-    SrsDash *dash;
+    SrsDash *dash_;
     // dvr handler.
-    SrsDvr *dvr;
+    SrsDvr *dvr_;
     // transcoding handler.
-    SrsEncoder *encoder;
+    SrsEncoder *encoder_;
 #ifdef SRS_HDS
     // adobe hds(http dynamic streaming).
-    SrsHds *hds;
+    SrsHds *hds_;
 #endif
     // nginx-rtmp exec feature.
-    SrsNgExec *ng_exec;
+    SrsNgExec *ng_exec_;
     // To forward stream to other servers
-    std::vector<SrsForwarder *> forwarders;
+    std::vector<SrsForwarder *> forwarders_;
 
 public:
     SrsOriginHub();
@@ -413,16 +413,16 @@ class SrsMetaCache
 {
 private:
     // The cached metadata, FLV script data tag.
-    SrsMediaPacket *meta;
+    SrsMediaPacket *meta_;
     // The cached video sequence header, for example, sps/pps for h.264.
-    SrsMediaPacket *video;
-    SrsMediaPacket *previous_video;
+    SrsMediaPacket *video_;
+    SrsMediaPacket *previous_video_;
     // The cached audio sequence header, for example, asc for aac.
-    SrsMediaPacket *audio;
-    SrsMediaPacket *previous_audio;
+    SrsMediaPacket *audio_;
+    SrsMediaPacket *previous_audio_;
     // The format for sequence header.
-    SrsRtmpFormat *vformat;
-    SrsRtmpFormat *aformat;
+    SrsRtmpFormat *vformat_;
+    SrsRtmpFormat *aformat_;
 
 public:
     SrsMetaCache();
@@ -469,8 +469,8 @@ public:
 class SrsLiveSourceManager : public ISrsHourGlass
 {
 private:
-    srs_mutex_t lock;
-    std::map<std::string, SrsSharedPtr<SrsLiveSource> > pool;
+    srs_mutex_t lock_;
+    std::map<std::string, SrsSharedPtr<SrsLiveSource> > pool_;
     SrsHourGlass *timer_;
 
 public:
@@ -520,35 +520,35 @@ private:
     // previous source id.
     SrsContextId _pre_source_id;
     // deep copy of client request.
-    ISrsRequest *req;
+    ISrsRequest *req_;
     // To delivery stream to clients.
-    std::vector<SrsLiveConsumer *> consumers;
+    std::vector<SrsLiveConsumer *> consumers_;
     // The time jitter algorithm for vhost.
-    SrsRtmpJitterAlgorithm jitter_algorithm;
+    SrsRtmpJitterAlgorithm jitter_algorithm_;
     // For play, whether use interlaced/mixed algorithm to correct timestamp.
-    bool mix_correct;
+    bool mix_correct_;
     // The mix queue to implements the mix correct algorithm.
-    SrsMixQueue *mix_queue;
+    SrsMixQueue *mix_queue_;
     // For play, whether enabled atc.
     // The atc(use absolute time and donot adjust time),
     // directly use msg time and donot adjust if atc is true,
     // otherwise, adjust msg time to start from 0 to make flash happy.
-    bool atc;
+    bool atc_;
     // whether stream is monotonically increase.
-    bool is_monotonically_increase;
+    bool is_monotonically_increase_;
     // The time of the packet we just got.
-    int64_t last_packet_time;
+    int64_t last_packet_time_;
     // The source bridge for other source.
     ISrsStreamBridge *bridge_;
     // The edge control service
-    SrsPlayEdge *play_edge;
-    SrsPublishEdge *publish_edge;
+    SrsPlayEdge *play_edge_;
+    SrsPublishEdge *publish_edge_;
     // The gop cache for client fast startup.
-    SrsGopCache *gop_cache;
+    SrsGopCache *gop_cache_;
     // The hub for origin server.
-    SrsOriginHub *hub;
+    SrsOriginHub *hub_;
     // The metadata cache.
-    SrsMetaCache *meta;
+    SrsMetaCache *meta_;
     // The format, codec information.
     SrsRtmpFormat *format_;
 

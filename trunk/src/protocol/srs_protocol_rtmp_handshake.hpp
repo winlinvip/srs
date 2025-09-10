@@ -326,7 +326,7 @@ public:
     // @param size, must always be 1536.
     // use the c1_validate_digest() to valid the digest of c1.
     // use the s1_validate_digest() to valid the digest of s1.
-    virtual srs_error_t parse(char *_c1s1, int size, srs_schema_type _schema);
+    virtual srs_error_t parse(char *c1s1, int size, srs_schema_type schema);
 
 public:
     // For client:  create and sign c1 by schema.
@@ -342,7 +342,7 @@ public:
     //        schema = choose schema0 or schema1
     //        digest-data = calc_c1_digest(c1, schema)
     //        copy digest-data to c1
-    virtual srs_error_t c1_create(srs_schema_type _schema);
+    virtual srs_error_t c1_create(srs_schema_type schema);
     // For server:  validate the parsed c1 schema
     virtual srs_error_t c1_validate_digest(bool &is_valid);
 

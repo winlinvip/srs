@@ -22,16 +22,16 @@ using namespace std;
 
 SrsNgExec::SrsNgExec()
 {
-    trd = new SrsDummyCoroutine();
-    pprint = SrsPithyPrint::create_exec();
+    trd_ = new SrsDummyCoroutine();
+    pprint_ = SrsPithyPrint::create_exec();
 }
 
 SrsNgExec::~SrsNgExec()
 {
     on_unpublish();
 
-    srs_freep(trd);
-    srs_freep(pprint);
+    srs_freep(trd_);
+    srs_freep(pprint_);
 }
 
 srs_error_t SrsNgExec::on_publish(ISrsRequest *req)
@@ -44,9 +44,9 @@ srs_error_t SrsNgExec::on_publish(ISrsRequest *req)
     }
 
     // start thread to run all processes.
-    srs_freep(trd);
-    trd = new SrsSTCoroutine("encoder", this, _srs_context->get_id());
-    if ((err = trd->start()) != srs_success) {
+    srs_freep(trd_);
+    trd_ = new SrsSTCoroutine("encoder", this, _srs_context->get_id());
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "start thread");
     }
 
@@ -55,7 +55,7 @@ srs_error_t SrsNgExec::on_publish(ISrsRequest *req)
 
 void SrsNgExec::on_unpublish()
 {
-    trd->stop();
+    trd_->stop();
     clear_exec_publish();
 }
 
@@ -68,7 +68,7 @@ srs_error_t SrsNgExec::cycle()
     while (true) {
         // We always check status first.
         // @see https://github.com/ossrs/srs/issues/1634#issuecomment-597571561
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             err = srs_error_wrap(err, "ng exec cycle");
             break;
         }
@@ -82,7 +82,7 @@ srs_error_t SrsNgExec::cycle()
     }
 
     std::vector<SrsProcess *>::iterator it;
-    for (it = exec_publishs.begin(); it != exec_publishs.end(); ++it) {
+    for (it = exec_publishs_.begin(); it != exec_publishs_.end(); ++it) {
         SrsProcess *ep = *it;
         ep->stop();
     }
@@ -95,12 +95,12 @@ srs_error_t SrsNgExec::do_cycle()
     srs_error_t err = srs_success;
 
     // ignore when no exec.
-    if (exec_publishs.empty()) {
+    if (exec_publishs_.empty()) {
         return err;
     }
 
     std::vector<SrsProcess *>::iterator it;
-    for (it = exec_publishs.begin(); it != exec_publishs.end(); ++it) {
+    for (it = exec_publishs_.begin(); it != exec_publishs_.end(); ++it) {
         SrsProcess *process = *it;
 
         // start all processes.
@@ -130,11 +130,11 @@ srs_error_t SrsNgExec::parse_exec_publish(ISrsRequest *req)
     }
 
     // stream name: vhost/app/stream for print
-    input_stream_name = req->vhost_;
-    input_stream_name += "/";
-    input_stream_name += req->app_;
-    input_stream_name += "/";
-    input_stream_name += req->stream_;
+    input_stream_name_ = req->vhost_;
+    input_stream_name_ += "/";
+    input_stream_name_ += req->app_;
+    input_stream_name_ += "/";
+    input_stream_name_ += req->stream_;
 
     std::vector<SrsConfDirective *> eps = _srs_config->get_exec_publishs(req->vhost_);
     for (int i = 0; i < (int)eps.size(); i++) {
@@ -165,7 +165,7 @@ srs_error_t SrsNgExec::parse_exec_publish(ISrsRequest *req)
             return srs_error_wrap(err, "initialize process failed, binary=%s, vhost=%s", binary.c_str(), req->vhost_.c_str());
         }
 
-        exec_publishs.push_back(process);
+        exec_publishs_.push_back(process);
     }
 
     return err;
@@ -174,22 +174,22 @@ srs_error_t SrsNgExec::parse_exec_publish(ISrsRequest *req)
 void SrsNgExec::clear_exec_publish()
 {
     std::vector<SrsProcess *>::iterator it;
-    for (it = exec_publishs.begin(); it != exec_publishs.end(); ++it) {
+    for (it = exec_publishs_.begin(); it != exec_publishs_.end(); ++it) {
         SrsProcess *ep = *it;
         srs_freep(ep);
     }
-    exec_publishs.clear();
+    exec_publishs_.clear();
 }
 
 void SrsNgExec::show_exec_log_message()
 {
-    pprint->elapse();
+    pprint_->elapse();
 
     // reportable
-    if (pprint->can_print()) {
+    if (pprint_->can_print()) {
         // TODO: FIXME: show more info.
         srs_trace("-> " SRS_CONSTS_LOG_EXEC " time=%" PRId64 ", publish=%d, input=%s",
-                  pprint->age(), (int)exec_publishs.size(), input_stream_name.c_str());
+                  pprint_->age(), (int)exec_publishs_.size(), input_stream_name_.c_str());
     }
 }
 

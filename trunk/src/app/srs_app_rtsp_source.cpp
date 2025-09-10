@@ -32,12 +32,12 @@ static const int kVideoSamplerate = 90000;
 SrsRtspConsumer::SrsRtspConsumer(SrsRtspSource *s)
 {
     source_ = s;
-    should_update_source_id = false;
+    should_update_source_id_ = false;
     handler_ = NULL;
 
-    mw_wait = srs_cond_new();
-    mw_min_msgs = 0;
-    mw_waiting = false;
+    mw_wait_ = srs_cond_new();
+    mw_min_msgs_ = 0;
+    mw_waiting_ = false;
 }
 
 SrsRtspConsumer::~SrsRtspConsumer()
@@ -45,29 +45,29 @@ SrsRtspConsumer::~SrsRtspConsumer()
     source_->on_consumer_destroy(this);
 
     vector<SrsRtpPacket *>::iterator it;
-    for (it = queue.begin(); it != queue.end(); ++it) {
+    for (it = queue_.begin(); it != queue_.end(); ++it) {
         SrsRtpPacket *pkt = *it;
         srs_freep(pkt);
     }
 
-    srs_cond_destroy(mw_wait);
+    srs_cond_destroy(mw_wait_);
 }
 
 void SrsRtspConsumer::update_source_id()
 {
-    should_update_source_id = true;
+    should_update_source_id_ = true;
 }
 
 srs_error_t SrsRtspConsumer::enqueue(SrsRtpPacket *pkt)
 {
     srs_error_t err = srs_success;
 
-    queue.push_back(pkt);
+    queue_.push_back(pkt);
 
-    if (mw_waiting) {
-        if ((int)queue.size() > mw_min_msgs) {
-            srs_cond_signal(mw_wait);
-            mw_waiting = false;
+    if (mw_waiting_) {
+        if ((int)queue_.size() > mw_min_msgs_) {
+            srs_cond_signal(mw_wait_);
+            mw_waiting_ = false;
             return err;
         }
     }
@@ -80,9 +80,9 @@ srs_error_t SrsRtspConsumer::dump_packet(SrsRtpPacket **ppkt)
     srs_error_t err = srs_success;
 
     // TODO: FIXME: Refine performance by ring buffer.
-    if (!queue.empty()) {
-        *ppkt = queue.front();
-        queue.erase(queue.begin());
+    if (!queue_.empty()) {
+        *ppkt = queue_.front();
+        queue_.erase(queue_.begin());
     }
 
     return err;
@@ -90,18 +90,18 @@ srs_error_t SrsRtspConsumer::dump_packet(SrsRtpPacket **ppkt)
 
 void SrsRtspConsumer::wait(int nb_msgs)
 {
-    mw_min_msgs = nb_msgs;
+    mw_min_msgs_ = nb_msgs;
 
     // when duration ok, signal to flush.
-    if ((int)queue.size() > mw_min_msgs) {
+    if ((int)queue_.size() > mw_min_msgs_) {
         return;
     }
 
     // the enqueue will notify this cond.
-    mw_waiting = true;
+    mw_waiting_ = true;
 
     // use cond block wait for high performance mode.
-    srs_cond_wait(mw_wait);
+    srs_cond_wait(mw_wait_);
 }
 
 void SrsRtspConsumer::on_stream_change(SrsRtcSourceDescription *desc)
@@ -113,13 +113,13 @@ void SrsRtspConsumer::on_stream_change(SrsRtcSourceDescription *desc)
 
 SrsRtspSourceManager::SrsRtspSourceManager()
 {
-    lock = srs_mutex_new();
+    lock_ = srs_mutex_new();
     timer_ = new SrsHourGlass("sources", this, 1 * SRS_UTIME_SECONDS);
 }
 
 SrsRtspSourceManager::~SrsRtspSourceManager()
 {
-    srs_mutex_destroy(lock);
+    srs_mutex_destroy(lock_);
     srs_freep(timer_);
 }
 
@@ -148,7 +148,7 @@ srs_error_t SrsRtspSourceManager::notify(int event, srs_utime_t interval, srs_ut
     srs_error_t err = srs_success;
 
     std::map<std::string, SrsSharedPtr<SrsRtspSource> >::iterator it;
-    for (it = pool.begin(); it != pool.end();) {
+    for (it = pool_.begin(); it != pool_.end();) {
         SrsSharedPtr<SrsRtspSource> &source = it->second;
 
         // When source expired, remove it.
@@ -157,8 +157,8 @@ srs_error_t SrsRtspSourceManager::notify(int event, srs_utime_t interval, srs_ut
             SrsContextId cid = source->source_id();
             if (cid.empty())
                 cid = source->pre_source_id();
-            srs_trace("RTSP: cleanup die source, id=[%s], total=%d", cid.c_str(), (int)pool.size());
-            pool.erase(it++);
+            srs_trace("RTSP: cleanup die source, id=[%s], total=%d", cid.c_str(), (int)pool_.size());
+            pool_.erase(it++);
         } else {
             ++it;
         }
@@ -176,12 +176,12 @@ srs_error_t SrsRtspSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
     if (true) {
         // Use lock to protect coroutine switch.
         // @bug https://github.com/ossrs/srs/issues/1230
-        SrsLocker(&lock);
+        SrsLocker(&lock_);
 
         string stream_url = r->get_stream_url();
-        std::map<std::string, SrsSharedPtr<SrsRtspSource> >::iterator it = pool.find(stream_url);
+        std::map<std::string, SrsSharedPtr<SrsRtspSource> >::iterator it = pool_.find(stream_url);
 
-        if (it != pool.end()) {
+        if (it != pool_.end()) {
             SrsSharedPtr<SrsRtspSource> source = it->second;
             pps = source;
         } else {
@@ -189,7 +189,7 @@ srs_error_t SrsRtspSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
             srs_trace("new rtsp source, stream_url=%s", stream_url.c_str());
             pps = source;
 
-            pool[stream_url] = source;
+            pool_[stream_url] = source;
             created = true;
         }
     }
@@ -213,13 +213,13 @@ SrsSharedPtr<SrsRtspSource> SrsRtspSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
-    SrsLocker(&lock);
+    SrsLocker(&lock_);
 
     string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsRtspSource> >::iterator it = pool.find(stream_url);
+    std::map<std::string, SrsSharedPtr<SrsRtspSource> >::iterator it = pool_.find(stream_url);
 
     SrsSharedPtr<SrsRtspSource> source;
-    if (it == pool.end()) {
+    if (it == pool_.end()) {
         return source;
     }
 
@@ -239,7 +239,7 @@ SrsRtspSource::SrsRtspSource()
     audio_desc_ = NULL;
     video_desc_ = NULL;
 
-    req = NULL;
+    req_ = NULL;
 
     stream_die_at_ = 0;
 }
@@ -248,9 +248,9 @@ SrsRtspSource::~SrsRtspSource()
 {
     // never free the consumers,
     // for all consumers are auto free.
-    consumers.clear();
+    consumers_.clear();
 
-    srs_freep(req);
+    srs_freep(req_);
     srs_freep(audio_desc_);
     srs_freep(video_desc_);
 
@@ -276,7 +276,7 @@ srs_error_t SrsRtspSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    req = r->copy();
+    req_ = r->copy();
 
     return err;
 }
@@ -289,7 +289,7 @@ bool SrsRtspSource::stream_is_dead()
     }
 
     // has any consumers?
-    if (!consumers.empty()) {
+    if (!consumers_.empty()) {
         return false;
     }
 
@@ -304,7 +304,7 @@ bool SrsRtspSource::stream_is_dead()
 
 void SrsRtspSource::update_auth(ISrsRequest *r)
 {
-    req->update_auth(r);
+    req_->update_auth(r);
 }
 
 srs_error_t SrsRtspSource::on_source_changed()
@@ -334,7 +334,7 @@ srs_error_t SrsRtspSource::on_source_changed()
 
     // Notify all consumers.
     std::vector<SrsRtspConsumer *>::iterator it;
-    for (it = consumers.begin(); it != consumers.end(); ++it) {
+    for (it = consumers_.begin(); it != consumers_.end(); ++it) {
         SrsRtspConsumer *consumer = *it;
 
         // Notify if context id changed.
@@ -364,7 +364,7 @@ srs_error_t SrsRtspSource::create_consumer(SrsRtspConsumer *&consumer)
     srs_error_t err = srs_success;
 
     consumer = new SrsRtspConsumer(this);
-    consumers.push_back(consumer);
+    consumers_.push_back(consumer);
 
     stream_die_at_ = 0;
 
@@ -386,15 +386,15 @@ srs_error_t SrsRtspSource::consumer_dumps(SrsRtspConsumer *consumer, bool ds, bo
 void SrsRtspSource::on_consumer_destroy(SrsRtspConsumer *consumer)
 {
     std::vector<SrsRtspConsumer *>::iterator it;
-    it = std::find(consumers.begin(), consumers.end(), consumer);
-    if (it != consumers.end()) {
-        it = consumers.erase(it);
+    it = std::find(consumers_.begin(), consumers_.end(), consumer);
+    if (it != consumers_.end()) {
+        it = consumers_.erase(it);
     }
 
     // TODO: When all consumers finished, notify publisher to handle it.
 
     // Destroy and cleanup source when no publishers and consumers.
-    if (!is_created_ && consumers.empty()) {
+    if (!is_created_ && consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
 }
@@ -417,7 +417,7 @@ srs_error_t SrsRtspSource::on_publish()
     srs_error_t err = srs_success;
 
     // update the request object.
-    srs_assert(req);
+    srs_assert(req_);
 
     // For RTC, DTLS is done, and we are ready to deliver packets.
     // @note For compatible with RTMP, we also set the is_created_, it MUST be created here.
@@ -430,7 +430,7 @@ srs_error_t SrsRtspSource::on_publish()
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_stream_publish(req, _source_id.c_str());
+    stat->on_stream_publish(req_, _source_id.c_str());
 
     return err;
 }
@@ -453,10 +453,10 @@ void SrsRtspSource::on_unpublish()
     _source_id = SrsContextId();
 
     SrsStatistic *stat = SrsStatistic::instance();
-    stat->on_stream_close(req);
+    stat->on_stream_close(req_);
 
     // Destroy and cleanup source when no publishers and consumers.
-    if (consumers.empty()) {
+    if (consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
 }
@@ -467,12 +467,12 @@ srs_error_t SrsRtspSource::on_rtp(SrsRtpPacket *pkt)
 
     // If circuit-breaker is dying, drop packet.
     if (_srs_circuit_breaker->hybrid_dying_water_level()) {
-        _srs_pps_aloss2->sugar_ += (int64_t)consumers.size();
+        _srs_pps_aloss2->sugar_ += (int64_t)consumers_.size();
         return err;
     }
 
-    for (int i = 0; i < (int)consumers.size(); i++) {
-        SrsRtspConsumer *consumer = consumers.at(i);
+    for (int i = 0; i < (int)consumers_.size(); i++) {
+        SrsRtspConsumer *consumer = consumers_.at(i);
         if ((err = consumer->enqueue(pkt->copy())) != srs_success) {
             return srs_error_wrap(err, "consume message");
         }
@@ -508,11 +508,11 @@ SrsRtspRtpBuilder::SrsRtspRtpBuilder(SrsFrameToRtspBridge *bridge, SrsSharedPtr<
     bridge_ = bridge;
     source_ = source;
 
-    req = NULL;
-    format = new SrsRtmpFormat();
-    meta = new SrsMetaCache();
+    req_ = NULL;
+    format_ = new SrsRtmpFormat();
+    meta_ = new SrsMetaCache();
     video_builder_ = new SrsRtpVideoBuilder();
-    audio_sequence = 0;
+    audio_sequence_ = 0;
 
     // Initialize with default values - will be set during lazy initialization
     audio_ssrc_ = 0;
@@ -526,8 +526,8 @@ SrsRtspRtpBuilder::SrsRtspRtpBuilder(SrsFrameToRtspBridge *bridge, SrsSharedPtr<
 
 SrsRtspRtpBuilder::~SrsRtspRtpBuilder()
 {
-    srs_freep(format);
-    srs_freep(meta);
+    srs_freep(format_);
+    srs_freep(meta_);
     srs_freep(video_builder_);
 }
 
@@ -548,18 +548,18 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
     audio_ssrc_ = SrsRtcSSRCGenerator::instance()->generate_ssrc();
     audio_desc->ssrc_ = audio_ssrc_;
 
-    int sample_rate = srs_flv_srates[format->acodec_->sound_rate_];
+    int sample_rate = srs_flv_srates[format_->acodec_->sound_rate_];
     audio_sample_rate_ = sample_rate;
 
     // Build payload from actual audio format
     if (codec == SrsAudioCodecIdOpus) {
         // For Opus, use actual format parameters if available
-        int channels = (format->acodec_->sound_type_ == SrsAudioChannelsStereo) ? 2 : 1;
+        int channels = (format_->acodec_->sound_type_ == SrsAudioChannelsStereo) ? 2 : 1;
         audio_payload_type_ = kAudioPayloadType;
         audio_desc->media_ = new SrsAudioPayload(audio_payload_type_, "opus", sample_rate, channels);
     } else if (codec == SrsAudioCodecIdAAC) {
         // For AAC, extract parameters from format
-        int channels = format->acodec_->aac_channels_;
+        int channels = format_->acodec_->aac_channels_;
         audio_payload_type_ = kAudioPayloadType;
 
         // Note: Use "MPEG4-GENERIC" instead of "AAC" for RTSP/SDP compliance
@@ -569,7 +569,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
 
         // AAC requires AudioSpecificConfig in SDP fmtp line
         // Build the config string from AAC sequence header
-        const std::vector<char> &asc = format->acodec_->aac_extra_data_;
+        const std::vector<char> &asc = format_->acodec_->aac_extra_data_;
         if (!asc.empty()) {
             int hex_len = asc.size() * 2;
             SrsUniquePtr<char> hex_buf(new char[hex_len + 1]);
@@ -641,7 +641,7 @@ srs_error_t SrsRtspRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
         return srs_error_new(ERROR_RTC_RTP_MUXER, "unsupported video codec %d", codec);
     }
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if ((err = video_builder_->initialize(format, video_ssrc, video_payload_type)) != srs_success) {
         return srs_error_wrap(err, "initialize video builder");
     }
@@ -659,16 +659,16 @@ srs_error_t SrsRtspRtpBuilder::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    req = r;
+    req_ = r;
 
-    if ((err = format->initialize()) != srs_success) {
+    if ((err = format_->initialize()) != srs_success) {
         return srs_error_wrap(err, "format initialize");
     }
 
     // Setup the SPS/PPS parsing strategy.
-    format->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost_);
+    format_->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost_);
 
-    srs_trace("RTSP bridge from RTMP, try_annexb_first=%d", format->try_annexb_first_);
+    srs_trace("RTSP bridge from RTMP, try_annexb_first=%d", format_->try_annexb_first_);
 
     return err;
 }
@@ -679,7 +679,7 @@ srs_error_t SrsRtspRtpBuilder::on_publish()
 
     // Reset the metadata cache, to make VLC happy when disable/enable stream.
     // @see https://github.com/ossrs/srs/issues/1630#issuecomment-597979448
-    meta->clear();
+    meta_->clear();
 
     return err;
 }
@@ -688,8 +688,8 @@ void SrsRtspRtpBuilder::on_unpublish()
 {
     // Reset the metadata cache, to make VLC happy when disable/enable stream.
     // @see https://github.com/ossrs/srs/issues/1630#issuecomment-597979448
-    meta->update_previous_vsh();
-    meta->update_previous_ash();
+    meta_->update_previous_vsh();
+    meta_->update_previous_ash();
 }
 
 srs_error_t SrsRtspRtpBuilder::on_frame(SrsMediaPacket *frame)
@@ -706,18 +706,18 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
-    if ((err = format->on_audio(msg)) != srs_success) {
+    if ((err = format_->on_audio(msg)) != srs_success) {
         return srs_error_wrap(err, "format consume audio");
     }
 
     // Ignore if no format->acodec, it means the codec is not parsed, or unknown codec.
     // @issue https://github.com/ossrs/srs/issues/1506#issuecomment-562079474
-    if (!format->acodec_) {
+    if (!format_->acodec_) {
         return err;
     }
 
     // support audio codec: aac/opus
-    SrsAudioCodecId acodec = format->acodec_->id_;
+    SrsAudioCodecId acodec = format_->acodec_->id_;
     if (acodec != SrsAudioCodecIdAAC && acodec != SrsAudioCodecIdOpus) {
         return err;
     }
@@ -731,7 +731,7 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
     }
 
     // Skip empty audio frames
-    if (format->audio_->nb_samples_ == 0) {
+    if (format_->audio_->nb_samples_ == 0) {
         return err;
     }
 
@@ -739,7 +739,7 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
     SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
 
     if (acodec == SrsAudioCodecIdAAC) {
-        if ((err = package_aac(format->audio_, pkt.get())) != srs_success) {
+        if ((err = package_aac(format_->audio_, pkt.get())) != srs_success) {
             return srs_error_wrap(err, "package aac");
         }
     } else {
@@ -769,7 +769,7 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
     pkt->header.set_ssrc(audio_ssrc_);
     pkt->frame_type_ = SrsFrameTypeAudio;
     pkt->header.set_marker(true);
-    pkt->header.set_sequence(audio_sequence++);
+    pkt->header.set_sequence(audio_sequence_++);
     pkt->header.set_timestamp(dts);
 
     SrsRtpRawPayload *raw = new SrsRtpRawPayload();
@@ -833,22 +833,22 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsMediaPacket *msg)
 
     // cache the sequence header if h264
     bool is_sequence_header = SrsFlvVideo::sh(msg->payload(), msg->size());
-    if (is_sequence_header && (err = meta->update_vsh(msg)) != srs_success) {
+    if (is_sequence_header && (err = meta_->update_vsh(msg)) != srs_success) {
         return srs_error_wrap(err, "meta update video");
     }
 
-    if ((err = format->on_video(msg)) != srs_success) {
+    if ((err = format_->on_video(msg)) != srs_success) {
         return srs_error_wrap(err, "format consume video");
     }
 
     // Ignore if no format->vcodec, it means the codec is not parsed, or unsupport/unknown codec
     // such as H.263 codec
-    if (!format->vcodec_) {
+    if (!format_->vcodec_) {
         return err;
     }
 
     // support video codec: h264/h265
-    SrsVideoCodecId vcodec = format->vcodec_->id_;
+    SrsVideoCodecId vcodec = format_->vcodec_->id_;
     if (vcodec != SrsVideoCodecIdAVC && vcodec != SrsVideoCodecIdHEVC) {
         return err;
     }
@@ -863,7 +863,7 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsMediaPacket *msg)
 
     bool has_idr = false;
     vector<SrsNaluSample *> samples;
-    if ((err = filter(msg, format, has_idr, samples)) != srs_success) {
+    if ((err = filter(msg, format_, has_idr, samples)) != srs_success) {
         return srs_error_wrap(err, "filter video");
     }
     int nn_samples = (int)samples.size();
@@ -930,7 +930,7 @@ srs_error_t SrsRtspRtpBuilder::package_stap_a(SrsMediaPacket *msg, SrsRtpPacket 
 {
     srs_error_t err = srs_success;
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if (!format || !format->vcodec_) {
         return err;
     }
@@ -942,7 +942,7 @@ srs_error_t SrsRtspRtpBuilder::package_nalus(SrsMediaPacket *msg, const vector<S
 {
     srs_error_t err = srs_success;
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if (!format || !format->vcodec_) {
         return err;
     }
@@ -960,7 +960,7 @@ srs_error_t SrsRtspRtpBuilder::package_fu_a(SrsMediaPacket *msg, SrsNaluSample *
 {
     srs_error_t err = srs_success;
 
-    SrsFormat *format = meta->vsh_format();
+    SrsFormat *format = meta_->vsh_format();
     if (!format || !format->vcodec_) {
         return err;
     }

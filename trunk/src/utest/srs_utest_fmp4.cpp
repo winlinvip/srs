@@ -194,8 +194,8 @@ VOID TEST(Fmp4Test, SrsHlsM4sSegment_WithEncryption)
     segment.config_cipher(key, iv);
 
     // Verify IV is stored
-    EXPECT_EQ(0x31, segment.iv[0]);
-    EXPECT_EQ(0x40, segment.iv[15]);
+    EXPECT_EQ(0x31, segment.iv_[0]);
+    EXPECT_EQ(0x40, segment.iv_[15]);
 
     // Write samples with different timestamps to create duration
     MockSrsFormat fmt;

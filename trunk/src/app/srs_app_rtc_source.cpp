@@ -1767,9 +1767,9 @@ srs_error_t SrsRtcFrameBuilder::initialize(ISrsRequest *r, SrsAudioCodecId audio
     srs_freep(audio_transcoder_);
     audio_transcoder_ = new SrsAudioTranscoder();
 
-    SrsAudioCodecId to = SrsAudioCodecIdAAC;                  // The output audio codec.
-    int channels = 2;                                         // The output audio channels.
-    int sample_rate = 48000;                                  // The output audio sample rate in HZ.
+    SrsAudioCodecId to = SrsAudioCodecIdAAC;                   // The output audio codec.
+    int channels = 2;                                          // The output audio channels.
+    int sample_rate = 48000;                                   // The output audio sample rate in HZ.
     int bitrate = _srs_config->get_rtc_aac_bitrate(r->vhost_); // The output audio bitrate in bps.
 
     // TODO: FIXME:

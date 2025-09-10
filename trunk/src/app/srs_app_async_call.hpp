@@ -41,12 +41,12 @@ public:
 class SrsAsyncCallWorker : public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd;
+    SrsCoroutine *trd_;
 
 protected:
-    std::vector<ISrsAsyncCallTask *> tasks;
-    srs_cond_t wait;
-    srs_mutex_t lock;
+    std::vector<ISrsAsyncCallTask *> tasks_;
+    srs_cond_t wait_;
+    srs_mutex_t lock_;
 
 public:
     SrsAsyncCallWorker();

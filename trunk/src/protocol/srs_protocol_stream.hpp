@@ -52,20 +52,20 @@ class SrsFastStream
 private:
 #ifdef SRS_PERF_MERGED_READ
     // the merged handler
-    bool merged_read;
-    IMergeReadHandler *_handler;
+    bool merged_read_;
+    IMergeReadHandler *handler_;
 #endif
     // the user-space buffer to fill by reader,
     // which use fast index and reset when chunk body read ok.
     // ptr to the current read position.
-    char *p;
+    char *p_;
     // ptr to the content end.
-    char *end;
+    char *end_;
     // ptr to the buffer.
     //      buffer <= p <= end <= buffer+nb_buffer
-    char *buffer;
+    char *buffer_;
     // the size of buffer.
-    int nb_buffer;
+    int nb_buffer_;
 
 public:
     // If buffer is 0, use default size.

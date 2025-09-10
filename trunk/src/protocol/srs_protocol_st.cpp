@@ -594,38 +594,38 @@ SrsStSocket::~SrsStSocket()
 void SrsStSocket::init(srs_netfd_t fd)
 {
     stfd_ = fd;
-    stm = rtm = SRS_UTIME_NO_TIMEOUT;
-    rbytes = sbytes = 0;
+    stm_ = rtm_ = SRS_UTIME_NO_TIMEOUT;
+    rbytes_ = sbytes_ = 0;
 }
 
 void SrsStSocket::set_recv_timeout(srs_utime_t tm)
 {
-    rtm = tm;
+    rtm_ = tm;
 }
 
 srs_utime_t SrsStSocket::get_recv_timeout()
 {
-    return rtm;
+    return rtm_;
 }
 
 void SrsStSocket::set_send_timeout(srs_utime_t tm)
 {
-    stm = tm;
+    stm_ = tm;
 }
 
 srs_utime_t SrsStSocket::get_send_timeout()
 {
-    return stm;
+    return stm_;
 }
 
 int64_t SrsStSocket::get_recv_bytes()
 {
-    return rbytes;
+    return rbytes_;
 }
 
 int64_t SrsStSocket::get_send_bytes()
 {
-    return sbytes;
+    return sbytes_;
 }
 
 srs_error_t SrsStSocket::read(void *buf, size_t size, ssize_t *nread)
@@ -635,10 +635,10 @@ srs_error_t SrsStSocket::read(void *buf, size_t size, ssize_t *nread)
     srs_assert(stfd_);
 
     ssize_t nb_read;
-    if (rtm == SRS_UTIME_NO_TIMEOUT) {
+    if (rtm_ == SRS_UTIME_NO_TIMEOUT) {
         nb_read = st_read((st_netfd_t)stfd_, buf, size, ST_UTIME_NO_TIMEOUT);
     } else {
-        nb_read = st_read((st_netfd_t)stfd_, buf, size, rtm);
+        nb_read = st_read((st_netfd_t)stfd_, buf, size, rtm_);
     }
 
     if (nread) {
@@ -650,7 +650,7 @@ srs_error_t SrsStSocket::read(void *buf, size_t size, ssize_t *nread)
     // Otherwise, a value of -1 is returned and errno is set to indicate the error.
     if (nb_read <= 0) {
         if (nb_read < 0 && errno == ETIME) {
-            return srs_error_new(ERROR_SOCKET_TIMEOUT, "timeout %d ms", srsu2msi(rtm));
+            return srs_error_new(ERROR_SOCKET_TIMEOUT, "timeout %d ms", srsu2msi(rtm_));
         }
 
         if (nb_read == 0) {
@@ -660,7 +660,7 @@ srs_error_t SrsStSocket::read(void *buf, size_t size, ssize_t *nread)
         return srs_error_new(ERROR_SOCKET_READ, "read");
     }
 
-    rbytes += nb_read;
+    rbytes_ += nb_read;
 
     return err;
 }
@@ -672,10 +672,10 @@ srs_error_t SrsStSocket::read_fully(void *buf, size_t size, ssize_t *nread)
     srs_assert(stfd_);
 
     ssize_t nb_read;
-    if (rtm == SRS_UTIME_NO_TIMEOUT) {
+    if (rtm_ == SRS_UTIME_NO_TIMEOUT) {
         nb_read = st_read_fully((st_netfd_t)stfd_, buf, size, ST_UTIME_NO_TIMEOUT);
     } else {
-        nb_read = st_read_fully((st_netfd_t)stfd_, buf, size, rtm);
+        nb_read = st_read_fully((st_netfd_t)stfd_, buf, size, rtm_);
     }
 
     if (nread) {
@@ -687,7 +687,7 @@ srs_error_t SrsStSocket::read_fully(void *buf, size_t size, ssize_t *nread)
     // Otherwise, a value of -1 is returned and errno is set to indicate the error.
     if (nb_read != (ssize_t)size) {
         if (nb_read < 0 && errno == ETIME) {
-            return srs_error_new(ERROR_SOCKET_TIMEOUT, "timeout %d ms", srsu2msi(rtm));
+            return srs_error_new(ERROR_SOCKET_TIMEOUT, "timeout %d ms", srsu2msi(rtm_));
         }
 
         if (nb_read >= 0) {
@@ -697,7 +697,7 @@ srs_error_t SrsStSocket::read_fully(void *buf, size_t size, ssize_t *nread)
         return srs_error_new(ERROR_SOCKET_READ_FULLY, "read fully, size=%d, nn=%d", size, nb_read);
     }
 
-    rbytes += nb_read;
+    rbytes_ += nb_read;
 
     return err;
 }
@@ -709,10 +709,10 @@ srs_error_t SrsStSocket::write(void *buf, size_t size, ssize_t *nwrite)
     srs_assert(stfd_);
 
     ssize_t nb_write;
-    if (stm == SRS_UTIME_NO_TIMEOUT) {
+    if (stm_ == SRS_UTIME_NO_TIMEOUT) {
         nb_write = st_write((st_netfd_t)stfd_, buf, size, ST_UTIME_NO_TIMEOUT);
     } else {
-        nb_write = st_write((st_netfd_t)stfd_, buf, size, stm);
+        nb_write = st_write((st_netfd_t)stfd_, buf, size, stm_);
     }
 
     if (nwrite) {
@@ -723,13 +723,13 @@ srs_error_t SrsStSocket::write(void *buf, size_t size, ssize_t *nwrite)
     // Otherwise, a value of -1 is returned and errno is set to indicate the error.
     if (nb_write <= 0) {
         if (nb_write < 0 && errno == ETIME) {
-            return srs_error_new(ERROR_SOCKET_TIMEOUT, "write timeout %d ms", srsu2msi(stm));
+            return srs_error_new(ERROR_SOCKET_TIMEOUT, "write timeout %d ms", srsu2msi(stm_));
         }
 
         return srs_error_new(ERROR_SOCKET_WRITE, "write");
     }
 
-    sbytes += nb_write;
+    sbytes_ += nb_write;
 
     return err;
 }
@@ -741,10 +741,10 @@ srs_error_t SrsStSocket::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
     srs_assert(stfd_);
 
     ssize_t nb_write;
-    if (stm == SRS_UTIME_NO_TIMEOUT) {
+    if (stm_ == SRS_UTIME_NO_TIMEOUT) {
         nb_write = st_writev((st_netfd_t)stfd_, iov, iov_size, ST_UTIME_NO_TIMEOUT);
     } else {
-        nb_write = st_writev((st_netfd_t)stfd_, iov, iov_size, stm);
+        nb_write = st_writev((st_netfd_t)stfd_, iov, iov_size, stm_);
     }
 
     if (nwrite) {
@@ -755,13 +755,13 @@ srs_error_t SrsStSocket::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
     // Otherwise, a value of -1 is returned and errno is set to indicate the error.
     if (nb_write <= 0) {
         if (nb_write < 0 && errno == ETIME) {
-            return srs_error_new(ERROR_SOCKET_TIMEOUT, "writev timeout %d ms", srsu2msi(stm));
+            return srs_error_new(ERROR_SOCKET_TIMEOUT, "writev timeout %d ms", srsu2msi(stm_));
         }
 
         return srs_error_new(ERROR_SOCKET_WRITE, "writev");
     }
 
-    sbytes += nb_write;
+    sbytes_ += nb_write;
 
     return err;
 }
@@ -769,16 +769,16 @@ srs_error_t SrsStSocket::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
 SrsTcpClient::SrsTcpClient(string h, int p, srs_utime_t tm)
 {
     stfd_ = NULL;
-    io = new SrsStSocket();
+    io_ = new SrsStSocket();
 
-    host = h;
-    port = p;
-    timeout = tm;
+    host_ = h;
+    port_ = p;
+    timeout_ = tm;
 }
 
 SrsTcpClient::~SrsTcpClient()
 {
-    srs_freep(io);
+    srs_freep(io_);
     srs_close_stfd(stfd_);
 }
 
@@ -787,13 +787,13 @@ srs_error_t SrsTcpClient::connect()
     srs_error_t err = srs_success;
 
     srs_netfd_t stfd = NULL;
-    if ((err = srs_tcp_connect(host, port, timeout, &stfd)) != srs_success) {
-        return srs_error_wrap(err, "tcp: connect %s:%d to=%dms", host.c_str(), port, srsu2msi(timeout));
+    if ((err = srs_tcp_connect(host_, port_, timeout_, &stfd)) != srs_success) {
+        return srs_error_wrap(err, "tcp: connect %s:%d to=%dms", host_.c_str(), port_, srsu2msi(timeout_));
     }
 
     // TODO: FIMXE: The timeout set on io need to be set to new object.
-    srs_freep(io);
-    io = new SrsStSocket(stfd);
+    srs_freep(io_);
+    io_ = new SrsStSocket(stfd);
 
     srs_close_stfd(stfd_);
     stfd_ = stfd;
@@ -803,50 +803,50 @@ srs_error_t SrsTcpClient::connect()
 
 void SrsTcpClient::set_recv_timeout(srs_utime_t tm)
 {
-    io->set_recv_timeout(tm);
+    io_->set_recv_timeout(tm);
 }
 
 srs_utime_t SrsTcpClient::get_recv_timeout()
 {
-    return io->get_recv_timeout();
+    return io_->get_recv_timeout();
 }
 
 void SrsTcpClient::set_send_timeout(srs_utime_t tm)
 {
-    io->set_send_timeout(tm);
+    io_->set_send_timeout(tm);
 }
 
 srs_utime_t SrsTcpClient::get_send_timeout()
 {
-    return io->get_send_timeout();
+    return io_->get_send_timeout();
 }
 
 int64_t SrsTcpClient::get_recv_bytes()
 {
-    return io->get_recv_bytes();
+    return io_->get_recv_bytes();
 }
 
 int64_t SrsTcpClient::get_send_bytes()
 {
-    return io->get_send_bytes();
+    return io_->get_send_bytes();
 }
 
 srs_error_t SrsTcpClient::read(void *buf, size_t size, ssize_t *nread)
 {
-    return io->read(buf, size, nread);
+    return io_->read(buf, size, nread);
 }
 
 srs_error_t SrsTcpClient::read_fully(void *buf, size_t size, ssize_t *nread)
 {
-    return io->read_fully(buf, size, nread);
+    return io_->read_fully(buf, size, nread);
 }
 
 srs_error_t SrsTcpClient::write(void *buf, size_t size, ssize_t *nwrite)
 {
-    return io->write(buf, size, nwrite);
+    return io_->write(buf, size, nwrite);
 }
 
 srs_error_t SrsTcpClient::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
 {
-    return io->writev(iov, iov_size, nwrite);
+    return io_->writev(iov, iov_size, nwrite);
 }

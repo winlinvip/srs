@@ -85,17 +85,17 @@ srs_error_t SrsHttpFlvListener::on_tcp_client(ISrsListener *listener, srs_netfd_
 
 SrsAppCasterFlv::SrsAppCasterFlv()
 {
-    http_mux = new SrsHttpServeMux();
-    manager = new SrsResourceManager("CFLV");
+    http_mux_ = new SrsHttpServeMux();
+    manager_ = new SrsResourceManager("CFLV");
 }
 
 SrsAppCasterFlv::~SrsAppCasterFlv()
 {
-    srs_freep(http_mux);
-    srs_freep(manager);
+    srs_freep(http_mux_);
+    srs_freep(manager_);
 
     std::vector<ISrsConnection *>::iterator it;
-    for (it = conns.begin(); it != conns.end(); ++it) {
+    for (it = conns_.begin(); it != conns_.end(); ++it) {
         ISrsConnection *conn = *it;
         srs_freep(conn);
     }
@@ -105,13 +105,13 @@ srs_error_t SrsAppCasterFlv::initialize(SrsConfDirective *c)
 {
     srs_error_t err = srs_success;
 
-    output = _srs_config->get_stream_caster_output(c);
+    output_ = _srs_config->get_stream_caster_output(c);
 
-    if ((err = http_mux->handle("/", this)) != srs_success) {
+    if ((err = http_mux_->handle("/", this)) != srs_success) {
         return srs_error_wrap(err, "handle root");
     }
 
-    if ((err = manager->start()) != srs_success) {
+    if ((err = manager_->start()) != srs_success) {
         return srs_error_wrap(err, "start manager");
     }
 
@@ -130,8 +130,8 @@ srs_error_t SrsAppCasterFlv::on_tcp_client(ISrsListener *listener, srs_netfd_t s
         srs_warn("empty ip for fd=%d", srs_netfd_fileno(stfd));
     }
 
-    SrsDynamicHttpConn *conn = new SrsDynamicHttpConn(this, stfd, http_mux, ip, port);
-    conns.push_back(conn);
+    SrsDynamicHttpConn *conn = new SrsDynamicHttpConn(this, stfd, http_mux_, ip, port);
+    conns_.push_back(conn);
 
     if ((err = conn->start()) != srs_success) {
         return srs_error_wrap(err, "start tcp listener");
@@ -145,14 +145,14 @@ void SrsAppCasterFlv::remove(ISrsResource *c)
     ISrsConnection *conn = dynamic_cast<ISrsConnection *>(c);
 
     std::vector<ISrsConnection *>::iterator it;
-    if ((it = std::find(conns.begin(), conns.end(), conn)) != conns.end()) {
-        it = conns.erase(it);
+    if ((it = std::find(conns_.begin(), conns_.end(), conn)) != conns_.end()) {
+        it = conns_.erase(it);
     }
 
     // fixbug: ISrsConnection for CasterFlv is not freed, which could cause memory leak
     // so, free conn which is not managed by SrsServer->conns;
     // @see: https://github.com/ossrs/srs/issues/826
-    manager->remove(c);
+    manager_->remove(c);
 }
 
 srs_error_t SrsAppCasterFlv::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
@@ -168,7 +168,7 @@ srs_error_t SrsAppCasterFlv::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     std::string stream = srs_path_filepath_base(r->path());
     stream = srs_strings_trim_start(stream, "/");
 
-    std::string o = output;
+    std::string o = output_;
     if (!app.empty() && app != "/") {
         o = srs_strings_replace(o, "[app]", app);
     }
@@ -192,13 +192,13 @@ SrsDynamicHttpConn::SrsDynamicHttpConn(ISrsResourceManager *cm, srs_netfd_t fd, 
     // Create a identify for this client.
     _srs_context->set_id(_srs_context->generate_id());
 
-    manager = cm;
-    sdk = NULL;
-    pprint = SrsPithyPrint::create_caster();
-    skt = new SrsTcpConnection(fd);
-    conn = new SrsHttpConn(this, skt, m, cip, cport);
-    ip = cip;
-    port = cport;
+    manager_ = cm;
+    sdk_ = NULL;
+    pprint_ = SrsPithyPrint::create_caster();
+    skt_ = new SrsTcpConnection(fd);
+    conn_ = new SrsHttpConn(this, skt_, m, cip, cport);
+    ip_ = cip;
+    port_ = cport;
 
     _srs_config->subscribe(this);
 }
@@ -207,18 +207,18 @@ SrsDynamicHttpConn::~SrsDynamicHttpConn()
 {
     _srs_config->unsubscribe(this);
 
-    srs_freep(conn);
-    srs_freep(skt);
-    srs_freep(sdk);
-    srs_freep(pprint);
+    srs_freep(conn_);
+    srs_freep(skt_);
+    srs_freep(sdk_);
+    srs_freep(pprint_);
 }
 
 srs_error_t SrsDynamicHttpConn::proxy(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string o)
 {
     srs_error_t err = srs_success;
 
-    output = o;
-    srs_trace("flv: proxy %s:%d %s to %s", ip.c_str(), port, r->uri().c_str(), output.c_str());
+    output_ = o;
+    srs_trace("flv: proxy %s:%d %s to %s", ip_.c_str(), port_, r->uri().c_str(), output_.c_str());
 
     ISrsHttpResponseReader *rr = r->body_reader();
     SrsHttpFileReader reader(rr);
@@ -239,7 +239,7 @@ srs_error_t SrsDynamicHttpConn::proxy(ISrsHttpResponseWriter *w, ISrsHttpMessage
     }
 
     err = do_proxy(rr, &dec);
-    sdk->close();
+    sdk_->close();
 
     return err;
 }
@@ -248,23 +248,23 @@ srs_error_t SrsDynamicHttpConn::do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecod
 {
     srs_error_t err = srs_success;
 
-    srs_freep(sdk);
+    srs_freep(sdk_);
 
     srs_utime_t cto = SRS_CONSTS_RTMP_TIMEOUT;
     srs_utime_t sto = SRS_CONSTS_RTMP_PULSE;
-    sdk = new SrsSimpleRtmpClient(output, cto, sto);
+    sdk_ = new SrsSimpleRtmpClient(output_, cto, sto);
 
-    if ((err = sdk->connect()) != srs_success) {
-        return srs_error_wrap(err, "connect %s failed, cto=%dms, sto=%dms.", output.c_str(), srsu2msi(cto), srsu2msi(sto));
+    if ((err = sdk_->connect()) != srs_success) {
+        return srs_error_wrap(err, "connect %s failed, cto=%dms, sto=%dms.", output_.c_str(), srsu2msi(cto), srsu2msi(sto));
     }
 
-    if ((err = sdk->publish(SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE)) != srs_success) {
+    if ((err = sdk_->publish(SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE)) != srs_success) {
         return srs_error_wrap(err, "publish");
     }
 
     char pps[4];
     while (!rr->eof()) {
-        pprint->elapse();
+        pprint_->elapse();
 
         char type;
         int32_t size;
@@ -280,7 +280,7 @@ srs_error_t SrsDynamicHttpConn::do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecod
         }
 
         SrsRtmpCommonMessage *cmsg = NULL;
-        if ((err = srs_rtmp_create_msg(type, time, data, size, sdk->sid(), &cmsg)) != srs_success) {
+        if ((err = srs_rtmp_create_msg(type, time, data, size, sdk_->sid(), &cmsg)) != srs_success) {
             return srs_error_wrap(err, "create message");
         }
 
@@ -289,12 +289,12 @@ srs_error_t SrsDynamicHttpConn::do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecod
         srs_freep(cmsg);
 
         // TODO: FIXME: for post flv, reconnect when error.
-        if ((err = sdk->send_and_free_message(msg)) != srs_success) {
+        if ((err = sdk_->send_and_free_message(msg)) != srs_success) {
             return srs_error_wrap(err, "send message");
         }
 
-        if (pprint->can_print()) {
-            srs_trace("flv: send msg %d age=%d, dts=%d, size=%d", type, pprint->age(), time, size);
+        if (pprint_->can_print()) {
+            srs_trace("flv: send msg %d age=%d, dts=%d, size=%d", type, pprint_->age(), time, size);
         }
 
         if ((err = dec->read_previous_tag_size(pps)) != srs_success) {
@@ -324,7 +324,7 @@ srs_error_t SrsDynamicHttpConn::on_conn_done(srs_error_t r0)
 {
     // Because we use manager to manage this object,
     // not the http connection object, so we must remove it here.
-    manager->remove(this);
+    manager_->remove(this);
 
     return r0;
 }
@@ -336,12 +336,12 @@ std::string SrsDynamicHttpConn::desc()
 
 std::string SrsDynamicHttpConn::remote_ip()
 {
-    return conn->remote_ip();
+    return conn_->remote_ip();
 }
 
 const SrsContextId &SrsDynamicHttpConn::get_id()
 {
-    return conn->get_id();
+    return conn_->get_id();
 }
 
 srs_error_t SrsDynamicHttpConn::start()
@@ -349,16 +349,16 @@ srs_error_t SrsDynamicHttpConn::start()
     srs_error_t err = srs_success;
 
     bool v = _srs_config->get_http_stream_crossdomain();
-    if ((err = conn->set_crossdomain_enabled(v)) != srs_success) {
+    if ((err = conn_->set_crossdomain_enabled(v)) != srs_success) {
         return srs_error_wrap(err, "set cors=%d", v);
     }
 
-    return conn->start();
+    return conn_->start();
 }
 
 SrsHttpFileReader::SrsHttpFileReader(ISrsHttpResponseReader *h)
 {
-    http = h;
+    http_ = h;
 }
 
 SrsHttpFileReader::~SrsHttpFileReader()
@@ -402,14 +402,14 @@ srs_error_t SrsHttpFileReader::read(void *buf, size_t count, ssize_t *pnread)
 {
     srs_error_t err = srs_success;
 
-    if (http->eof()) {
+    if (http_->eof()) {
         return srs_error_new(ERROR_HTTP_REQUEST_EOF, "EOF");
     }
 
     int total_read = 0;
     while (total_read < (int)count) {
         ssize_t nread = 0;
-        if ((err = http->read((char *)buf + total_read, (int)(count - total_read), &nread)) != srs_success) {
+        if ((err = http_->read((char *)buf + total_read, (int)(count - total_read), &nread)) != srs_success) {
             return srs_error_wrap(err, "read");
         }
 

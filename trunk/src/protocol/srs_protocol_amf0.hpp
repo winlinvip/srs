@@ -413,7 +413,7 @@ class SrsAmf0EcmaArray : public SrsAmf0Any
 private:
     srs_internal::SrsUnSortedHashtable *properties_;
     srs_internal::SrsAmf0ObjectEOF *eof_;
-    int32_t _count;
+    int32_t count_;
 
 private:
     friend class SrsAmf0Any;
@@ -500,7 +500,7 @@ class SrsAmf0StrictArray : public SrsAmf0Any
 {
 private:
     std::vector<SrsAmf0Any *> properties_;
-    int32_t _count;
+    int32_t count_;
 
 private:
     friend class SrsAmf0Any;
@@ -716,8 +716,8 @@ public:
 class SrsAmf0Date : public SrsAmf0Any
 {
 private:
-    int64_t _date_value;
-    int16_t _time_zone;
+    int64_t date_value_;
+    int16_t time_zone_;
 
 private:
     friend class SrsAmf0Any;

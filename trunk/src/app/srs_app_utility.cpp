@@ -570,8 +570,8 @@ bool srs_get_disk_diskstats_stat(SrsDiskStat &r)
                &ticks,
                &aveq);
 
-        for (int i = 0; i < (int)conf->args.size(); i++) {
-            string name_ok = conf->args.at(i);
+        for (int i = 0; i < (int)conf->args_.size(); i++) {
+            string name_ok = conf->args_.at(i);
 
             if (strcmp(name_ok.c_str(), name) != 0) {
                 continue;

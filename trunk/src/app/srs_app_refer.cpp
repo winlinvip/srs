@@ -26,8 +26,8 @@ srs_error_t SrsRefer::check(std::string page_url, SrsConfDirective *refer)
         return err;
     }
 
-    for (int i = 0; i < (int)refer->args.size(); i++) {
-        if ((err = check_single_refer(page_url, refer->args.at(i))) == srs_success) {
+    for (int i = 0; i < (int)refer->args_.size(); i++) {
+        if ((err = check_single_refer(page_url, refer->args_.at(i))) == srs_success) {
             return srs_success;
         }
 

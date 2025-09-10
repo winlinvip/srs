@@ -153,18 +153,18 @@ extern bool srs_is_never_timeout(srs_utime_t tm);
 class impl__SrsLocker
 {
 private:
-    srs_mutex_t *lock;
+    srs_mutex_t *lock_;
 
 public:
     impl__SrsLocker(srs_mutex_t *l)
     {
-        lock = l;
-        int r0 = srs_mutex_lock(*lock);
+        lock_ = l;
+        int r0 = srs_mutex_lock(*lock_);
         srs_assert(!r0);
     }
     virtual ~impl__SrsLocker()
     {
-        int r0 = srs_mutex_unlock(*lock);
+        int r0 = srs_mutex_unlock(*lock_);
         srs_assert(!r0);
     }
 };
@@ -176,11 +176,11 @@ class SrsStSocket : public ISrsProtocolReadWriter
 private:
     // The recv/send timeout in srs_utime_t.
     // @remark Use SRS_UTIME_NO_TIMEOUT for never timeout.
-    srs_utime_t rtm;
-    srs_utime_t stm;
+    srs_utime_t rtm_;
+    srs_utime_t stm_;
     // The recv/send data in bytes
-    int64_t rbytes;
-    int64_t sbytes;
+    int64_t rbytes_;
+    int64_t sbytes_;
     // The underlayer st fd.
     srs_netfd_t stfd_;
 
@@ -221,13 +221,13 @@ class SrsTcpClient : public ISrsProtocolReadWriter
 {
 private:
     srs_netfd_t stfd_;
-    SrsStSocket *io;
+    SrsStSocket *io_;
 
 private:
-    std::string host;
-    int port;
+    std::string host_;
+    int port_;
     // The timeout in srs_utime_t.
-    srs_utime_t timeout;
+    srs_utime_t timeout_;
 
 public:
     // Constructor.

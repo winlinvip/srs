@@ -1278,8 +1278,8 @@ srs_error_t SrsOriginHub::create_forwarders()
 
     // For destanition config
     SrsConfDirective *conf = _srs_config->get_forwards(req_->vhost_);
-    for (int i = 0; conf && i < (int)conf->args.size(); i++) {
-        std::string forward_server = conf->args.at(i);
+    for (int i = 0; conf && i < (int)conf->args_.size(); i++) {
+        std::string forward_server = conf->args_.at(i);
 
         SrsForwarder *forwarder = new SrsForwarder(this);
         forwarders.push_back(forwarder);

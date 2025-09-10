@@ -817,7 +817,7 @@ void SrsAmf0Object::remove(string name)
 
 SrsAmf0EcmaArray::SrsAmf0EcmaArray()
 {
-    _count = 0;
+    count_ = 0;
     properties_ = new SrsUnSortedHashtable();
     eof_ = new SrsAmf0ObjectEOF();
     marker_ = RTMP_AMF0_EcmaArray;
@@ -868,7 +868,7 @@ srs_error_t SrsAmf0EcmaArray::read(SrsBuffer *stream)
     int32_t count = stream->read_4bytes();
 
     // value
-    this->_count = count;
+    this->count_ = count;
 
     while (!stream->empty()) {
         // detect whether is eof.
@@ -914,7 +914,7 @@ srs_error_t SrsAmf0EcmaArray::write(SrsBuffer *stream)
         return srs_error_new(ERROR_RTMP_AMF0_ENCODE, "requires 4 only %d bytes", stream->left());
     }
 
-    stream->write_4bytes(this->_count);
+    stream->write_4bytes(this->count_);
 
     // value
     for (int i = 0; i < properties_->count(); i++) {
@@ -941,7 +941,7 @@ SrsAmf0Any *SrsAmf0EcmaArray::copy()
 {
     SrsAmf0EcmaArray *copy = new SrsAmf0EcmaArray();
     copy->properties_->copy(properties_);
-    copy->_count = _count;
+    copy->count_ = count_;
     return copy;
 }
 
@@ -1007,7 +1007,7 @@ SrsAmf0Any *SrsAmf0EcmaArray::ensure_property_number(string name)
 SrsAmf0StrictArray::SrsAmf0StrictArray()
 {
     marker_ = RTMP_AMF0_StrictArray;
-    _count = 0;
+    count_ = 0;
 }
 
 SrsAmf0StrictArray::~SrsAmf0StrictArray()
@@ -1049,7 +1049,7 @@ srs_error_t SrsAmf0StrictArray::read(SrsBuffer *stream)
     int32_t count = stream->read_4bytes();
 
     // value
-    this->_count = count;
+    this->count_ = count;
 
     for (int i = 0; i < count && !stream->empty(); i++) {
         // property-value: any
@@ -1081,7 +1081,7 @@ srs_error_t SrsAmf0StrictArray::write(SrsBuffer *stream)
         return srs_error_new(ERROR_RTMP_AMF0_ENCODE, "requires 4 only %d bytes", stream->left());
     }
 
-    stream->write_4bytes(this->_count);
+    stream->write_4bytes(this->count_);
 
     // value
     for (int i = 0; i < (int)properties_.size(); i++) {
@@ -1105,7 +1105,7 @@ SrsAmf0Any *SrsAmf0StrictArray::copy()
         copy->append(any->copy());
     }
 
-    copy->_count = _count;
+    copy->count_ = count_;
     return copy;
 }
 
@@ -1146,7 +1146,7 @@ SrsAmf0Any *SrsAmf0StrictArray::at(int index)
 void SrsAmf0StrictArray::append(SrsAmf0Any *any)
 {
     properties_.push_back(any);
-    _count = (int32_t)properties_.size();
+    count_ = (int32_t)properties_.size();
 }
 
 int SrsAmf0Size::utf8(string value)
@@ -1323,8 +1323,8 @@ SrsAmf0Any *SrsAmf0Number::copy()
 SrsAmf0Date::SrsAmf0Date(int64_t value)
 {
     marker_ = RTMP_AMF0_Date;
-    _date_value = value;
-    _time_zone = 0;
+    date_value_ = value;
+    time_zone_ = 0;
 }
 
 SrsAmf0Date::~SrsAmf0Date()
@@ -1358,7 +1358,7 @@ srs_error_t SrsAmf0Date::read(SrsBuffer *stream)
         return srs_error_new(ERROR_RTMP_AMF0_DECODE, "requires 8 only %d bytes", stream->left());
     }
 
-    _date_value = stream->read_8bytes();
+    date_value_ = stream->read_8bytes();
 
     // time zone
     // While the design of this type reserves room for time zone offset
@@ -1369,7 +1369,7 @@ srs_error_t SrsAmf0Date::read(SrsBuffer *stream)
         return srs_error_new(ERROR_RTMP_AMF0_DECODE, "requires 2 only %d bytes", stream->left());
     }
 
-    _time_zone = stream->read_2bytes();
+    time_zone_ = stream->read_2bytes();
 
     return err;
 }
@@ -1390,14 +1390,14 @@ srs_error_t SrsAmf0Date::write(SrsBuffer *stream)
         return srs_error_new(ERROR_RTMP_AMF0_ENCODE, "requires 8 only %d bytes", stream->left());
     }
 
-    stream->write_8bytes(_date_value);
+    stream->write_8bytes(date_value_);
 
     // time zone
     if (!stream->require(2)) {
         return srs_error_new(ERROR_RTMP_AMF0_ENCODE, "requires 2 only %d bytes", stream->left());
     }
 
-    stream->write_2bytes(_time_zone);
+    stream->write_2bytes(time_zone_);
 
     return err;
 }
@@ -1406,20 +1406,20 @@ SrsAmf0Any *SrsAmf0Date::copy()
 {
     SrsAmf0Date *copy = new SrsAmf0Date(0);
 
-    copy->_date_value = _date_value;
-    copy->_time_zone = _time_zone;
+    copy->date_value_ = date_value_;
+    copy->time_zone_ = time_zone_;
 
     return copy;
 }
 
 int64_t SrsAmf0Date::date()
 {
-    return _date_value;
+    return date_value_;
 }
 
 int16_t SrsAmf0Date::time_zone()
 {
-    return _time_zone;
+    return time_zone_;
 }
 
 SrsAmf0Null::SrsAmf0Null()

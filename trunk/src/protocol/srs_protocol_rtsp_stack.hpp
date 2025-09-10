@@ -107,9 +107,9 @@ class SrsRtspTransport
 public:
     // The syntax for the transport specifier is
     //      transport/profile/lower-transport
-    std::string transport;
-    std::string profile;
-    std::string lower_transport;
+    std::string transport_;
+    std::string profile_;
+    std::string lower_transport_;
     // unicast | multicast
     // mutually exclusive indication of whether unicast or multicast
     // delivery will be attempted. Default value is multicast.
@@ -117,7 +117,7 @@ public:
     // multicast transmission MUST indicate such capability by
     // including two full transport-specs with separate parameters
     // For each.
-    std::string cast_type;
+    std::string cast_type_;
     // The interleaved parameter implies mixing the media stream with
     // the control stream in whatever protocol is being used by the
     // control stream, using the mechanism defined in Section 10.12.
@@ -125,21 +125,21 @@ public:
     // statement. This parameter may be specified as a range, e.g.,
     // interleaved=4-5 in cases where the transport choice for the
     // media stream requires it.
-    std::string interleaved;
-    int interleaved_min;
-    int interleaved_max;
+    std::string interleaved_;
+    int interleaved_min_;
+    int interleaved_max_;
     // The mode parameter indicates the methods to be supported for
     // this session. Valid values are PLAY and RECORD. If not
     // provided, the default is PLAY.
-    std::string mode;
+    std::string mode_;
     // This parameter provides the unicast RTP/RTCP port pair on
     // which the client has chosen to receive media data and control
     // information. It is specified as a range, e.g.,
     //      client_port=3456-3457.
     // where client will use port in:
     //      [client_port_min, client_port_max)
-    int client_port_min;
-    int client_port_max;
+    int client_port_min_;
+    int client_port_max_;
 
 public:
     SrsRtspTransport();
@@ -169,9 +169,9 @@ class SrsRtspRequest
 public:
     // 6.1 Request Line
     // Request-Line = Method SP Request-URI SP RTSP-Version CRLF
-    std::string method;
-    std::string uri;
-    std::string version;
+    std::string method_;
+    std::string uri_;
+    std::string version_;
     // 12.17 CSeq
     // The CSeq field specifies the sequence number for an RTSP requestresponse
     // pair. This field MUST be present in all requests and
@@ -180,30 +180,30 @@ public:
     // number. Any retransmitted request must contain the same sequence
     // number as the original (i.e. the sequence number is not incremented
     // For retransmissions of the same request).
-    long seq;
+    long seq_;
     // 12.16 Content-Type, @see rfc2326-1998-rtsp.pdf, page 99
     // See [H14.18]. Note that the content types suitable for RTSP are
     // likely to be restricted in practice to presentation descriptions and
     // parameter-value types.
-    std::string content_type;
+    std::string content_type_;
     // 12.14 Content-Length, @see rfc2326-1998-rtsp.pdf, page 99
     // This field contains the length of the content of the method (i.e.
     // after the double CRLF following the last header). Unlike HTTP, it
     // MUST be included in all messages that carry content beyond the header
     // portion of the message. If it is missing, a default value of zero is
     // assumed. It is interpreted according to [H14.14].
-    long content_length;
+    long content_length_;
     // The session id.
-    std::string session;
+    std::string session_;
 
     // The transport in setup, NULL for no transport.
-    SrsRtspTransport *transport;
+    SrsRtspTransport *transport_;
     // For setup message, parse the stream id from uri.
-    int stream_id;
+    int stream_id_;
 
-    std::string accept;
-    std::string user_agent;
-    std::string range;
+    std::string accept_;
+    std::string user_agent_;
+    std::string range_;
 
 public:
     SrsRtspRequest();
@@ -243,7 +243,7 @@ public:
     //       Status-Line = RTSP-Version SP Status-Code SP Reason-Phrase CRLF
     // @see about the version of rtsp, see SRS_RTSP_VERSION
     // @see about the status of rtsp, see SRS_CONSTS_RTSP_OK
-    int status;
+    int status_;
     // 12.17 CSeq, @see rfc2326-1998-rtsp.pdf, page 99
     // The CSeq field specifies the sequence number for an RTSP requestresponse
     // pair. This field MUST be present in all requests and
@@ -252,9 +252,9 @@ public:
     // number. Any retransmitted request must contain the same sequence
     // number as the original (i.e. the sequence number is not incremented
     // For retransmissions of the same request).
-    long seq;
+    long seq_;
     // The session id.
-    std::string session;
+    std::string session_;
 
 public:
     SrsRtspResponse(int cseq);
@@ -277,7 +277,7 @@ class SrsRtspOptionsResponse : public SrsRtspResponse
 {
 public:
     // Join of SrsRtspMethod
-    SrsRtspMethod methods;
+    SrsRtspMethod methods_;
 
 public:
     SrsRtspOptionsResponse(int cseq);
@@ -292,7 +292,7 @@ class SrsRtspDescribeResponse : public SrsRtspResponse
 {
 public:
     // The sdp in describe.
-    std::string sdp;
+    std::string sdp_;
 
 public:
     SrsRtspDescribeResponse(int cseq);
@@ -315,16 +315,16 @@ class SrsRtspSetupResponse : public SrsRtspResponse
 {
 public:
     // The client specified port.
-    int client_port_min;
-    int client_port_max;
+    int client_port_min_;
+    int client_port_max_;
     // The client will use the port in:
     //      [local_port_min, local_port_max)
-    int local_port_min;
-    int local_port_max;
+    int local_port_min_;
+    int local_port_max_;
 
-    SrsRtspTransport *transport;
+    SrsRtspTransport *transport_;
     // The ssrc of the stream.
-    std::string ssrc;
+    std::string ssrc_;
 
 public:
     SrsRtspSetupResponse(int cseq);
@@ -350,9 +350,9 @@ class SrsRtspStack
 {
 private:
     // The cached bytes buffer.
-    SrsSimpleStream *buf;
+    SrsSimpleStream *buf_;
     // The underlayer socket object, send/recv bytes.
-    ISrsProtocolReadWriter *skt;
+    ISrsProtocolReadWriter *skt_;
 
 public:
     SrsRtspStack(ISrsProtocolReadWriter *s);

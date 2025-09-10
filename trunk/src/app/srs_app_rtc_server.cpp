@@ -253,19 +253,19 @@ set<string> discover_candidates(SrsRtcUserConfig *ruc)
         string family = _srs_config->get_rtc_server_ip_family();
         for (int i = 0; i < (int)ips.size(); ++i) {
             SrsIPAddress *ip = ips[i];
-            if (ip->is_loopback) {
+            if (ip->is_loopback_) {
                 continue;
             }
 
-            if (family == "ipv4" && !ip->is_ipv4) {
+            if (family == "ipv4" && !ip->is_ipv4_) {
                 continue;
             }
-            if (family == "ipv6" && ip->is_ipv4) {
+            if (family == "ipv6" && ip->is_ipv4_) {
                 continue;
             }
 
-            candidate_ips.insert(ip->ip);
-            srs_trace("Best matched ip=%s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
+            candidate_ips.insert(ip->ip_);
+            srs_trace("Best matched ip=%s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
         }
     }
 
@@ -276,20 +276,20 @@ set<string> discover_candidates(SrsRtcUserConfig *ruc)
     // Then, we use the ipv4 address.
     for (int i = 0; i < (int)ips.size(); ++i) {
         SrsIPAddress *ip = ips[i];
-        if (!ip->is_ipv4) {
+        if (!ip->is_ipv4_) {
             continue;
         }
 
-        candidate_ips.insert(ip->ip);
-        srs_trace("No best matched, use first ip=%s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
+        candidate_ips.insert(ip->ip_);
+        srs_trace("No best matched, use first ip=%s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
         return candidate_ips;
     }
 
     // We use the first one, to make sure there will be at least one CANDIDATE.
     if (candidate_ips.empty()) {
         SrsIPAddress *ip = ips[0];
-        candidate_ips.insert(ip->ip);
-        srs_warn("No best matched, use first ip=%s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
+        candidate_ips.insert(ip->ip_);
+        srs_warn("No best matched, use first ip=%s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
         return candidate_ips;
     }
 

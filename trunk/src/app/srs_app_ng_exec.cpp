@@ -143,8 +143,8 @@ srs_error_t SrsNgExec::parse_exec_publish(ISrsRequest *req)
 
         std::string binary = ep->arg0();
         std::vector<std::string> argv;
-        for (int i = 0; i < (int)ep->args.size(); i++) {
-            std::string epa = ep->args.at(i);
+        for (int i = 0; i < (int)ep->args_.size(); i++) {
+            std::string epa = ep->args_.at(i);
 
             if (srs_strings_contains(epa, ">")) {
                 vector<string> epas = srs_strings_split(epa, ">");

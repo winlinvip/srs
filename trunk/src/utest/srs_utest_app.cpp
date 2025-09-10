@@ -576,10 +576,10 @@ VOID TEST(AppSecurity, CheckSecurity)
         rules.get_or_create("deny", "play", "11.12.13.14");
         if (true) {
             SrsConfDirective *d = new SrsConfDirective();
-            d->name = "deny";
-            d->args.push_back("play");
-            d->args.push_back("12.13.14.15");
-            rules.directives.push_back(d);
+            d->name_ = "deny";
+            d->args_.push_back("play");
+            d->args_.push_back("12.13.14.15");
+            rules.directives_.push_back(d);
         }
         HELPER_EXPECT_FAILED(sec.do_check(&rules, SrsRtmpConnPlay, "12.13.14.15", &rr));
     }
@@ -604,10 +604,10 @@ VOID TEST(AppSecurity, CheckSecurity)
         rules.get_or_create("deny", "play", "11.12.13.14");
         if (true) {
             SrsConfDirective *d = new SrsConfDirective();
-            d->name = "deny";
-            d->args.push_back("play");
-            d->args.push_back("12.13.14.15");
-            rules.directives.push_back(d);
+            d->name_ = "deny";
+            d->args_.push_back("play");
+            d->args_.push_back("12.13.14.15");
+            rules.directives_.push_back(d);
         }
         HELPER_EXPECT_FAILED(sec.do_check(&rules, SrsRtcConnPlay, "12.13.14.15", &rr));
     }

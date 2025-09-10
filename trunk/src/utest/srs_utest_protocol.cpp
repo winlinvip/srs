@@ -5253,13 +5253,13 @@ VOID TEST(ProtocolRTSPTest, RTSPRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_options());
-        EXPECT_STREQ("OPTIONS", req->method.c_str());
-        EXPECT_STREQ("rtsp://server.example.com/stream", req->uri.c_str());
-        EXPECT_STREQ("RTSP/1.0", req->version.c_str());
-        EXPECT_EQ(1, req->seq);
-        EXPECT_STREQ("SRS RTSP Client", req->user_agent.c_str());
+        EXPECT_STREQ("OPTIONS", req->method_.c_str());
+        EXPECT_STREQ("rtsp://server.example.com/stream", req->uri_.c_str());
+        EXPECT_STREQ("RTSP/1.0", req->version_.c_str());
+        EXPECT_EQ(1, req->seq_);
+        EXPECT_STREQ("SRS RTSP Client", req->user_agent_.c_str());
 
-        SrsRtspOptionsResponse *res = new SrsRtspOptionsResponse(req->seq);
+        SrsRtspOptionsResponse *res = new SrsRtspOptionsResponse(req->seq_);
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5282,12 +5282,12 @@ VOID TEST(ProtocolRTSPTest, RTSPRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_describe());
-        EXPECT_STREQ("DESCRIBE", req->method.c_str());
-        EXPECT_EQ(2, req->seq);
-        EXPECT_STREQ("application/sdp", req->accept.c_str());
+        EXPECT_STREQ("DESCRIBE", req->method_.c_str());
+        EXPECT_EQ(2, req->seq_);
+        EXPECT_STREQ("application/sdp", req->accept_.c_str());
 
-        SrsRtspDescribeResponse *res = new SrsRtspDescribeResponse(req->seq);
-        res->sdp = "v=0\r\n"
+        SrsRtspDescribeResponse *res = new SrsRtspDescribeResponse(req->seq_);
+        res->sdp_ = "v=0\r\n"
                    "o=- 123456 0 IN IP4 127.0.0.1\r\n"
                    "s=SRS RTSP Server\r\n"
                    "c=IN IP4 127.0.0.1\r\n"
@@ -5317,26 +5317,26 @@ VOID TEST(ProtocolRTSPTest, RTSPRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_setup());
-        EXPECT_STREQ("SETUP", req->method.c_str());
-        EXPECT_EQ(3, req->seq);
-        EXPECT_TRUE(req->transport != NULL);
-        EXPECT_STREQ("RTP", req->transport->transport.c_str());
-        EXPECT_STREQ("AVP", req->transport->profile.c_str());
-        EXPECT_STREQ("unicast", req->transport->cast_type.c_str());
-        EXPECT_EQ(9000, req->transport->client_port_min);
-        EXPECT_EQ(9001, req->transport->client_port_max);
-        EXPECT_EQ(0, req->stream_id);
+        EXPECT_STREQ("SETUP", req->method_.c_str());
+        EXPECT_EQ(3, req->seq_);
+        EXPECT_TRUE(req->transport_ != NULL);
+        EXPECT_STREQ("RTP", req->transport_->transport_.c_str());
+        EXPECT_STREQ("AVP", req->transport_->profile_.c_str());
+        EXPECT_STREQ("unicast", req->transport_->cast_type_.c_str());
+        EXPECT_EQ(9000, req->transport_->client_port_min_);
+        EXPECT_EQ(9001, req->transport_->client_port_max_);
+        EXPECT_EQ(0, req->stream_id_);
 
-        SrsRtspSetupResponse *res = new SrsRtspSetupResponse(req->seq);
-        res->session = "12345678";
-        res->client_port_min = 9000;
-        res->client_port_max = 9001;
-        res->local_port_min = 5000;
-        res->local_port_max = 5001;
-        res->transport->transport = "RTP";
-        res->transport->profile = "AVP";
-        res->transport->cast_type = "unicast";
-        res->ssrc = "1234ABCD";
+        SrsRtspSetupResponse *res = new SrsRtspSetupResponse(req->seq_);
+        res->session_ = "12345678";
+        res->client_port_min_ = 9000;
+        res->client_port_max_ = 9001;
+        res->local_port_min_ = 5000;
+        res->local_port_max_ = 5001;
+        res->transport_->transport_ = "RTP";
+        res->transport_->profile_ = "AVP";
+        res->transport_->cast_type_ = "unicast";
+        res->ssrc_ = "1234ABCD";
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5360,13 +5360,13 @@ VOID TEST(ProtocolRTSPTest, RTSPRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_play());
-        EXPECT_STREQ("PLAY", req->method.c_str());
-        EXPECT_EQ(4, req->seq);
-        EXPECT_STREQ("12345678", req->session.c_str());
-        EXPECT_STREQ("npt=0.000-", req->range.c_str());
+        EXPECT_STREQ("PLAY", req->method_.c_str());
+        EXPECT_EQ(4, req->seq_);
+        EXPECT_STREQ("12345678", req->session_.c_str());
+        EXPECT_STREQ("npt=0.000-", req->range_.c_str());
 
-        SrsRtspPlayResponse *res = new SrsRtspPlayResponse(req->seq);
-        res->session = req->session;
+        SrsRtspPlayResponse *res = new SrsRtspPlayResponse(req->seq_);
+        res->session_ = req->session_;
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5389,12 +5389,12 @@ VOID TEST(ProtocolRTSPTest, RTSPRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_teardown());
-        EXPECT_STREQ("TEARDOWN", req->method.c_str());
-        EXPECT_EQ(5, req->seq);
-        EXPECT_STREQ("12345678", req->session.c_str());
+        EXPECT_STREQ("TEARDOWN", req->method_.c_str());
+        EXPECT_EQ(5, req->seq_);
+        EXPECT_STREQ("12345678", req->session_.c_str());
 
-        SrsRtspResponse *res = new SrsRtspResponse(req->seq);
-        res->session = req->session;
+        SrsRtspResponse *res = new SrsRtspResponse(req->seq_);
+        res->session_ = req->session_;
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5426,20 +5426,20 @@ VOID TEST(ProtocolRTSPTest, RTSPTcpOnlyTransport)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_setup());
-        EXPECT_STREQ("SETUP", req->method.c_str());
-        EXPECT_EQ(3, req->seq);
-        EXPECT_TRUE(req->transport != NULL);
-        EXPECT_STREQ("RTP", req->transport->transport.c_str());
-        EXPECT_STREQ("AVP", req->transport->profile.c_str());
-        EXPECT_STREQ("TCP", req->transport->lower_transport.c_str());
-        EXPECT_STREQ("unicast", req->transport->cast_type.c_str());
-        EXPECT_EQ(0, req->transport->interleaved_min);
-        EXPECT_EQ(1, req->transport->interleaved_max);
+        EXPECT_STREQ("SETUP", req->method_.c_str());
+        EXPECT_EQ(3, req->seq_);
+        EXPECT_TRUE(req->transport_ != NULL);
+        EXPECT_STREQ("RTP", req->transport_->transport_.c_str());
+        EXPECT_STREQ("AVP", req->transport_->profile_.c_str());
+        EXPECT_STREQ("TCP", req->transport_->lower_transport_.c_str());
+        EXPECT_STREQ("unicast", req->transport_->cast_type_.c_str());
+        EXPECT_EQ(0, req->transport_->interleaved_min_);
+        EXPECT_EQ(1, req->transport_->interleaved_max_);
 
-        SrsRtspSetupResponse *res = new SrsRtspSetupResponse(req->seq);
-        res->session = "12345678";
-        res->transport->copy(req->transport);
-        res->ssrc = "1234ABCD";
+        SrsRtspSetupResponse *res = new SrsRtspSetupResponse(req->seq_);
+        res->session_ = "12345678";
+        res->transport_->copy(req->transport_);
+        res->ssrc_ = "1234ABCD";
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5462,19 +5462,19 @@ VOID TEST(ProtocolRTSPTest, RTSPTcpOnlyTransport)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_setup());
-        EXPECT_STREQ("SETUP", req->method.c_str());
-        EXPECT_EQ(4, req->seq);
-        EXPECT_TRUE(req->transport != NULL);
-        EXPECT_STREQ("RTP", req->transport->transport.c_str());
-        EXPECT_STREQ("AVP", req->transport->profile.c_str());
-        EXPECT_STREQ("", req->transport->lower_transport.c_str()); // UDP has empty lower_transport
-        EXPECT_STREQ("unicast", req->transport->cast_type.c_str());
-        EXPECT_EQ(9000, req->transport->client_port_min);
-        EXPECT_EQ(9001, req->transport->client_port_max);
+        EXPECT_STREQ("SETUP", req->method_.c_str());
+        EXPECT_EQ(4, req->seq_);
+        EXPECT_TRUE(req->transport_ != NULL);
+        EXPECT_STREQ("RTP", req->transport_->transport_.c_str());
+        EXPECT_STREQ("AVP", req->transport_->profile_.c_str());
+        EXPECT_STREQ("", req->transport_->lower_transport_.c_str()); // UDP has empty lower_transport
+        EXPECT_STREQ("unicast", req->transport_->cast_type_.c_str());
+        EXPECT_EQ(9000, req->transport_->client_port_min_);
+        EXPECT_EQ(9001, req->transport_->client_port_max_);
 
         // Simulate server rejecting UDP transport
-        SrsRtspSetupResponse *res = new SrsRtspSetupResponse(req->seq);
-        res->status = SRS_CONSTS_RTSP_UnsupportedTransport;
+        SrsRtspSetupResponse *res = new SrsRtspSetupResponse(req->seq_);
+        res->status_ = SRS_CONSTS_RTSP_UnsupportedTransport;
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5602,7 +5602,7 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_setup());
-        EXPECT_TRUE(req->transport == NULL);
+        EXPECT_TRUE(req->transport_ == NULL);
     }
 
     if (true) {
@@ -5618,10 +5618,10 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_setup());
-        EXPECT_TRUE(req->transport != NULL);
+        EXPECT_TRUE(req->transport_ != NULL);
         // Invalid port will be parsed as 0
-        EXPECT_EQ(0, req->transport->client_port_min);
-        EXPECT_EQ(0, req->transport->client_port_max);
+        EXPECT_EQ(0, req->transport_->client_port_min_);
+        EXPECT_EQ(0, req->transport_->client_port_max_);
     }
 
     if (true) {
@@ -5637,14 +5637,14 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_setup());
-        EXPECT_TRUE(req->transport != NULL);
+        EXPECT_TRUE(req->transport_ != NULL);
         // Transport field is empty
-        EXPECT_STREQ("", req->transport->transport.c_str());
-        EXPECT_STREQ("", req->transport->profile.c_str());
-        EXPECT_STREQ("", req->transport->lower_transport.c_str());
-        EXPECT_STREQ("unicast", req->transport->cast_type.c_str());
-        EXPECT_EQ(9000, req->transport->client_port_min);
-        EXPECT_EQ(9001, req->transport->client_port_max);
+        EXPECT_STREQ("", req->transport_->transport_.c_str());
+        EXPECT_STREQ("", req->transport_->profile_.c_str());
+        EXPECT_STREQ("", req->transport_->lower_transport_.c_str());
+        EXPECT_STREQ("unicast", req->transport_->cast_type_.c_str());
+        EXPECT_EQ(9000, req->transport_->client_port_min_);
+        EXPECT_EQ(9001, req->transport_->client_port_max_);
     }
 
     if (true) {
@@ -5660,11 +5660,11 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_play());
-        EXPECT_STREQ("", req->session.c_str()); // 会话ID为空
+        EXPECT_STREQ("", req->session_.c_str()); // 会话ID为空
 
         // Should return 454 Session Not Found error
-        SrsRtspResponse *res = new SrsRtspResponse(req->seq);
-        res->status = SRS_CONSTS_RTSP_SessionNotFound;
+        SrsRtspResponse *res = new SrsRtspResponse(req->seq_);
+        res->status_ = SRS_CONSTS_RTSP_SessionNotFound;
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5686,11 +5686,11 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_play());
-        EXPECT_STREQ("invalid_session_id", req->session.c_str());
+        EXPECT_STREQ("invalid_session_id", req->session_.c_str());
 
         // Should return 454 Session Not Found error
-        SrsRtspResponse *res = new SrsRtspResponse(req->seq);
-        res->status = SRS_CONSTS_RTSP_SessionNotFound;
+        SrsRtspResponse *res = new SrsRtspResponse(req->seq_);
+        res->status_ = SRS_CONSTS_RTSP_SessionNotFound;
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5715,11 +5715,11 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_options());
-        EXPECT_EQ(7, req->seq);
+        EXPECT_EQ(7, req->seq_);
         // Custom headers will be ignored
-        EXPECT_STREQ("CustomUserAgent", req->user_agent.c_str());
+        EXPECT_STREQ("CustomUserAgent", req->user_agent_.c_str());
 
-        SrsRtspOptionsResponse *res = new SrsRtspOptionsResponse(req->seq);
+        SrsRtspOptionsResponse *res = new SrsRtspOptionsResponse(req->seq_);
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5740,11 +5740,11 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         SrsUniquePtr<SrsRtspRequest> req_uptr(req);
 
         EXPECT_TRUE(req->is_options());
-        EXPECT_STREQ("RTSP/2.0", req->version.c_str()); // Different version but still parsed
+        EXPECT_STREQ("RTSP/2.0", req->version_.c_str()); // Different version but still parsed
 
         // Should return RTSP version not supported error
-        SrsRtspResponse *res = new SrsRtspResponse(req->seq);
-        res->status = SRS_CONSTS_RTSP_RTSPVersionNotSupported;
+        SrsRtspResponse *res = new SrsRtspResponse(req->seq_);
+        res->status_ = SRS_CONSTS_RTSP_RTSPVersionNotSupported;
         HELPER_ASSERT_SUCCESS(stack.send_message(res));
 
         string response = std::string(bio.out_buffer.bytes(), bio.out_buffer.length());
@@ -5805,7 +5805,7 @@ VOID TEST(ProtocolRTSPTest, RTSPConsumeRTCPThenRTSP)
         EXPECT_TRUE(req != NULL);
         if (req != NULL) {
             EXPECT_TRUE(req->is_options());
-            EXPECT_EQ(1, req->seq);
+            EXPECT_EQ(1, req->seq_);
         }
 
         srs_freep(req);

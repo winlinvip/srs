@@ -89,7 +89,7 @@ void srs_build_features(stringstream &ss)
 
     SrsConfDirective *root = _srs_config->get_root();
     // Note that we limit the loop, never detect all configs.
-    for (int i = 0; i < (int)root->directives.size() && i < 128; i++) {
+    for (int i = 0; i < (int)root->directives_.size() && i < 128; i++) {
         SrsConfDirective *conf = root->at(i);
 
         if (!gb28181 && conf->is_stream_caster() && _srs_config->get_stream_caster_enabled(conf)) {
@@ -138,13 +138,13 @@ void srs_build_features(stringstream &ss)
                 security = true;
             }
 
-            for (int j = 0; j < (int)conf->directives.size() && j < 64; j++) {
-                SrsConfDirective *prop = conf->directives.at(j);
+            for (int j = 0; j < (int)conf->directives_.size() && j < 64; j++) {
+                SrsConfDirective *prop = conf->directives_.at(j);
 
-                if (!ingest && prop->name == "ingest" && _srs_config->get_ingest_enabled(prop)) {
+                if (!ingest && prop->name_ == "ingest" && _srs_config->get_ingest_enabled(prop)) {
                     ingest = true;
                 }
-                if (!transcode && prop->name == "transcode" && _srs_config->get_transcode_enabled(prop)) {
+                if (!transcode && prop->name_ == "transcode" && _srs_config->get_transcode_enabled(prop)) {
                     transcode = true;
                 }
 

@@ -537,7 +537,7 @@ srs_error_t SrsDvrAsyncCallOnDvr::call()
     if (true) {
         SrsConfDirective *conf = _srs_config->get_vhost_on_dvr(req->vhost_);
         if (conf) {
-            hooks = conf->args;
+            hooks = conf->args_;
         }
     }
 

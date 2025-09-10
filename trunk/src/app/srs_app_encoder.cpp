@@ -282,7 +282,7 @@ srs_error_t SrsEncoder::initialize_ffmpeg(SrsFFMPEG *ffmpeg, ISrsRequest *req, S
         log_file += req->app_;
         log_file += "-";
         log_file += req->stream_;
-        if (!engine->args.empty()) {
+        if (!engine->args_.empty()) {
             log_file += "-";
             log_file += engine->arg0();
         }

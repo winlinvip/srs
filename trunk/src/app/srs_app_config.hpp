@@ -66,17 +66,17 @@ class SrsConfigBuffer
 {
 protected:
     // The last available position.
-    char *last;
+    char *last_;
     // The end of buffer.
-    char *end;
+    char *end_;
     // The start of buffer.
-    char *start;
+    char *start_;
 
 public:
     // Current consumed position.
-    char *pos;
+    char *pos_;
     // Current parsed line.
-    int line;
+    int line_;
 
 public:
     SrsConfigBuffer();
@@ -150,15 +150,15 @@ class SrsConfDirective
 {
 public:
     // The line of config file in which the directive from
-    int conf_line;
+    int conf_line_;
     // The name of directive, for example, the following config text:
     //       enabled     on;
     // will be parsed to a directive, its name is "enalbed"
-    std::string name;
+    std::string name_;
     // The args of directive, for example, the following config text:
     //       listen      1935 1936;
     // will be parsed to a directive, its args is ["1935", "1936"].
-    std::vector<std::string> args;
+    std::vector<std::string> args_;
     // The child directives, for example, the following config text:
     //       vhost vhost.ossrs.net {
     //           enabled         on;
@@ -168,7 +168,7 @@ public:
     //       name:"enalbed", args:["on"], directives:[]
     //
     // @remark, the directives can contains directives.
-    std::vector<SrsConfDirective *> directives;
+    std::vector<SrsConfDirective *> directives_;
 
 public:
     SrsConfDirective();
@@ -284,13 +284,13 @@ class SrsConfig
     // user command
 private:
     // Whether show help and exit.
-    bool show_help;
+    bool show_help_;
     // Whether test config file and exit.
-    bool test_conf;
+    bool test_conf_;
     // Whether show SRS version and exit.
-    bool show_version;
+    bool show_version_;
     // Whether show SRS signature and exit.
-    bool show_signature;
+    bool show_signature_;
     // Whether only use environment variable, ignore config file.
     // Set it by argv "-e" or env "SRS_ENV_ONLY=on".
     bool env_only_;
@@ -298,18 +298,18 @@ private:
 private:
     // The user parameters, the argc and argv.
     // The argv is " ".join(argv), where argv is from main(argc, argv).
-    std::string _argv;
+    std::string argv_;
     // current working directory.
-    std::string _cwd;
+    std::string cwd_;
     // Config section
 private:
     // The last parsed config file.
     // If  reload, reload the config file.
-    std::string config_file;
+    std::string config_file_;
 
 protected:
     // The directive root.
-    SrsConfDirective *root;
+    SrsConfDirective *root_;
 
 private:
     // The cache for parsing the config from environment variables.
@@ -317,7 +317,7 @@ private:
     // Reload  section
 private:
     // The reload subscribers, when reload, callback all handlers.
-    std::vector<ISrsReloadHandler *> subscribes;
+    std::vector<ISrsReloadHandler *> subscribes_;
 
 public:
     SrsConfig();

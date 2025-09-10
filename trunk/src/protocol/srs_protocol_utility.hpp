@@ -109,15 +109,15 @@ extern srs_error_t srs_write_large_iovs(ISrsProtocolReadWriter *skt, iovec *iovs
 // Get local ip, fill to @param ips
 struct SrsIPAddress {
     // The network interface name, such as eth0, en0, eth1.
-    std::string ifname;
+    std::string ifname_;
     // The IP v4 or v6 address.
-    std::string ip;
+    std::string ip_;
     // Whether the ip is IPv4 address.
-    bool is_ipv4;
+    bool is_ipv4_;
     // Whether the ip is internet public IP address.
-    bool is_internet;
+    bool is_internet_;
     // Whether the ip is loopback, such as 127.0.0.1
-    bool is_loopback;
+    bool is_loopback_;
 };
 extern std::vector<SrsIPAddress *> &srs_get_local_ips();
 

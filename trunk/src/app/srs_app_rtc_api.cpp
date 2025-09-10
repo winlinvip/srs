@@ -313,7 +313,7 @@ srs_error_t SrsGoApiRtcPlay::http_hooks_on_play(ISrsRequest *req)
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -586,7 +586,7 @@ srs_error_t SrsGoApiRtcPublish::http_hooks_on_publish(ISrsRequest *req)
         if (!conf) {
             return err;
         }
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {

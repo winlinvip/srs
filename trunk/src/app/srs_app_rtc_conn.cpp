@@ -397,7 +397,7 @@ srs_error_t SrsRtcAsyncCallOnStop::call()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     SrsContextRestore(_srs_context->get_id());
@@ -1058,7 +1058,7 @@ srs_error_t SrsRtcAsyncCallOnUnpublish::call()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     SrsContextRestore(_srs_context->get_id());

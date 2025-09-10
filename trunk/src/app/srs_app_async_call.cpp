@@ -21,49 +21,49 @@ ISrsAsyncCallTask::~ISrsAsyncCallTask()
 
 SrsAsyncCallWorker::SrsAsyncCallWorker()
 {
-    trd = new SrsDummyCoroutine();
-    wait = srs_cond_new();
-    lock = srs_mutex_new();
+    trd_ = new SrsDummyCoroutine();
+    wait_ = srs_cond_new();
+    lock_ = srs_mutex_new();
 }
 
 SrsAsyncCallWorker::~SrsAsyncCallWorker()
 {
-    srs_freep(trd);
+    srs_freep(trd_);
 
     std::vector<ISrsAsyncCallTask *>::iterator it;
-    for (it = tasks.begin(); it != tasks.end(); ++it) {
+    for (it = tasks_.begin(); it != tasks_.end(); ++it) {
         ISrsAsyncCallTask *task = *it;
         srs_freep(task);
     }
-    tasks.clear();
+    tasks_.clear();
 
-    srs_cond_destroy(wait);
-    srs_mutex_destroy(lock);
+    srs_cond_destroy(wait_);
+    srs_mutex_destroy(lock_);
 }
 
 srs_error_t SrsAsyncCallWorker::execute(ISrsAsyncCallTask *t)
 {
     srs_error_t err = srs_success;
 
-    tasks.push_back(t);
-    srs_cond_signal(wait);
+    tasks_.push_back(t);
+    srs_cond_signal(wait_);
 
     return err;
 }
 
 int SrsAsyncCallWorker::count()
 {
-    return (int)tasks.size();
+    return (int)tasks_.size();
 }
 
 srs_error_t SrsAsyncCallWorker::start()
 {
     srs_error_t err = srs_success;
 
-    srs_freep(trd);
-    trd = new SrsSTCoroutine("async", this, _srs_context->get_id());
+    srs_freep(trd_);
+    trd_ = new SrsSTCoroutine("async", this, _srs_context->get_id());
 
-    if ((err = trd->start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "coroutine");
     }
 
@@ -73,8 +73,8 @@ srs_error_t SrsAsyncCallWorker::start()
 void SrsAsyncCallWorker::stop()
 {
     flush_tasks();
-    srs_cond_signal(wait);
-    trd->stop();
+    srs_cond_signal(wait_);
+    trd_->stop();
 }
 
 srs_error_t SrsAsyncCallWorker::cycle()
@@ -82,12 +82,12 @@ srs_error_t SrsAsyncCallWorker::cycle()
     srs_error_t err = srs_success;
 
     while (true) {
-        if ((err = trd->pull()) != srs_success) {
+        if ((err = trd_->pull()) != srs_success) {
             return srs_error_wrap(err, "async call worker");
         }
 
-        if (tasks.empty()) {
-            srs_cond_wait(wait);
+        if (tasks_.empty()) {
+            srs_cond_wait(wait_);
         }
 
         flush_tasks();
@@ -103,14 +103,14 @@ void SrsAsyncCallWorker::flush_tasks()
     // Avoid the async call blocking other coroutines.
     std::vector<ISrsAsyncCallTask *> copy;
     if (true) {
-        SrsLocker(&lock);
+        SrsLocker(&lock_);
 
-        if (tasks.empty()) {
+        if (tasks_.empty()) {
             return;
         }
 
-        copy = tasks;
-        tasks.clear();
+        copy = tasks_;
+        tasks_.clear();
     }
 
     std::vector<ISrsAsyncCallTask *>::iterator it;

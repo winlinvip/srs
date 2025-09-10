@@ -79,7 +79,7 @@ srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, ISrsLbRoundRobin *lb)
         }
 
         // select the origin.
-        std::string server = lb->select(conf->args);
+        std::string server = lb->select(conf->args_);
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
         srs_net_split_hostport(server, server, port);
 
@@ -201,7 +201,7 @@ srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, ISrsLbRoundRobin *lb,
         }
 
         // select the origin.
-        std::string server = lb->select(conf->args);
+        std::string server = lb->select(conf->args_);
         int port = SRS_DEFAULT_HTTP_PORT;
         if (schema_ == "https") {
             port = SRS_DEFAULT_HTTPS_PORT;
@@ -762,7 +762,7 @@ srs_error_t SrsEdgeForwarder::start()
         srs_assert(conf);
 
         // select the origin.
-        std::string server = lb->select(conf->args);
+        std::string server = lb->select(conf->args_);
         int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
         srs_net_split_hostport(server, server, port);
 

@@ -59,7 +59,7 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
         // Use the local ip address specified by the stats.network config.
         vector<SrsIPAddress *> &ips = srs_get_local_ips();
         if (!ips.empty()) {
-            ip = ips[_srs_config->get_stats_network() % (int)ips.size()]->ip;
+            ip = ips[_srs_config->get_stats_network() % (int)ips.size()]->ip_;
         }
     }
 

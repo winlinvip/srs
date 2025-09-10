@@ -28,10 +28,10 @@ MockSrsConfigBuffer::MockSrsConfigBuffer(string buf)
     }
 
     // create buffer
-    pos = last = start = new char[filesize];
-    end = start + filesize;
+    pos_ = last_ = start_ = new char[filesize];
+    end_ = start_ + filesize;
 
-    memcpy(start, buf.data(), filesize);
+    memcpy(start_, buf.data(), filesize);
 }
 
 MockSrsConfigBuffer::~MockSrsConfigBuffer()
@@ -61,7 +61,7 @@ srs_error_t MockSrsConfig::parse(string buf)
         return srs_error_wrap(err, "parse buffer");
     }
 
-    if ((err = srs_config_transform_vhost(root)) != srs_success) {
+    if ((err = srs_config_transform_vhost(root_)) != srs_success) {
         return srs_error_wrap(err, "transform config");
     }
 
@@ -158,9 +158,9 @@ VOID TEST(ConfigDirectiveTest, ParseEmpty)
     MockSrsConfigBuffer buf("");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(0, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(0, (int)conf.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameOnly)
@@ -170,14 +170,14 @@ VOID TEST(ConfigDirectiveTest, ParseNameOnly)
     MockSrsConfigBuffer buf("winlin;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(0, (int)dir.args.size());
-    EXPECT_EQ(0, (int)dir.directives.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(0, (int)dir.args_.size());
+    EXPECT_EQ(0, (int)dir.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg0Only)
@@ -187,15 +187,15 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg0Only)
     MockSrsConfigBuffer buf("winlin arg0;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(1, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(1, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
-    EXPECT_EQ(0, (int)dir.directives.size());
+    EXPECT_EQ(0, (int)dir.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg1Only)
@@ -205,16 +205,16 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg1Only)
     MockSrsConfigBuffer buf("winlin arg0 arg1;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(2, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(2, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
-    EXPECT_EQ(0, (int)dir.directives.size());
+    EXPECT_EQ(0, (int)dir.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg2Only)
@@ -224,17 +224,17 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg2Only)
     MockSrsConfigBuffer buf("winlin arg0 arg1 arg2;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(3, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(3, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
     EXPECT_STREQ("arg2", dir.arg2().c_str());
-    EXPECT_EQ(0, (int)dir.directives.size());
+    EXPECT_EQ(0, (int)dir.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg2Dir0)
@@ -244,22 +244,22 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg2Dir0)
     MockSrsConfigBuffer buf("winlin arg0 arg1 arg2 {dir0;}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(3, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(3, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
     EXPECT_STREQ("arg2", dir.arg2().c_str());
-    EXPECT_EQ(1, (int)dir.directives.size());
+    EXPECT_EQ(1, (int)dir.directives_.size());
 
-    SrsConfDirective &dir0 = *dir.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    SrsConfDirective &dir0 = *dir.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg2Dir0NoEmpty)
@@ -269,22 +269,22 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg2Dir0NoEmpty)
     MockSrsConfigBuffer buf("winlin arg0 arg1 arg2{dir0;}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(3, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(3, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
     EXPECT_STREQ("arg2", dir.arg2().c_str());
-    EXPECT_EQ(1, (int)dir.directives.size());
+    EXPECT_EQ(1, (int)dir.directives_.size());
 
-    SrsConfDirective &dir0 = *dir.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    SrsConfDirective &dir0 = *dir.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg2_Dir0Arg0)
@@ -294,23 +294,23 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg2_Dir0Arg0)
     MockSrsConfigBuffer buf("winlin arg0 arg1 arg2 {dir0 dir_arg0;}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(3, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(3, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
     EXPECT_STREQ("arg2", dir.arg2().c_str());
-    EXPECT_EQ(1, (int)dir.directives.size());
+    EXPECT_EQ(1, (int)dir.directives_.size());
 
-    SrsConfDirective &dir0 = *dir.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *dir.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("dir_arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg2_Dir0Arg0_Dir0)
@@ -320,28 +320,28 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg2_Dir0Arg0_Dir0)
     MockSrsConfigBuffer buf("winlin arg0 arg1 arg2 {dir0 dir_arg0 {ddir0;}}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(3, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(3, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
     EXPECT_STREQ("arg2", dir.arg2().c_str());
-    EXPECT_EQ(1, (int)dir.directives.size());
+    EXPECT_EQ(1, (int)dir.directives_.size());
 
-    SrsConfDirective &dir0 = *dir.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *dir.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("dir_arg0", dir0.arg0().c_str());
-    EXPECT_EQ(1, (int)dir0.directives.size());
+    EXPECT_EQ(1, (int)dir0.directives_.size());
 
-    SrsConfDirective &ddir0 = *dir0.directives.at(0);
-    EXPECT_STREQ("ddir0", ddir0.name.c_str());
-    EXPECT_EQ(0, (int)ddir0.args.size());
-    EXPECT_EQ(0, (int)ddir0.directives.size());
+    SrsConfDirective &ddir0 = *dir0.directives_.at(0);
+    EXPECT_STREQ("ddir0", ddir0.name_.c_str());
+    EXPECT_EQ(0, (int)ddir0.args_.size());
+    EXPECT_EQ(0, (int)ddir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNameArg2_Dir0Arg0_Dir0Arg0)
@@ -351,29 +351,29 @@ VOID TEST(ConfigDirectiveTest, ParseNameArg2_Dir0Arg0_Dir0Arg0)
     MockSrsConfigBuffer buf("winlin arg0 arg1 arg2 {dir0 dir_arg0 {ddir0 ddir_arg0;}}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir = *conf.directives.at(0);
-    EXPECT_STREQ("winlin", dir.name.c_str());
-    EXPECT_EQ(3, (int)dir.args.size());
+    SrsConfDirective &dir = *conf.directives_.at(0);
+    EXPECT_STREQ("winlin", dir.name_.c_str());
+    EXPECT_EQ(3, (int)dir.args_.size());
     EXPECT_STREQ("arg0", dir.arg0().c_str());
     EXPECT_STREQ("arg1", dir.arg1().c_str());
     EXPECT_STREQ("arg2", dir.arg2().c_str());
-    EXPECT_EQ(1, (int)dir.directives.size());
+    EXPECT_EQ(1, (int)dir.directives_.size());
 
-    SrsConfDirective &dir0 = *dir.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *dir.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("dir_arg0", dir0.arg0().c_str());
-    EXPECT_EQ(1, (int)dir0.directives.size());
+    EXPECT_EQ(1, (int)dir0.directives_.size());
 
-    SrsConfDirective &ddir0 = *dir0.directives.at(0);
-    EXPECT_STREQ("ddir0", ddir0.name.c_str());
-    EXPECT_EQ(1, (int)ddir0.args.size());
+    SrsConfDirective &ddir0 = *dir0.directives_.at(0);
+    EXPECT_STREQ("ddir0", ddir0.name_.c_str());
+    EXPECT_EQ(1, (int)ddir0.args_.size());
     EXPECT_STREQ("ddir_arg0", ddir0.arg0().c_str());
-    EXPECT_EQ(0, (int)ddir0.directives.size());
+    EXPECT_EQ(0, (int)ddir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseArgsSpace)
@@ -396,9 +396,9 @@ VOID TEST(ConfigDirectiveTest, ParseArgsSpace)
             MockSrsConfigBuffer buf(usecase);
             SrsConfDirective conf;
             HELPER_ASSERT_FAILED(conf.parse(&buf));
-            EXPECT_EQ(0, (int)conf.name.length());
-            EXPECT_EQ(0, (int)conf.args.size());
-            EXPECT_EQ(0, (int)conf.directives.size());
+            EXPECT_EQ(0, (int)conf.name_.length());
+            EXPECT_EQ(0, (int)conf.args_.size());
+            EXPECT_EQ(0, (int)conf.directives_.size());
         }
     }
 
@@ -414,9 +414,9 @@ VOID TEST(ConfigDirectiveTest, ParseArgsSpace)
             MockSrsConfigBuffer buf(usecase);
             SrsConfDirective conf;
             HELPER_ASSERT_FAILED(conf.parse(&buf));
-            EXPECT_EQ(0, (int)conf.name.length());
-            EXPECT_EQ(0, (int)conf.args.size());
-            EXPECT_EQ(0, (int)conf.directives.size());
+            EXPECT_EQ(0, (int)conf.name_.length());
+            EXPECT_EQ(0, (int)conf.args_.size());
+            EXPECT_EQ(0, (int)conf.directives_.size());
         }
     }
 
@@ -437,15 +437,15 @@ VOID TEST(ConfigDirectiveTest, ParseArgsSpace)
             MockSrsConfigBuffer buf(usecase);
             SrsConfDirective conf;
             HELPER_ASSERT_SUCCESS(conf.parse(&buf, &config));
-            EXPECT_EQ(0, (int)conf.name.length());
-            EXPECT_EQ(0, (int)conf.args.size());
-            EXPECT_EQ(1, (int)conf.directives.size());
+            EXPECT_EQ(0, (int)conf.name_.length());
+            EXPECT_EQ(0, (int)conf.args_.size());
+            EXPECT_EQ(1, (int)conf.directives_.size());
 
-            SrsConfDirective &dir = *conf.directives.at(0);
-            EXPECT_STREQ("listen", dir.name.c_str());
-            EXPECT_EQ(1, (int)dir.args.size());
+            SrsConfDirective &dir = *conf.directives_.at(0);
+            EXPECT_STREQ("listen", dir.name_.c_str());
+            EXPECT_EQ(1, (int)dir.args_.size());
             EXPECT_STREQ("1935", dir.arg0().c_str());
-            EXPECT_EQ(0, (int)dir.directives.size());
+            EXPECT_EQ(0, (int)dir.directives_.size());
         }
     }
 }
@@ -458,90 +458,90 @@ VOID TEST(ConfigDirectiveTest, ParseInvalidEndOfLine)
         MockSrsConfigBuffer buf("dir0 \narg0;dir1 arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(0, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(0, (int)conf.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0\n arg0;dir1 arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(0, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(0, (int)conf.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0 arg0\n;dir1 arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(0, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(0, (int)conf.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0 \rarg0;dir1 arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(0, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(0, (int)conf.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0 arg0\r;dir1 arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(0, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(0, (int)conf.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0 \n { dir1 arg1; }");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(0, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(0, (int)conf.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0 arg0;dir1\n arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_FAILED(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(1, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(1, (int)conf.directives_.size());
 
-        SrsConfDirective &dir0 = *conf.directives.at(0);
-        EXPECT_STREQ("dir0", dir0.name.c_str());
-        EXPECT_EQ(1, (int)dir0.args.size());
+        SrsConfDirective &dir0 = *conf.directives_.at(0);
+        EXPECT_STREQ("dir0", dir0.name_.c_str());
+        EXPECT_EQ(1, (int)dir0.args_.size());
         EXPECT_STREQ("arg0", dir0.arg0().c_str());
-        EXPECT_EQ(0, (int)dir0.directives.size());
+        EXPECT_EQ(0, (int)dir0.directives_.size());
     }
 
     if (true) {
         MockSrsConfigBuffer buf("dir0 arg0;dir1 arg1;");
         SrsConfDirective conf;
         HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-        EXPECT_EQ(0, (int)conf.name.length());
-        EXPECT_EQ(0, (int)conf.args.size());
-        EXPECT_EQ(2, (int)conf.directives.size());
+        EXPECT_EQ(0, (int)conf.name_.length());
+        EXPECT_EQ(0, (int)conf.args_.size());
+        EXPECT_EQ(2, (int)conf.directives_.size());
 
-        SrsConfDirective &dir0 = *conf.directives.at(0);
-        EXPECT_STREQ("dir0", dir0.name.c_str());
-        EXPECT_EQ(1, (int)dir0.args.size());
+        SrsConfDirective &dir0 = *conf.directives_.at(0);
+        EXPECT_STREQ("dir0", dir0.name_.c_str());
+        EXPECT_EQ(1, (int)dir0.args_.size());
         EXPECT_STREQ("arg0", dir0.arg0().c_str());
-        EXPECT_EQ(0, (int)dir0.directives.size());
+        EXPECT_EQ(0, (int)dir0.directives_.size());
 
-        SrsConfDirective &dir1 = *conf.directives.at(1);
-        EXPECT_STREQ("dir1", dir1.name.c_str());
-        EXPECT_EQ(1, (int)dir1.args.size());
+        SrsConfDirective &dir1 = *conf.directives_.at(1);
+        EXPECT_STREQ("dir1", dir1.name_.c_str());
+        EXPECT_EQ(1, (int)dir1.args_.size());
         EXPECT_STREQ("arg1", dir1.arg0().c_str());
-        EXPECT_EQ(0, (int)dir1.directives.size());
+        EXPECT_EQ(0, (int)dir1.directives_.size());
     }
 }
 
@@ -552,21 +552,21 @@ VOID TEST(ConfigDirectiveTest, Parse2SingleDirs)
     MockSrsConfigBuffer buf("dir0 arg0;dir1 arg1;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(2, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(2, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 
-    SrsConfDirective &dir1 = *conf.directives.at(1);
-    EXPECT_STREQ("dir1", dir1.name.c_str());
-    EXPECT_EQ(1, (int)dir1.args.size());
+    SrsConfDirective &dir1 = *conf.directives_.at(1);
+    EXPECT_STREQ("dir1", dir1.name_.c_str());
+    EXPECT_EQ(1, (int)dir1.args_.size());
     EXPECT_STREQ("arg1", dir1.arg0().c_str());
-    EXPECT_EQ(0, (int)dir1.directives.size());
+    EXPECT_EQ(0, (int)dir1.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseSingleComplexDirs)
@@ -576,26 +576,26 @@ VOID TEST(ConfigDirectiveTest, ParseSingleComplexDirs)
     MockSrsConfigBuffer buf("dir0 arg0;dir1 {dir2 arg2;}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(2, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(2, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 
-    SrsConfDirective &dir1 = *conf.directives.at(1);
-    EXPECT_STREQ("dir1", dir1.name.c_str());
-    EXPECT_EQ(0, (int)dir1.args.size());
-    EXPECT_EQ(1, (int)dir1.directives.size());
+    SrsConfDirective &dir1 = *conf.directives_.at(1);
+    EXPECT_STREQ("dir1", dir1.name_.c_str());
+    EXPECT_EQ(0, (int)dir1.args_.size());
+    EXPECT_EQ(1, (int)dir1.directives_.size());
 
-    SrsConfDirective &dir2 = *dir1.directives.at(0);
-    EXPECT_STREQ("dir2", dir2.name.c_str());
-    EXPECT_EQ(1, (int)dir2.args.size());
+    SrsConfDirective &dir2 = *dir1.directives_.at(0);
+    EXPECT_STREQ("dir2", dir2.name_.c_str());
+    EXPECT_EQ(1, (int)dir2.args_.size());
     EXPECT_STREQ("arg2", dir2.arg0().c_str());
-    EXPECT_EQ(0, (int)dir2.directives.size());
+    EXPECT_EQ(0, (int)dir2.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseStringArgs)
@@ -605,17 +605,17 @@ VOID TEST(ConfigDirectiveTest, ParseStringArgs)
     MockSrsConfigBuffer buf("dir0 arg0 \"str_arg\" 100;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(3, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(3, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
     EXPECT_STREQ("str_arg", dir0.arg1().c_str());
     EXPECT_STREQ("100", dir0.arg2().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseStringArgsWithSpace)
@@ -625,17 +625,17 @@ VOID TEST(ConfigDirectiveTest, ParseStringArgsWithSpace)
     MockSrsConfigBuffer buf("dir0 arg0 \"str_arg space\" 100;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(3, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(3, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
     EXPECT_STREQ("str_arg space", dir0.arg1().c_str());
     EXPECT_STREQ("100", dir0.arg2().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseNumberArgs)
@@ -645,17 +645,17 @@ VOID TEST(ConfigDirectiveTest, ParseNumberArgs)
     MockSrsConfigBuffer buf("dir0 100 101 102;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(3, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(3, (int)dir0.args_.size());
     EXPECT_EQ(100, ::atoi(dir0.arg0().c_str()));
     EXPECT_EQ(101, ::atoi(dir0.arg1().c_str()));
     EXPECT_EQ(102, ::atoi(dir0.arg2().c_str()));
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseFloatArgs)
@@ -665,17 +665,17 @@ VOID TEST(ConfigDirectiveTest, ParseFloatArgs)
     MockSrsConfigBuffer buf("dir0 100.01 101.02 102.03;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(3, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(3, (int)dir0.args_.size());
     EXPECT_FLOAT_EQ(100.01, ::atof(dir0.arg0().c_str()));
     EXPECT_FLOAT_EQ(101.02, ::atof(dir0.arg1().c_str()));
     EXPECT_FLOAT_EQ(102.03, ::atof(dir0.arg2().c_str()));
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseComments)
@@ -685,15 +685,15 @@ VOID TEST(ConfigDirectiveTest, ParseComments)
     MockSrsConfigBuffer buf("#commnets\ndir0 arg0;\n#end-comments");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseCommentsInline)
@@ -703,15 +703,15 @@ VOID TEST(ConfigDirectiveTest, ParseCommentsInline)
     MockSrsConfigBuffer buf("#commnets\ndir0 arg0;#inline comments\n#end-comments");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseCommentsInlineWithSpace)
@@ -721,15 +721,15 @@ VOID TEST(ConfigDirectiveTest, ParseCommentsInlineWithSpace)
     MockSrsConfigBuffer buf(" #commnets\ndir0 arg0; #inline comments\n #end-comments");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseCommentsInlinemixed)
@@ -739,21 +739,21 @@ VOID TEST(ConfigDirectiveTest, ParseCommentsInlinemixed)
     MockSrsConfigBuffer buf("#commnets\ndir0 arg0;#inline comments\n#end-comments\ndir1 arg1;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(2, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(2, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("arg0", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 
-    SrsConfDirective &dir1 = *conf.directives.at(1);
-    EXPECT_STREQ("dir1", dir1.name.c_str());
-    EXPECT_EQ(1, (int)dir1.args.size());
+    SrsConfDirective &dir1 = *conf.directives_.at(1);
+    EXPECT_STREQ("dir1", dir1.name_.c_str());
+    EXPECT_EQ(1, (int)dir1.args_.size());
     EXPECT_STREQ("arg1", dir1.arg0().c_str());
-    EXPECT_EQ(0, (int)dir1.directives.size());
+    EXPECT_EQ(0, (int)dir1.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseSpecialChars)
@@ -763,15 +763,15 @@ VOID TEST(ConfigDirectiveTest, ParseSpecialChars)
     MockSrsConfigBuffer buf("dir0 http://www.ossrs.net/api/v1/versions?level=major;");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("http://www.ossrs.net/api/v1/versions?level=major", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseSpecialChars2)
@@ -781,15 +781,15 @@ VOID TEST(ConfigDirectiveTest, ParseSpecialChars2)
     MockSrsConfigBuffer buf("dir0 rtmp://[server]:[port]/[app]/[stream]_[engine];");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(1, (int)dir0.args.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(1, (int)dir0.args_.size());
     EXPECT_STREQ("rtmp://[server]:[port]/[app]/[stream]_[engine]", dir0.arg0().c_str());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseInvalidNoEndOfDirective)
@@ -864,14 +864,14 @@ VOID TEST(ConfigDirectiveTest, ParseInvalidEmptyDirective)
     MockSrsConfigBuffer buf("dir0 {}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(0, (int)dir0.directives.size());
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
 }
 
 VOID TEST(ConfigDirectiveTest, ParseLine)
@@ -881,15 +881,15 @@ VOID TEST(ConfigDirectiveTest, ParseLine)
     MockSrsConfigBuffer buf("dir0 {}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(0, (int)dir0.directives.size());
-    EXPECT_EQ(1, (int)dir0.conf_line);
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
+    EXPECT_EQ(1, (int)dir0.conf_line_);
 }
 
 VOID TEST(ConfigDirectiveTest, ParseLine2)
@@ -899,15 +899,15 @@ VOID TEST(ConfigDirectiveTest, ParseLine2)
     MockSrsConfigBuffer buf("\n\ndir0 {}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(0, (int)dir0.directives.size());
-    EXPECT_EQ(3, (int)dir0.conf_line);
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(0, (int)dir0.directives_.size());
+    EXPECT_EQ(3, (int)dir0.conf_line_);
 }
 
 VOID TEST(ConfigDirectiveTest, ParseLine3)
@@ -917,22 +917,22 @@ VOID TEST(ConfigDirectiveTest, ParseLine3)
     MockSrsConfigBuffer buf("dir0 {\n\ndir1 arg0;}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(1, (int)dir0.directives.size());
-    EXPECT_EQ(1, (int)dir0.conf_line);
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(1, (int)dir0.directives_.size());
+    EXPECT_EQ(1, (int)dir0.conf_line_);
 
-    SrsConfDirective &dir1 = *dir0.directives.at(0);
-    EXPECT_STREQ("dir1", dir1.name.c_str());
-    EXPECT_EQ(1, (int)dir1.args.size());
+    SrsConfDirective &dir1 = *dir0.directives_.at(0);
+    EXPECT_STREQ("dir1", dir1.name_.c_str());
+    EXPECT_EQ(1, (int)dir1.args_.size());
     EXPECT_STREQ("arg0", dir1.arg0().c_str());
-    EXPECT_EQ(0, (int)dir1.directives.size());
-    EXPECT_EQ(3, (int)dir1.conf_line);
+    EXPECT_EQ(0, (int)dir1.directives_.size());
+    EXPECT_EQ(3, (int)dir1.conf_line_);
 }
 
 VOID TEST(ConfigDirectiveTest, ParseLine4)
@@ -951,28 +951,28 @@ VOID TEST(ConfigDirectiveTest, ParseLineNormal)
     MockSrsConfigBuffer buf("dir0 {\ndir1 {\ndir2 arg2;\n}\n}");
     SrsConfDirective conf;
     HELPER_ASSERT_SUCCESS(conf.parse(&buf));
-    EXPECT_EQ(0, (int)conf.name.length());
-    EXPECT_EQ(0, (int)conf.args.size());
-    EXPECT_EQ(1, (int)conf.directives.size());
+    EXPECT_EQ(0, (int)conf.name_.length());
+    EXPECT_EQ(0, (int)conf.args_.size());
+    EXPECT_EQ(1, (int)conf.directives_.size());
 
-    SrsConfDirective &dir0 = *conf.directives.at(0);
-    EXPECT_STREQ("dir0", dir0.name.c_str());
-    EXPECT_EQ(0, (int)dir0.args.size());
-    EXPECT_EQ(1, (int)dir0.directives.size());
-    EXPECT_EQ(1, (int)dir0.conf_line);
+    SrsConfDirective &dir0 = *conf.directives_.at(0);
+    EXPECT_STREQ("dir0", dir0.name_.c_str());
+    EXPECT_EQ(0, (int)dir0.args_.size());
+    EXPECT_EQ(1, (int)dir0.directives_.size());
+    EXPECT_EQ(1, (int)dir0.conf_line_);
 
-    SrsConfDirective &dir1 = *dir0.directives.at(0);
-    EXPECT_STREQ("dir1", dir1.name.c_str());
-    EXPECT_EQ(0, (int)dir1.args.size());
-    EXPECT_EQ(1, (int)dir1.directives.size());
-    EXPECT_EQ(2, (int)dir1.conf_line);
+    SrsConfDirective &dir1 = *dir0.directives_.at(0);
+    EXPECT_STREQ("dir1", dir1.name_.c_str());
+    EXPECT_EQ(0, (int)dir1.args_.size());
+    EXPECT_EQ(1, (int)dir1.directives_.size());
+    EXPECT_EQ(2, (int)dir1.conf_line_);
 
-    SrsConfDirective &dir2 = *dir1.directives.at(0);
-    EXPECT_STREQ("dir2", dir2.name.c_str());
-    EXPECT_EQ(1, (int)dir2.args.size());
+    SrsConfDirective &dir2 = *dir1.directives_.at(0);
+    EXPECT_STREQ("dir2", dir2.name_.c_str());
+    EXPECT_EQ(1, (int)dir2.args_.size());
     EXPECT_STREQ("arg2", dir2.arg0().c_str());
-    EXPECT_EQ(0, (int)dir2.directives.size());
-    EXPECT_EQ(3, (int)dir2.conf_line);
+    EXPECT_EQ(0, (int)dir2.directives_.size());
+    EXPECT_EQ(3, (int)dir2.conf_line_);
 }
 
 VOID TEST(ConfigMainTest, ParseEmpty)
@@ -2410,9 +2410,9 @@ VOID TEST(ConfigUnitTest, DirectiveEquals)
 
     if (true) {
         SrsConfDirective *a = new SrsConfDirective();
-        a->name = "hls";
+        a->name_ = "hls";
         SrsConfDirective *b = new SrsConfDirective();
-        b->name = "dvr";
+        b->name_ = "dvr";
         EXPECT_FALSE(srs_directive_equals_self(a, b));
         srs_freep(a);
         srs_freep(b);
@@ -2420,7 +2420,7 @@ VOID TEST(ConfigUnitTest, DirectiveEquals)
 
     if (true) {
         SrsConfDirective *a = new SrsConfDirective();
-        a->directives.push_back(new SrsConfDirective());
+        a->directives_.push_back(new SrsConfDirective());
         SrsConfDirective *b = new SrsConfDirective();
         EXPECT_FALSE(srs_directive_equals_self(a, b));
         srs_freep(a);
@@ -2429,10 +2429,10 @@ VOID TEST(ConfigUnitTest, DirectiveEquals)
 
     if (true) {
         SrsConfDirective *a = new SrsConfDirective();
-        a->directives.push_back(new SrsConfDirective());
-        a->at(0)->name = "hls";
+        a->directives_.push_back(new SrsConfDirective());
+        a->at(0)->name_ = "hls";
         SrsConfDirective *b = new SrsConfDirective();
-        b->directives.push_back(new SrsConfDirective());
+        b->directives_.push_back(new SrsConfDirective());
         EXPECT_TRUE(srs_directive_equals(a, b, "hls"));
         srs_freep(a);
         srs_freep(b);
@@ -2481,7 +2481,7 @@ VOID TEST(ConfigUnitTest, ApplyFilter)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("all");
+        d.args_.push_back("all");
         EXPECT_TRUE(srs_config_apply_filter(&d, NULL));
     }
 
@@ -2490,13 +2490,13 @@ VOID TEST(ConfigUnitTest, ApplyFilter)
         SrsRequest r;
         r.app_ = "live";
         r.stream_ = "stream";
-        d.args.push_back("live/stream");
+        d.args_.push_back("live/stream");
         EXPECT_TRUE(srs_config_apply_filter(&d, &r));
     }
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("live/stream");
+        d.args_.push_back("live/stream");
         SrsRequest r;
         EXPECT_FALSE(srs_config_apply_filter(&d, &r));
     }
@@ -2706,12 +2706,12 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 {
     if (true) {
         SrsConfDirective d;
-        d.name = "vhost";
+        d.name_ = "vhost";
         d.get_or_create("enabled", "on");
 
         SrsConfDirective *cp = d.copy();
         ASSERT_TRUE(cp != NULL);
-        EXPECT_STREQ("vhost", cp->name.c_str());
+        EXPECT_STREQ("vhost", cp->name_.c_str());
         ASSERT_TRUE(cp->get("enabled") != NULL);
         EXPECT_STREQ("on", cp->get("enabled")->arg0().c_str());
         srs_freep(cp);
@@ -2719,25 +2719,25 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.name = "vhost";
+        d.name_ = "vhost";
         d.get_or_create("enabled", "on");
 
         SrsConfDirective *cp = d.copy("enabled");
         ASSERT_TRUE(cp != NULL);
-        EXPECT_STREQ("vhost", cp->name.c_str());
+        EXPECT_STREQ("vhost", cp->name_.c_str());
         ASSERT_TRUE(cp->get("enabled") == NULL);
         srs_freep(cp);
     }
 
     if (true) {
         SrsConfDirective d;
-        d.name = "vhost";
+        d.name_ = "vhost";
         d.get_or_create("enabled", "on");
         d.get_or_create("hls");
 
         SrsConfDirective *cp = d.copy("hls");
         ASSERT_TRUE(cp != NULL);
-        EXPECT_STREQ("vhost", cp->name.c_str());
+        EXPECT_STREQ("vhost", cp->name_.c_str());
         ASSERT_TRUE(cp->get("enabled") != NULL);
         EXPECT_STREQ("on", cp->get("enabled")->arg0().c_str());
         srs_freep(cp);
@@ -2753,7 +2753,7 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("a0");
+        d.args_.push_back("a0");
         EXPECT_STREQ("a0", d.arg0().c_str());
         EXPECT_TRUE(d.arg1().empty());
         EXPECT_TRUE(d.arg2().empty());
@@ -2762,8 +2762,8 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("a0");
-        d.args.push_back("a1");
+        d.args_.push_back("a0");
+        d.args_.push_back("a1");
         EXPECT_STREQ("a0", d.arg0().c_str());
         EXPECT_STREQ("a1", d.arg1().c_str());
         EXPECT_TRUE(d.arg2().empty());
@@ -2772,9 +2772,9 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("a0");
-        d.args.push_back("a1");
-        d.args.push_back("a2");
+        d.args_.push_back("a0");
+        d.args_.push_back("a1");
+        d.args_.push_back("a2");
         EXPECT_STREQ("a0", d.arg0().c_str());
         EXPECT_STREQ("a1", d.arg1().c_str());
         EXPECT_STREQ("a2", d.arg2().c_str());
@@ -2783,10 +2783,10 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("a0");
-        d.args.push_back("a1");
-        d.args.push_back("a2");
-        d.args.push_back("a3");
+        d.args_.push_back("a0");
+        d.args_.push_back("a1");
+        d.args_.push_back("a2");
+        d.args_.push_back("a3");
         EXPECT_STREQ("a0", d.arg0().c_str());
         EXPECT_STREQ("a1", d.arg1().c_str());
         EXPECT_STREQ("a2", d.arg2().c_str());
@@ -2804,7 +2804,7 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("a0");
+        d.args_.push_back("a0");
         d.set_arg0("a0");
         EXPECT_STREQ("a0", d.arg0().c_str());
         EXPECT_TRUE(d.arg1().empty());
@@ -2814,7 +2814,7 @@ VOID TEST(ConfigUnitTest, DirectiveCopy)
 
     if (true) {
         SrsConfDirective d;
-        d.args.push_back("a1");
+        d.args_.push_back("a1");
         d.set_arg0("a0");
         EXPECT_STREQ("a0", d.arg0().c_str());
         EXPECT_TRUE(d.arg1().empty());
@@ -2848,8 +2848,8 @@ VOID TEST(ConfigUnitTest, PersistenceConfig)
 
     if (true) {
         SrsConfDirective d;
-        d.name = "root";
-        d.args.push_back("on");
+        d.name_ = "root";
+        d.args_.push_back("on");
 
         MockSrsFileWriter fw;
         HELPER_ASSERT_SUCCESS(d.persistence(&fw, 0));
@@ -3489,7 +3489,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig3)
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_connect xxx;}}"));
         SrsConfDirective *dir = conf.get_vhost_on_connect("ossrs.net");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 1);
+        ASSERT_EQ((int)dir->args_.size(), 1);
         ASSERT_STREQ("xxx", dir->arg0().c_str());
     }
 
@@ -3498,7 +3498,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig3)
         HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_connect xxx yyy;}}"));
         SrsConfDirective *dir = conf.get_vhost_on_connect("ossrs.net");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 2);
+        ASSERT_EQ((int)dir->args_.size(), 2);
         ASSERT_STREQ("xxx", dir->arg0().c_str());
         ASSERT_STREQ("yyy", dir->arg1().c_str());
     }
@@ -4993,7 +4993,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesForward)
         SrsSetEnvConfig(conf, forward_backend, "SRS_VHOST_FORWARD_BACKEND", "127.0.0.1:1936");
         SrsConfDirective *backend = conf.get_forward_backend("__defaultVhost__");
         ASSERT_TRUE(backend != NULL);
-        ASSERT_EQ((int)backend->args.size(), 1);
+        ASSERT_EQ((int)backend->args_.size(), 1);
         EXPECT_STREQ("127.0.0.1:1936", backend->arg0().c_str());
     }
 
@@ -5002,9 +5002,9 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesForward)
         SrsSetEnvConfig(conf, forward_backend, "SRS_VHOST_FORWARD_BACKEND", "127.0.0.1:1936 127.0.0.1:1937");
         SrsConfDirective *backend = conf.get_forward_backend("__defaultVhost__");
         ASSERT_TRUE(backend != NULL);
-        ASSERT_EQ((int)backend->args.size(), 2);
-        EXPECT_STREQ("127.0.0.1:1936", backend->args.at(0).c_str());
-        EXPECT_STREQ("127.0.0.1:1937", backend->args.at(1).c_str());
+        ASSERT_EQ((int)backend->args_.size(), 2);
+        EXPECT_STREQ("127.0.0.1:1936", backend->args_.at(0).c_str());
+        EXPECT_STREQ("127.0.0.1:1937", backend->args_.at(1).c_str());
     }
 
     if (true) {
@@ -5019,7 +5019,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesForward)
 
         SrsConfDirective *backend = conf.get_forward_backend("ossrs.net");
         ASSERT_TRUE(backend != NULL);
-        ASSERT_EQ((int)backend->args.size(), 1);
+        ASSERT_EQ((int)backend->args_.size(), 1);
         EXPECT_STREQ("10.0.0.1:1936", backend->arg0().c_str());
     }
 
@@ -5032,7 +5032,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesForward)
 
         SrsConfDirective *backend = conf.get_forward_backend("test.example.com");
         ASSERT_TRUE(backend != NULL);
-        ASSERT_EQ((int)backend->args.size(), 1);
+        ASSERT_EQ((int)backend->args_.size(), 1);
         EXPECT_STREQ("example.com:1936", backend->arg0().c_str());
     }
 }
@@ -5225,7 +5225,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_CONNECT", "http://server/api/connect");
         SrsConfDirective *dir = conf.get_vhost_on_connect("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 1);
+        ASSERT_EQ((int)dir->args_.size(), 1);
         ASSERT_STREQ("http://server/api/connect", dir->arg0().c_str());
     }
 
@@ -5233,7 +5233,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_CLOSE", "http://server/api/close");
         SrsConfDirective *dir = conf.get_vhost_on_close("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/close", dir->arg0().c_str());
     }
 
@@ -5241,7 +5241,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_PUBLISH", "http://server/api/publish");
         SrsConfDirective *dir = conf.get_vhost_on_publish("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 1);
+        ASSERT_EQ((int)dir->args_.size(), 1);
         ASSERT_STREQ("http://server/api/publish", dir->arg0().c_str());
     }
 
@@ -5249,7 +5249,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_UNPUBLISH", "http://server/api/unpublish");
         SrsConfDirective *dir = conf.get_vhost_on_unpublish("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/unpublish", dir->arg0().c_str());
     }
 
@@ -5257,7 +5257,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_PLAY", "http://server/api/play");
         SrsConfDirective *dir = conf.get_vhost_on_play("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/play", dir->arg0().c_str());
     }
 
@@ -5265,7 +5265,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_STOP", "http://server/api/stop");
         SrsConfDirective *dir = conf.get_vhost_on_stop("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/stop", dir->arg0().c_str());
     }
 
@@ -5273,7 +5273,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_DVR", "http://server/api/dvr");
         SrsConfDirective *dir = conf.get_vhost_on_dvr("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/dvr", dir->arg0().c_str());
     }
 
@@ -5281,7 +5281,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_HLS", "http://server/api/hls");
         SrsConfDirective *dir = conf.get_vhost_on_hls("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/hls", dir->arg0().c_str());
     }
 
@@ -5289,7 +5289,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooks)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_HLS_NOTIFY", "http://server/api/hls_notify");
         SrsConfDirective *dir = conf.get_vhost_on_hls_notify("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/hls_notify", dir->arg0().c_str());
     }
 }
@@ -5303,7 +5303,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
 
         SrsConfDirective *dir = conf.get_vhost_on_connect("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 2);
+        ASSERT_EQ((int)dir->args_.size(), 2);
         ASSERT_STREQ("http://server/api/connect", dir->arg0().c_str());
         ASSERT_STREQ("https://server2/api/connect2", dir->arg1().c_str());
     }
@@ -5312,7 +5312,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_CLOSE", "http://server/api/close close2 close3");
         SrsConfDirective *dir = conf.get_vhost_on_close("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 3);
+        ASSERT_TRUE((int)dir->args_.size() == 3);
         ASSERT_STREQ("http://server/api/close", dir->arg0().c_str());
         ASSERT_STREQ("close2", dir->arg1().c_str());
         ASSERT_STREQ("close3", dir->arg2().c_str());
@@ -5322,7 +5322,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_PUBLISH", "http://server/api/publish http://server/api/publish2");
         SrsConfDirective *dir = conf.get_vhost_on_publish("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 2);
+        ASSERT_EQ((int)dir->args_.size(), 2);
         ASSERT_STREQ("http://server/api/publish", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/publish2", dir->arg1().c_str());
     }
@@ -5331,7 +5331,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_UNPUBLISH", "http://server/api/unpublish 2");
         SrsConfDirective *dir = conf.get_vhost_on_unpublish("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 2);
+        ASSERT_TRUE((int)dir->args_.size() == 2);
         ASSERT_STREQ("http://server/api/unpublish", dir->arg0().c_str());
         ASSERT_STREQ("2", dir->arg1().c_str());
     }
@@ -5340,7 +5340,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_PLAY", "http://server/api/play http://server/api/play2");
         SrsConfDirective *dir = conf.get_vhost_on_play("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 2);
+        ASSERT_TRUE((int)dir->args_.size() == 2);
         ASSERT_STREQ("http://server/api/play", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/play2", dir->arg1().c_str());
     }
@@ -5349,7 +5349,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_STOP", "http://server/api/stop http://server/api/stop2");
         SrsConfDirective *dir = conf.get_vhost_on_stop("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 2);
+        ASSERT_TRUE((int)dir->args_.size() == 2);
         ASSERT_STREQ("http://server/api/stop", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/stop2", dir->arg1().c_str());
     }
@@ -5358,7 +5358,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_DVR", "http://server/api/dvr http://server/api/dvr2");
         SrsConfDirective *dir = conf.get_vhost_on_dvr("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 2);
+        ASSERT_TRUE((int)dir->args_.size() == 2);
         ASSERT_STREQ("http://server/api/dvr", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/dvr2", dir->arg1().c_str());
     }
@@ -5367,7 +5367,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_HLS", "http://server/api/hls http://server/api/hls2");
         SrsConfDirective *dir = conf.get_vhost_on_hls("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 2);
+        ASSERT_TRUE((int)dir->args_.size() == 2);
         ASSERT_STREQ("http://server/api/hls", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/hls2", dir->arg1().c_str());
     }
@@ -5376,7 +5376,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksMultiValues)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_HLS_NOTIFY", "http://server/api/hls_notify http://server/api/hls_notify2");
         SrsConfDirective *dir = conf.get_vhost_on_hls_notify("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 2);
+        ASSERT_TRUE((int)dir->args_.size() == 2);
         ASSERT_STREQ("http://server/api/hls_notify", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/hls_notify2", dir->arg1().c_str());
     }
@@ -5390,7 +5390,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksWithWhitespaces)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_PUBLISH", "http://server/api/publish         http://server/api/publish2");
         SrsConfDirective *dir = conf.get_vhost_on_publish("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_EQ((int)dir->args.size(), 2);
+        ASSERT_EQ((int)dir->args_.size(), 2);
         ASSERT_STREQ("http://server/api/publish", dir->arg0().c_str());
         ASSERT_STREQ("http://server/api/publish2", dir->arg1().c_str());
     }
@@ -5399,7 +5399,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksWithWhitespaces)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_UNPUBLISH", "http://server/api/unpublish        ");
         SrsConfDirective *dir = conf.get_vhost_on_unpublish("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("http://server/api/unpublish", dir->arg0().c_str());
     }
 
@@ -5407,7 +5407,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksWithWhitespaces)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_PLAY", "       http://server/api/play play2     play3  ");
         SrsConfDirective *dir = conf.get_vhost_on_play("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 3);
+        ASSERT_TRUE((int)dir->args_.size() == 3);
         ASSERT_STREQ("http://server/api/play", dir->arg0().c_str());
         ASSERT_STREQ("play2", dir->arg1().c_str());
         ASSERT_STREQ("play3", dir->arg2().c_str());
@@ -5417,7 +5417,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHooksWithWhitespaces)
         SrsSetEnvConfig(conf, hooks, "SRS_VHOST_HTTP_HOOKS_ON_DVR", "       dvr");
         SrsConfDirective *dir = conf.get_vhost_on_dvr("__defaultVhost__");
         ASSERT_TRUE(dir != NULL);
-        ASSERT_TRUE((int)dir->args.size() == 1);
+        ASSERT_TRUE((int)dir->args_.size() == 1);
         ASSERT_STREQ("dvr", dir->arg0().c_str());
     }
 }

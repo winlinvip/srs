@@ -328,7 +328,7 @@ srs_error_t SrsHlsStream::http_hooks_on_play(ISrsRequest *req)
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -360,7 +360,7 @@ void SrsHlsStream::http_hooks_on_stop(ISrsRequest *req)
             return;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -616,7 +616,7 @@ srs_error_t SrsHttpStaticServer::initialize()
 
     // http static file and flv vod stream mount for each vhost.
     SrsConfDirective *root = _srs_config->get_root();
-    for (int i = 0; i < (int)root->directives.size(); i++) {
+    for (int i = 0; i < (int)root->directives_.size(); i++) {
         SrsConfDirective *conf = root->at(i);
 
         if (!conf->is_vhost()) {

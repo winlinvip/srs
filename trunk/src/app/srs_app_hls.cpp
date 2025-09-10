@@ -291,7 +291,7 @@ srs_error_t SrsDvrAsyncCallOnHls::call()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -341,7 +341,7 @@ srs_error_t SrsDvrAsyncCallOnHlsNotify::call()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     int nb_notify = _srs_config->get_vhost_hls_nb_notify(req->vhost_);

@@ -54,10 +54,10 @@ public:
 class SrsAppCasterFlv : public ISrsTcpHandler, public ISrsResourceManager, public ISrsHttpHandler
 {
 private:
-    std::string output;
-    SrsHttpServeMux *http_mux;
-    std::vector<ISrsConnection *> conns;
-    SrsResourceManager *manager;
+    std::string output_;
+    SrsHttpServeMux *http_mux_;
+    std::vector<ISrsConnection *> conns_;
+    SrsResourceManager *manager_;
 
 public:
     SrsAppCasterFlv();
@@ -81,17 +81,17 @@ class SrsDynamicHttpConn : public ISrsConnection, public ISrsStartable, public I
 {
 private:
     // The manager object to manage the connection.
-    ISrsResourceManager *manager;
-    std::string output;
-    SrsPithyPrint *pprint;
-    SrsSimpleRtmpClient *sdk;
-    SrsTcpConnection *skt;
-    SrsHttpConn *conn;
+    ISrsResourceManager *manager_;
+    std::string output_;
+    SrsPithyPrint *pprint_;
+    SrsSimpleRtmpClient *sdk_;
+    SrsTcpConnection *skt_;
+    SrsHttpConn *conn_;
 
 private:
     // The ip and port of client.
-    std::string ip;
-    int port;
+    std::string ip_;
+    int port_;
 
 public:
     SrsDynamicHttpConn(ISrsResourceManager *cm, srs_netfd_t fd, SrsHttpServeMux *m, std::string cip, int port);
@@ -125,7 +125,7 @@ public:
 class SrsHttpFileReader : public SrsFileReader
 {
 private:
-    ISrsHttpResponseReader *http;
+    ISrsHttpResponseReader *http_;
 
 public:
     SrsHttpFileReader(ISrsHttpResponseReader *h);

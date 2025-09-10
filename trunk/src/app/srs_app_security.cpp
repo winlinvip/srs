@@ -59,11 +59,11 @@ srs_error_t SrsSecurity::allow_check(SrsConfDirective *rules, SrsRtmpConnType ty
     int allow_rules = 0;
     int deny_rules = 0;
 
-    for (int i = 0; i < (int)rules->directives.size(); i++) {
+    for (int i = 0; i < (int)rules->directives_.size(); i++) {
         SrsConfDirective *rule = rules->at(i);
 
-        if (rule->name != "allow") {
-            if (rule->name == "deny") {
+        if (rule->name_ != "allow") {
+            if (rule->name_ == "deny") {
                 deny_rules++;
             }
             continue;
@@ -118,10 +118,10 @@ srs_error_t SrsSecurity::allow_check(SrsConfDirective *rules, SrsRtmpConnType ty
 
 srs_error_t SrsSecurity::deny_check(SrsConfDirective *rules, SrsRtmpConnType type, std::string ip)
 {
-    for (int i = 0; i < (int)rules->directives.size(); i++) {
+    for (int i = 0; i < (int)rules->directives_.size(); i++) {
         SrsConfDirective *rule = rules->at(i);
 
-        if (rule->name != "deny") {
+        if (rule->name_ != "deny") {
             continue;
         }
 

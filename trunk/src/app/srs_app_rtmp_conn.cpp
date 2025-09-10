@@ -76,7 +76,7 @@ srs_error_t SrsSimpleRtmpClient::connect_app()
 
     bool debug_srs_upnode = _srs_config->get_debug_srs_upnode(req_->vhost_);
 
-    return do_connect_app(local_ip->ip, debug_srs_upnode);
+    return do_connect_app(local_ip->ip_, debug_srs_upnode);
 }
 
 SrsClientInfo::SrsClientInfo()
@@ -1282,7 +1282,7 @@ srs_error_t SrsRtmpConn::check_edge_token_traverse_auth()
     ISrsRequest *req = info->req;
     srs_assert(req);
 
-    vector<string> args = _srs_config->get_vhost_edge_origin(req->vhost_)->args;
+    vector<string> args = _srs_config->get_vhost_edge_origin(req->vhost_)->args_;
     if (args.empty()) {
         return err;
     }
@@ -1366,7 +1366,7 @@ srs_error_t SrsRtmpConn::http_hooks_on_connect()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -1399,7 +1399,7 @@ void SrsRtmpConn::http_hooks_on_close()
             return;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -1430,7 +1430,7 @@ srs_error_t SrsRtmpConn::http_hooks_on_publish()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -1463,7 +1463,7 @@ void SrsRtmpConn::http_hooks_on_unpublish()
             return;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -1494,7 +1494,7 @@ srs_error_t SrsRtmpConn::http_hooks_on_play()
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -1527,7 +1527,7 @@ void SrsRtmpConn::http_hooks_on_stop()
             return;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {

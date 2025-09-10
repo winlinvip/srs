@@ -901,7 +901,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
             return err;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -937,7 +937,7 @@ void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
             return;
         }
 
-        hooks = conf->args;
+        hooks = conf->args_;
     }
 
     for (int i = 0; i < (int)hooks.size(); i++) {
@@ -1284,7 +1284,7 @@ srs_error_t SrsHttpStreamServer::initialize_flv_streaming()
 
     // http flv live stream mount for each vhost.
     SrsConfDirective *root = _srs_config->get_root();
-    for (int i = 0; i < (int)root->directives.size(); i++) {
+    for (int i = 0; i < (int)root->directives_.size(); i++) {
         SrsConfDirective *conf = root->at(i);
 
         if (!conf->is_vhost()) {

@@ -481,15 +481,15 @@ void discover_network_iface(ifaddrs *cur, vector<SrsIPAddress *> &ips, stringstr
         << " 0x" << std::hex << cur->ifa_flags << std::dec << " " << ip;
 
     SrsIPAddress *ip_address = new SrsIPAddress();
-    ip_address->ip = ip;
-    ip_address->is_ipv4 = !ipv6;
-    ip_address->is_loopback = loopback;
-    ip_address->ifname = cur->ifa_name;
-    ip_address->is_internet = srs_net_device_is_internet(cur->ifa_addr);
+    ip_address->ip_ = ip;
+    ip_address->is_ipv4_ = !ipv6;
+    ip_address->is_loopback_ = loopback;
+    ip_address->ifname_ = cur->ifa_name;
+    ip_address->is_internet_ = srs_net_device_is_internet(cur->ifa_addr);
     ips.push_back(ip_address);
 
     // set the device internet status.
-    if (!ip_address->is_internet) {
+    if (!ip_address->is_internet_) {
         ss1 << ", intranet ";
         _srs_device_ifs[cur->ifa_name] = false;
     } else {
@@ -610,40 +610,40 @@ string srs_get_public_internet_address(bool ipv4_only)
     // find the best match public address.
     for (int i = 0; i < (int)ips.size(); i++) {
         SrsIPAddress *ip = ips[i];
-        if (!ip->is_internet) {
+        if (!ip->is_internet_) {
             continue;
         }
-        if (ipv4_only && !ip->is_ipv4) {
+        if (ipv4_only && !ip->is_ipv4_) {
             continue;
         }
 
-        srs_warn("use public address as ip: %s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
-        _public_internet_address = ip->ip;
-        return ip->ip;
+        srs_warn("use public address as ip: %s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
+        _public_internet_address = ip->ip_;
+        return ip->ip_;
     }
 
     // no public address, use private address.
     for (int i = 0; i < (int)ips.size(); i++) {
         SrsIPAddress *ip = ips[i];
-        if (ip->is_loopback) {
+        if (ip->is_loopback_) {
             continue;
         }
-        if (ipv4_only && !ip->is_ipv4) {
+        if (ipv4_only && !ip->is_ipv4_) {
             continue;
         }
 
-        srs_warn("use private address as ip: %s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
-        _public_internet_address = ip->ip;
-        return ip->ip;
+        srs_warn("use private address as ip: %s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
+        _public_internet_address = ip->ip_;
+        return ip->ip_;
     }
 
     // Finally, use first whatever kind of address.
     if (!ips.empty() && _public_internet_address.empty()) {
         SrsIPAddress *ip = ips[0];
 
-        srs_warn("use first address as ip: %s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
-        _public_internet_address = ip->ip;
-        return ip->ip;
+        srs_warn("use first address as ip: %s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
+        _public_internet_address = ip->ip_;
+        return ip->ip_;
     }
 
     return "";

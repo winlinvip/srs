@@ -2276,7 +2276,7 @@ VOID TEST(ProtocolRTMPTest, CoverAll)
         EXPECT_EQ(100 * SRS_UTIME_MILLISECONDS, r.get_send_timeout());
 
         r.set_recv_buffer(SRS_DEFAULT_RECV_BUFFER_SIZE + 10);
-        EXPECT_EQ(SRS_DEFAULT_RECV_BUFFER_SIZE + 10, r.protocol_->in_buffer_->nb_buffer);
+        EXPECT_EQ(SRS_DEFAULT_RECV_BUFFER_SIZE + 10, r.protocol_->in_buffer_->nb_buffer_);
 
         EXPECT_EQ(0, r.get_recv_bytes());
         EXPECT_EQ(0, r.get_send_bytes());

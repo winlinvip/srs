@@ -498,15 +498,15 @@ bool srs_get_disk_vmstat_stat(SrsDiskStat &r)
         return false;
     }
 
-    r.sample_time = srsu2ms(srs_time_now_realtime());
+    r.sample_time_ = srsu2ms(srs_time_now_realtime());
 
     static char buf[1024];
     while (fgets(buf, sizeof(buf), f)) {
         // @see: read_vmstat_paging() from https://github.com/sysstat/sysstat/blob/master/rd_stats.c#L495
         if (strncmp(buf, "pgpgin ", 7) == 0) {
-            sscanf(buf + 7, "%lu\n", &r.pgpgin);
+            sscanf(buf + 7, "%lu\n", &r.pgpgin_);
         } else if (strncmp(buf, "pgpgout ", 8) == 0) {
-            sscanf(buf + 8, "%lu\n", &r.pgpgout);
+            sscanf(buf + 8, "%lu\n", &r.pgpgout_);
         }
     }
 
@@ -577,17 +577,17 @@ bool srs_get_disk_diskstats_stat(SrsDiskStat &r)
                 continue;
             }
 
-            r.rd_ios += rd_ios;
-            r.rd_merges += rd_merges;
-            r.rd_sectors += rd_sectors;
-            r.rd_ticks += rd_ticks;
-            r.wr_ios += wr_ios;
-            r.wr_merges += wr_merges;
-            r.wr_sectors += wr_sectors;
-            r.wr_ticks += wr_ticks;
-            r.nb_current += nb_current;
-            r.ticks += ticks;
-            r.aveq += aveq;
+            r.rd_ios_ += rd_ios;
+            r.rd_merges_ += rd_merges;
+            r.rd_sectors_ += rd_sectors;
+            r.rd_ticks_ += rd_ticks;
+            r.wr_ios_ += wr_ios;
+            r.wr_merges_ += wr_merges;
+            r.wr_sectors_ += wr_sectors;
+            r.wr_ticks_ += wr_ticks;
+            r.nb_current_ += nb_current;
+            r.ticks_ += ticks;
+            r.aveq_ += aveq;
 
             break;
         }
@@ -786,7 +786,7 @@ void srs_update_platform_info()
             return;
         }
 
-        fscanf(f, "%lf %lf\n", &r.os_uptime, &r.os_ilde_time);
+        fscanf(f, "%lf %lf\n", &r.os_uptime_, &r.os_ilde_time_);
 
         fclose(f);
     }
@@ -801,9 +801,9 @@ void srs_update_platform_info()
         // @see: read_loadavg() from https://github.com/sysstat/sysstat/blob/master/rd_stats.c#L402
         // @remark, we use our algorithm, not sysstat.
         fscanf(f, "%lf %lf %lf\n",
-               &r.load_one_minutes,
-               &r.load_five_minutes,
-               &r.load_fifteen_minutes);
+               &r.load_one_minutes_,
+               &r.load_five_minutes_,
+               &r.load_fifteen_minutes_);
 
         fclose(f);
     }
@@ -1002,15 +1002,15 @@ void srs_update_network_devices()
             // @remark, we use our algorithm, not sysstat.
             char fname[7];
             sscanf(buf, "%6[^:]:%llu %lu %lu %lu %lu %lu %lu %lu %llu %lu %lu %lu %lu %lu %lu %lu\n",
-                   fname, &r.rbytes, &r.rpackets, &r.rerrs, &r.rdrop, &r.rfifo, &r.rframe, &r.rcompressed, &r.rmulticast,
-                   &r.sbytes, &r.spackets, &r.serrs, &r.sdrop, &r.sfifo, &r.scolls, &r.scarrier, &r.scompressed);
+                   fname, &r.rbytes_, &r.rpackets_, &r.rerrs_, &r.rdrop_, &r.rfifo_, &r.rframe_, &r.rcompressed_, &r.rmulticast_,
+                   &r.sbytes_, &r.spackets_, &r.serrs_, &r.sdrop_, &r.sfifo_, &r.scolls_, &r.scarrier_, &r.scompressed_);
 
-            sscanf(fname, "%s", r.name);
+            sscanf(fname, "%s", r.name_);
             _nb_srs_system_network_devices = i + 1;
-            srs_info("scan network device ifname=%s, total=%d", r.name, _nb_srs_system_network_devices);
+            srs_info("scan network device ifname=%s, total=%d", r.name_, _nb_srs_system_network_devices);
 
-            r.sample_time = srsu2ms(srs_time_now_realtime());
-            r.ok = true;
+            r.sample_time_ = srsu2ms(srs_time_now_realtime());
+            r.ok_ = true;
         }
 
         fclose(f);

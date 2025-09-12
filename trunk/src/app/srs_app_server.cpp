@@ -1816,7 +1816,7 @@ srs_error_t SrsInotifyWorker::cycle()
 
         // Notify server to do reload.
         if (do_reload && srs_path_exists(config_path)) {
-            server->on_signal(SRS_SIGNAL_RELOAD);
+            server_->on_signal(SRS_SIGNAL_RELOAD);
         }
 
         srs_usleep(3000 * SRS_UTIME_MILLISECONDS);

@@ -139,4 +139,17 @@ extern std::string srs_get_system_hostname(void);
 extern utsname *srs_get_system_uname_info();
 #endif
 
+class ISrsRequest;
+
+enum SrtMode {
+    SrtModePull = 1,
+    SrtModePush = 2,
+};
+
+// Get SRT streamid info.
+extern bool srs_srt_streamid_info(const std::string &streamid, SrtMode &mode, std::string &vhost, std::string &url_subpath);
+
+// SRT streamid to request.
+extern bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, ISrsRequest *request);
+
 #endif

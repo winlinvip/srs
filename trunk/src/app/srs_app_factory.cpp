@@ -46,6 +46,11 @@ srs_utime_t SrsConfigProxy::get_pithy_print()
     return _srs_config->get_pithy_print();
 }
 
+std::string SrsConfigProxy::get_default_app_name()
+{
+    return _srs_config->get_default_app_name();
+}
+
 SrsTrueTime::SrsTrueTime()
 {
 }

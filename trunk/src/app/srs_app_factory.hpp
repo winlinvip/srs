@@ -33,6 +33,7 @@ public:
 
 public:
     virtual srs_utime_t get_pithy_print();
+    virtual std::string get_default_app_name();
 };
 
 // The time to use system time.

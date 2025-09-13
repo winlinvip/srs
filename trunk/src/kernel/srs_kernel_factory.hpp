@@ -12,6 +12,8 @@
 #include <srs_core_time.hpp>
 #include <srs_kernel_st.hpp>
 
+#include <string>
+
 // The config for kernel and protocol objects.
 class ISrsConfig
 {
@@ -21,6 +23,7 @@ public:
 
 public:
     virtual srs_utime_t get_pithy_print() = 0;
+    virtual std::string get_default_app_name() = 0;
 };
 
 // The factory to create kernel objects.

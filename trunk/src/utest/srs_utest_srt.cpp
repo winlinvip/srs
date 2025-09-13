@@ -6,7 +6,7 @@
 #include <srs_utest_srt.hpp>
 
 #include <srs_app_srt_server.hpp>
-#include <srs_app_srt_utility.hpp>
+#include <srs_protocol_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>

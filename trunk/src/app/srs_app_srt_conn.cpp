@@ -10,9 +10,8 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtc_source.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_srt_server.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_app_statistic.hpp>
@@ -20,6 +19,7 @@ using namespace std;
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_flv.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_stream.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_rtmp_stack.hpp>

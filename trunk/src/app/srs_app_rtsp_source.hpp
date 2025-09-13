@@ -10,7 +10,7 @@
 #include <srs_core.hpp>
 
 #include <srs_app_rtc_source.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 
 #include <map>

@@ -14,7 +14,6 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtsp_source.hpp>
 #include <srs_app_security.hpp>
 #include <srs_app_statistic.hpp>
@@ -24,6 +23,7 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_st.hpp>

@@ -31,7 +31,6 @@ using namespace std;
 #include <srs_app_latest_version.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_mpegts_udp.hpp>
-#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_dtls.hpp>
@@ -40,7 +39,7 @@ using namespace std;
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtmp_conn.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_stream_token.hpp>
 #include <srs_app_utility.hpp>
@@ -49,6 +48,7 @@ using namespace std;
 #include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_log.hpp>
 #include <srs_protocol_rtc_stun.hpp>

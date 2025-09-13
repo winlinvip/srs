@@ -10,7 +10,6 @@
 using namespace std;
 
 #include <srs_app_http_static.hpp>
-#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_st.hpp>
@@ -20,6 +19,7 @@ using namespace std;
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_rtc_stun.hpp>

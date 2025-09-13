@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_SOURCE_HPP
-#define SRS_APP_SOURCE_HPP
+#ifndef SRS_APP_RTMP_SOURCE_HPP
+#define SRS_APP_RTMP_SOURCE_HPP
 
 #include <srs_core.hpp>
 

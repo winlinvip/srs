@@ -14,7 +14,6 @@ using namespace std;
 #include <srs_app_config.hpp>
 #include <srs_app_conn.hpp>
 #include <srs_app_http_api.hpp>
-#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_dtls.hpp>
@@ -27,6 +26,7 @@ using namespace std;
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_log.hpp>

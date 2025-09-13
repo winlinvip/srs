@@ -30,7 +30,7 @@ class SrsFormat;
 
 #include <srs_app_async_call.hpp>
 #include <srs_app_reload.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 
 // The segmenter for DVR, to write a segment file in flv/mp4.
 class SrsDvrSegmenter : public ISrsReloadHandler

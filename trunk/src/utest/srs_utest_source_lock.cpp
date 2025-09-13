@@ -9,8 +9,8 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_rtc_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_server.hpp>
-#include <srs_app_source.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_protocol_amf0.hpp>

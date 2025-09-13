@@ -8,7 +8,7 @@
 
 #include <srs_app_config.hpp>
 #include <srs_app_rtc_source.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_format.hpp>

@@ -10,12 +10,12 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_process.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_consts.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>

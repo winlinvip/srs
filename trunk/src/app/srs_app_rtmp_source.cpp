@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 
 #include <algorithm>
 #include <sstream>

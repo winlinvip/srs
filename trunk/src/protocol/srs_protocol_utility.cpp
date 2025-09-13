@@ -36,11 +36,11 @@ using namespace std;
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_consts.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_factory.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_st.hpp>
-#include <srs_kernel_factory.hpp>
 
 void srs_net_url_parse_tcurl(string tcUrl, string &schema, string &host, string &vhost, string &app, string &stream, int &port, string &param)
 {

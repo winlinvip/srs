@@ -8,7 +8,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_performance.hpp>
 #include <srs_kernel_consts.hpp>

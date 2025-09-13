@@ -7,7 +7,7 @@
 #include <srs_app_gb28181.hpp>
 
 #include <srs_app_config.hpp>
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_protocol_sdp.hpp>

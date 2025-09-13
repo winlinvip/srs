@@ -11,7 +11,7 @@
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_kernel_rtc_queue.hpp>

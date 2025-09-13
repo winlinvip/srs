@@ -21,7 +21,7 @@ using namespace std;
 #include <srs_app_caster_flv.hpp>
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_coworkers.hpp>
 #include <srs_app_heartbeat.hpp>
 #include <srs_app_http_api.hpp>

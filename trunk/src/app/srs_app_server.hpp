@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>

@@ -18,6 +18,8 @@ SrsPps *_srs_pps_fids = NULL;
 SrsPps *_srs_pps_fids_level0 = NULL;
 SrsPps *_srs_pps_dispose = NULL;
 
+SrsResourceManager *_srs_conn_manager = NULL;
+
 ISrsDisposingHandler::ISrsDisposingHandler()
 {
 }

@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_st.hpp>

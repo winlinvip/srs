@@ -9,7 +9,7 @@
 
 #include <srs_core.hpp>
 
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_ps.hpp>

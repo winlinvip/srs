@@ -5,7 +5,7 @@
 //
 #include <srs_utest_rtc.hpp>
 
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_kernel_rtc_queue.hpp>
 #include <srs_app_rtc_source.hpp>

@@ -24,7 +24,7 @@ class SrsTcpClient;
 class SrsSimpleRtmpClient;
 class SrsAppCasterFlv;
 
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_st.hpp>

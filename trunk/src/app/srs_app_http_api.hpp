@@ -22,7 +22,7 @@ class SrsHttpConn;
 
 #include <string>
 
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_st.hpp>

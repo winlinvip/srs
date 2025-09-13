@@ -236,4 +236,7 @@ public:
     }
 };
 
+// Manager for RTC connections.
+extern SrsResourceManager *_srs_conn_manager;
+
 #endif

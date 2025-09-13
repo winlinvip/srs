@@ -13,6 +13,7 @@
 
 #include <srs_kernel_error.hpp>
 #include <srs_protocol_io.hpp>
+#include <srs_kernel_st.hpp>
 
 // Wrap for SRT.
 typedef int srs_srt_t;
@@ -88,7 +89,7 @@ extern int srs_mutex_unlock(srs_mutex_t mutex);
 // For example:
 //      SrsUniquePtr<SrsCond> cond(new SrsCond());
 //      cond->signal();
-class SrsCond
+class SrsCond : public ISrsCond
 {
 private:
     srs_cond_t cond_;

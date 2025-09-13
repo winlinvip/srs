@@ -94,7 +94,7 @@ public:
 };
 
 // High performance coroutine.
-class SrsFastCoroutine
+class SrsFastCoroutine : public ISrsCoroutine
 {
 private:
     std::string name_;

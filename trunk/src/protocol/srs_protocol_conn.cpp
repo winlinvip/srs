@@ -11,27 +11,6 @@
 #include <algorithm>
 using namespace std;
 
-ISrsResource::ISrsResource()
-{
-}
-
-ISrsResource::~ISrsResource()
-{
-}
-
-std::string ISrsResource::desc()
-{
-    return "Resource";
-}
-
-ISrsResourceManager::ISrsResourceManager()
-{
-}
-
-ISrsResourceManager::~ISrsResourceManager()
-{
-}
-
 ISrsConnection::ISrsConnection()
 {
 }

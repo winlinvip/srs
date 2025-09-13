@@ -34,9 +34,10 @@ public:
     virtual ~ISrsKernelFactory();
 
 public:
-    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler) = 0;
+    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid) = 0;
     virtual ISrsTime *create_time() = 0;
     virtual ISrsConfig *create_config() = 0;
+    virtual ISrsCond *create_cond() = 0;
 };
 
 extern ISrsKernelFactory *_srs_kernel_factory;

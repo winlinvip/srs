@@ -18,9 +18,9 @@ SrsFinalFactory::~SrsFinalFactory()
 {
 }
 
-ISrsCoroutine *SrsFinalFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler)
+ISrsCoroutine *SrsFinalFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
 {
-    return new SrsSTCoroutine(name, handler);
+    return new SrsSTCoroutine(name, handler, cid);
 }
 
 ISrsTime *SrsFinalFactory::create_time()
@@ -31,6 +31,11 @@ ISrsTime *SrsFinalFactory::create_time()
 ISrsConfig *SrsFinalFactory::create_config()
 {
     return new SrsConfigProxy();
+}
+
+ISrsCond *SrsFinalFactory::create_cond()
+{
+    return new SrsCond();
 }
 
 SrsConfigProxy::SrsConfigProxy()

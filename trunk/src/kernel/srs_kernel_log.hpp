@@ -18,6 +18,14 @@
 
 #include <srs_kernel_consts.hpp>
 
+// For log TAGs.
+#define TAG_MAIN "MAIN"
+#define TAG_MAYBE "MAYBE"
+#define TAG_DTLS_ALERT "DTLS_ALERT"
+#define TAG_DTLS_HANG "DTLS_HANG"
+#define TAG_RESOURCE_UNSUB "RESOURCE_UNSUB"
+#define TAG_LARGE_TIMER "LARGE_TIMER"
+
 // The log level, see https://github.com/apache/logging-log4j2/blob/release-2.x/log4j-api/src/main/java/org/apache/logging/log4j/Level.java
 // Please note that the enum name might not be the string, to keep compatible with previous definition.
 enum SrsLogLevel {
@@ -78,6 +86,20 @@ public:
     // Set the context id of current thread.
     // @return the current context id.
     virtual const SrsContextId &set_id(const SrsContextId &v) = 0;
+};
+
+// The context restore stores the context and restore it when done.
+// Usage:
+//      SrsContextRestore(_srs_context->get_id());
+#define SrsContextRestore(cid) impl_SrsContextRestore _context_restore_instance(cid)
+class impl_SrsContextRestore
+{
+private:
+    SrsContextId cid_;
+
+public:
+    impl_SrsContextRestore(SrsContextId cid);
+    virtual ~impl_SrsContextRestore();
 };
 
 // @global User must implements the LogContext and define a global instance.

@@ -44,7 +44,7 @@ SrsHourGlass::SrsHourGlass(string label, ISrsHourGlass *h, srs_utime_t resolutio
     handler_ = h;
     resolution_ = resolution;
     total_elapse_ = 0;
-    trd_ = _srs_kernel_factory->create_coroutine("timer-" + label, this);
+    trd_ = _srs_kernel_factory->create_coroutine("timer-" + label, this, _srs_context->get_id());
     time_ = _srs_kernel_factory->create_time();
 }
 
@@ -139,7 +139,7 @@ ISrsFastTimer::~ISrsFastTimer()
 SrsFastTimer::SrsFastTimer(std::string label, srs_utime_t interval)
 {
     interval_ = interval;
-    trd_ = _srs_kernel_factory->create_coroutine(label, this);
+    trd_ = _srs_kernel_factory->create_coroutine(label, this, _srs_context->get_id());
     time_ = _srs_kernel_factory->create_time();
 }
 

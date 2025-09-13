@@ -28,6 +28,7 @@ using namespace std;
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
+#include <srs_app_st.hpp>
 
 extern SrsPps *_srs_pps_snack;
 extern SrsPps *_srs_pps_snack2;

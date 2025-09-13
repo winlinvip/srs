@@ -38,7 +38,7 @@ class SrsRtspPlayStream : public ISrsCoroutineHandler, public ISrsRtcSourceChang
 {
 private:
     SrsContextId cid_;
-    SrsFastCoroutine *trd_;
+    ISrsCoroutine *trd_;
     SrsRtspConnection *session_;
 
 private:

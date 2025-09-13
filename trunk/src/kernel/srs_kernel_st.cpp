@@ -61,3 +61,11 @@ ISrsCoroutine::ISrsCoroutine()
 ISrsCoroutine::~ISrsCoroutine()
 {
 }
+
+ISrsCond::ISrsCond()
+{
+}
+
+ISrsCond::~ISrsCond()
+{
+}

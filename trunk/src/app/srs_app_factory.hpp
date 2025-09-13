@@ -19,9 +19,10 @@ public:
     virtual ~SrsFinalFactory();
 
 public:
-    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler);
+    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
     virtual ISrsTime *create_time();
     virtual ISrsConfig *create_config();
+    virtual ISrsCond *create_cond();
 };
 
 // The proxy for config.

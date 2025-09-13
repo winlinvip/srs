@@ -110,4 +110,18 @@ public:
     virtual ~ISrsCoroutine();
 };
 
+// The condition variable interface.
+class ISrsCond
+{
+public:
+    ISrsCond();
+    virtual ~ISrsCond();
+
+public:
+    virtual int wait() = 0;
+    virtual int timedwait(srs_utime_t timeout) = 0;
+    virtual int signal() = 0;
+    virtual int broadcast() = 0;
+};
+
 #endif

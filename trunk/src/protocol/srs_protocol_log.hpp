@@ -38,20 +38,6 @@ private:
 // Set the context id of specified thread, not self.
 extern const SrsContextId &srs_context_set_cid_of(srs_thread_t trd, const SrsContextId &v);
 
-// The context restore stores the context and restore it when done.
-// Usage:
-//      SrsContextRestore(_srs_context->get_id());
-#define SrsContextRestore(cid) impl_SrsContextRestore _context_restore_instance(cid)
-class impl_SrsContextRestore
-{
-private:
-    SrsContextId cid_;
-
-public:
-    impl_SrsContextRestore(SrsContextId cid);
-    virtual ~impl_SrsContextRestore();
-};
-
 // The basic console log, which write log to console.
 class SrsConsoleLog : public ISrsLog
 {

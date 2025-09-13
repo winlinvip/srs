@@ -101,6 +101,16 @@ ISrsContext::~ISrsContext()
 {
 }
 
+impl_SrsContextRestore::impl_SrsContextRestore(SrsContextId cid)
+{
+    cid_ = cid;
+}
+
+impl_SrsContextRestore::~impl_SrsContextRestore()
+{
+    _srs_context->set_id(cid_);
+}
+
 void srs_logger_impl(SrsLogLevel level, const char *tag, const SrsContextId &context_id, const char *fmt, ...)
 {
     if (!_srs_log)

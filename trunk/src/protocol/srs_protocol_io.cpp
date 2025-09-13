@@ -6,14 +6,6 @@
 
 #include <srs_protocol_io.hpp>
 
-ISrsProtocolStatistic::ISrsProtocolStatistic()
-{
-}
-
-ISrsProtocolStatistic::~ISrsProtocolStatistic()
-{
-}
-
 ISrsProtocolReader::ISrsProtocolReader()
 {
 }

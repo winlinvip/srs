@@ -20,7 +20,7 @@
 #include <srs_app_st.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_protocol_conn.hpp>
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 
 class SrsWallClock;
 class SrsBuffer;

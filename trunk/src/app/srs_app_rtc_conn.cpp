@@ -43,7 +43,7 @@ using namespace std;
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_http_stack.hpp>
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_protocol_log.hpp>
 #include <srs_protocol_rtc_stun.hpp>
 #include <srs_protocol_rtmp_msg_array.hpp>

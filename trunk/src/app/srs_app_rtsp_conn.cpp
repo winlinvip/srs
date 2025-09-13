@@ -25,7 +25,7 @@ using namespace std;
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>

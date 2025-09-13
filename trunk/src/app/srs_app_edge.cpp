@@ -31,7 +31,7 @@ using namespace std;
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_io.hpp>
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_protocol_rtmp_msg_array.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>

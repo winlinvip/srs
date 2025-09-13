@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 //
 
-#include <srs_app_uuid.hpp>
+#include <srs_kernel_uuid.hpp>
 
 #include <stdio.h>
 #include <sys/file.h>
@@ -125,18 +125,18 @@
 
 #ifndef min
 #define min(x, y) ({				\
-	__typeof__(x) _min1 = (x);		\
-	__typeof__(y) _min2 = (y);		\
-	(void) (&_min1 == &_min2);		\
-	_min1 < _min2 ? _min1 : _min2; })
+		__typeof__(x) _min1 = (x);		\
+		__typeof__(y) _min2 = (y);		\
+		(void) (&_min1 == &_min2);		\
+		_min1 < _min2 ? _min1 : _min2; })
 #endif
 
 #ifndef max
 #define max(x, y) ({				\
-	__typeof__(x) _max1 = (x);		\
-	__typeof__(y) _max2 = (y);		\
-	(void) (&_max1 == &_max2);		\
-	_max1 > _max2 ? _max1 : _max2; })
+		__typeof__(x) _max1 = (x);		\
+		__typeof__(y) _max2 = (y);		\
+		(void) (&_max1 == &_max2);		\
+		_max1 > _max2 ? _max1 : _max2; })
 #endif
 
 #ifndef offsetof
@@ -145,8 +145,8 @@
 
 #ifndef container_of
 #define container_of(ptr, type, member) ({                       \
-	const __typeof__( ((type *)0)->member ) *__mptr = (ptr); \
-	(type *)( (char *)__mptr - offsetof(type,member) ); })
+		const __typeof__( ((type *)0)->member ) *__mptr = (ptr); \
+		(type *)( (char *)__mptr - offsetof(type,member) ); })
 #endif
 
 #if 0
@@ -603,6 +603,33 @@ static int flock(int fd, int op)
 }
 
 #endif /* LOCK_EX */
+
+#if defined(HAVE_UUIDD) && defined(HAVE_SYS_UN_H)
+// Helper function for reading all bytes
+static ssize_t read_all(int fd, char *buf, size_t count)
+{
+    ssize_t ret;
+    ssize_t c = 0;
+    int tries = 0;
+
+    memset(buf, 0, count);
+    while (count > 0) {
+        ret = read(fd, buf, count);
+        if (ret <= 0) {
+            if ((errno == EAGAIN || errno == EINTR) && (tries++ < 5))
+                continue;
+            return c ? c : -1;
+        }
+        if (ret > 0) {
+            tries = 0;
+            count -= ret;
+            buf += ret;
+            c += ret;
+        }
+    }
+    return c;
+}
+#endif
 
 /*
  * Get the ethernet hardware address, if we can find it...

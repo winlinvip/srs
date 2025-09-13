@@ -37,7 +37,7 @@
 #include <srs_app_rtc_codec.hpp>
 #endif
 
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_protocol_raw_avc.hpp>
 #include <srs_protocol_rtp.hpp>
 

@@ -12,7 +12,6 @@
 #include <srs_app_statistic.hpp>
 
 #include <srs_app_utility.hpp>
-#include <srs_app_uuid.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>

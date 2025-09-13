@@ -40,22 +40,6 @@
  */
 
 /**
- * Get the statistic of channel.
- */
-class ISrsProtocolStatistic
-{
-public:
-    ISrsProtocolStatistic();
-    virtual ~ISrsProtocolStatistic();
-    // For protocol
-public:
-    // Get the total recv bytes over underlay fd.
-    virtual int64_t get_recv_bytes() = 0;
-    // Get the total send bytes over underlay fd.
-    virtual int64_t get_send_bytes() = 0;
-};
-
-/**
  * the reader for the protocol to read from whatever channel.
  */
 class ISrsProtocolReader : public ISrsReader, virtual public ISrsProtocolStatistic

@@ -61,3 +61,11 @@ ISrsWriteSeeker::ISrsWriteSeeker()
 ISrsWriteSeeker::~ISrsWriteSeeker()
 {
 }
+
+ISrsProtocolStatistic::ISrsProtocolStatistic()
+{
+}
+
+ISrsProtocolStatistic::~ISrsProtocolStatistic()
+{
+}

@@ -11,10 +11,8 @@
 
 #include <map>
 
-#include <srs_app_reload.hpp>
-
 // The stage info to calc the age.
-class SrsStageInfo : public ISrsReloadHandler
+class SrsStageInfo
 {
 public:
     int stage_id_;

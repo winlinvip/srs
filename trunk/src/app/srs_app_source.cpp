@@ -1007,10 +1007,10 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
     }
 
 #ifdef SRS_HDS
-    if ((err = hds->on_audio(msg)) != srs_success) {
+    if ((err = hds_->on_audio(msg)) != srs_success) {
         srs_warn("hds: ignore audio error %s", srs_error_desc(err).c_str());
         srs_error_reset(err);
-        hds->on_unpublish();
+        hds_->on_unpublish();
     }
 #endif
 
@@ -1098,10 +1098,10 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
     }
 
 #ifdef SRS_HDS
-    if ((err = hds->on_video(msg)) != srs_success) {
+    if ((err = hds_->on_video(msg)) != srs_success) {
         srs_warn("hds: ignore video error %s", srs_error_desc(err).c_str());
         srs_error_reset(err);
-        hds->on_unpublish();
+        hds_->on_unpublish();
     }
 #endif
 

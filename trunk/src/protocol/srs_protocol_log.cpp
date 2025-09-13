@@ -16,7 +16,7 @@ using namespace std;
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_utility.hpp>
 
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 
 SrsPps *_srs_pps_cids_get = NULL;
 SrsPps *_srs_pps_cids_set = NULL;

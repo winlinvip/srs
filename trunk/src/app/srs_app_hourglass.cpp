@@ -13,7 +13,7 @@ using namespace std;
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 
 SrsPps *_srs_pps_timer = NULL;
 SrsPps *_srs_pps_conn = NULL;

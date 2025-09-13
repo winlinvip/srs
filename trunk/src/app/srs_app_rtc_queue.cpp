@@ -18,7 +18,7 @@ using namespace std;
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
 
-#include <srs_protocol_kbps.hpp>
+#include <srs_kernel_kbps.hpp>
 
 extern SrsPps *_srs_pps_snack3;
 extern SrsPps *_srs_pps_snack4;

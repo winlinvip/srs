@@ -23,13 +23,10 @@ SrsStageInfo::SrsStageInfo(int _stage_id, double ratio)
     interval_ratio_ = ratio;
 
     update_print_time();
-
-    _srs_config->subscribe(this);
 }
 
 SrsStageInfo::~SrsStageInfo()
 {
-    _srs_config->unsubscribe(this);
 }
 
 void SrsStageInfo::update_print_time()

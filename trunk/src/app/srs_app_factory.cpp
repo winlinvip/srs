@@ -6,6 +6,7 @@
 
 #include <srs_app_factory.hpp>
 
+#include <srs_app_config.hpp>
 #include <srs_app_st.hpp>
 #include <srs_protocol_st.hpp>
 
@@ -27,3 +28,38 @@ ISrsTime *SrsFinalFactory::create_time()
     return new SrsTrueTime();
 }
 
+ISrsConfig *SrsFinalFactory::create_config()
+{
+    return new SrsConfigProxy();
+}
+
+SrsConfigProxy::SrsConfigProxy()
+{
+}
+
+SrsConfigProxy::~SrsConfigProxy()
+{
+}
+
+srs_utime_t SrsConfigProxy::get_pithy_print()
+{
+    return _srs_config->get_pithy_print();
+}
+
+SrsTrueTime::SrsTrueTime()
+{
+}
+
+SrsTrueTime::~SrsTrueTime()
+{
+}
+
+srs_utime_t SrsTrueTime::now()
+{
+    return srs_time_now_realtime();
+}
+
+void SrsTrueTime::usleep(srs_utime_t duration)
+{
+    srs_usleep(duration);
+}

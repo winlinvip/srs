@@ -21,9 +21,9 @@ using namespace std;
 #include <sys/mman.h>
 #include <sys/types.h>
 
+#include <srs_app_factory.hpp>
 #include <srs_app_srt_server.hpp>
 #include <srt/srt.h>
-#include <srs_app_factory.hpp>
 
 // Temporary disk config.
 std::string _srs_tmp_file_prefix = "/tmp/srs-utest-";

@@ -16,9 +16,9 @@ using namespace std;
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
-#include <srs_kernel_kbps.hpp>
 #include <srs_protocol_log.hpp>
 
 SrsPps *_srs_pps_ids = NULL;

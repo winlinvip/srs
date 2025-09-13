@@ -33,6 +33,7 @@ using namespace std;
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_server.hpp>
@@ -45,7 +46,6 @@ using namespace std;
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_srt.hpp>
-#include <srs_app_factory.hpp>
 
 // pre-declare
 srs_error_t run_directly_or_daemon();

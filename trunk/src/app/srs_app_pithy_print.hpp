@@ -11,6 +11,8 @@
 
 #include <map>
 
+class ISrsConfig;
+
 // The stage info to calc the age.
 class SrsStageInfo
 {
@@ -22,6 +24,7 @@ public:
     uint32_t nn_count_;
     // The ratio for interval, 1.0 means no change.
     double interval_ratio_;
+    ISrsConfig *config_;
 
 public:
     srs_utime_t age_;

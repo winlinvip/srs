@@ -9,8 +9,8 @@
 #include <unistd.h>
 using namespace std;
 
-#include <srs_protocol_amf0.hpp>
 #include <srs_kernel_kbps.hpp>
+#include <srs_protocol_amf0.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>

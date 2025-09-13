@@ -18,6 +18,7 @@
 #include <srs_app_async_call.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_st.hpp>
+#include <srs_kernel_factory.hpp>
 
 class ISrsRequest;
 class SrsFileWriter;
@@ -278,7 +279,7 @@ enum SrsReloadState {
 // that is, never save the SrsConfDirective* get by any api of config,
 // For it maybe free in the reload st-thread cycle.
 // You could keep it before st-thread switch, or simply never keep it.
-class SrsConfig
+class SrsConfig : public ISrsConfig
 {
     friend class SrsConfDirective;
     // user command

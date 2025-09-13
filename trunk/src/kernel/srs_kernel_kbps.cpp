@@ -7,8 +7,8 @@
 #include <srs_kernel_kbps.hpp>
 
 #include <srs_kernel_error.hpp>
-#include <srs_kernel_utility.hpp>
 #include <srs_kernel_io.hpp>
+#include <srs_kernel_utility.hpp>
 
 #include <cstdio>
 #include <string>

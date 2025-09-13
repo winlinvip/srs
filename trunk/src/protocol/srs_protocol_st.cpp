@@ -850,21 +850,3 @@ srs_error_t SrsTcpClient::writev(const iovec *iov, int iov_size, ssize_t *nwrite
 {
     return io_->writev(iov, iov_size, nwrite);
 }
-
-SrsTrueTime::SrsTrueTime()
-{
-}
-
-SrsTrueTime::~SrsTrueTime()
-{
-}
-
-srs_utime_t SrsTrueTime::now()
-{
-    return srs_time_now_realtime();
-}
-
-void SrsTrueTime::usleep(srs_utime_t duration)
-{
-    srs_usleep(duration);
-}

@@ -13,10 +13,10 @@
 
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_st.hpp>
 #include <srs_protocol_conn.hpp>
 #include <srs_protocol_io.hpp>
 #include <srs_protocol_st.hpp>
-#include <srs_kernel_st.hpp>
 
 class SrsFastCoroutine;
 class SrsExecutorCoroutine;

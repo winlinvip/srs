@@ -140,6 +140,7 @@ class SrsClockWallMonitor : public ISrsFastTimer
 {
 private:
     ISrsTime *time_;
+
 public:
     SrsClockWallMonitor();
     virtual ~SrsClockWallMonitor();

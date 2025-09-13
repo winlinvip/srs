@@ -7,9 +7,9 @@
 #include <srs_app_circuit_breaker.hpp>
 
 #include <srs_app_config.hpp>
-#include <srs_kernel_hourglass.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_utility.hpp>
+#include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
 

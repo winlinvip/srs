@@ -9,8 +9,19 @@
 
 #include <srs_core.hpp>
 
-#include <srs_kernel_st.hpp>
 #include <srs_core_time.hpp>
+#include <srs_kernel_st.hpp>
+
+// The config for kernel and protocol objects.
+class ISrsConfig
+{
+public:
+    ISrsConfig();
+    virtual ~ISrsConfig();
+
+public:
+    virtual srs_utime_t get_pithy_print() = 0;
+};
 
 // The factory to create kernel objects.
 class ISrsKernelFactory
@@ -19,9 +30,10 @@ public:
     ISrsKernelFactory();
     virtual ~ISrsKernelFactory();
 
-  public:
+public:
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler) = 0;
     virtual ISrsTime *create_time() = 0;
+    virtual ISrsConfig *create_config() = 0;
 };
 
 extern ISrsKernelFactory *_srs_kernel_factory;

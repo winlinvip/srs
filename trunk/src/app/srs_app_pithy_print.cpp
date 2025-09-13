@@ -9,8 +9,8 @@
 #include <stdlib.h>
 using namespace std;
 
-#include <srs_app_config.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_factory.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 
@@ -21,17 +21,19 @@ SrsStageInfo::SrsStageInfo(int _stage_id, double ratio)
     age_ = 0;
     nn_count_ = 0;
     interval_ratio_ = ratio;
+    config_ = _srs_kernel_factory->create_config();
 
     update_print_time();
 }
 
 SrsStageInfo::~SrsStageInfo()
 {
+    srs_freep(config_);
 }
 
 void SrsStageInfo::update_print_time()
 {
-    interval_ = _srs_config->get_pithy_print();
+    interval_ = config_->get_pithy_print();
 }
 
 void SrsStageInfo::elapse(srs_utime_t diff)

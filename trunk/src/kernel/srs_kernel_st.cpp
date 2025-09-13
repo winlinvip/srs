@@ -61,4 +61,3 @@ ISrsCoroutine::ISrsCoroutine()
 ISrsCoroutine::~ISrsCoroutine()
 {
 }
-

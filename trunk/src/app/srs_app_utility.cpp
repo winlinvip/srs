@@ -26,11 +26,11 @@ using namespace std;
 #include <srs_app_config.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_json.hpp>
-#include <srs_kernel_kbps.hpp>
 
 // the longest time to wait for a process to quit.
 #define SRS_PROCESS_QUIT_TIMEOUT_MS 1000

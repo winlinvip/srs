@@ -18,9 +18,33 @@ public:
     SrsFinalFactory();
     virtual ~SrsFinalFactory();
 
-  public:
+public:
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler);
     virtual ISrsTime *create_time();
+    virtual ISrsConfig *create_config();
+};
+
+// The proxy for config.
+class SrsConfigProxy : public ISrsConfig
+{
+public:
+    SrsConfigProxy();
+    virtual ~SrsConfigProxy();
+
+public:
+    virtual srs_utime_t get_pithy_print();
+};
+
+// The time to use system time.
+class SrsTrueTime : public ISrsTime
+{
+public:
+    SrsTrueTime();
+    virtual ~SrsTrueTime();
+
+public:
+    virtual srs_utime_t now();
+    virtual void usleep(srs_utime_t duration);
 };
 
 #endif

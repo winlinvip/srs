@@ -6,6 +6,14 @@
 
 #include <srs_kernel_factory.hpp>
 
+ISrsConfig::ISrsConfig()
+{
+}
+
+ISrsConfig::~ISrsConfig()
+{
+}
+
 ISrsKernelFactory::ISrsKernelFactory()
 {
 }
@@ -13,4 +21,3 @@ ISrsKernelFactory::ISrsKernelFactory()
 ISrsKernelFactory::~ISrsKernelFactory()
 {
 }
-

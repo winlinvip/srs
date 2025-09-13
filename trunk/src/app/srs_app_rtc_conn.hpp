@@ -8,21 +8,20 @@
 #define SRS_APP_RTC_CONN_HPP
 
 #include <srs_app_async_call.hpp>
-#include <srs_protocol_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtc_dtls.hpp>
-#include <srs_kernel_rtc_queue.hpp>
-#include <srs_protocol_sdp.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_core.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_hourglass.hpp>
+#include <srs_kernel_rtc_queue.hpp>
 #include <srs_kernel_rtc_rtcp.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_conn.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_protocol_st.hpp>
 
 #include <map>

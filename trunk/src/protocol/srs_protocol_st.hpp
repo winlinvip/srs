@@ -12,8 +12,8 @@
 #include <string>
 
 #include <srs_kernel_error.hpp>
-#include <srs_protocol_io.hpp>
 #include <srs_kernel_st.hpp>
+#include <srs_protocol_io.hpp>
 
 // Wrap for SRT.
 typedef int srs_srt_t;

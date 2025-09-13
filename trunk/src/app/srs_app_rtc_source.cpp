@@ -11,10 +11,8 @@
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
-#include <srs_protocol_conn.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_rtc_conn.hpp>
-#include <srs_kernel_rtc_queue.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_statistic.hpp>
@@ -25,8 +23,10 @@
 #include <srs_kernel_flv.hpp>
 #include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_pithy_print.hpp>
+#include <srs_kernel_rtc_queue.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_protocol_format.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_rtmp_msg_array.hpp>
@@ -3182,14 +3182,14 @@ srs_error_t SrsRtcRecvTrack::on_nack(SrsRtpPacket **ppkt)
             srs_warn("NACK: too old seq %u, range [%u, %u]", seq, rtp_queue_->begin_,
                      rtp_queue_->end_);
         }
-        
+
         if (srs_rtp_seq_distance(nack_first, nack_last) > 0) {
             // If circuit-breaker is enabled, disable nack.
             if (_srs_circuit_breaker->hybrid_high_water_level()) {
                 ++_srs_pps_snack4->sugar_;
             } else {
                 srs_trace("NACK: update seq=%u, nack range [%u, %u]", seq, nack_first,
-                        nack_last);
+                          nack_last);
 
                 nack_receiver_->insert(nack_first, nack_last);
                 nack_receiver_->check_queue_size();

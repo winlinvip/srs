@@ -5,15 +5,15 @@
 //
 #include <srs_utest_rtc.hpp>
 
-#include <srs_protocol_conn.hpp>
 #include <srs_app_rtc_conn.hpp>
-#include <srs_kernel_rtc_queue.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_codec.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_rtc_queue.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
+#include <srs_protocol_conn.hpp>
 
 #include <srs_utest_service.hpp>
 

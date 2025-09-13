@@ -9,8 +9,8 @@
 
 #include <srs_core.hpp>
 
-#include <srs_kernel_st.hpp>
 #include <srs_core_autofree.hpp>
+#include <srs_kernel_st.hpp>
 
 #include <map>
 #include <string>

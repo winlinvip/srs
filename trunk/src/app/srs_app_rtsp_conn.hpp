@@ -7,7 +7,6 @@
 #ifndef SRS_APP_RTSP_CONN_HPP
 #define SRS_APP_RTSP_CONN_HPP
 
-#include <srs_protocol_conn.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_core.hpp>
 #include <srs_core_autofree.hpp>

@@ -12,7 +12,6 @@ using namespace std;
 #include <srs_app_security.hpp>
 #include <srs_kernel_error.hpp>
 
-#include <srs_protocol_conn.hpp>
 #include <srs_app_mpegts_udp.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_buffer.hpp>

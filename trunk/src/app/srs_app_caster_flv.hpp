@@ -24,11 +24,11 @@ class SrsTcpClient;
 class SrsSimpleRtmpClient;
 class SrsAppCasterFlv;
 
-#include <srs_protocol_conn.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_file.hpp>
+#include <srs_protocol_conn.hpp>
 
 // A TCP listener, for flv stream server.
 class SrsHttpFlvListener : public ISrsTcpHandler, public ISrsListener

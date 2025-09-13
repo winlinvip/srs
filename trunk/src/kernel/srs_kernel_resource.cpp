@@ -6,10 +6,10 @@
 
 #include <srs_kernel_resource.hpp>
 
-#include <srs_kernel_factory.hpp>
 #include <srs_kernel_error.hpp>
-#include <srs_kernel_log.hpp>
+#include <srs_kernel_factory.hpp>
 #include <srs_kernel_kbps.hpp>
+#include <srs_kernel_log.hpp>
 
 using namespace std;
 

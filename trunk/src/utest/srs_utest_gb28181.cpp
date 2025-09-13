@@ -10,7 +10,6 @@ using namespace std;
 
 #include <srs_app_gb28181.hpp>
 #include <srs_app_http_static.hpp>
-#include <srs_protocol_sdp.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
@@ -18,6 +17,7 @@ using namespace std;
 #include <srs_protocol_http_conn.hpp>
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_json.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_protocol_utility.hpp>
 #include <srs_utest_kernel.hpp>
 #include <srs_utest_protocol.hpp>

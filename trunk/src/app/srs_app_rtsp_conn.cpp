@@ -16,6 +16,7 @@ using namespace std;
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_rtsp_source.hpp>
 #include <srs_app_security.hpp>
+#include <srs_app_st.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
@@ -28,7 +29,6 @@ using namespace std;
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_st.hpp>
 
 extern SrsPps *_srs_pps_snack;
 extern SrsPps *_srs_pps_snack2;

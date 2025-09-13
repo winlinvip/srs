@@ -17,7 +17,7 @@
 #include <unistd.h>
 using namespace std;
 
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>

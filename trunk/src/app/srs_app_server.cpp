@@ -31,7 +31,7 @@ using namespace std;
 #include <srs_app_latest_version.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_mpegts_udp.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_dtls.hpp>

@@ -51,7 +51,6 @@ public:
     virtual ~ISrsTime();
 
 public:
-    virtual srs_utime_t now() = 0;
     virtual void usleep(srs_utime_t duration) = 0;
 };
 

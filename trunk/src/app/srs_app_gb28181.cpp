@@ -10,7 +10,7 @@
 #include <srs_app_conn.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_listener.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtc_sdp.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_server.hpp>

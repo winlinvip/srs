@@ -43,7 +43,6 @@ public:
     virtual ~SrsTrueTime();
 
 public:
-    virtual srs_utime_t now();
     virtual void usleep(srs_utime_t duration);
 };
 

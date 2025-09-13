@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 
 #include <stdlib.h>
 using namespace std;

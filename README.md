@@ -29,10 +29,10 @@ or [Chinese](https://ossrs.net/lts/zh-cn/docs/v5/doc/getting-started). We highly
 
 ```bash
 docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 \
-    -p 8000:8000/udp -p 10080:10080/udp ossrs/srs:5
+    -p 8000:8000/udp -p 10080:10080/udp ossrs/srs:6
 ```
 
-> Tips: If you're in China, use this image `registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5` for faster speed.
+> Tips: If you're in China, use this image `registry.cn-hangzhou.aliyuncs.com/ossrs/srs:6` for faster speed.
 
 Open [http://localhost:8080/](http://localhost:8080/) to verify, and then stream using the following
 [FFmpeg](https://ffmpeg.org/download.html) command:

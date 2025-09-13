@@ -10,7 +10,7 @@
 using namespace std;
 
 #include <srs_app_http_static.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_st.hpp>

@@ -20,7 +20,7 @@ using namespace std;
 #include <openssl/rand.h>
 #include <srs_app_config.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>

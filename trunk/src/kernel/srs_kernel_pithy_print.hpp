@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_PITHY_PRINT_HPP
-#define SRS_APP_PITHY_PRINT_HPP
+#ifndef SRS_KERNEL_PITHY_PRINT_HPP
+#define SRS_KERNEL_PITHY_PRINT_HPP
 
 #include <srs_core.hpp>
 
@@ -158,5 +158,8 @@ public:
     // Get the elapsed time in srs_utime_t.
     virtual srs_utime_t age();
 };
+
+// Global stage manager for pithy print, multiple stages.
+extern SrsStageManager *_srs_stages;
 
 #endif

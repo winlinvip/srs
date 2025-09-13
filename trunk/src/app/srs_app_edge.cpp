@@ -16,7 +16,7 @@ using namespace std;
 #include <srs_app_caster_flv.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_http_client.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_st.hpp>

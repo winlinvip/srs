@@ -9,7 +9,7 @@
 #include <algorithm>
 using namespace std;
 
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_core_autofree.hpp>

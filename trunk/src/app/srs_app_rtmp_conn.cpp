@@ -18,7 +18,7 @@ using namespace std;
 #include <srs_app_edge.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_app_recv_thread.hpp>
 #include <srs_app_refer.hpp>
 #include <srs_app_rtc_source.hpp>

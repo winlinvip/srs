@@ -9,12 +9,12 @@
 #include <algorithm>
 using namespace std;
 
-#include <srs_core_time.hpp>
 #include <srs_kernel_error.hpp>
-#include <srs_kernel_factory.hpp>
-#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_kernel_kbps.hpp>
+#include <srs_kernel_factory.hpp>
+#include <srs_core_time.hpp>
 
 SrsPps *_srs_pps_timer = NULL;
 SrsPps *_srs_pps_conn = NULL;
@@ -216,7 +216,7 @@ srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
 
     static srs_utime_t clock = 0;
 
-    srs_utime_t now = time_->now();
+    srs_utime_t now = srs_time_now_realtime();
     if (!clock) {
         clock = now;
         return err;

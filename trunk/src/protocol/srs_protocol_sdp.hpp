@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_RTC_SDP_HPP
-#define SRS_APP_RTC_SDP_HPP
+#ifndef SRS_PROTOCOL_SDP_HPP
+#define SRS_PROTOCOL_SDP_HPP
 
 #include <srs_core.hpp>
 #include <srs_kernel_utility.hpp>
@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+
 const std::string kTWCCExt = "http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01";
 
 // TDOO: FIXME: Rename it, and add utest.

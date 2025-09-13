@@ -13,7 +13,7 @@
 #include <srs_app_reload.hpp>
 #include <srs_app_rtc_dtls.hpp>
 #include <srs_kernel_rtc_queue.hpp>
-#include <srs_app_rtc_sdp.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_core.hpp>
 #include <srs_core_autofree.hpp>

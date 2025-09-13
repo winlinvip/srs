@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <srs_app_rtc_sdp.hpp>
+#include <srs_protocol_sdp.hpp>
 
 #include <stdlib.h>
 

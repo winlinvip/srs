@@ -10,7 +10,7 @@ using namespace std;
 
 #include <srs_app_gb28181.hpp>
 #include <srs_app_http_static.hpp>
-#include <srs_app_rtc_sdp.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_rtc_rtp.hpp>

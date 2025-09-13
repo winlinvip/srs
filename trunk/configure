@@ -270,7 +270,7 @@ MODULE_FILES=("srs_protocol_amf0" "srs_protocol_io" "srs_protocol_conn" "srs_pro
 # Always include SRT protocol
 MODULE_FILES+=("srs_protocol_srt")
 ModuleLibIncs+=(${LibSRTRoot})
-MODULE_FILES+=("srs_protocol_rtc_stun" "srs_protocol_rtp")
+MODULE_FILES+=("srs_protocol_rtc_stun" "srs_protocol_rtp" "srs_protocol_sdp")
 if [[ $SRS_RTSP == YES ]]; then
     MODULE_FILES+=("srs_protocol_rtsp_stack")
 fi
@@ -302,7 +302,7 @@ MODULE_FILES=("srs_app_server" "srs_app_conn" "srs_app_rtmp_conn" "srs_app_rtmp_
         "srs_app_stream_token")
 # Always include SRT app modules
 MODULE_FILES+=("srs_app_srt_server" "srs_app_srt_listener" "srs_app_srt_conn" "srs_app_srt_source")
-MODULE_FILES+=("srs_app_rtc_conn" "srs_app_rtc_dtls" "srs_app_rtc_sdp" "srs_app_rtc_network"
+MODULE_FILES+=("srs_app_rtc_conn" "srs_app_rtc_dtls" "srs_app_rtc_network"
     "srs_app_rtc_server" "srs_app_rtc_source" "srs_app_rtc_api")
 if [[ $SRS_RTSP == YES ]]; then
     MODULE_FILES+=("srs_app_rtsp_source" "srs_app_rtsp_conn")

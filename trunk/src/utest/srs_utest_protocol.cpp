@@ -21,7 +21,7 @@ using namespace std;
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 
-#include <srs_app_rtc_sdp.hpp>
+#include <srs_protocol_sdp.hpp>
 
 MockEmptyIO::MockEmptyIO()
 {

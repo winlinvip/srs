@@ -35,7 +35,7 @@ using namespace std;
 #include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_dtls.hpp>
 #include <srs_app_rtc_network.hpp>
-#include <srs_app_rtc_sdp.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtmp_conn.hpp>

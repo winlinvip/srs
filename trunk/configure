@@ -251,8 +251,8 @@ MODULE_FILES=("srs_kernel_error" "srs_kernel_log" "srs_kernel_buffer"
         "srs_kernel_consts" "srs_kernel_aac" "srs_kernel_mp3" "srs_kernel_ts" "srs_kernel_ps"
         "srs_kernel_stream" "srs_kernel_balance" "srs_kernel_mp4" "srs_kernel_file"
         "srs_kernel_kbps" "srs_kernel_rtc_rtp" "srs_kernel_rtc_rtcp" "srs_kernel_packet"
-        "srs_kernel_uuid" "srs_kernel_st" "srs_kernel_factory" "srs_kernel_hourglass" 
-        "srs_kernel_pithy_print")
+        "srs_kernel_uuid" "srs_kernel_st" "srs_kernel_factory" "srs_kernel_hourglass"
+        "srs_kernel_pithy_print" "srs_kernel_rtc_queue")
 KERNEL_INCS="src/kernel"; MODULE_DIR=${KERNEL_INCS} . $SRS_WORKDIR/auto/modules.sh
 KERNEL_OBJS="${MODULE_OBJS[@]}"
 #
@@ -303,7 +303,7 @@ MODULE_FILES=("srs_app_server" "srs_app_conn" "srs_app_rtmp_conn" "srs_app_rtmp_
 # Always include SRT app modules
 MODULE_FILES+=("srs_app_srt_server" "srs_app_srt_listener" "srs_app_srt_conn" "srs_app_srt_source")
 MODULE_FILES+=("srs_app_rtc_conn" "srs_app_rtc_dtls" "srs_app_rtc_sdp" "srs_app_rtc_network"
-    "srs_app_rtc_queue" "srs_app_rtc_server" "srs_app_rtc_source" "srs_app_rtc_api")
+    "srs_app_rtc_server" "srs_app_rtc_source" "srs_app_rtc_api")
 if [[ $SRS_RTSP == YES ]]; then
     MODULE_FILES+=("srs_app_rtsp_source" "srs_app_rtsp_conn")
 fi

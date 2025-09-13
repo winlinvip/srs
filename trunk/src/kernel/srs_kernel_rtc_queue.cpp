@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <srs_app_rtc_queue.hpp>
+#include <srs_kernel_rtc_queue.hpp>
 
 #include <sstream>
 #include <string.h>
@@ -12,11 +12,10 @@
 
 using namespace std;
 
-#include <srs_app_circuit_breaker.hpp>
-#include <srs_app_utility.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_kernel_log.hpp>
 
 #include <srs_kernel_kbps.hpp>
 
@@ -215,12 +214,6 @@ SrsRtpNackForReceiver::~SrsRtpNackForReceiver()
 
 void SrsRtpNackForReceiver::insert(uint16_t first, uint16_t last)
 {
-    // If circuit-breaker is enabled, disable nack.
-    if (_srs_circuit_breaker->hybrid_high_water_level()) {
-        ++_srs_pps_snack4->sugar_;
-        return;
-    }
-
     for (uint16_t s = first; s != last; ++s) {
         queue_[s] = SrsRtpNackInfo();
     }
@@ -252,13 +245,6 @@ void SrsRtpNackForReceiver::check_queue_size()
 
 void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack &seqs, uint32_t &timeout_nacks)
 {
-    // If circuit-breaker is enabled, disable nack.
-    if (_srs_circuit_breaker->hybrid_high_water_level()) {
-        queue_.clear();
-        ++_srs_pps_snack4->sugar_;
-        return;
-    }
-
     srs_utime_t now = srs_time_now_cached();
 
     srs_utime_t interval = now - pre_check_time_;

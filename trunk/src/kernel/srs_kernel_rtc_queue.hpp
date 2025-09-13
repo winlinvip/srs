@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_RTC_QUEUE_HPP
-#define SRS_APP_RTC_QUEUE_HPP
+#ifndef SRS_KERNEL_RTC_QUEUE_HPP
+#define SRS_KERNEL_RTC_QUEUE_HPP
 
 #include <srs_core.hpp>
 

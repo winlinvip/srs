@@ -15,7 +15,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_app_hourglass.hpp>
+#include <srs_kernel_hourglass.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_pithy_print.hpp>
 #include <srs_app_server.hpp>

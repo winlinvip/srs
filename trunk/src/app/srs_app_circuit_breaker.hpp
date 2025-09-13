@@ -9,7 +9,7 @@
 
 #include <srs_core.hpp>
 
-#include <srs_app_hourglass.hpp>
+#include <srs_kernel_hourglass.hpp>
 
 // Interface for circuit breaker functionality to protect server in high load conditions.
 // The circuit breaker monitors CPU usage and enables different levels of protection:

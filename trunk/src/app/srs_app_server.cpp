@@ -24,7 +24,7 @@ using namespace std;
 #include <srs_app_conn.hpp>
 #include <srs_app_coworkers.hpp>
 #include <srs_app_heartbeat.hpp>
-#include <srs_app_hourglass.hpp>
+#include <srs_kernel_hourglass.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_http_hooks.hpp>

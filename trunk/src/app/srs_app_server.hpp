@@ -14,7 +14,7 @@
 
 #include <srs_app_conn.hpp>
 #include <srs_app_hls.hpp>
-#include <srs_app_hourglass.hpp>
+#include <srs_kernel_hourglass.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_source.hpp>

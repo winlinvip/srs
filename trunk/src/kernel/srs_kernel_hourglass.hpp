@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_KERNEL_HOURGLASS_HPP
-#define SRS_APP_KERNEL_HOURGLASS_HPP
+#ifndef SRS_KERNEL_HOURGLASS_HPP
+#define SRS_KERNEL_HOURGLASS_HPP
 
 #include <srs_core.hpp>
 

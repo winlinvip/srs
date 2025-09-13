@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <srs_app_hourglass.hpp>
+#include <srs_kernel_hourglass.hpp>
 
 #include <algorithm>
 using namespace std;

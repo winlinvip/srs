@@ -12,7 +12,7 @@
 #include <map>
 #include <vector>
 
-#include <srs_app_hourglass.hpp>
+#include <srs_kernel_hourglass.hpp>
 #include <srs_app_stream_bridge.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_ts.hpp>

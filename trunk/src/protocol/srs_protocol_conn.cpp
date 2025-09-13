@@ -13,6 +13,7 @@
 #include <srs_protocol_io.hpp>
 
 #include <algorithm>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
 using namespace std;
 

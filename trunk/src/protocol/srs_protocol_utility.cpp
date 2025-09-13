@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <sstream>
 #include <stdlib.h>
+#include <algorithm>
 using namespace std;
 
 #include <srs_kernel_buffer.hpp>

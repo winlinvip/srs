@@ -11,6 +11,7 @@
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 
+#include <algorithm>
 using namespace std;
 
 SrsPps *_srs_pps_ids = NULL;

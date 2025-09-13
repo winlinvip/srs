@@ -157,7 +157,7 @@ private:
     SrsRtmpTransport *transport_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     // The ip and port of client.

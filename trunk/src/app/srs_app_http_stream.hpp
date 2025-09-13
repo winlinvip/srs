@@ -30,7 +30,7 @@ private:
 private:
     SrsMessageQueue *queue_;
     ISrsRequest *req_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 public:
     SrsBufferCache(SrsServer *s, ISrsRequest *r);

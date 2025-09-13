@@ -38,7 +38,7 @@ private:
     SrsContextId source_cid_;
 
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 private:
     SrsOriginHub *hub_;

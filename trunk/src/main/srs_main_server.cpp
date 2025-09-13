@@ -45,6 +45,7 @@ using namespace std;
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_srt.hpp>
+#include <srs_app_factory.hpp>
 
 // pre-declare
 srs_error_t run_directly_or_daemon();
@@ -57,6 +58,9 @@ ISrsLog *_srs_log = NULL;
 ISrsContext *_srs_context = NULL;
 // @global config object for app module.
 SrsConfig *_srs_config = NULL;
+
+// @global kernel factory.
+ISrsKernelFactory *_srs_kernel_factory = new SrsFinalFactory();
 
 // @global version of srs, which can grep keyword "XCORE"
 extern const char *_srs_version;

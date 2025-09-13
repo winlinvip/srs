@@ -22,7 +22,7 @@ class SrsConfDirective;
 class SrsTcpListener;
 class SrsResourceManager;
 class SrsTcpConnection;
-class SrsCoroutine;
+class ISrsCoroutine;
 class SrsPackContext;
 class SrsBuffer;
 

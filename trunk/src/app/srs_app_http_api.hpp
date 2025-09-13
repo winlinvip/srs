@@ -238,7 +238,7 @@ public:
 class SrsGoApiValgrind : public ISrsHttpHandler, public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     std::string task_;
 
 public:

@@ -41,7 +41,7 @@ public:
 class SrsAsyncCallWorker : public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 protected:
     std::vector<ISrsAsyncCallTask *> tasks_;

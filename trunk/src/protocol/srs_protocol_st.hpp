@@ -255,4 +255,15 @@ public:
     virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
 };
 
+class SrsTrueTime : public ISrsTime
+{
+public:
+    SrsTrueTime();
+    virtual ~SrsTrueTime();
+
+public:
+    virtual srs_utime_t now();
+    virtual void usleep(srs_utime_t duration);
+};
+
 #endif

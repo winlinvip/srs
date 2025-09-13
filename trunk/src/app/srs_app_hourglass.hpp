@@ -9,13 +9,13 @@
 
 #include <srs_core.hpp>
 
-#include <srs_app_st.hpp>
+#include <srs_kernel_st.hpp>
 
 #include <map>
 #include <string>
 #include <vector>
 
-class SrsCoroutine;
+class ISrsCoroutine;
 
 // The handler for the tick.
 class ISrsHourGlass
@@ -57,9 +57,10 @@ class SrsHourGlass : public ISrsCoroutineHandler
 {
 private:
     std::string label_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     ISrsHourGlass *handler_;
     srs_utime_t resolution_;
+    ISrsTime *time_;
     // The ticks:
     //      key: the event of tick.
     //      value: the interval of tick.
@@ -112,9 +113,10 @@ public:
 class SrsFastTimer : public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     srs_utime_t interval_;
     std::vector<ISrsFastTimer *> handlers_;
+    ISrsTime *time_;
 
 public:
     SrsFastTimer(std::string label, srs_utime_t interval);
@@ -136,6 +138,8 @@ private:
 // To monitor the system wall clock timer deviation.
 class SrsClockWallMonitor : public ISrsFastTimer
 {
+private:
+    ISrsTime *time_;
 public:
     SrsClockWallMonitor();
     virtual ~SrsClockWallMonitor();

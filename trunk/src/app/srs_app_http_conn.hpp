@@ -73,7 +73,7 @@ protected:
     ISrsProtocolReadWriter *skt_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     // The ip and port of client.
     std::string ip_;
     int port_;

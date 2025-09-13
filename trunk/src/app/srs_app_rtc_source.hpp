@@ -21,6 +21,7 @@
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_format.hpp>
 #include <srs_protocol_st.hpp>
+#include <srs_kernel_log.hpp>
 
 class ISrsRequest;
 class SrsMetaCache;

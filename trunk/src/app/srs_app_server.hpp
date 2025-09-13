@@ -269,7 +269,7 @@ private:
 
 private:
     SrsServer *server_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 public:
     SrsSignalManager(SrsServer *s);
@@ -296,7 +296,7 @@ class SrsInotifyWorker : public ISrsCoroutineHandler
 {
 private:
     SrsServer *server_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     srs_netfd_t inotify_fd_;
 
 public:

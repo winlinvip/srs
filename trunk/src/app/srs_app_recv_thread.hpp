@@ -64,7 +64,7 @@ public:
 class SrsRecvThread : public ISrsCoroutineHandler
 {
 protected:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     ISrsMessagePumper *pumper_;
     SrsRtmpServer *rtmp_;
     SrsContextId _parent_cid;
@@ -206,7 +206,7 @@ class SrsHttpRecvThread : public ISrsCoroutineHandler
 {
 private:
     SrsHttpxConn *conn_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 public:
     SrsHttpRecvThread(SrsHttpxConn *c);

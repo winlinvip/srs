@@ -74,7 +74,7 @@ private:
     bool verbose_;
 
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     srs_cond_t cond_;
     // Callback handlers.
     std::vector<ISrsDisposingHandler *> handlers_;

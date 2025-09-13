@@ -14,3 +14,11 @@ srs_utime_t srs_time_since(srs_utime_t start, srs_utime_t end)
 
     return end - start;
 }
+
+ISrsTime::ISrsTime()
+{
+}
+
+ISrsTime::~ISrsTime()
+{
+}

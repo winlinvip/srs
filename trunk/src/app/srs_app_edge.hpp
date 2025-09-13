@@ -154,7 +154,7 @@ private:
 private:
     SrsPlayEdge *edge_;
     ISrsRequest *req_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     ISrsLbRoundRobin *lb_;
     SrsEdgeUpstream *upstream_;
 
@@ -189,7 +189,7 @@ private:
 private:
     SrsPublishEdge *edge_;
     ISrsRequest *req_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     SrsSimpleRtmpClient *sdk_;
     ISrsLbRoundRobin *lb_;
     // we must ensure one thread one fd principle,

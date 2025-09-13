@@ -20,7 +20,7 @@
 class SrsLatestVersion : public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     std::string server_id_;
     std::string session_id_;
 

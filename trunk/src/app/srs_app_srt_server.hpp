@@ -71,7 +71,7 @@ public:
 
 private:
     ISrsSrtPoller *srt_poller_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 };
 
 // SrsSrtEventLoop is global singleton instance.

@@ -141,7 +141,7 @@ class SrsDtlsClientImpl : public SrsDtlsImpl, public ISrsCoroutineHandler
 private:
     // ARQ thread, for role active(DTLS client).
     // @note If passive(DTLS server), the ARQ is driven by DTLS client.
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     // The DTLS-client state to drive the ARQ thread.
     SrsDtlsState state_;
     // The max ARQ retry.

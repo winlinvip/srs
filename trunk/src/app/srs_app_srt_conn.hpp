@@ -73,7 +73,7 @@ public:
 
 private:
     SrsSrtConnection *srt_conn_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     srs_error_t recv_err_;
 };
 
@@ -132,7 +132,7 @@ private:
     SrsNetworkKbps *kbps_;
     std::string ip_;
     int port_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
     ISrsRequest *req_;
     SrsSharedPtr<SrsSrtSource> srt_source_;

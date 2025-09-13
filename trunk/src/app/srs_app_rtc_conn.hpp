@@ -185,7 +185,7 @@ public:
 class SrsRtcPLIWorker : public ISrsCoroutineHandler
 {
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     srs_cond_t wait_;
     ISrsRtcPLIWorkerHandler *handler_;
 

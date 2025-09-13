@@ -31,7 +31,7 @@ class SrsSrtListener : public ISrsCoroutineHandler
 private:
     srs_srt_t lfd_;
     SrsSrtSocket *srt_skt_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 private:
     ISrsSrtHandler *handler_;

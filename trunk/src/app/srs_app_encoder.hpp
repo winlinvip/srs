@@ -28,7 +28,7 @@ private:
     std::vector<SrsFFMPEG *> ffmpegs_;
 
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     SrsPithyPrint *pprint_;
 
 public:

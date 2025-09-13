@@ -58,7 +58,7 @@ private:
     std::vector<SrsIngesterFFMPEG *> ingesters_;
 
 private:
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     SrsPithyPrint *pprint_;
     // Whether the ingesters are expired, for example, the listen port changed,
     // all ingesters must be restart.

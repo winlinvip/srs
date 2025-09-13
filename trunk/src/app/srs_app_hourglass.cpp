@@ -12,8 +12,9 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
-
 #include <srs_kernel_kbps.hpp>
+#include <srs_kernel_factory.hpp>
+#include <srs_core_time.hpp>
 
 SrsPps *_srs_pps_timer = NULL;
 SrsPps *_srs_pps_conn = NULL;
@@ -43,12 +44,14 @@ SrsHourGlass::SrsHourGlass(string label, ISrsHourGlass *h, srs_utime_t resolutio
     handler_ = h;
     resolution_ = resolution;
     total_elapse_ = 0;
-    trd_ = new SrsSTCoroutine("timer-" + label, this, _srs_context->get_id());
+    trd_ = _srs_kernel_factory->create_coroutine("timer-" + label, this);
+    time_ = _srs_kernel_factory->create_time();
 }
 
 SrsHourGlass::~SrsHourGlass()
 {
     srs_freep(trd_);
+    srs_freep(time_);
 }
 
 srs_error_t SrsHourGlass::start()
@@ -119,7 +122,7 @@ srs_error_t SrsHourGlass::cycle()
 
         // TODO: FIXME: Maybe we should use wallclock.
         total_elapse_ += resolution_;
-        srs_usleep(resolution_);
+        time_->usleep(resolution_);
     }
 
     return err;
@@ -136,12 +139,14 @@ ISrsFastTimer::~ISrsFastTimer()
 SrsFastTimer::SrsFastTimer(std::string label, srs_utime_t interval)
 {
     interval_ = interval;
-    trd_ = new SrsSTCoroutine(label, this, _srs_context->get_id());
+    trd_ = _srs_kernel_factory->create_coroutine(label, this);
+    time_ = _srs_kernel_factory->create_time();
 }
 
 SrsFastTimer::~SrsFastTimer()
 {
     srs_freep(trd_);
+    srs_freep(time_);
 }
 
 srs_error_t SrsFastTimer::start()
@@ -189,7 +194,7 @@ srs_error_t SrsFastTimer::cycle()
             }
         }
 
-        srs_usleep(interval_);
+        time_->usleep(interval_);
     }
 
     return err;
@@ -197,10 +202,12 @@ srs_error_t SrsFastTimer::cycle()
 
 SrsClockWallMonitor::SrsClockWallMonitor()
 {
+    time_ = _srs_kernel_factory->create_time();
 }
 
 SrsClockWallMonitor::~SrsClockWallMonitor()
 {
+    srs_freep(time_);
 }
 
 srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
@@ -209,7 +216,7 @@ srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
 
     static srs_utime_t clock = 0;
 
-    srs_utime_t now = srs_time_now_realtime();
+    srs_utime_t now = time_->now();
     if (!clock) {
         clock = now;
         return err;

@@ -18,7 +18,7 @@
 #include <srs_protocol_conn.hpp>
 
 class ISrsResourceManager;
-class SrsCoroutine;
+class ISrsCoroutine;
 class SrsNetworkDelta;
 class SrsTcpConnection;
 class ISrsKbpsDelta;

@@ -82,7 +82,7 @@ class SrsUdpListener : public ISrsCoroutineHandler
 protected:
     std::string label_;
     srs_netfd_t lfd_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 protected:
     char *buf_;
@@ -125,7 +125,7 @@ class SrsTcpListener : public ISrsCoroutineHandler, public ISrsListener
 private:
     std::string label_;
     srs_netfd_t lfd_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 private:
     ISrsTcpHandler *handler_;
@@ -229,7 +229,7 @@ class SrsUdpMuxListener : public ISrsCoroutineHandler
 {
 private:
     srs_netfd_t lfd_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     SrsContextId cid_;
 
 private:

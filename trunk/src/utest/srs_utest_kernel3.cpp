@@ -7,8 +7,8 @@
 
 #include <srs_app_utility.hpp>
 #include <srs_kernel_buffer.hpp>
-#include <srs_kernel_error.hpp>
 #include <srs_kernel_consts.hpp>
+#include <srs_kernel_error.hpp>
 #include <srs_kernel_factory.hpp>
 #include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_io.hpp>
@@ -34,23 +34,25 @@ public:
     virtual ~MockSrsReader() {}
 
 public:
-    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread) {
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread)
+    {
         if (read_error_ != srs_success) {
             return srs_error_copy(read_error_);
         }
-        
+
         size_t available = data_.size() - pos_;
         size_t to_read = std::min(size, available);
-        
+
         if (to_read > 0) {
             memcpy(buf, data_.data() + pos_, to_read);
             pos_ += to_read;
         }
-        
-        if (nread) *nread = to_read;
+
+        if (nread)
+            *nread = to_read;
         return srs_success;
     }
-    
+
     void set_error(srs_error_t err) { read_error_ = err; }
 };
 
@@ -65,31 +67,35 @@ public:
     virtual ~MockSrsWriter() {}
 
 public:
-    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite) {
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite)
+    {
         if (write_error_ != srs_success) {
             return srs_error_copy(write_error_);
         }
-        
-        written_data_.append((char*)buf, size);
-        if (nwrite) *nwrite = size;
+
+        written_data_.append((char *)buf, size);
+        if (nwrite)
+            *nwrite = size;
         return srs_success;
     }
-    
-    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite) {
+
+    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+    {
         if (write_error_ != srs_success) {
             return srs_error_copy(write_error_);
         }
-        
+
         ssize_t total = 0;
         for (int i = 0; i < iov_size; i++) {
-            written_data_.append((char*)iov[i].iov_base, iov[i].iov_len);
+            written_data_.append((char *)iov[i].iov_base, iov[i].iov_len);
             total += iov[i].iov_len;
         }
-        
-        if (nwrite) *nwrite = total;
+
+        if (nwrite)
+            *nwrite = total;
         return srs_success;
     }
-    
+
     void set_error(srs_error_t err) { write_error_ = err; }
 };
 
@@ -104,27 +110,29 @@ public:
     virtual ~MockSrsSeeker() {}
 
 public:
-    virtual srs_error_t lseek(off_t offset, int whence, off_t *seeked) {
+    virtual srs_error_t lseek(off_t offset, int whence, off_t *seeked)
+    {
         if (seek_error_ != srs_success) {
             return srs_error_copy(seek_error_);
         }
-        
+
         switch (whence) {
-            case SEEK_SET:
-                position_ = offset;
-                break;
-            case SEEK_CUR:
-                position_ += offset;
-                break;
-            case SEEK_END:
-                position_ = 1000 + offset; // Mock file size of 1000
-                break;
+        case SEEK_SET:
+            position_ = offset;
+            break;
+        case SEEK_CUR:
+            position_ += offset;
+            break;
+        case SEEK_END:
+            position_ = 1000 + offset; // Mock file size of 1000
+            break;
         }
-        
-        if (seeked) *seeked = position_;
+
+        if (seeked)
+            *seeked = position_;
         return srs_success;
     }
-    
+
     void set_error(srs_error_t err) { seek_error_ = err; }
 };
 
@@ -178,13 +186,13 @@ VOID TEST(KernelIOTest, ISrsWriterInterface)
     ssize_t nwrite = 0;
 
     // Test write
-    srs_error_t err = writer.write((void*)data1, 5, &nwrite);
+    srs_error_t err = writer.write((void *)data1, 5, &nwrite);
     EXPECT_EQ(srs_success, err);
     EXPECT_EQ(5, (int)nwrite);
     EXPECT_EQ("Hello", writer.written_data_);
 
     // Test another write
-    err = writer.write((void*)data2, 6, &nwrite);
+    err = writer.write((void *)data2, 6, &nwrite);
     EXPECT_EQ(srs_success, err);
     EXPECT_EQ(6, (int)nwrite);
     EXPECT_EQ("Hello World", writer.written_data_);
@@ -199,11 +207,11 @@ VOID TEST(KernelIOTest, ISrsVectorWriterInterface)
     const char *data3 = "World";
 
     iovec iov[3];
-    iov[0].iov_base = (void*)data1;
+    iov[0].iov_base = (void *)data1;
     iov[0].iov_len = 5;
-    iov[1].iov_base = (void*)data2;
+    iov[1].iov_base = (void *)data2;
     iov[1].iov_len = 1;
-    iov[2].iov_base = (void*)data3;
+    iov[2].iov_base = (void *)data3;
     iov[2].iov_len = 5;
 
     ssize_t nwrite = 0;
@@ -329,7 +337,8 @@ public:
     std::string desc_;
 
 public:
-    MockSrsResource() {
+    MockSrsResource()
+    {
         desc_ = "mock resource";
     }
     virtual ~MockSrsResource() {}
@@ -345,18 +354,20 @@ public:
 class MockSrsDisposingHandler : public ISrsDisposingHandler
 {
 public:
-    std::vector<ISrsResource*> before_dispose_calls_;
-    std::vector<ISrsResource*> disposing_calls_;
+    std::vector<ISrsResource *> before_dispose_calls_;
+    std::vector<ISrsResource *> disposing_calls_;
 
 public:
     MockSrsDisposingHandler() {}
     virtual ~MockSrsDisposingHandler() {}
 
 public:
-    virtual void on_before_dispose(ISrsResource *c) {
+    virtual void on_before_dispose(ISrsResource *c)
+    {
         before_dispose_calls_.push_back(c);
     }
-    virtual void on_disposing(ISrsResource *c) {
+    virtual void on_disposing(ISrsResource *c)
+    {
         disposing_calls_.push_back(c);
     }
 };
@@ -539,14 +550,16 @@ public:
     virtual ~MockSrsHourGlass() {}
 
 public:
-    virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick) {
+    virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick)
+    {
         events_.push_back(event);
         intervals_.push_back(interval);
         ticks_.push_back(tick);
         return srs_success;
     }
 
-    void clear() {
+    void clear()
+    {
         events_.clear();
         intervals_.clear();
         ticks_.clear();
@@ -563,12 +576,14 @@ public:
     virtual ~MockSrsFastTimer() {}
 
 public:
-    virtual srs_error_t on_timer(srs_utime_t interval) {
+    virtual srs_error_t on_timer(srs_utime_t interval)
+    {
         timer_calls_.push_back(interval);
         return srs_success;
     }
 
-    void clear() {
+    void clear()
+    {
         timer_calls_.clear();
     }
 };

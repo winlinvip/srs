@@ -5,8 +5,10 @@
 # and generate *.gcda by
 #       ./objs/srs_utest
 
-# Workdir is objs/cover.
-workdir=$(cd `dirname $0`/.. && pwd)/objs/cover
+# Workdir should be in the same directory, for example:
+#       ./objs/srs_utest
+#       bash <(curl -s https://codecov.io/bash)
+workdir=$(cd `dirname $0`/.. && pwd)
 
 # Create trunk under workdir.
 mkdir -p $workdir && cd $workdir

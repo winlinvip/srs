@@ -181,6 +181,7 @@ VOID TEST(ProtocolFormatTest, SrsRtmpFormatAudioVideo)
 
         // Video processing may fail due to complex AVC validation - just test that method exists
         srs_error_t video_err = format.on_video(video);
+        srs_freep(video_err);
         // Don't assert success since AVC decoder configuration validation is complex
     }
 
@@ -189,6 +190,8 @@ VOID TEST(ProtocolFormatTest, SrsRtmpFormatAudioVideo)
     char test_data[] = {0x01, 0x02, 0x03, 0x04};
     srs_error_t audio_err = format.on_audio(3000, test_data, sizeof(test_data));
     srs_error_t video_err = format.on_video(4000, test_data, sizeof(test_data));
+    srs_freep(audio_err);
+    srs_freep(video_err);
     // Don't assert success since codec validation may fail with test data
 }
 
@@ -347,11 +350,13 @@ VOID TEST(ProtocolRawAvcTest, SrsRawH264StreamBasic)
     char test_frame[] = {0x00, 0x00, 0x00, 0x01, 0x67}; // Minimal SPS-like data
     bool is_sps = h264.is_sps(test_frame, sizeof(test_frame));
     bool is_pps = h264.is_pps(test_frame, sizeof(test_frame));
+    (void)is_sps; (void)is_pps;
     // Don't assert specific results since frame detection is complex
 
     char pps_frame[] = {0x00, 0x00, 0x00, 0x01, 0x68}; // Minimal PPS-like data
     bool is_sps2 = h264.is_sps(pps_frame, sizeof(pps_frame));
     bool is_pps2 = h264.is_pps(pps_frame, sizeof(pps_frame));
+    (void)is_sps2; (void)is_pps2;
     // Don't assert specific results since frame detection is complex
 }
 
@@ -369,14 +374,17 @@ VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamBasic)
     bool is_vps1 = hevc.is_vps(vps_frame, sizeof(vps_frame));
     bool is_sps1 = hevc.is_sps(vps_frame, sizeof(vps_frame));
     bool is_pps1 = hevc.is_pps(vps_frame, sizeof(vps_frame));
+    (void)is_vps1; (void)is_sps1; (void)is_pps1;
 
     bool is_vps2 = hevc.is_vps(sps_frame, sizeof(sps_frame));
     bool is_sps2 = hevc.is_sps(sps_frame, sizeof(sps_frame));
     bool is_pps2 = hevc.is_pps(sps_frame, sizeof(sps_frame));
+    (void)is_vps2; (void)is_sps2; (void)is_pps2;
 
     bool is_vps3 = hevc.is_vps(pps_frame, sizeof(pps_frame));
     bool is_sps3 = hevc.is_sps(pps_frame, sizeof(pps_frame));
     bool is_pps3 = hevc.is_pps(pps_frame, sizeof(pps_frame));
+    (void)is_vps3; (void)is_sps3; (void)is_pps3;
 }
 
 VOID TEST(ProtocolHttpClientTest, SrsHttpClientBasic)
@@ -405,6 +413,7 @@ VOID TEST(ProtocolStreamTest, SrsFastStreamBasic)
 
     // Test bytes() method - should not crash even when empty
     char *bytes = stream.bytes();
+    (void)bytes;
     // bytes might be NULL or valid pointer, both are acceptable for empty stream
 
     // Test buffer setting
@@ -425,6 +434,7 @@ VOID TEST(ProtocolLogTest, SrsThreadContextBasic)
 
     // Test getting current ID
     const SrsContextId &current = context.get_id();
+    (void)current;
     // Should not crash
 
     // Test setting ID

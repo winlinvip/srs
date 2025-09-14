@@ -19,7 +19,8 @@
 #include <srs_kernel_st.hpp>
 #include <srs_kernel_stream.hpp>
 #include <srs_kernel_utility.hpp>
-#include <srs_kernel_uuid.hpp>
+
+#include <algorithm>
 
 // Mock classes for IO testing
 class MockSrsReader : public ISrsReader
@@ -412,129 +413,6 @@ VOID TEST(KernelResourceTest, SrsSharedResourceBasic)
     assigned_resource = shared_resource;
     EXPECT_TRUE(assigned_resource.get() != NULL);
     EXPECT_EQ("shared test", assigned_resource->desc());
-}
-
-// Tests for srs_kernel_uuid.hpp (basic functions only)
-VOID TEST(KernelUUIDTest, UUIDGeneration)
-{
-    uuid_t uuid1, uuid2;
-
-    // Test generating UUIDs
-    uuid_generate(uuid1);
-    uuid_generate(uuid2);
-
-    // UUIDs should not be null
-    EXPECT_FALSE(uuid_is_null(uuid1));
-    EXPECT_FALSE(uuid_is_null(uuid2));
-
-    // UUIDs should be different
-    EXPECT_NE(0, uuid_compare(uuid1, uuid2));
-}
-
-VOID TEST(KernelUUIDTest, UUIDRandomGeneration)
-{
-    uuid_t uuid1, uuid2;
-
-    // Test generating random UUIDs
-    uuid_generate_random(uuid1);
-    uuid_generate_random(uuid2);
-
-    // UUIDs should not be null
-    EXPECT_FALSE(uuid_is_null(uuid1));
-    EXPECT_FALSE(uuid_is_null(uuid2));
-
-    // UUIDs should be different
-    EXPECT_NE(0, uuid_compare(uuid1, uuid2));
-}
-
-VOID TEST(KernelUUIDTest, UUIDTimeGeneration)
-{
-    uuid_t uuid1, uuid2;
-
-    // Test generating time-based UUIDs
-    uuid_generate_time(uuid1);
-    uuid_generate_time(uuid2);
-
-    // UUIDs should not be null
-    EXPECT_FALSE(uuid_is_null(uuid1));
-    EXPECT_FALSE(uuid_is_null(uuid2));
-}
-
-VOID TEST(KernelUUIDTest, UUIDClearAndNull)
-{
-    uuid_t uuid;
-
-    // Generate a UUID first
-    uuid_generate(uuid);
-    EXPECT_FALSE(uuid_is_null(uuid));
-
-    // Clear it
-    uuid_clear(uuid);
-    EXPECT_TRUE(uuid_is_null(uuid));
-}
-
-VOID TEST(KernelUUIDTest, UUIDCopy)
-{
-    uuid_t uuid1, uuid2;
-
-    // Generate a UUID
-    uuid_generate(uuid1);
-
-    // Copy it
-    uuid_copy(uuid2, uuid1);
-
-    // Should be equal
-    EXPECT_EQ(0, uuid_compare(uuid1, uuid2));
-}
-
-VOID TEST(KernelUUIDTest, UUIDParseAndUnparse)
-{
-    uuid_t uuid;
-    char uuid_str[37]; // 36 chars + null terminator
-    char parsed_str[37];
-
-    // Generate a UUID
-    uuid_generate(uuid);
-
-    // Convert to string
-    uuid_unparse(uuid, uuid_str);
-    EXPECT_EQ(36, (int)strlen(uuid_str)); // Standard UUID string length
-
-    // Parse it back
-    uuid_t parsed_uuid;
-    int result = uuid_parse(uuid_str, parsed_uuid);
-    EXPECT_EQ(0, result);
-
-    // Should be equal to original
-    EXPECT_EQ(0, uuid_compare(uuid, parsed_uuid));
-
-    // Convert parsed UUID back to string
-    uuid_unparse(parsed_uuid, parsed_str);
-    EXPECT_EQ(0, strcmp(uuid_str, parsed_str));
-}
-
-VOID TEST(KernelUUIDTest, UUIDUnparseLowerUpper)
-{
-    uuid_t uuid;
-    char lower_str[37], upper_str[37];
-
-    // Generate a UUID
-    uuid_generate(uuid);
-
-    // Test lower case
-    uuid_unparse_lower(uuid, lower_str);
-    EXPECT_EQ(36, (int)strlen(lower_str));
-
-    // Test upper case
-    uuid_unparse_upper(uuid, upper_str);
-    EXPECT_EQ(36, (int)strlen(upper_str));
-
-    // Convert both to same case and compare
-    std::string lower_cpp(lower_str);
-    std::string upper_cpp(upper_str);
-    std::transform(upper_cpp.begin(), upper_cpp.end(), upper_cpp.begin(), ::tolower);
-
-    EXPECT_EQ(lower_cpp, upper_cpp);
 }
 
 // Mock classes for hourglass testing

@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-09-14, Merge [#4488](https://github.com/ossrs/srs/pull/4488): AI: Add utests for kernel and protocol. v7.0.87 (#4488)
 * v7.0, 2025-09-13, Merge [#4486](https://github.com/ossrs/srs/pull/4486): Move some app files to kernel. v7.0.86 (#4486)
 * v7.0, 2025-09-12, Merge [#4485](https://github.com/ossrs/srs/pull/4485): AI: Fix naming problem for app module. v7.0.85 (#4485)
 * v7.0, 2025-09-09, Merge [#4446](https://github.com/ossrs/srs/pull/4446): SRT2RTMP: fix srt bridge hevc to rtmp error. v7.0.84 (#4446)

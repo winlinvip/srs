@@ -1735,11 +1735,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
 
     int nb_payload = 0;
     int16_t cnt = srs_rtp_seq_distance(start, end) + 1;
-
-    // If the sequence range is invalid (end before start), return error
-    if (cnt <= 0) {
-        return srs_error_new(ERROR_RTC_RTP_MUXER, "invalid sequence range start=%u, end=%u, cnt=%d", start, end, cnt);
-    }
+    srs_assert(cnt >= 1);
 
     for (uint16_t i = 0; i < (uint16_t)cnt; ++i) {
         uint16_t sn = start + i;

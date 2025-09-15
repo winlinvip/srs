@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v6-changes"></a>
 
 ## SRS 6.0 Changelog
+* v6.0, 2025-09-15, RTC2RTMP: Fix sequence number wraparound assertion crashes. v6.0.177 (#4491)
 * v6.0, 2025-09-05, RTX: Fix race condition for timer. v6.0.176 (#4470) (#4474)
 * v6.0, 2025-08-26, Merge [#4451](https://github.com/ossrs/srs/pull/4451): RTC: Fix null pointer crash in RTC2RTMP when start packet is missing. v6.0.175 (#4451)
 * v6.0, 2025-08-16, Merge [#4441](https://github.com/ossrs/srs/pull/4441): fix err memory leak in rtc to rtmp bridge. v6.0.174 (#4441)

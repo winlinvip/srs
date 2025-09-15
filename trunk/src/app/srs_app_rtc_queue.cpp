@@ -51,7 +51,12 @@ bool SrsRtpRingBuffer::empty()
 int SrsRtpRingBuffer::size()
 {
     int size = srs_rtp_seq_distance(begin, end);
-    srs_assert(size >= 0);
+
+    // If the sequence range is invalid (end before begin), return 0
+    if (size < 0) {
+        return 0;
+    }
+
     return size;
 }
 

@@ -1810,9 +1810,9 @@ VOID TEST(KernelRtcRtpTest, SequenceUtilityFunctions)
 
     // Test srs_seq_is_rollback
     if (true) {
-        EXPECT_FALSE(srs_seq_is_rollback(5, 3)); // Normal newer
+        EXPECT_FALSE(srs_seq_is_rollback(5, 3));    // Normal newer
         EXPECT_TRUE(srs_seq_is_rollback(3, 65534)); // Wrap around
-        EXPECT_FALSE(srs_seq_is_rollback(3, 5)); // Not newer
+        EXPECT_FALSE(srs_seq_is_rollback(3, 5));    // Not newer
     }
 
     // Test srs_seq_distance
@@ -1878,7 +1878,7 @@ VOID TEST(KernelRtcRtpTest, SrsRtpExtensionTwcc)
     // Test decoding - create a proper TWCC extension format
     // TWCC extension format: ID (4 bits) | Length (4 bits) | Data
     char twcc_data[4] = {0x51, 0x12, 0x34, 0x00}; // ID=5, len=1, sn=0x1234 (2 bytes)
-    SrsBuffer decode_buffer(twcc_data, 3); // Only use 3 bytes (ID+len+2 data bytes)
+    SrsBuffer decode_buffer(twcc_data, 3);        // Only use 3 bytes (ID+len+2 data bytes)
 
     SrsRtpExtensionTwcc twcc2;
     twcc2.set_id(5); // Set ID first
@@ -2124,7 +2124,7 @@ VOID TEST(KernelRtcRtpTest, SrsRtpRawNALUs)
     EXPECT_EQ(0, nalus.nb_bytes());
 
     // Create test NALU samples
-    char nalu1_data[] = {0x67, 0x42, 0x00, 0x1E}; // SPS
+    char nalu1_data[] = {0x67, 0x42, 0x00, 0x1E};             // SPS
     char nalu2_data[] = {0x68, (char)0xCE, 0x3C, (char)0x80}; // PPS
 
     SrsNaluSample *sample1 = new SrsNaluSample();
@@ -2177,7 +2177,7 @@ VOID TEST(KernelRtcRtpTest, SrsRtpSTAPPayload)
     EXPECT_EQ(NULL, stap.get_pps());
 
     // Create test NALU samples
-    char sps_data[] = {0x67, 0x42, 0x00, 0x1E}; // SPS
+    char sps_data[] = {0x67, 0x42, 0x00, 0x1E};             // SPS
     char pps_data[] = {0x68, (char)0xCE, 0x3C, (char)0x80}; // PPS
 
     SrsNaluSample *sps_sample = new SrsNaluSample();
@@ -2823,7 +2823,7 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_NackIntervalCove
         ASSERT_TRUE(info != NULL);
 
         srs_utime_t now = srs_time_now_cached();
-        info->generate_time_ = now - 10 * SRS_UTIME_MILLISECONDS; // Pass first_nack_interval_
+        info->generate_time_ = now - 10 * SRS_UTIME_MILLISECONDS;     // Pass first_nack_interval_
         info->pre_req_nack_time_ = now - 25 * SRS_UTIME_MILLISECONDS; // 25ms ago
 
         SrsRtcpNack seqs;
@@ -2853,7 +2853,7 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_NackIntervalCove
         ASSERT_TRUE(info != NULL);
 
         srs_utime_t now = srs_time_now_cached();
-        info->generate_time_ = now - 10 * SRS_UTIME_MILLISECONDS; // Pass first_nack_interval_
+        info->generate_time_ = now - 10 * SRS_UTIME_MILLISECONDS;     // Pass first_nack_interval_
         info->pre_req_nack_time_ = now - 35 * SRS_UTIME_MILLISECONDS; // 35ms ago
 
         SrsRtcpNack seqs;
@@ -2883,7 +2883,7 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_NackIntervalCove
         ASSERT_TRUE(info != NULL);
 
         srs_utime_t now = srs_time_now_cached();
-        info->generate_time_ = now - 10 * SRS_UTIME_MILLISECONDS; // Pass first_nack_interval_
+        info->generate_time_ = now - 10 * SRS_UTIME_MILLISECONDS;     // Pass first_nack_interval_
         info->pre_req_nack_time_ = now - 15 * SRS_UTIME_MILLISECONDS; // 15ms ago
 
         SrsRtcpNack seqs;
@@ -2963,7 +2963,7 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_UpdateRtt)
         SrsRtpNackForReceiver nack(&mock_buffer, 50);
 
         // Set initial nack_interval_
-        nack.opts_.nack_interval_ = 30 * SRS_UTIME_MILLISECONDS; // 30ms
+        nack.opts_.nack_interval_ = 30 * SRS_UTIME_MILLISECONDS;       // 30ms
         nack.opts_.max_nack_interval_ = 1000 * SRS_UTIME_MILLISECONDS; // 1000ms max
 
         // First RTT update (larger than nack_interval_)
@@ -2989,7 +2989,7 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_UpdateRtt)
         SrsRtpNackForReceiver nack(&mock_buffer, 50);
 
         // Set initial nack_interval_ and a low max_nack_interval_
-        nack.opts_.nack_interval_ = 100 * SRS_UTIME_MILLISECONDS; // 100ms
+        nack.opts_.nack_interval_ = 100 * SRS_UTIME_MILLISECONDS;     // 100ms
         nack.opts_.max_nack_interval_ = 120 * SRS_UTIME_MILLISECONDS; // 120ms max
 
         // Update RTT with a very high value
@@ -3007,7 +3007,7 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_UpdateRtt)
         SrsRtpNackForReceiver nack(&mock_buffer, 50);
 
         // Set initial nack_interval_
-        nack.opts_.nack_interval_ = 100 * SRS_UTIME_MILLISECONDS; // 100ms
+        nack.opts_.nack_interval_ = 100 * SRS_UTIME_MILLISECONDS;      // 100ms
         nack.opts_.max_nack_interval_ = 1000 * SRS_UTIME_MILLISECONDS; // 1000ms max
 
         // Update with zero RTT
@@ -3127,11 +3127,11 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_NackInterval)
         SrsRtpNackForReceiver nack(&mock_buffer, 50);
 
         // Set up options for testing
-        nack.opts_.nack_interval_ = 60 * SRS_UTIME_MILLISECONDS; // 60ms
-        nack.opts_.min_nack_interval_ = 10 * SRS_UTIME_MILLISECONDS; // 10ms
+        nack.opts_.nack_interval_ = 60 * SRS_UTIME_MILLISECONDS;      // 60ms
+        nack.opts_.min_nack_interval_ = 10 * SRS_UTIME_MILLISECONDS;  // 10ms
         nack.opts_.first_nack_interval_ = 5 * SRS_UTIME_MILLISECONDS; // 5ms
-        nack.opts_.nack_check_interval_ = 0; // Disable check interval for testing
-        nack.pre_check_time_ = 0; // Initialize to ensure first call passes interval check
+        nack.opts_.nack_check_interval_ = 0;                          // Disable check interval for testing
+        nack.pre_check_time_ = 0;                                     // Initialize to ensure first call passes interval check
 
         // Insert a sequence
         nack.insert(300, 301);
@@ -3168,11 +3168,11 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_NackInterval)
         SrsRtpNackForReceiver nack(&mock_buffer, 50);
 
         // Set up options for testing
-        nack.opts_.nack_interval_ = 30 * SRS_UTIME_MILLISECONDS; // 30ms (< 50ms)
-        nack.opts_.min_nack_interval_ = 15 * SRS_UTIME_MILLISECONDS; // 15ms
+        nack.opts_.nack_interval_ = 30 * SRS_UTIME_MILLISECONDS;      // 30ms (< 50ms)
+        nack.opts_.min_nack_interval_ = 15 * SRS_UTIME_MILLISECONDS;  // 15ms
         nack.opts_.first_nack_interval_ = 5 * SRS_UTIME_MILLISECONDS; // 5ms
-        nack.opts_.nack_check_interval_ = 0; // Disable check interval for testing
-        nack.pre_check_time_ = 0; // Initialize to ensure first call passes interval check
+        nack.opts_.nack_check_interval_ = 0;                          // Disable check interval for testing
+        nack.pre_check_time_ = 0;                                     // Initialize to ensure first call passes interval check
 
         // Insert a sequence
         nack.insert(400, 401);
@@ -3213,11 +3213,11 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_IntervalNotReach
         SrsRtpNackForReceiver nack(&mock_buffer, 50);
 
         // Set up options for testing
-        nack.opts_.nack_interval_ = 100 * SRS_UTIME_MILLISECONDS; // 100ms
-        nack.opts_.min_nack_interval_ = 20 * SRS_UTIME_MILLISECONDS; // 20ms
+        nack.opts_.nack_interval_ = 100 * SRS_UTIME_MILLISECONDS;     // 100ms
+        nack.opts_.min_nack_interval_ = 20 * SRS_UTIME_MILLISECONDS;  // 20ms
         nack.opts_.first_nack_interval_ = 5 * SRS_UTIME_MILLISECONDS; // 5ms
-        nack.opts_.nack_check_interval_ = 0; // Disable check interval for testing
-        nack.pre_check_time_ = 0; // Initialize to ensure first call passes interval check
+        nack.opts_.nack_check_interval_ = 0;                          // Disable check interval for testing
+        nack.pre_check_time_ = 0;                                     // Initialize to ensure first call passes interval check
 
         // Insert a sequence
         nack.insert(500, 501);
@@ -3247,5 +3247,3 @@ VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_IntervalNotReach
         EXPECT_TRUE(nack.find(500) != NULL);
     }
 }
-
-

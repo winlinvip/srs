@@ -1404,7 +1404,7 @@ VOID TEST(HTTPClientTest, HTTPClientUtility)
         EXPECT_STREQ("OK", buf);
     }
 
-    // Set receive timeout and Kbps ample.
+    // Set receive timeout and Kbps sample.
     if (true) {
         SrsHttpTestServer server("OK");
         HELPER_ASSERT_SUCCESS(server.start());

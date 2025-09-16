@@ -196,7 +196,9 @@ public:
 //        // The coroutine will be stopped and wait for it to terminate.
 //        // So maybe it won't execute all your code there.
 //
-// Enjoiy the sugar for coroutines.
+// Warning: Donot use this macro unless you don't need to debug the code block, 
+// because it's impossible to debug it. Accordingly, you should use it when the 
+// code block is very simple.
 #define SRS_COROUTINE_GO_IMPL(context, id, code_block)                \
     class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler \
     {                                                                 \
@@ -300,6 +302,33 @@ public:
 
 private:
     virtual srs_error_t do_cycle(srs_netfd_t cfd);
+};
+
+// Simple HTTPS test server similar to Go's httptest.NewServer but with SSL support
+class SrsHttpsTestServer : public ISrsCoroutineHandler
+{
+private:
+    ISrsCoroutine *trd_;
+    srs_netfd_t fd_;
+    string response_body_;
+    string ssl_key_file_;
+    string ssl_cert_file_;
+    string ip_;
+    int port_;
+
+public:
+    SrsHttpsTestServer(string response_body, string key_file = "./conf/server.key", string cert_file = "./conf/server.crt");
+    virtual ~SrsHttpsTestServer();
+    virtual srs_error_t start();
+    virtual void close();
+    virtual string url();
+    virtual int get_port();
+
+    // Interface ISrsCoroutineHandler
+private:
+    virtual srs_error_t cycle();
+private:
+    srs_error_t handle_client(srs_netfd_t client_fd);
 };
 
 #endif

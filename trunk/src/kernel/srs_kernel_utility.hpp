@@ -160,6 +160,7 @@ extern std::string srs_rand_gen_str(int len);
 
 // Generate random value, use srandom(now_us) to init seed if not initialized.
 extern long srs_rand_integer();
+extern long srs_rand_integer(long min, long max);
 
 // Whether string is digit number
 //      is_digit("0")  is true

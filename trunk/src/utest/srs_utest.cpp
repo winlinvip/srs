@@ -305,7 +305,7 @@ SrsHttpTestServer::SrsHttpTestServer(string response_body) : response_body_(resp
     trd_ = new SrsSTCoroutine("http-test", this);
     fd_ = NULL;
     ip_ = "127.0.0.1";
-    port_ = 8080; // Default test port
+    port_ = srs_rand_integer(30000, 60000);
 }
 
 SrsHttpTestServer::~SrsHttpTestServer()
@@ -383,6 +383,112 @@ srs_error_t SrsHttpTestServer::do_cycle(srs_netfd_t cfd)
         if ((err = skt.write((char *)res.data(), (int)res.length(), NULL)) != srs_success) {
             return err;
         }
+    }
+
+    return err;
+}
+
+SrsHttpsTestServer::SrsHttpsTestServer(string response_body, string key_file, string cert_file)
+    : response_body_(response_body), ssl_key_file_(key_file), ssl_cert_file_(cert_file)
+{
+    trd_ = new SrsFastCoroutine("https-test", this);
+    fd_ = NULL;
+    ip_ = "127.0.0.1";
+    port_ = srs_rand_integer(30000, 60000);
+}
+
+SrsHttpsTestServer::~SrsHttpsTestServer()
+{
+    close();
+    srs_freep(trd_);
+}
+
+srs_error_t SrsHttpsTestServer::start()
+{
+    srs_error_t err = srs_success;
+
+    if ((err = srs_tcp_listen(ip_, port_, &fd_)) != srs_success) {
+        return srs_error_wrap(err, "listen %s:%d", ip_.c_str(), port_);
+    }
+
+    if ((err = trd_->start()) != srs_success) {
+        return srs_error_wrap(err, "start coroutine");
+    }
+
+    return err;
+}
+
+void SrsHttpsTestServer::close()
+{
+    if (trd_) {
+        trd_->stop();
+    }
+    if (fd_) {
+        srs_close_stfd(fd_);
+        fd_ = NULL;
+    }
+}
+
+string SrsHttpsTestServer::url()
+{
+    return "https://" + ip_ + ":" + srs_strconv_format_int(port_);
+}
+
+int SrsHttpsTestServer::get_port()
+{
+    return port_;
+}
+
+srs_error_t SrsHttpsTestServer::cycle()
+{
+    srs_error_t err = srs_success;
+
+    while (true) {
+        if ((err = trd_->pull()) != srs_success) {
+            return srs_error_wrap(err, "pull");
+        }
+
+        srs_netfd_t client_fd = srs_accept(fd_, NULL, NULL, SRS_UTIME_NO_TIMEOUT);
+        if (client_fd == NULL) {
+            return srs_error_new(ERROR_SOCKET_ACCEPT, "accept failed");
+        }
+
+        if ((err = handle_client(client_fd)) != srs_success) {
+            srs_warn("handle client failed, err=%s", srs_error_desc(err).c_str());
+            srs_freep(err);
+        }
+    }
+
+    return err;
+}
+
+srs_error_t SrsHttpsTestServer::handle_client(srs_netfd_t client_fd)
+{
+    srs_error_t err = srs_success;
+
+    SrsStSocket *skt = new SrsStSocket(client_fd);
+    SrsUniquePtr<SrsStSocket> skt_uptr(skt);
+
+    // Create SSL connection
+    SrsSslConnection *ssl = new SrsSslConnection(skt);
+    SrsUniquePtr<SrsSslConnection> ssl_uptr(ssl);
+
+    // Perform SSL handshake
+    if ((err = ssl->handshake(ssl_key_file_, ssl_cert_file_)) != srs_success) {
+        return srs_error_wrap(err, "ssl handshake");
+    }
+
+    // Read HTTP request (simplified - just read some data)
+    char buf[4096];
+    ssize_t nread = 0;
+    if ((err = ssl->read(buf, sizeof(buf), &nread)) != srs_success) {
+        return srs_error_wrap(err, "read request");
+    }
+
+    // Send HTTP response
+    string response = mock_http_response(200, response_body_);
+    if ((err = ssl->write((void*)response.data(), response.length(), NULL)) != srs_success) {
+        return srs_error_wrap(err, "write response");
     }
 
     return err;

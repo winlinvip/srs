@@ -701,6 +701,11 @@ long srs_rand_integer()
     return random();
 }
 
+long srs_rand_integer(long min, long max)
+{
+    return min + (srs_rand_integer() % (max - min + 1));
+}
+
 bool srs_is_digit_number(string str)
 {
     if (str.empty()) {

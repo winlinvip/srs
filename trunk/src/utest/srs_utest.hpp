@@ -272,4 +272,34 @@ public:
 #define SRS_COROUTINE_GO_CTX2(ctx, id, code_block) \
     SRS_COROUTINE_GO_IMPL(ctx, id, code_block)
 
+// Simple HTTP test server similar to Go's httptest.NewServer
+// This is a simplified version that uses the raw socket approach like MockOnCycleThread4
+// but with proper HTTP response formatting
+class SrsHttpTestServer : public ISrsCoroutineHandler
+{
+private:
+    ISrsCoroutine *trd_;
+    srs_netfd_t fd_;
+    string response_body_;
+    string ip_;
+    int port_;
+
+public:
+    SrsHttpTestServer(string response_body);
+    virtual ~SrsHttpTestServer();
+
+public:
+    virtual srs_error_t start();
+    virtual void close();
+    virtual string url();
+    virtual int get_port();
+
+    // Interface ISrsCoroutineHandler
+public:
+    virtual srs_error_t cycle();
+
+private:
+    virtual srs_error_t do_cycle(srs_netfd_t cfd);
+};
+
 #endif

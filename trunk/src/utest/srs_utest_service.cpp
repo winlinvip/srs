@@ -7,9 +7,11 @@
 
 using namespace std;
 
+#include <srs_app_http_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_core_deprecated.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
 
@@ -1332,69 +1334,23 @@ VOID TEST(TCPServerTest, CoverUtility)
     }
 }
 
-class MockOnCycleThread4 : public ISrsCoroutineHandler
+// Simple HTTP handler for testing
+class MockHttpTestHandler : public ISrsHttpHandler
 {
 public:
-    SrsSTCoroutine trd;
-    srs_netfd_t fd;
-    MockOnCycleThread4() : trd("mock", this)
+    string response_body_;
+
+    MockHttpTestHandler(string body) : response_body_(body)
     {
-        fd = NULL;
-    };
-    virtual ~MockOnCycleThread4()
-    {
-        trd.stop();
-        srs_close_stfd(fd);
     }
-    virtual srs_error_t start(string ip, int port)
-    {
-        srs_error_t err = srs_success;
-        if ((err = srs_tcp_listen(ip, port, &fd)) != srs_success) {
-            return err;
-        }
 
-        return trd.start();
+    virtual ~MockHttpTestHandler()
+    {
     }
-    virtual srs_error_t do_cycle(srs_netfd_t cfd)
+
+    virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage * /*r*/)
     {
-        srs_error_t err = srs_success;
-
-        SrsStSocket skt(cfd);
-        skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
-        skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
-
-        while (true) {
-            if ((err = trd.pull()) != srs_success) {
-                return err;
-            }
-
-            char buf[1024];
-            if ((err = skt.read(buf, 1024, NULL)) != srs_success) {
-                return err;
-            }
-
-            string res = mock_http_response(200, "OK");
-            if ((err = skt.write((char *)res.data(), (int)res.length(), NULL)) != srs_success) {
-                return err;
-            }
-        }
-
-        return err;
-    }
-    virtual srs_error_t cycle()
-    {
-        srs_error_t err = srs_success;
-
-        srs_netfd_t cfd = srs_accept(fd, NULL, NULL, SRS_UTIME_NO_TIMEOUT);
-        if (cfd == NULL) {
-            return err;
-        }
-
-        err = do_cycle(cfd);
-        srs_close_stfd(cfd);
-        srs_freep(err);
-
-        return err;
+        return w->write((char *)response_body_.data(), (int)response_body_.length());
     }
 };
 
@@ -1404,11 +1360,11 @@ VOID TEST(HTTPClientTest, HTTPClientUtility)
 
     // Typical HTTP POST.
     if (true) {
-        MockOnCycleThread4 trd;
-        HELPER_ASSERT_SUCCESS(trd.start("127.0.0.1", 8080));
+        SrsHttpTestServer server("OK");
+        HELPER_ASSERT_SUCCESS(server.start());
 
         SrsHttpClient client;
-        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1 * SRS_UTIME_SECONDS));
+        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", server.get_port(), 1 * SRS_UTIME_SECONDS));
 
         ISrsHttpMessage *res = NULL;
         HELPER_ASSERT_SUCCESS(client.post("/api/v1", "", &res));
@@ -1427,11 +1383,11 @@ VOID TEST(HTTPClientTest, HTTPClientUtility)
 
     // Typical HTTP GET.
     if (true) {
-        MockOnCycleThread4 trd;
-        HELPER_ASSERT_SUCCESS(trd.start("127.0.0.1", 8080));
+        SrsHttpTestServer server("OK");
+        HELPER_ASSERT_SUCCESS(server.start());
 
         SrsHttpClient client;
-        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1 * SRS_UTIME_SECONDS));
+        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", server.get_port(), 1 * SRS_UTIME_SECONDS));
 
         ISrsHttpMessage *res = NULL;
         HELPER_ASSERT_SUCCESS(client.get("/api/v1", "", &res));
@@ -1450,11 +1406,11 @@ VOID TEST(HTTPClientTest, HTTPClientUtility)
 
     // Set receive timeout and Kbps ample.
     if (true) {
-        MockOnCycleThread4 trd;
-        HELPER_ASSERT_SUCCESS(trd.start("127.0.0.1", 8080));
+        SrsHttpTestServer server("OK");
+        HELPER_ASSERT_SUCCESS(server.start());
 
         SrsHttpClient client;
-        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1 * SRS_UTIME_SECONDS));
+        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", server.get_port(), 1 * SRS_UTIME_SECONDS));
         client.set_recv_timeout(1 * SRS_UTIME_SECONDS);
         client.set_header("agent", "srs");
 

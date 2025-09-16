@@ -297,3 +297,93 @@ SrsCoroutineChan *SrsCoroutineChan::copy()
     cp->trd_ = trd_;
     return cp;
 }
+
+extern string mock_http_response(int status, string content);
+
+SrsHttpTestServer::SrsHttpTestServer(string response_body) : response_body_(response_body)
+{
+    trd_ = new SrsSTCoroutine("http-test", this);
+    fd_ = NULL;
+    ip_ = "127.0.0.1";
+    port_ = 8080; // Default test port
+}
+
+SrsHttpTestServer::~SrsHttpTestServer()
+{
+    close();
+    srs_freep(trd_);
+    srs_close_stfd(fd_);
+}
+
+srs_error_t SrsHttpTestServer::start()
+{
+    srs_error_t err = srs_success;
+
+    if ((err = srs_tcp_listen(ip_, port_, &fd_)) != srs_success) {
+        return srs_error_wrap(err, "listen %s:%d", ip_.c_str(), port_);
+    }
+
+    return trd_->start();
+}
+
+void SrsHttpTestServer::close()
+{
+    if (trd_) {
+        trd_->stop();
+    }
+    srs_close_stfd(fd_);
+}
+
+string SrsHttpTestServer::url()
+{
+    return "http://" + ip_ + ":" + srs_strconv_format_int(port_);
+}
+
+int SrsHttpTestServer::get_port()
+{
+    return port_;
+}
+
+srs_error_t SrsHttpTestServer::cycle()
+{
+    srs_error_t err = srs_success;
+
+    srs_netfd_t cfd = srs_accept(fd_, NULL, NULL, SRS_UTIME_NO_TIMEOUT);
+    if (cfd == NULL) {
+        return err;
+    }
+
+    err = do_cycle(cfd);
+    srs_close_stfd(cfd);
+    srs_freep(err);
+
+    return err;
+}
+
+srs_error_t SrsHttpTestServer::do_cycle(srs_netfd_t cfd)
+{
+    srs_error_t err = srs_success;
+
+    SrsStSocket skt(cfd);
+    skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
+    skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
+
+    while (true) {
+        if ((err = trd_->pull()) != srs_success) {
+            return err;
+        }
+
+        char buf[1024];
+        if ((err = skt.read(buf, 1024, NULL)) != srs_success) {
+            return err;
+        }
+
+        // Generate proper HTTP response
+        string res = mock_http_response(200, response_body_);
+        if ((err = skt.write((char *)res.data(), (int)res.length(), NULL)) != srs_success) {
+            return err;
+        }
+    }
+
+    return err;
+}

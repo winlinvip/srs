@@ -140,6 +140,10 @@ private:
     srs_mutex_t lock_;
 
 public:
+    // The thread to run the coroutine.
+    ISrsCoroutine *trd_;
+
+public:
     SrsCoroutineChan();
     virtual ~SrsCoroutineChan();
 
@@ -193,35 +197,29 @@ public:
 //        // So maybe it won't execute all your code there.
 //
 // Enjoiy the sugar for coroutines.
-#define SRS_COROUTINE_GO_IMPL(context, id, code_block)                            \
-    class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler             \
-    {                                                                             \
-    private:                                                                      \
-        SrsCoroutineChan *ctx_;                                                   \
-                                                                                  \
-    public:                                                                       \
-        AnonymousCoroutineHandler##id(SrsCoroutineChan *c)                        \
-        {                                                                         \
-            /* Copy the context so that we can pop it in different coroutines. */ \
-            ctx_ = c->copy();                                                     \
-        }                                                                         \
-        ~AnonymousCoroutineHandler##id()                                          \
-        {                                                                         \
-            srs_freep(ctx_);                                                      \
-        }                                                                         \
-                                                                                  \
-    public:                                                                       \
-        virtual srs_error_t cycle()                                               \
-        {                                                                         \
-            SrsCoroutineChan &ctx = *ctx_;                                        \
-            (void)ctx;                                                            \
-            code_block;                                                           \
-            return srs_success;                                                   \
-        }                                                                         \
-    };                                                                            \
-    AnonymousCoroutineHandler##id handler##id(context);                           \
-    SrsSTCoroutine st##id("anonymous", &handler##id);                             \
-    srs_error_t err_coroutine##id = st##id.start();                               \
+#define SRS_COROUTINE_GO_IMPL(context, id, code_block)                \
+    class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler \
+    {                                                                 \
+    private:                                                          \
+        SrsCoroutineChan *ctx_;                                       \
+                                                                      \
+    public:                                                           \
+        AnonymousCoroutineHandler##id() : ctx_(NULL) {}               \
+        ~AnonymousCoroutineHandler##id() { srs_freep(ctx_); }         \
+        void set_ctx(SrsCoroutineChan *c) { ctx_ = c->copy(); }       \
+        virtual srs_error_t cycle()                                   \
+        {                                                             \
+            SrsCoroutineChan &ctx = *ctx_;                            \
+            (void)ctx;                                                \
+            code_block;                                               \
+            return srs_success;                                       \
+        }                                                             \
+    };                                                                \
+    AnonymousCoroutineHandler##id handler##id;                        \
+    SrsSTCoroutine st##id("anonymous", &handler##id);                 \
+    (context)->trd_ = &st##id;                                        \
+    handler##id.set_ctx(context);                                     \
+    srs_error_t err_coroutine##id = st##id.start();                   \
     srs_assert(err_coroutine##id == srs_success)
 
 // A helper to create a anonymous coroutine like goroutine in Go.

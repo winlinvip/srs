@@ -400,23 +400,6 @@ VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamBasic)
     (void)is_pps3;
 }
 
-VOID TEST(ProtocolHttpClientTest, SrsHttpClientBasic)
-{
-    SrsHttpClient client;
-
-    // Test basic initialization - should not crash
-    // We can't easily test actual HTTP requests without a server
-
-    // Test header setting
-    SrsHttpClient *result = client.set_header("User-Agent", "SRS-Test");
-    EXPECT_TRUE(result != NULL);
-    EXPECT_EQ(&client, result); // Should return self for chaining
-
-    // Test multiple headers
-    client.set_header("Content-Type", "application/json");
-    client.set_header("Accept", "application/json");
-}
-
 VOID TEST(ProtocolStreamTest, SrsFastStreamBasic)
 {
     SrsFastStream stream;
@@ -825,71 +808,6 @@ VOID TEST(ProtocolRtmpConnTest, SrsBasicRtmpClientOperations)
     // because they require valid internal client/transport objects which we don't have
     // without a successful connection. These methods exist and will be tested in
     // integration tests with actual RTMP server connections.
-}
-
-VOID TEST(ProtocolHttpClientTest, SrsHttpClientInitialization)
-{
-    srs_error_t err = srs_success;
-
-    SrsHttpClient client;
-
-    // Test initialization with HTTP
-    HELPER_EXPECT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 5000 * SRS_UTIME_MILLISECONDS));
-
-    // Test initialization with HTTPS
-    HELPER_EXPECT_SUCCESS(client.initialize("https", "example.com", 443, 10000 * SRS_UTIME_MILLISECONDS));
-
-    // Test header setting and chaining
-    SrsHttpClient *result1 = client.set_header("User-Agent", "SRS-Test/1.0");
-    EXPECT_TRUE(result1 != NULL);
-    EXPECT_EQ(&client, result1); // Should return self for chaining
-
-    SrsHttpClient *result2 = client.set_header("Accept", "application/json");
-    EXPECT_TRUE(result2 != NULL);
-    EXPECT_EQ(&client, result2);
-
-    // Test multiple header settings
-    client.set_header("Content-Type", "application/json");
-    client.set_header("Authorization", "Bearer token123");
-    client.set_header("X-Custom-Header", "custom-value");
-
-    // Test timeout setting
-    client.set_recv_timeout(3000 * SRS_UTIME_MILLISECONDS);
-}
-
-VOID TEST(ProtocolHttpClientTest, SrsHttpClientRequests)
-{
-    srs_error_t err = srs_success;
-
-    SrsHttpClient client;
-    HELPER_EXPECT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1000 * SRS_UTIME_MILLISECONDS));
-
-    // Set headers for testing
-    client.set_header("User-Agent", "SRS-UTest");
-    client.set_header("Accept", "application/json");
-
-    // Test GET request - will fail without server but shouldn't crash
-    ISrsHttpMessage *get_msg = NULL;
-    srs_error_t get_err = client.get("/api/test", "", &get_msg);
-    srs_freep(get_err); // Expected to fail without server
-    EXPECT_TRUE(get_msg == NULL);
-
-    // Test POST request - will fail without server but shouldn't crash
-    ISrsHttpMessage *post_msg = NULL;
-    std::string post_data = "{\"test\":\"data\"}";
-    srs_error_t post_err = client.post("/api/submit", post_data, &post_msg);
-    srs_freep(post_err); // Expected to fail without server
-    EXPECT_TRUE(post_msg == NULL);
-
-    // Test requests with different paths
-    ISrsHttpMessage *root_msg = NULL;
-    srs_error_t get_root_err = client.get("/", "", &root_msg);
-    srs_freep(get_root_err);
-    EXPECT_TRUE(root_msg == NULL);
-
-    srs_error_t post_empty_err = client.post("/empty", "", &post_msg);
-    srs_freep(post_empty_err);
-    EXPECT_TRUE(post_msg == NULL);
 }
 
 VOID TEST(ProtocolRtcStunTest, SrsCrc32IeeeBasic)

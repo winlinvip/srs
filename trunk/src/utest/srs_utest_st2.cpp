@@ -45,6 +45,34 @@ VOID TEST(StTest, AnonymouseMultipleCoroutines)
     srs_usleep(50 * SRS_UTIME_MILLISECONDS);
 }
 
+VOID TEST(StTest, AnonymouseCoroutinePull)
+{
+    int counter = 0;
+
+    if (true) {
+        SrsCoroutineChan ctx;
+        ctx.push(&counter);
+
+        SRS_COROUTINE_GO_CTX(&ctx, {
+            int *counter = (int *)ctx.pop();
+            srs_assert(ctx.trd_);
+            while (ctx.trd_->pull() == srs_success) {
+                srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+            }
+            (*counter)++;
+        });
+
+        // Coroutine not terminated, so the counter is not increased.
+        EXPECT_TRUE(counter == 0);
+
+        // Wait for coroutine to run and terminated, or it will crash
+        // because the ctx.pop is called after coroutine terminated.
+        srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+    }
+
+    EXPECT_TRUE(counter == 1);
+}
+
 VOID TEST(StTest, AnonymouseCoroutineWithContext)
 {
     int counter = 0;

@@ -262,6 +262,7 @@ int MockProtectedBuffer::alloc(int size)
 
 SrsCoroutineChan::SrsCoroutineChan()
 {
+    trd_ = NULL;
     lock_ = srs_mutex_new();
 }
 
@@ -293,5 +294,6 @@ SrsCoroutineChan *SrsCoroutineChan::copy()
 
     SrsCoroutineChan *cp = new SrsCoroutineChan();
     cp->args_ = args_;
+    cp->trd_ = trd_;
     return cp;
 }

@@ -51,7 +51,7 @@ MockSrsConfig::~MockSrsConfig()
 {
 }
 
-srs_error_t MockSrsConfig::parse(string buf)
+srs_error_t MockSrsConfig::mock_parse(string buf)
 {
     srs_error_t err = srs_success;
 
@@ -980,7 +980,7 @@ VOID TEST(ConfigMainTest, ParseEmpty)
     srs_error_t err;
 
     MockSrsConfig conf;
-    HELPER_ASSERT_FAILED(conf.parse(""));
+    HELPER_ASSERT_FAILED(conf.mock_parse(""));
 }
 
 VOID TEST(ConfigMainTest, ParseMinConf)
@@ -988,7 +988,7 @@ VOID TEST(ConfigMainTest, ParseMinConf)
     srs_error_t err;
 
     MockSrsConfig conf;
-    HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+    HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
 
     vector<string> listens = conf.get_listens();
     EXPECT_EQ(1, (int)listens.size());
@@ -1000,7 +1000,7 @@ VOID TEST(ConfigMainTest, ParseInvalidDirective)
     srs_error_t err;
 
     MockSrsConfig conf;
-    HELPER_ASSERT_FAILED(conf.parse("listens 1935;"));
+    HELPER_ASSERT_FAILED(conf.mock_parse("listens 1935;"));
 }
 
 VOID TEST(ConfigMainTest, ParseInvalidDirective2)
@@ -1009,7 +1009,7 @@ VOID TEST(ConfigMainTest, ParseInvalidDirective2)
 
     MockSrsConfig conf;
     // check error for user not specified the listen directive.
-    HELPER_ASSERT_FAILED(conf.parse("chunk_size 4096;"));
+    HELPER_ASSERT_FAILED(conf.mock_parse("chunk_size 4096;"));
 }
 
 VOID TEST(ConfigMainTest, CheckConf_listen)
@@ -1018,27 +1018,27 @@ VOID TEST(ConfigMainTest, CheckConf_listen)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse("listens 1935;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse("listens 1935;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse("listen 0;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse("listen 0;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse("listen -1;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse("listen -1;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse("listen -1935;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse("listen -1935;"));
     }
 }
 
@@ -1048,7 +1048,7 @@ VOID TEST(ConfigMainTest, CheckConf_pid)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "pids ./objs/srs.pid;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "pids ./objs/srs.pid;"));
     }
 }
 
@@ -1058,42 +1058,42 @@ VOID TEST(ConfigMainTest, CheckConf_chunk_size)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 60000;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size 60000;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse("rtmp{listen 1935; chunk_sizes 60000;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse("rtmp{listen 1935; chunk_sizes 60000;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 0;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 1;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size 1;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 127;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size 127;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size -1;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size -1;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size -4096;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size -4096;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935; chunk_size 65537;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935; chunk_size 65537;}"));
     }
 }
 
@@ -1103,17 +1103,17 @@ VOID TEST(ConfigMainTest, CheckConf_ff_log_dir)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "ff_log_dir ./objs;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "ff_log_dir ./objs;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "ff_log_dirs ./objs;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "ff_log_dirs ./objs;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "ff_log_levels info;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "ff_log_levels info;"));
     }
 }
 
@@ -1123,12 +1123,12 @@ VOID TEST(ConfigMainTest, CheckConf_srs_log_level)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srs_log_level trace;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srs_log_level trace;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "srs_log_levels trace;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "srs_log_levels trace;"));
     }
 }
 
@@ -1138,12 +1138,12 @@ VOID TEST(ConfigMainTest, CheckConf_srs_log_file)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srs_log_file ./objs/srs.log;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srs_log_file ./objs/srs.log;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "srs_log_files ./objs/srs.log;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "srs_log_files ./objs/srs.log;"));
     }
 }
 
@@ -1153,12 +1153,12 @@ VOID TEST(ConfigMainTest, CheckConf_daemon)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "daemon on;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "daemon on;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "daemons on;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "daemons on;"));
     }
 }
 
@@ -1168,62 +1168,62 @@ VOID TEST(ConfigMainTest, CheckConf_heartbeat)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "heartbeats{}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "heartbeats{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{enabled on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{enabled on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "heartbeat{enableds on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "heartbeat{enableds on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{interval 9;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{interval 9;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "heartbeat{intervals 9;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "heartbeat{intervals 9;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{url http://127.0.0.1:8085/api/v1/servers;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{url http://127.0.0.1:8085/api/v1/servers;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "heartbeat{urls http://127.0.0.1:8085/api/v1/servers;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "heartbeat{urls http://127.0.0.1:8085/api/v1/servers;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{device_id 0;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{device_id 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "heartbeat{device_ids 0;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "heartbeat{device_ids 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{summaries on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{summaries on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "heartbeat{summariess on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "heartbeat{summariess on;}"));
     }
 }
 
@@ -1233,22 +1233,22 @@ VOID TEST(ConfigMainTest, CheckConf_http_api)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_apis{}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_apis{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_api{enableds on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_api{enableds on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_api{listens 1985;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_api{listens 1985;}"));
     }
 }
 
@@ -1258,42 +1258,42 @@ VOID TEST(ConfigMainTest, CheckConf_stats)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stats{}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stats{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "statss{}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "statss{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stats{network 0;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stats{network 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "stats{networks 0;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "stats{networks 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "stats{network -100;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "stats{network -100;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "stats{network -1;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "stats{network -1;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stats{disk sda;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stats{disk sda;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "stats{disks sda;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "stats{disks sda;}"));
     }
 }
 
@@ -1303,27 +1303,27 @@ VOID TEST(ConfigMainTest, CheckConf_http_stream)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_stream{}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_stream{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_streams{}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_streams{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_stream{enableds on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_stream{enableds on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_stream{listens 8080;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_stream{listens 8080;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_stream{dirs ./objs/nginx/html;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_stream{dirs ./objs/nginx/html;}"));
     }
 }
 
@@ -1333,12 +1333,12 @@ VOID TEST(ConfigMainTest, CheckConf_vhost)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhosts{}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhosts{}"));
     }
 }
 
@@ -1348,32 +1348,32 @@ VOID TEST(ConfigMainTest, CheckConf_vhost_edge)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{mode remote;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{mode remote;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{modes remote;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{modes remote;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{origin 127.0.0.1:1935 localhost:1935;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{origin 127.0.0.1:1935 localhost:1935;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{origins 127.0.0.1:1935 localhost:1935;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{origins 127.0.0.1:1935 localhost:1935;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{token_traverse off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{token_traverse off;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{token_traverses off;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{token_traverses off;}"));
     }
 }
 
@@ -1383,72 +1383,72 @@ VOID TEST(ConfigMainTest, CheckConf_vhost_dvr)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvrs{}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvrs{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{enabled on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvr{enableds on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{enableds on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_path ./objs/nginx/html;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_path ./objs/nginx/html;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_paths ./objs/nginx/html;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_paths ./objs/nginx/html;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_plan session;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_plan session;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_plans session;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_plans session;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_duration 30;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_duration 30;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_durations 30;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_durations 30;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_wait_keyframe on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_wait_keyframe on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_wait_keyframes on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_wait_keyframes on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{time_jitter full;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{time_jitter full;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{dvr{time_jitters full;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{time_jitters full;}}"));
     }
 }
 
@@ -1458,52 +1458,52 @@ VOID TEST(ConfigMainTest, CheckConf_vhost_ingest)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{ingest{}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingests{}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingests{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{ingest{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{enabled on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingest{enableds on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{enableds on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{ingest{input{}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{input{}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingest{inputs{}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{inputs{}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{ingest{ffmpeg ./objs/ffmpeg/bin/ffmpeg;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{ffmpeg ./objs/ffmpeg/bin/ffmpeg;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingest{ffmpegs ./objs/ffmpeg/bin/ffmpeg;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{ffmpegs ./objs/ffmpeg/bin/ffmpeg;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{ingest{engine{}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{engine{}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingest{engines{}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{engines{}}}"));
     }
 }
 
@@ -1513,42 +1513,42 @@ VOID TEST(ConfigMainTest, CheckConf_vhost_http)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http{}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{https{}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{https{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http{enabled on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http{enableds on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http{enableds on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http{mount /hls;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http{mount /hls;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http{mounts /hls;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http{mounts /hls;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http{dir ./objs/nginx/html/hls;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http{dir ./objs/nginx/html/hls;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http{dirs ./objs/nginx/html/hls;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http{dirs ./objs/nginx/html/hls;}}"));
     }
 }
 
@@ -1558,57 +1558,57 @@ VOID TEST(ConfigMainTest, CheckConf_vhost_hls)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{hlss{}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{hlss{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{enabled on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{hls{enableds on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{enableds on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_path ./objs/nginx/html;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_path ./objs/nginx/html;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_paths ./objs/nginx/html;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_paths ./objs/nginx/html;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_fragment 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_fragment 10;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_fragments 10;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_fragments 10;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_window 60;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_window 60;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_windows 60;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_windows 60;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_ctx on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_ctx on;}}"));
     }
 }
 
@@ -1618,82 +1618,82 @@ VOID TEST(ConfigMainTest, CheckConf_hooks)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hookss{}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hookss{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{enabled on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{enableds on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{enableds on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_connect http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_connect http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_connects http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_connects http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_close http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_close http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_closes http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_closes http://127.0.0.1:8085/api/v1/clients http://localhost:8085/api/v1/clients;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_publish http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_publish http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_publishs http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_publishs http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_unpublish http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_unpublish http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_unpublishs http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_unpublishs http://127.0.0.1:8085/api/v1/streams http://localhost:8085/api/v1/streams;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_play http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_play http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_plays http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_plays http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_stop http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_stop http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{http_hooks{on_stops http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{http_hooks{on_stops http://127.0.0.1:8085/api/v1/sessions http://localhost:8085/api/v1/sessions;}}"));
     }
 }
 
@@ -1703,22 +1703,22 @@ VOID TEST(ConfigMainTest, CheckConf_gop_cache)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{gop_cache off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{gop_cache off;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{gop_caches off;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{gop_caches off;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{queue_length 10;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{queue_length 10;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{queue_lengths 10;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{queue_lengths 10;}"));
     }
 }
 
@@ -1728,12 +1728,12 @@ VOID TEST(ConfigMainTest, CheckConf_debug_srs_upnode)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{debug_srs_upnode off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{debug_srs_upnode off;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{debug_srs_upnodes off;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{debug_srs_upnodes off;}"));
     }
 }
 
@@ -1743,32 +1743,32 @@ VOID TEST(ConfigMainTest, CheckConf_refer)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{refer github.com github.io;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{refer github.com github.io;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{refers github.com github.io;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{refers github.com github.io;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{refer_publish github.com github.io;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{refer_publish github.com github.io;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{refer_publishs github.com github.io;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{refer_publishs github.com github.io;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{refer_play github.com github.io;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{refer_play github.com github.io;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{refer_plays github.com github.io;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{refer_plays github.com github.io;}"));
     }
 }
 
@@ -1778,12 +1778,12 @@ VOID TEST(ConfigMainTest, CheckConf_forward)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{forward 127.0.0.1:1936;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{forward 127.0.0.1:1936;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{forwards 127.0.0.1:1936;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{forwards 127.0.0.1:1936;}"));
     }
 }
 
@@ -1793,212 +1793,212 @@ VOID TEST(ConfigMainTest, CheckConf_transcode)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcodes{}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcodes{}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{enabled on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{enableds on;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{enableds on;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{ffmpeg ./objs/ffmpeg/bin/ffmpeg;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{ffmpeg ./objs/ffmpeg/bin/ffmpeg;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{ffmpegs ./objs/ffmpeg/bin/ffmpeg;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{ffmpegs ./objs/ffmpeg/bin/ffmpeg;}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engines {}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engines {}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {enabled on;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {enabled on;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {enableds on;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {enableds on;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vfilter {}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vfilter {}}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vfilters {}}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vfilters {}}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vcodec libx264;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vcodec libx264;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vcodecs libx264;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vcodecs libx264;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vbitrate 300;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vbitrate 300;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vbitrates 300;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vbitrates 300;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vfps 20;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vfps 20;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vfpss 20;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vfpss 20;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vwidth 768;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vwidth 768;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vwidths 768;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vwidths 768;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vheight 320;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vheight 320;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vheights 320;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vheights 320;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vthreads 2;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vthreads 2;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vthreadss 2;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vthreadss 2;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vprofile baseline;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vprofile baseline;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vprofiles baseline;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vprofiles baseline;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vpreset superfast;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vpreset superfast;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vpresets superfast;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vpresets superfast;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vparams {}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vparams {}}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {vparamss {}}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {vparamss {}}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {acodec libfdk_aac;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {acodec libfdk_aac;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {acodecs libfdk_aac;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {acodecs libfdk_aac;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {abitrate 45;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {abitrate 45;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {abitrates 45;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {abitrates 45;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {asample_rate 44100;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {asample_rate 44100;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {asample_rates 44100;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {asample_rates 44100;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {achannels 2;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {achannels 2;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {achannelss 2;}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {achannelss 2;}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {aparams {}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {aparams {}}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {aparamss {}}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {aparamss {}}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {output rtmp://127.0.0.1:[port]/[app]?vhost=[vhost]/[stream]_[engine];}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {output rtmp://127.0.0.1:[port]/[app]?vhost=[vhost]/[stream]_[engine];}}}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{transcode{engine {outputs rtmp://127.0.0.1:[port]/[app]?vhost=[vhost]/[stream]_[engine];}}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{transcode{engine {outputs rtmp://127.0.0.1:[port]/[app]?vhost=[vhost]/[stream]_[engine];}}}"));
     }
 }
 
@@ -2008,37 +2008,37 @@ VOID TEST(ConfigMainTest, CheckConf_chunk_size2)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{chunk_size 128;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_size 128;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{chunk_sizes 128;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_sizes 128;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{chunk_size 127;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_size 127;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{chunk_size 0;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_size 0;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{chunk_size -1;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_size -1;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{chunk_size -128;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_size -128;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{chunk_size 65537;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{chunk_size 65537;}"));
     }
 }
 
@@ -2049,7 +2049,7 @@ VOID TEST(ConfigMainTest, TransformRtmpConfig)
     // Test backward compatibility: global listen should be transformed to rtmp.listen
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("listen 1935;"));
 
         // After parsing and transformation, should be able to get listen from rtmp section
         vector<string> listens = conf.get_listens();
@@ -2071,7 +2071,7 @@ VOID TEST(ConfigMainTest, TransformRtmpConfig)
     // Test backward compatibility: global chunk_size should be transformed to rtmp.chunk_size
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935; chunk_size 60000;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("listen 1935; chunk_size 60000;"));
 
         // After parsing and transformation, should be able to get chunk_size from rtmp section
         EXPECT_EQ(60000, conf.get_global_chunk_size());
@@ -2091,7 +2091,7 @@ VOID TEST(ConfigMainTest, TransformRtmpConfig)
     // Test backward compatibility: multiple global RTMP configs
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("listen 1935 1936; chunk_size 128;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("listen 1935 1936; chunk_size 128;"));
 
         // Verify listen ports
         vector<string> listens = conf.get_listens();
@@ -2106,7 +2106,7 @@ VOID TEST(ConfigMainTest, TransformRtmpConfig)
     // Test that new rtmp section format still works
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1937; chunk_size 256;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1937; chunk_size 256;}"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -2117,7 +2117,7 @@ VOID TEST(ConfigMainTest, TransformRtmpConfig)
     // Test mixed format: existing rtmp section + global configs (global should be merged)
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1938;} chunk_size 512;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1938;} chunk_size 512;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -2140,12 +2140,12 @@ VOID TEST(ConfigMainTest, CheckConf_jitter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{time_jitter full;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{time_jitter full;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{time_jitters full;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{time_jitters full;}"));
     }
 }
 
@@ -2155,32 +2155,32 @@ VOID TEST(ConfigMainTest, CheckConf_atc)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{atc on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{atc on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{atcs on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{atcs on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{atc_auto on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{atc_auto on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{atc_autos on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{atc_autos on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{enabled on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{enabled on;}"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{enableds on;}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{enableds on;}"));
     }
 }
 
@@ -2190,12 +2190,12 @@ VOID TEST(ConfigMainTest, CheckConf_pithy_print)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "pithy_print_ms 1000;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "pithy_print_ms 1000;"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "pithy_print_mss 1000;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "pithy_print_mss 1000;"));
     }
 }
 
@@ -2204,9 +2204,9 @@ VOID TEST(ConfigMainTest, CheckConf_vhost_ingest_id)
     srs_error_t err;
 
     MockSrsConfig conf;
-    HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{ingest id{}}"));
-    HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingest id{} ingest id{}}"));
-    HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "vhost v{ingest{} ingest{}}"));
+    HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest id{}}"));
+    HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest id{} ingest id{}}"));
+    HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "vhost v{ingest{} ingest{}}"));
 }
 
 VOID TEST(ConfigUnitTest, CheckDefaultValuesVhost)
@@ -2216,91 +2216,91 @@ VOID TEST(ConfigUnitTest, CheckDefaultValuesVhost)
     MockSrsConfig conf;
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_dash_fragment(""));
         EXPECT_EQ(5 * SRS_UTIME_SECONDS, conf.get_dash_update_period(""));
         EXPECT_EQ(300 * SRS_UTIME_SECONDS, conf.get_dash_timeshift(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dash{dash_fragment 4;dash_update_period 40;dash_timeshift 70;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dash{dash_fragment 4;dash_update_period 40;dash_timeshift 70;}}"));
         EXPECT_EQ(4 * SRS_UTIME_SECONDS, conf.get_dash_fragment("v"));
         EXPECT_EQ(40 * SRS_UTIME_SECONDS, conf.get_dash_update_period("v"));
         EXPECT_EQ(70 * SRS_UTIME_SECONDS, conf.get_dash_timeshift("v"));
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(srs_utime_t(10 * SRS_UTIME_SECONDS), conf.get_heartbeat_interval());
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{interval 10;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{interval 10;}"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_heartbeat_interval());
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_pithy_print());
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "pithy_print_ms 20000;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "pithy_print_ms 20000;"));
         EXPECT_EQ(20 * SRS_UTIME_SECONDS, conf.get_pithy_print());
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(350 * SRS_UTIME_MILLISECONDS, conf.get_mr_sleep(""));
         EXPECT_EQ(350 * SRS_UTIME_MILLISECONDS, conf.get_mw_sleep(""));
         EXPECT_EQ(20 * SRS_UTIME_SECONDS, conf.get_publish_1stpkt_timeout(""));
         EXPECT_EQ(5 * SRS_UTIME_SECONDS, conf.get_publish_normal_timeout(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{publish{mr_latency 1000; firstpkt_timeout 100; normal_timeout 100;} play{mw_latency 1000;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{publish{mr_latency 1000; firstpkt_timeout 100; normal_timeout 100;} play{mw_latency 1000;}}"));
         EXPECT_EQ(1000 * SRS_UTIME_MILLISECONDS, conf.get_mr_sleep("v"));
         EXPECT_EQ(100 * SRS_UTIME_MILLISECONDS, conf.get_publish_1stpkt_timeout("v"));
         EXPECT_EQ(100 * SRS_UTIME_MILLISECONDS, conf.get_publish_normal_timeout("v"));
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(30 * SRS_UTIME_SECONDS, conf.get_dvr_duration(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{dvr{dvr_duration 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{dvr{dvr_duration 10;}}"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_dvr_duration("v"));
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(120 * SRS_UTIME_SECONDS, (int)conf.get_hls_dispose(""));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_hls_fragment(""));
         EXPECT_EQ(60 * SRS_UTIME_SECONDS, conf.get_hls_window(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hls{hls_dispose 10;hls_fragment 20;hls_window 30;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hls{hls_dispose 10;hls_fragment 20;hls_window 30;}}"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_hls_dispose("v"));
         EXPECT_EQ(20 * SRS_UTIME_SECONDS, conf.get_hls_fragment("v"));
         EXPECT_EQ(30 * SRS_UTIME_SECONDS, conf.get_hls_window("v"));
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_hds_fragment(""));
         EXPECT_EQ(60 * SRS_UTIME_SECONDS, conf.get_hds_window(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{hds{hds_fragment 20;hds_window 30;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{hds{hds_fragment 20;hds_window 30;}}"));
         EXPECT_EQ(20 * SRS_UTIME_SECONDS, conf.get_hds_fragment("v"));
         EXPECT_EQ(30 * SRS_UTIME_SECONDS, conf.get_hds_window("v"));
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(30 * SRS_UTIME_SECONDS, conf.get_queue_length(""));
         EXPECT_EQ(0, (int)conf.get_send_min_interval(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{play{queue_length 100;send_min_interval 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{play{queue_length 100;send_min_interval 10;}}"));
         EXPECT_EQ(100 * SRS_UTIME_SECONDS, conf.get_queue_length("v"));
         EXPECT_EQ(10 * SRS_UTIME_MILLISECONDS, conf.get_send_min_interval("v"));
     }
 
     if (true) {
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(0, (int)conf.get_vhost_http_remux_fast_cache(""));
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost v{http_remux{fast_cache 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost v{http_remux{fast_cache 10;}}"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_vhost_http_remux_fast_cache("v"));
     }
 }
@@ -2917,128 +2917,128 @@ VOID TEST(ConfigMainTest, CheckGlobalConfig)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_TRUE(conf.cwd().empty());
         EXPECT_TRUE(conf.argv().empty());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_TRUE(conf.get_daemon());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "daemon on;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "daemon on;"));
         EXPECT_TRUE(conf.get_daemon());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "daemon off;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "daemon off;"));
         EXPECT_FALSE(conf.get_daemon());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_TRUE(conf.get_root() != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(1000, conf.get_max_connections());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "max_connections 1024;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "max_connections 1024;"));
         EXPECT_EQ(1024, conf.get_max_connections());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935;}"));
         EXPECT_EQ(1, (int)conf.get_listens().size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse("rtmp{listen 1935 1936;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("rtmp{listen 1935 1936;}"));
         EXPECT_EQ(2, (int)conf.get_listens().size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_STREQ("./objs/srs.pid", conf.get_pid_file().c_str());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "pid server.pid;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "pid server.pid;"));
         EXPECT_STREQ("server.pid", conf.get_pid_file().c_str());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_pithy_print());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_FALSE(conf.get_utc_time());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "utc_time on;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "utc_time on;"));
         EXPECT_TRUE(conf.get_utc_time());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "utc_time off;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "utc_time off;"));
         EXPECT_FALSE(conf.get_utc_time());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_STREQ("./", conf.get_work_dir().c_str());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "work_dir objs;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "work_dir objs;"));
         EXPECT_STREQ("objs", conf.get_work_dir().c_str());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_FALSE(conf.get_asprocess());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "asprocess off;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "asprocess off;"));
         EXPECT_FALSE(conf.get_asprocess());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "daemon off; asprocess on;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "daemon off; asprocess on;"));
         EXPECT_TRUE(conf.get_asprocess());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "daemon on; asprocess on;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "daemon on; asprocess on;"));
     }
 }
 
@@ -3048,25 +3048,25 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(0, (int)conf.get_stream_casters().size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster;"));
         EXPECT_EQ(1, (int)conf.get_stream_casters().size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster; stream_caster;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster; stream_caster;"));
         EXPECT_EQ(2, (int)conf.get_stream_casters().size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster;"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3076,7 +3076,7 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster {enabled off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster {enabled off;}"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3086,7 +3086,7 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster {enabled on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster {enabled on;}"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3096,7 +3096,7 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster;"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3106,7 +3106,7 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster {output xxx;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster {output xxx;}"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3116,7 +3116,7 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster;"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3126,7 +3126,7 @@ VOID TEST(ConfigMainTest, CheckStreamConverter)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stream_caster {listen 8080;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stream_caster {listen 8080;}"));
 
         vector<SrsConfDirective *> arr = conf.get_stream_casters();
         ASSERT_EQ(1, (int)arr.size());
@@ -3141,13 +3141,13 @@ VOID TEST(ConfigMainTest, CheckVhostConfig2)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_FALSE(conf.get_vhost_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net;"));
         EXPECT_TRUE(conf.get_vhost_enabled("ossrs.net"));
         EXPECT_TRUE(conf.get_gop_cache("ossrs.net"));
         EXPECT_TRUE(conf.get_debug_srs_upnode("ossrs.net"));
@@ -3181,181 +3181,181 @@ VOID TEST(ConfigMainTest, CheckVhostConfig2)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{forward {backend xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{forward {backend xxx;}}"));
         EXPECT_TRUE(conf.get_forward_backend("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{forward {destination xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{forward {destination xxx;}}"));
         EXPECT_TRUE(conf.get_forwards("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{forward {enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{forward {enabled on;}}"));
         EXPECT_TRUE(conf.get_forward_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{publish {normal_timeout 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{publish {normal_timeout 10;}}"));
         EXPECT_EQ(10000, conf.get_publish_normal_timeout("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{publish {firstpkt_timeout 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{publish {firstpkt_timeout 10;}}"));
         EXPECT_EQ(10000, conf.get_publish_1stpkt_timeout("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play {reduce_sequence_header on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play {reduce_sequence_header on;}}"));
         EXPECT_TRUE(conf.get_reduce_sequence_header("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play {send_min_interval 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play {send_min_interval 10;}}"));
         EXPECT_EQ(10000, conf.get_send_min_interval("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{tcp_nodelay on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{tcp_nodelay on;}"));
         EXPECT_TRUE(conf.get_tcp_nodelay("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{min_latency on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{min_latency on;}"));
         EXPECT_TRUE(conf.get_realtime_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{mw_latency 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{mw_latency 10;}}"));
         EXPECT_EQ(10000, conf.get_mw_sleep("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{publish{mr_latency 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{publish{mr_latency 10;}}"));
         EXPECT_EQ(10000, conf.get_mr_sleep("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{publish{mr on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{publish{mr on;}}"));
         EXPECT_TRUE(conf.get_mr_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{publish{parse_sps off;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{publish{parse_sps off;}}"));
         EXPECT_FALSE(conf.get_parse_sps("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{publish{try_annexb_first off;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{publish{try_annexb_first off;}}"));
         EXPECT_FALSE(conf.try_annexb_first("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{chunk_size 10;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{chunk_size 10;}"));
         EXPECT_EQ(10, conf.get_chunk_size("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{out_ack_size 10;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{out_ack_size 10;}"));
         EXPECT_EQ(10, conf.get_out_ack_size("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{in_ack_size 10;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{in_ack_size 10;}"));
         EXPECT_EQ(10, conf.get_in_ack_size("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{refer{publish xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{refer{publish xxx;}}"));
         EXPECT_TRUE(conf.get_refer_publish("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{refer{play xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{refer{play xxx;}}"));
         EXPECT_TRUE(conf.get_refer_play("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{refer{all xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{refer{all xxx;}}"));
         EXPECT_TRUE(conf.get_refer_all("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{refer{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{refer{enabled on;}}"));
         EXPECT_TRUE(conf.get_refer_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{queue_length 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{queue_length 10;}}"));
         EXPECT_EQ(10000000, conf.get_queue_length("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{mix_correct on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{mix_correct on;}}"));
         EXPECT_TRUE(conf.get_mix_correct("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{time_jitter zero;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{time_jitter zero;}}"));
         EXPECT_EQ(2, (int)conf.get_time_jitter("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{atc_auto on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{atc_auto on;}}"));
         EXPECT_TRUE(conf.get_gop_cache("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{atc on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{atc on;}}"));
         EXPECT_TRUE(conf.get_gop_cache("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{gop_cache off;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{gop_cache off;}}"));
         EXPECT_FALSE(conf.get_gop_cache("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net {enabled off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net {enabled off;}"));
         EXPECT_FALSE(conf.get_vhost_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net {enabled on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net {enabled on;}"));
         EXPECT_TRUE(conf.get_vhost_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{play{gop_cache off;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{play{gop_cache off;}}"));
         EXPECT_FALSE(conf.get_gop_cache("ossrs.net"));
     }
 }
@@ -3366,7 +3366,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig3)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net;"));
         EXPECT_TRUE(conf.get_vhost_http_hooks("ossrs.net") == NULL);
         EXPECT_FALSE(conf.get_vhost_http_hooks_enabled("ossrs.net"));
         EXPECT_TRUE(conf.get_vhost_on_connect("ossrs.net") == NULL);
@@ -3390,103 +3390,103 @@ VOID TEST(ConfigMainTest, CheckVhostConfig3)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{security{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{security{enabled on;}}"));
         EXPECT_TRUE(conf.get_security_rules("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{security{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{security{enabled on;}}"));
         EXPECT_TRUE(conf.get_security_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{cluster{coworkers xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{cluster{coworkers xxx;}}"));
         EXPECT_EQ(1, (int)conf.get_vhost_coworkers("ossrs.net").size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{cluster{origin_cluster on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{cluster{origin_cluster on;}}"));
         EXPECT_TRUE(conf.get_vhost_origin_cluster("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{cluster{vhost xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{cluster{vhost xxx;}}"));
         EXPECT_FALSE(conf.get_vhost_edge_transform_vhost("ossrs.net").empty());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{cluster{token_traverse on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{cluster{token_traverse on;}}"));
         EXPECT_TRUE(conf.get_vhost_edge_token_traverse("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{cluster{origin xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{cluster{origin xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_edge_origin("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{cluster{mode remote;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{cluster{mode remote;}}"));
         EXPECT_TRUE(conf.get_vhost_is_edge("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_hls_notify xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_hls_notify xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_hls_notify("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_hls xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_hls xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_hls("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_dvr xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_dvr xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_dvr("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_stop xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_stop xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_stop("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_play xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_play xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_play("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_unpublish xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_unpublish xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_unpublish("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_publish xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_publish xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_publish("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_close xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_close xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_on_close("ossrs.net") != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_connect xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_connect xxx;}}"));
         SrsConfDirective *dir = conf.get_vhost_on_connect("ossrs.net");
         ASSERT_TRUE(dir != NULL);
         ASSERT_EQ((int)dir->args_.size(), 1);
@@ -3495,7 +3495,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig3)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_connect xxx yyy;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{on_connect xxx yyy;}}"));
         SrsConfDirective *dir = conf.get_vhost_on_connect("ossrs.net");
         ASSERT_TRUE(dir != NULL);
         ASSERT_EQ((int)dir->args_.size(), 2);
@@ -3505,13 +3505,13 @@ VOID TEST(ConfigMainTest, CheckVhostConfig3)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks{enabled on;}}"));
         EXPECT_TRUE(conf.get_vhost_http_hooks_enabled("ossrs.net"));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_hooks;}"));
         EXPECT_TRUE(conf.get_vhost_http_hooks("ossrs.net") != NULL);
     }
 }
@@ -3522,7 +3522,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net;"));
         EXPECT_TRUE(conf.get_transcode("ossrs.net", "") == NULL);
         EXPECT_FALSE(conf.get_transcode_enabled(conf.get_transcode("ossrs.net", "")));
         EXPECT_TRUE(conf.get_transcode_ffmpeg(conf.get_transcode("ossrs.net", "")).empty());
@@ -3531,7 +3531,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{output xxx;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{output xxx;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("xxx", conf.get_engine_output(arr.at(0)).c_str());
@@ -3539,7 +3539,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{oformat flv;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{oformat flv;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("flv", conf.get_engine_oformat(arr.at(0)).c_str());
@@ -3547,7 +3547,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{aparams {i;}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{aparams {i;}}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1, (int)conf.get_engine_aparams(arr.at(0)).size());
@@ -3555,7 +3555,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{achannels 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{achannels 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_achannels(arr.at(0)));
@@ -3563,7 +3563,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{asample_rate 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{asample_rate 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_asample_rate(arr.at(0)));
@@ -3571,7 +3571,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{abitrate 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{abitrate 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_abitrate(arr.at(0)));
@@ -3579,7 +3579,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{acodec aac;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{acodec aac;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("aac", conf.get_engine_acodec(arr.at(0)).c_str());
@@ -3587,7 +3587,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vparams {t;}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vparams {t;}}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1, (int)conf.get_engine_vparams(arr.at(0)).size());
@@ -3595,7 +3595,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vpreset main;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vpreset main;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("main", conf.get_engine_vpreset(arr.at(0)).c_str());
@@ -3603,7 +3603,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vprofile main;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vprofile main;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("main", conf.get_engine_vprofile(arr.at(0)).c_str());
@@ -3611,7 +3611,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vthreads 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vthreads 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_vthreads(arr.at(0)));
@@ -3619,7 +3619,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vheight 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vheight 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_vheight(arr.at(0)));
@@ -3627,7 +3627,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vwidth 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vwidth 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_vwidth(arr.at(0)));
@@ -3635,7 +3635,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vfps 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vfps 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_vfps(arr.at(0)));
@@ -3643,7 +3643,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vbitrate 1000;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vbitrate 1000;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1000, conf.get_engine_vbitrate(arr.at(0)));
@@ -3651,7 +3651,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vcodec x264;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vcodec x264;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("x264", conf.get_engine_vcodec(arr.at(0)).c_str());
@@ -3659,7 +3659,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vfilter {i;}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vfilter {i;}}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1, (int)conf.get_engine_vfilter(arr.at(0)).size());
@@ -3667,7 +3667,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vfilter {i logo.png;}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{vfilter {i logo.png;}}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(2, (int)conf.get_engine_vfilter(arr.at(0)).size());
@@ -3675,7 +3675,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{iformat mp4;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{iformat mp4;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_STREQ("mp4", conf.get_engine_iformat(arr.at(0)).c_str());
@@ -3683,7 +3683,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{perfile {re;}}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{perfile {re;}}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_EQ(1, (int)conf.get_engine_perfile(arr.at(0)).size());
@@ -3691,7 +3691,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{enabled on;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine{enabled on;}}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
         EXPECT_TRUE(conf.get_engine_enabled(arr.at(0)));
@@ -3699,26 +3699,26 @@ VOID TEST(ConfigMainTest, CheckVhostConfig4)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{engine;}}"));
         vector<SrsConfDirective *> arr = conf.get_transcode_engines(conf.get_transcode("ossrs.net", "xxx"));
         ASSERT_EQ(1, (int)arr.size());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{ffmpeg xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{ffmpeg xxx;}}"));
         EXPECT_STREQ("xxx", conf.get_transcode_ffmpeg(conf.get_transcode("ossrs.net", "xxx")).c_str());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx{enabled on;}}"));
         EXPECT_TRUE(conf.get_transcode_enabled(conf.get_transcode("ossrs.net", "xxx")));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{transcode xxx;}"));
         EXPECT_TRUE(conf.get_transcode("ossrs.net", "xxx") != NULL);
     }
 }
@@ -3729,7 +3729,7 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;}http_server{enabled on;listen 2345;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;}http_server{enabled on;listen 2345;}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("2345", conf.get_http_stream_listens().at(0).c_str());
@@ -3740,7 +3740,7 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;}http_server{enabled on;listen 2345;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;}http_server{enabled on;listen 2345;}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("2345", conf.get_http_stream_listens().at(0).c_str());
@@ -3755,7 +3755,7 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;listen 2345;}}http_server{enabled on;listen 3456;https{enabled on;listen 4567;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;listen 2345;}}http_server{enabled on;listen 3456;https{enabled on;listen 4567;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("3456", conf.get_http_stream_listens().at(0).c_str());
@@ -3770,7 +3770,7 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;listen 2345;}}http_server{enabled on;listen 3456;https{enabled on;listen 5678;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;listen 2345;}}http_server{enabled on;listen 3456;https{enabled on;listen 5678;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("3456", conf.get_http_stream_listens().at(0).c_str());
@@ -3785,7 +3785,7 @@ VOID TEST(ConfigMainTest, CheckHttpListen)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_FAILED(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen xxx;https{enabled on;listen zzz;}}http_server{enabled on;listen xxx;https{enabled on;listen yyy;}}"));
+        HELPER_ASSERT_FAILED(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen xxx;https{enabled on;listen zzz;}}http_server{enabled on;listen xxx;https{enabled on;listen yyy;}}"));
     }
 }
 
@@ -3795,7 +3795,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{exec{enabled on;publish xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{exec{enabled on;publish xxx;}}"));
         EXPECT_TRUE(conf.get_exec("ossrs.net") != NULL);
         EXPECT_TRUE(conf.get_exec_enabled("ossrs.net"));
         EXPECT_EQ(1, (int)conf.get_exec_publishs("ossrs.net").size());
@@ -3803,7 +3803,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{ingest xxx{enabled on;ffmpeg xxx2;input{type xxx3;url xxx4;}}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{ingest xxx{enabled on;ffmpeg xxx2;input{type xxx3;url xxx4;}}}"));
         EXPECT_EQ(1, (int)conf.get_ingesters("ossrs.net").size());
         ASSERT_TRUE(conf.get_ingest_by_id("ossrs.net", "xxx") != NULL);
         EXPECT_TRUE(conf.get_ingest_enabled(conf.get_ingest_by_id("ossrs.net", "xxx")));
@@ -3814,7 +3814,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srs_log_tank xxx;srs_log_level xxx2;srs_log_file xxx3;ff_log_dir xxx4; ff_log_level xxx5;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srs_log_tank xxx;srs_log_level xxx2;srs_log_file xxx3;ff_log_dir xxx4; ff_log_level xxx5;"));
         EXPECT_TRUE(conf.get_log_tank_file());
         EXPECT_STREQ("xxx2", conf.get_log_level().c_str());
         EXPECT_STREQ("xxx3", conf.get_log_file().c_str());
@@ -3825,7 +3825,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{dash{enabled on;dash_fragment 10;dash_update_period 10;dash_timeshift 10;dash_path xxx;dash_mpd_file xxx2;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{dash{enabled on;dash_fragment 10;dash_update_period 10;dash_timeshift 10;dash_path xxx;dash_mpd_file xxx2;}}"));
         EXPECT_TRUE(conf.get_dash_enabled("ossrs.net"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_dash_fragment("ossrs.net"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_dash_update_period("ossrs.net"));
@@ -3836,7 +3836,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{hls{enabled on;hls_entry_prefix xxx;hls_path xxx2;hls_m3u8_file xxx3;hls_ts_file xxx4;hls_ts_floor on;hls_fragment 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{hls{enabled on;hls_entry_prefix xxx;hls_path xxx2;hls_m3u8_file xxx3;hls_ts_file xxx4;hls_ts_floor on;hls_fragment 10;}}"));
         EXPECT_TRUE(conf.get_hls_enabled("ossrs.net"));
         EXPECT_STREQ("xxx", conf.get_hls_entry_prefix("ossrs.net").c_str());
         EXPECT_STREQ("xxx2", conf.get_hls_path("ossrs.net").c_str());
@@ -3848,7 +3848,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{hls{hls_td_ratio 2.1;hls_aof_ratio 3.1;hls_window 10;hls_on_error xxx;hls_nb_notify 5;hls_dts_directly off;hls_cleanup off;hls_dispose 10;hls_wait_keyframe off;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{hls{hls_td_ratio 2.1;hls_aof_ratio 3.1;hls_window 10;hls_on_error xxx;hls_nb_notify 5;hls_dts_directly off;hls_cleanup off;hls_dispose 10;hls_wait_keyframe off;}}"));
         EXPECT_EQ(2.1, conf.get_hls_td_ratio("ossrs.net"));
         EXPECT_EQ(3.1, conf.get_hls_aof_ratio("ossrs.net"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_hls_window("ossrs.net"));
@@ -3862,7 +3862,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{hls{hls_keys on;hls_fragments_per_key 5;hls_key_file xxx;hls_key_file_path xxx2;hls_key_url xxx3;hls_use_fmp4 on;hls_fmp4_file xx.m4s;hls_init_file yy-init.mp4;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{hls{hls_keys on;hls_fragments_per_key 5;hls_key_file xxx;hls_key_file_path xxx2;hls_key_url xxx3;hls_use_fmp4 on;hls_fmp4_file xx.m4s;hls_init_file yy-init.mp4;}}"));
         EXPECT_TRUE(conf.get_hls_keys("ossrs.net"));
         EXPECT_EQ(5, conf.get_hls_fragments_per_key("ossrs.net"));
         EXPECT_STREQ("xxx", conf.get_hls_key_file("ossrs.net").c_str());
@@ -3875,7 +3875,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{hds{enabled on;hds_path xxx;hds_fragment 10;hds_window 10;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{hds{enabled on;hds_path xxx;hds_fragment 10;hds_window 10;}}"));
         EXPECT_TRUE(conf.get_hds_enabled("ossrs.net"));
         EXPECT_STREQ("xxx", conf.get_hds_path("ossrs.net").c_str());
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_hds_fragment("ossrs.net"));
@@ -3884,7 +3884,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{dvr{enabled on;dvr_apply all;dvr_path xxx;dvr_plan xxx2;dvr_duration 10;time_jitter full;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{dvr{enabled on;dvr_apply all;dvr_path xxx;dvr_plan xxx2;dvr_duration 10;time_jitter full;}}"));
         EXPECT_TRUE(conf.get_dvr_enabled("ossrs.net"));
         EXPECT_TRUE(conf.get_dvr_apply("ossrs.net") != NULL);
         EXPECT_STREQ("xxx", conf.get_dvr_path("ossrs.net").c_str());
@@ -3896,7 +3896,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;crossdomain off;auth {enabled on;username admin;password 123456;}raw_api {enabled on;allow_reload on;allow_query on;allow_update on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;crossdomain off;auth {enabled on;username admin;password 123456;}raw_api {enabled on;allow_reload on;allow_query on;allow_update on;}}"));
         EXPECT_TRUE(conf.get_http_api_enabled());
         EXPECT_EQ(1, (int)conf.get_http_api_listens().size());
         EXPECT_STREQ("1234", conf.get_http_api_listens().at(0).c_str());
@@ -3912,7 +3912,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_server{enabled on;listen 1234;dir xxx2;crossdomain on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_server{enabled on;listen 1234;dir xxx2;crossdomain on;}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
         EXPECT_EQ(1, (int)conf.get_http_stream_listens().size());
         EXPECT_STREQ("1234", conf.get_http_stream_listens().at(0).c_str());
@@ -3922,7 +3922,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_static{enabled on;mount xxx;dir xxx2;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_static{enabled on;mount xxx;dir xxx2;}}"));
         EXPECT_TRUE(conf.get_vhost_http_enabled("ossrs.net"));
         EXPECT_STREQ("xxx", conf.get_vhost_http_mount("ossrs.net").c_str());
         EXPECT_STREQ("xxx2", conf.get_vhost_http_dir("ossrs.net").c_str());
@@ -3930,7 +3930,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{http_remux{enabled on;fast_cache 10;mount xxx;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{http_remux{enabled on;fast_cache 10;mount xxx;}}"));
         EXPECT_TRUE(conf.get_vhost_http_remux_enabled("ossrs.net"));
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_vhost_http_remux_fast_cache("ossrs.net"));
         EXPECT_STREQ("xxx", conf.get_vhost_http_remux_mount("ossrs.net").c_str());
@@ -3938,7 +3938,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "heartbeat{enabled on;interval 10;url xxx;device_id xxx2;summaries on;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "heartbeat{enabled on;interval 10;url xxx;device_id xxx2;summaries on;}"));
         EXPECT_TRUE(conf.get_heartbeat_enabled());
         EXPECT_EQ(10 * SRS_UTIME_SECONDS, conf.get_heartbeat_interval());
         EXPECT_STREQ("xxx", conf.get_heartbeat_url().c_str());
@@ -3948,14 +3948,14 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "stats{network 0;disk xxx;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "stats{network 0;disk xxx;}"));
         EXPECT_EQ(0, (int)conf.get_stats_network());
         EXPECT_TRUE(conf.get_stats_disk_device() != NULL);
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "exporter{enabled on;listen 9972;label cn-beijing;tag cn-edge;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "exporter{enabled on;listen 9972;label cn-beijing;tag cn-edge;}"));
         EXPECT_TRUE(conf.get_exporter_enabled());
         EXPECT_STREQ("9972", conf.get_exporter_listen().c_str());
         EXPECT_STREQ("cn-beijing", conf.get_exporter_label().c_str());
@@ -3973,7 +3973,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         conf.mock_include("./conf/include_test/include.conf", "rtmp{listen 1935;}include ./conf/include_test/include_1.conf;");
         conf.mock_include("./conf/include_test/include_1.conf", "max_connections 1000;daemon off;srs_log_tank console;http_server {enabled on;listen 1234;dir xxx2;}vhost ossrs.net {hls {enabled on;hls_path xxx;hls_m3u8_file xxx1;hls_ts_file xxx2;hls_fragment 10;hls_window 60;}}");
 
-        HELPER_ASSERT_SUCCESS(conf.parse("include ./conf/include_test/include.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("include ./conf/include_test/include.conf;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -3999,7 +3999,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
 
         conf.mock_include("./conf/include_test/include_1.conf", "max_connections 1000;daemon off;srs_log_tank console;http_server {enabled on;listen 1234;dir xxx2;}vhost ossrs.net {hls {enabled on;hls_path xxx;hls_m3u8_file xxx1;hls_ts_file xxx2;hls_fragment 10;hls_window 60;}}");
 
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "include ./conf/include_test/include_1.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "include ./conf/include_test/include_1.conf;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -4026,7 +4026,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         conf.mock_include("./conf/include_test/include_2.conf", "listen 1935;max_connections 1000;daemon off;srs_log_tank console;http_server {enabled on;listen 1234;dir xxx2;}vhost ossrs.net {include ./conf/include_test/include_3.conf;}");
         conf.mock_include("./conf/include_test/include_3.conf", "hls {enabled on;hls_path xxx;hls_m3u8_file xxx1;hls_ts_file xxx2;hls_fragment 10;hls_window 60;}");
 
-        HELPER_ASSERT_SUCCESS(conf.parse("include ./conf/include_test/include_2.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("include ./conf/include_test/include_2.conf;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -4055,7 +4055,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         conf.mock_include("./conf/include_test/include_5.conf", "http_server {enabled on;listen 8080;dir xxx2;}");
         conf.mock_include("./conf/include_test/include_6.conf", "http_api {enabled on;listen 1985;}");
 
-        HELPER_ASSERT_SUCCESS(conf.parse("include ./conf/include_test/include_4.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("include ./conf/include_test/include_4.conf;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -4088,7 +4088,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         conf.mock_include("./conf/include_test/include_5.conf", "http_server {enabled on;listen 1234;dir xxx2;}");
         conf.mock_include("./conf/include_test/include_6.conf", "http_api {enabled on;listen 2345;}");
 
-        HELPER_ASSERT_SUCCESS(conf.parse("include ./conf/include_test/include_4.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("include ./conf/include_test/include_4.conf;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -4122,7 +4122,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
         conf.mock_include("./conf/include_test/include_6.conf", "http_api {enabled on;listen 2345;}");
         conf.mock_include("./conf/include_test/include_7.conf", "dash{enabled on;dash_fragment 10;dash_update_period 10;dash_timeshift 10;dash_path xxx;dash_mpd_file xxx2;}");
 
-        HELPER_ASSERT_SUCCESS(conf.parse("include ./conf/include_test/include_4.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse("include ./conf/include_test/include_4.conf;"));
 
         vector<string> listens = conf.get_listens();
         EXPECT_EQ(1, (int)listens.size());
@@ -4156,7 +4156,7 @@ VOID TEST(ConfigMainTest, CheckIncludeConfig)
     if (true) {
         MockSrsConfig conf;
 
-        HELPER_ASSERT_FAILED(conf.parse("include ./conf/include_test/include.conf;"));
+        HELPER_ASSERT_FAILED(conf.mock_parse("include ./conf/include_test/include.conf;"));
     }
 }
 
@@ -4166,19 +4166,19 @@ VOID TEST(ConfigMainTest, LogLevelV2)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_EQ(SrsLogLevelTrace, srs_get_log_level(conf.get_log_level()));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srs_log_level warn;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srs_log_level warn;"));
         EXPECT_EQ(SrsLogLevelWarn, srs_get_log_level(conf.get_log_level()));
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srs_log_level_v2 warn;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srs_log_level_v2 warn;"));
         EXPECT_EQ(SrsLogLevelWarn, srs_get_log_level(conf.get_log_level_v2()));
     }
 }
@@ -4189,19 +4189,19 @@ VOID TEST(ConfigMainTest, SrtServerTlpktDrop)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF));
         EXPECT_TRUE(conf.get_srto_tlpktdrop());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srt_server{tlpktdrop off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srt_server{tlpktdrop off;}"));
         EXPECT_FALSE(conf.get_srto_tlpktdrop());
     }
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "srt_server{tlpkdrop off;}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "srt_server{tlpkdrop off;}"));
         EXPECT_FALSE(conf.get_srto_tlpktdrop());
     }
 }
@@ -5009,7 +5009,7 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesForward)
 
     if (true) {
         // Test that environment variable overrides config file
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{forward {enabled off; backend 192.168.1.1:1936;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{forward {enabled off; backend 192.168.1.1:1936;}}"));
 
         SrsSetEnvConfig(conf, forward_enabled, "SRS_VHOST_FORWARD_ENABLED", "on");
         SrsSetEnvConfig(conf, forward_backend, "SRS_VHOST_FORWARD_BACKEND", "10.0.0.1:1936");

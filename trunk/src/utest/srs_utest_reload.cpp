@@ -78,7 +78,7 @@ srs_error_t MockSrsReloadConfig::do_reload(string buf)
     srs_error_t err = srs_success;
 
     MockSrsReloadConfig conf;
-    if ((err = conf.parse(buf)) != srs_success) {
+    if ((err = conf.mock_parse(buf)) != srs_success) {
         return srs_error_wrap(err, "parse");
     }
 
@@ -97,7 +97,7 @@ VOID TEST(ConfigReloadTest, ReloadEmpty)
     MockSrsReloadConfig conf;
 
     conf.subscribe(&handler);
-    HELPER_EXPECT_FAILED(conf.parse(""));
+    HELPER_EXPECT_FAILED(conf.mock_parse(""));
     HELPER_EXPECT_FAILED(conf.do_reload(""));
     EXPECT_TRUE(handler.all_false());
 }
@@ -110,7 +110,7 @@ VOID TEST(ConfigReloadTest, ReloadVhostChunkSize)
     MockSrsReloadConfig conf;
 
     conf.subscribe(&handler);
-    HELPER_EXPECT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net { chunk_size 60000; }"));
+    HELPER_EXPECT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net { chunk_size 60000; }"));
     HELPER_EXPECT_SUCCESS(conf.do_reload(_MIN_OK_CONF "vhost ossrs.net { chunk_size 60000; }"));
     EXPECT_TRUE(handler.all_false());
     handler.reset();

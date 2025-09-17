@@ -40,7 +40,7 @@ VOID TEST(ConfigMainTest, CheckIncludeEmptyConfig)
     if (true) {
         MockSrsConfig conf;
         conf.mock_include("test.conf", "");
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "include test.conf;"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "include test.conf;"));
         EXPECT_EQ(1, (int)conf.get_listens().size());
     }
 }
@@ -51,7 +51,7 @@ VOID TEST(ConfigMainTest, CheckHttpListenFollow)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;https{enabled on;}}http_server{enabled on;listen 1985;https{enabled on;listen 4567;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;https{enabled on;}}http_server{enabled on;listen 1985;https{enabled on;listen 4567;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         // If http API use same port to HTTP server.
@@ -70,7 +70,7 @@ VOID TEST(ConfigMainTest, CheckHttpListenFollow)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 8080;https{enabled on;}}http_server{enabled on;https{enabled on;listen 4567;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 8080;https{enabled on;}}http_server{enabled on;https{enabled on;listen 4567;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         // If http API use same port to HTTP server.
@@ -89,7 +89,7 @@ VOID TEST(ConfigMainTest, CheckHttpListenFollow)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 8080;https{enabled on;}}http_server{enabled on;https{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 8080;https{enabled on;}}http_server{enabled on;https{enabled on;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         // If http API use same port to HTTP server.
@@ -108,7 +108,7 @@ VOID TEST(ConfigMainTest, CheckHttpListenFollow)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;https{enabled on;}}http_server{enabled on;listen 1985;https{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;https{enabled on;}}http_server{enabled on;listen 1985;https{enabled on;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         // If http API use same port to HTTP server.
@@ -127,7 +127,7 @@ VOID TEST(ConfigMainTest, CheckHttpListenFollow)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;}}http_server{enabled on;listen 1234;https{enabled on;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;}}http_server{enabled on;listen 1234;https{enabled on;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         // If http API use same port to HTTP server.
@@ -146,7 +146,7 @@ VOID TEST(ConfigMainTest, CheckHttpListenFollow)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;}}http_server{enabled on;listen 1234;https{enabled on;listen 4567;}}"));
+        HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "http_api{enabled on;listen 1234;https{enabled on;}}http_server{enabled on;listen 1234;https{enabled on;listen 4567;}}"));
         EXPECT_TRUE(conf.get_http_stream_enabled());
 
         // If http API use same port to HTTP server.

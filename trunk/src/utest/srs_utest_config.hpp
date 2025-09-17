@@ -38,7 +38,7 @@ private:
     std::map<std::string, std::string> included_files;
 
 public:
-    virtual srs_error_t parse(std::string buf);
+    virtual srs_error_t mock_parse(std::string buf);
     virtual srs_error_t mock_include(const std::string file_name, const std::string content);
 
 protected:

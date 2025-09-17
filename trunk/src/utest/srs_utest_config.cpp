@@ -2433,6 +2433,7 @@ VOID TEST(ConfigUnitTest, DirectiveEquals)
         a->at(0)->name_ = "hls";
         SrsConfDirective *b = new SrsConfDirective();
         b->directives_.push_back(new SrsConfDirective());
+        b->at(0)->name_ = "hls";
         EXPECT_TRUE(srs_directive_equals(a, b, "hls"));
         srs_freep(a);
         srs_freep(b);

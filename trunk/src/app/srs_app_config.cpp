@@ -277,7 +277,7 @@ bool srs_directive_equals(SrsConfDirective *a, SrsConfDirective *b, string excep
         SrsConfDirective *b0 = b->at(i);
 
         // donot compare the except child directive.
-        if (a0->name_ == except) {
+        if (a0->name_ == except && b0->name_ == except) {
             continue;
         }
 

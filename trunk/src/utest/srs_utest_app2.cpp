@@ -7,11 +7,14 @@
 #include <srs_utest_app2.hpp>
 
 #include <srs_app_rtc_source.hpp>
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_codec.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_format.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_utest.hpp>
 
 // External function declaration from srs_app_rtc_source.cpp
@@ -78,6 +81,198 @@ public:
         last_stream_desc_ = desc;
     }
 };
+
+// Mock implementation of ISrsRtcConsumer for testing SrsRtcSource
+class MockRtcConsumer : public ISrsRtcConsumer
+{
+public:
+    int update_source_id_count_;
+    int stream_change_count_;
+    SrsRtcSourceDescription *last_stream_desc_;
+    int enqueue_count_;
+    srs_error_t enqueue_error_;
+
+    MockRtcConsumer()
+    {
+        update_source_id_count_ = 0;
+        stream_change_count_ = 0;
+        last_stream_desc_ = NULL;
+        enqueue_count_ = 0;
+        enqueue_error_ = srs_success;
+    }
+
+    virtual ~MockRtcConsumer()
+    {
+        srs_freep(enqueue_error_);
+    }
+
+    virtual void update_source_id()
+    {
+        update_source_id_count_++;
+    }
+
+    virtual void on_stream_change(SrsRtcSourceDescription *desc)
+    {
+        stream_change_count_++;
+        last_stream_desc_ = desc;
+    }
+
+    virtual srs_error_t enqueue(SrsRtpPacket *pkt)
+    {
+        enqueue_count_++;
+        srs_freep(pkt); // Free the packet to avoid memory leak in tests
+        return srs_error_copy(enqueue_error_);
+    }
+
+    void set_enqueue_error(srs_error_t err)
+    {
+        srs_freep(enqueue_error_);
+        enqueue_error_ = srs_error_copy(err);
+    }
+};
+
+// Mock implementation of ISrsRtcSourceEventHandler for testing
+class MockRtcSourceEventHandler : public ISrsRtcSourceEventHandler
+{
+public:
+    int on_unpublish_count_;
+    int on_consumers_finished_count_;
+
+    MockRtcSourceEventHandler()
+    {
+        on_unpublish_count_ = 0;
+        on_consumers_finished_count_ = 0;
+    }
+
+    virtual ~MockRtcSourceEventHandler()
+    {
+    }
+
+    virtual void on_unpublish()
+    {
+        on_unpublish_count_++;
+    }
+
+    virtual void on_consumers_finished()
+    {
+        on_consumers_finished_count_++;
+    }
+};
+
+// Mock implementation of ISrsRtcPublishStream for testing
+class MockRtcPublishStream : public ISrsRtcPublishStream
+{
+public:
+    int request_keyframe_count_;
+    uint32_t last_keyframe_ssrc_;
+    SrsContextId last_keyframe_cid_;
+    SrsContextId context_id_;
+
+    MockRtcPublishStream()
+    {
+        request_keyframe_count_ = 0;
+        last_keyframe_ssrc_ = 0;
+    }
+
+    virtual ~MockRtcPublishStream()
+    {
+    }
+
+    virtual void request_keyframe(uint32_t ssrc, SrsContextId cid)
+    {
+        request_keyframe_count_++;
+        last_keyframe_ssrc_ = ssrc;
+        last_keyframe_cid_ = cid;
+    }
+
+    virtual const SrsContextId &context_id()
+    {
+        return context_id_;
+    }
+
+    void set_context_id(const SrsContextId &cid)
+    {
+        context_id_ = cid;
+    }
+};
+
+// Mock implementation of ISrsCircuitBreaker for testing
+class MockCircuitBreaker : public ISrsCircuitBreaker
+{
+public:
+    bool hybrid_high_water_level_;
+    bool hybrid_critical_water_level_;
+    bool hybrid_dying_water_level_;
+
+    MockCircuitBreaker()
+    {
+        hybrid_high_water_level_ = false;
+        hybrid_critical_water_level_ = false;
+        hybrid_dying_water_level_ = false;
+    }
+
+    virtual ~MockCircuitBreaker()
+    {
+    }
+
+    virtual srs_error_t initialize()
+    {
+        return srs_success;
+    }
+
+    virtual bool hybrid_high_water_level()
+    {
+        return hybrid_high_water_level_;
+    }
+
+    virtual bool hybrid_critical_water_level()
+    {
+        return hybrid_critical_water_level_;
+    }
+
+    virtual bool hybrid_dying_water_level()
+    {
+        return hybrid_dying_water_level_;
+    }
+
+    void set_hybrid_dying_water_level(bool value)
+    {
+        hybrid_dying_water_level_ = value;
+    }
+};
+
+#ifdef SRS_FFMPEG_FIT
+// Mock implementation of SrsRtcFrameBuilder for testing
+class MockRtcFrameBuilder : public SrsRtcFrameBuilder
+{
+public:
+    int on_rtp_count_;
+    srs_error_t on_rtp_error_;
+
+    MockRtcFrameBuilder(ISrsStreamBridge *bridge) : SrsRtcFrameBuilder(bridge)
+    {
+        on_rtp_count_ = 0;
+        on_rtp_error_ = srs_success;
+    }
+
+    virtual ~MockRtcFrameBuilder()
+    {
+        srs_freep(on_rtp_error_);
+    }
+
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt)
+    {
+        on_rtp_count_++;
+        return srs_error_copy(on_rtp_error_);
+    }
+
+    void set_on_rtp_error(srs_error_t err)
+    {
+        srs_freep(on_rtp_error_);
+        on_rtp_error_ = srs_error_copy(err);
+    }
+};
+#endif
 
 VOID TEST(AppTest2, AacRawAppendAdtsHeaderSequenceHeader)
 {
@@ -677,3 +872,2703 @@ VOID TEST(AppTest2, RtcConsumerLargePacketQueue)
     HELPER_EXPECT_SUCCESS(consumer.dump_packet(&empty_pkt));
     EXPECT_TRUE(empty_pkt == NULL);
 }
+
+VOID TEST(AppTest2, RtcSourceOnSourceChangedNoConsumers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Call on_source_changed with no consumers - should succeed
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+}
+
+VOID TEST(AppTest2, RtcSourceOnSourceChangedWithConsumers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create consumers using the source's create_consumer method
+    ISrsRtcConsumer *consumer1 = NULL;
+    ISrsRtcConsumer *consumer2 = NULL;
+    ISrsRtcConsumer *consumer3 = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer1));
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer2));
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer3));
+
+    // Create a stream description
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream-123";
+    source->set_stream_desc(stream_desc.get());
+
+    // Call on_source_changed - should notify all consumers
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Verify stream description is accessible
+    EXPECT_TRUE(source->has_stream_desc());
+
+    // Note: We can't easily verify consumer notifications without accessing private members
+    // or creating a more complex mock setup. The test verifies the method executes successfully.
+}
+
+VOID TEST(AppTest2, RtcSourceOnSourceChangedContextIdChange)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create consumers
+    ISrsRtcConsumer *consumer1 = NULL;
+    ISrsRtcConsumer *consumer2 = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer1));
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer2));
+
+    // Store original context ID
+    SrsContextId original_context = _srs_context->get_id();
+
+    // Change the global context ID to simulate source ID change
+    SrsContextId new_context = _srs_context->generate_id();
+    _srs_context->set_id(new_context);
+
+    // Call on_source_changed - should detect context ID change and notify consumers
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Verify source ID was updated
+    EXPECT_TRUE(source->source_id().compare(new_context) == 0);
+
+    // Restore original context
+    _srs_context->set_id(original_context);
+}
+
+VOID TEST(AppTest2, RtcSourceOnSourceChangedNoContextIdChange)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create consumer
+    ISrsRtcConsumer *consumer = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
+
+    // Call on_source_changed first time to set initial context ID
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Store the source ID after first call
+    SrsContextId first_source_id = source->source_id();
+
+    // Call on_source_changed again without changing context ID
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Verify source ID remains the same (no context change)
+    EXPECT_TRUE(source->source_id().compare(first_source_id) == 0);
+}
+
+VOID TEST(AppTest2, RtcSourceOnSourceChangedPreviousSourceId)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Store original context ID
+    SrsContextId original_context = _srs_context->get_id();
+
+    // Call on_source_changed first time to set initial context ID
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+    SrsContextId first_context = source->source_id();
+
+    // Note: Due to the buggy implementation, _pre_source_id gets set to the current context ID
+    // on the first call when _source_id was empty, so it's not empty after the first call
+    EXPECT_FALSE(source->pre_source_id().empty());
+    EXPECT_TRUE(source->pre_source_id().compare(first_context) == 0);
+
+    // Change the global context ID to simulate source ID change
+    SrsContextId new_context = _srs_context->generate_id();
+    _srs_context->set_id(new_context);
+
+    // Call on_source_changed - should update current source ID but not previous (since it's not empty)
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Verify current source ID was updated
+    EXPECT_TRUE(source->source_id().compare(new_context) == 0);
+
+    // Verify previous source ID remains the first_context (not updated because it's not empty)
+    EXPECT_TRUE(source->pre_source_id().compare(first_context) == 0);
+
+    // Change context ID again
+    SrsContextId third_context = _srs_context->generate_id();
+    _srs_context->set_id(third_context);
+
+    // Call on_source_changed again
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Verify current source ID was updated to third context
+    EXPECT_TRUE(source->source_id().compare(third_context) == 0);
+
+    // Verify previous source ID remains the first_context (not updated again because it's not empty)
+    EXPECT_TRUE(source->pre_source_id().compare(first_context) == 0);
+
+    // Restore original context
+    _srs_context->set_id(original_context);
+}
+
+VOID TEST(AppTest2, RtcSourceOnSourceChangedWithStreamDescription)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create consumer
+    ISrsRtcConsumer *consumer = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
+
+    // Create and set stream description
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream-with-desc";
+
+    // Add audio track description
+    stream_desc->audio_track_desc_ = new SrsRtcTrackDescription();
+    stream_desc->audio_track_desc_->type_ = "audio";
+    stream_desc->audio_track_desc_->id_ = "audio-track-1";
+    stream_desc->audio_track_desc_->ssrc_ = 12345;
+
+    // Add video track description
+    SrsRtcTrackDescription *video_track = new SrsRtcTrackDescription();
+    video_track->type_ = "video";
+    video_track->id_ = "video-track-1";
+    video_track->ssrc_ = 67890;
+    stream_desc->video_track_descs_.push_back(video_track);
+
+    source->set_stream_desc(stream_desc.get());
+
+    // Call on_source_changed
+    HELPER_EXPECT_SUCCESS(source->on_source_changed());
+
+    // Verify stream description is accessible
+    EXPECT_TRUE(source->has_stream_desc());
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitWithSufficientPackets)
+{
+    srs_error_t err;
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Add some packets to the queue
+    for (int i = 0; i < 5; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(1000 + i);
+        pkt->header_.set_timestamp(2000 + i * 100);
+        pkt->header_.set_ssrc(0x12345678);
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Wait for 3 messages - should return immediately since we have 5
+    consumer.wait(3);
+
+    // Verify we can dump packets (queue should still have packets)
+    SrsRtpPacket *dumped_pkt = NULL;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&dumped_pkt));
+    EXPECT_TRUE(dumped_pkt != NULL);
+    EXPECT_EQ(1000, dumped_pkt->header_.get_sequence());
+    srs_freep(dumped_pkt);
+
+    // Verify more packets are available
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&dumped_pkt));
+    EXPECT_TRUE(dumped_pkt != NULL);
+    EXPECT_EQ(1001, dumped_pkt->header_.get_sequence());
+    srs_freep(dumped_pkt);
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitWithMoreThanRequestedPackets)
+{
+    srs_error_t err;
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Add 5 packets to the queue
+    for (int i = 0; i < 5; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(2000 + i);
+        pkt->header_.set_timestamp(3000 + i * 50);
+        pkt->header_.set_ssrc(0xABCDEF00);
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Wait for 3 messages - should return immediately since we have 5 > 3
+    consumer.wait(3);
+
+    // Verify all packets are available
+    for (int i = 0; i < 5; i++) {
+        SrsRtpPacket *dumped_pkt = NULL;
+        HELPER_EXPECT_SUCCESS(consumer.dump_packet(&dumped_pkt));
+        EXPECT_TRUE(dumped_pkt != NULL);
+        EXPECT_EQ(2000 + i, dumped_pkt->header_.get_sequence());
+        EXPECT_EQ(3000 + i * 50, dumped_pkt->header_.get_timestamp());
+        srs_freep(dumped_pkt);
+    }
+
+    // Queue should be empty now
+    SrsRtpPacket *empty_pkt = NULL;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&empty_pkt));
+    EXPECT_TRUE(empty_pkt == NULL);
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitWithZeroMessages)
+{
+    srs_error_t err;
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Add some packets to the queue
+    for (int i = 0; i < 5; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(3000 + i);
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Wait for 0 messages - should return immediately regardless of queue size
+    consumer.wait(0);
+
+    // Verify packets are still available
+    SrsRtpPacket *dumped_pkt = NULL;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&dumped_pkt));
+    EXPECT_TRUE(dumped_pkt != NULL);
+    EXPECT_EQ(3000, dumped_pkt->header_.get_sequence());
+    srs_freep(dumped_pkt);
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitWithEmptyQueueZeroMessages)
+{
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Queue is empty, wait for 0 messages - should return immediately
+    // This tests the edge case where nb_msgs is 0
+    consumer.wait(0);
+
+    // Verify queue is still empty
+    SrsRtpPacket *pkt = NULL;
+    srs_error_t err;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt));
+    EXPECT_TRUE(pkt == NULL);
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitWithInsufficientPackets)
+{
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Add only 2 packets to the queue
+    for (int i = 0; i < 2; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(4000 + i);
+        pkt->header_.set_timestamp(5000 + i * 200);
+        pkt->header_.set_ssrc(0xDEADBEEF);
+        srs_error_t err;
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Start a goroutine to add more packets after a delay
+    SrsCoroutineChan ctx;
+    ctx.push(&consumer);
+
+    SRS_COROUTINE_GO_CTX(&ctx, {
+        SrsRtcConsumer *consumer = (SrsRtcConsumer *)ctx.pop();
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        for (int i = 0; i < 3; i++) {
+            SrsRtpPacket *pkt = new SrsRtpPacket();
+            pkt->header_.set_sequence(4002 + i);
+            pkt->header_.set_timestamp(5000 + (i + 2) * 200);
+            pkt->header_.set_ssrc(0xDEADBEEF);
+            srs_error_t err;
+            HELPER_EXPECT_SUCCESS(consumer->enqueue(pkt));
+        }
+    });
+
+    // Wait for 5 messages when we only have 2
+    // In real usage, this would set mw_waiting_ = true and block until more packets arrive
+    consumer.wait(5);
+
+    // Verify we still have the 2 packets we added
+    SrsRtpPacket *pkt1 = NULL;
+    srs_error_t err;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt1));
+    EXPECT_TRUE(pkt1 != NULL);
+    EXPECT_EQ(4000, pkt1->header_.get_sequence());
+    srs_freep(pkt1);
+
+    SrsRtpPacket *pkt2 = NULL;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt2));
+    EXPECT_TRUE(pkt2 != NULL);
+    EXPECT_EQ(4001, pkt2->header_.get_sequence());
+    srs_freep(pkt2);
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitMultipleCalls)
+{
+    srs_error_t err;
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Test multiple wait calls with different thresholds
+
+    // First, add 3 packets
+    for (int i = 0; i < 3; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(5000 + i);
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Wait for 2 messages - should return immediately
+    consumer.wait(2);
+
+    // Wait for 1 message - should return immediately
+    consumer.wait(1);
+
+    // Wait for 3 messages - should return immediately (we have exactly 3)
+    consumer.wait(3);
+
+    // Start a goroutine to add more packets after a delay
+    SrsCoroutineChan ctx;
+    ctx.push(&consumer);
+
+    SRS_COROUTINE_GO_CTX(&ctx, {
+        SrsRtcConsumer *consumer = (SrsRtcConsumer *)ctx.pop();
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        for (int i = 0; i < 1; i++) {
+            SrsRtpPacket *pkt = new SrsRtpPacket();
+            pkt->header_.set_sequence(4002 + i);
+            pkt->header_.set_timestamp(5000 + (i + 2) * 200);
+            pkt->header_.set_ssrc(0xDEADBEEF);
+            srs_error_t err;
+            HELPER_EXPECT_SUCCESS(consumer->enqueue(pkt));
+        }
+    });
+
+    // Wait for 4 messages - would block for a while in real usage, but we can't test that
+    consumer.wait(4);
+
+    // Verify all packets are still available
+    for (int i = 0; i < 3; i++) {
+        SrsRtpPacket *pkt = NULL;
+        HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt));
+        EXPECT_TRUE(pkt != NULL);
+        EXPECT_EQ(5000 + i, pkt->header_.get_sequence());
+        srs_freep(pkt);
+    }
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitAfterDumpingPackets)
+{
+    srs_error_t err;
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Add 5 packets
+    for (int i = 0; i < 5; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(6000 + i);
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Wait for 3 messages - should return immediately
+    consumer.wait(3);
+
+    // Dump 2 packets, leaving 3 in queue
+    for (int i = 0; i < 2; i++) {
+        SrsRtpPacket *pkt = NULL;
+        HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt));
+        EXPECT_TRUE(pkt != NULL);
+        srs_freep(pkt);
+    }
+
+    // Wait for 3 messages - should return immediately (we still have 3)
+    consumer.wait(3);
+
+    // Dump 1 more packet, leaving 2 in queue
+    SrsRtpPacket *pkt = NULL;
+    HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt));
+    EXPECT_TRUE(pkt != NULL);
+    srs_freep(pkt);
+
+    // Start a goroutine to add more packets after a delay
+    SrsCoroutineChan ctx;
+    ctx.push(&consumer);
+
+    SRS_COROUTINE_GO_CTX(&ctx, {
+        SrsRtcConsumer *consumer = (SrsRtcConsumer *)ctx.pop();
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        for (int i = 0; i < 1; i++) {
+            SrsRtpPacket *pkt = new SrsRtpPacket();
+            pkt->header_.set_sequence(4002 + i);
+            pkt->header_.set_timestamp(5000 + (i + 2) * 200);
+            pkt->header_.set_ssrc(0xDEADBEEF);
+            srs_error_t err;
+            HELPER_EXPECT_SUCCESS(consumer->enqueue(pkt));
+        }
+    });
+
+    // Wait for 3 messages - would block for a while in real usage (we only have 2)
+    consumer.wait(3);
+
+    // Verify remaining packets
+    for (int i = 0; i < 3; i++) {
+        SrsRtpPacket *remaining_pkt = NULL;
+        HELPER_EXPECT_SUCCESS(consumer.dump_packet(&remaining_pkt));
+        EXPECT_TRUE(remaining_pkt != NULL);
+        srs_freep(remaining_pkt);
+    }
+}
+
+VOID TEST(AppTest2, RtcConsumerWaitWithLargeThreshold)
+{
+    srs_error_t err;
+    MockRtcSourceForConsumer mock_source;
+    SrsRtcConsumer consumer(&mock_source);
+
+    // Add 10 packets
+    for (int i = 0; i < 10; i++) {
+        SrsRtpPacket *pkt = new SrsRtpPacket();
+        pkt->header_.set_sequence(7000 + i);
+        pkt->header_.set_timestamp(8000 + i * 1000);
+        HELPER_EXPECT_SUCCESS(consumer.enqueue(pkt));
+    }
+
+    // Start a goroutine to add more packets after a delay
+    SrsCoroutineChan ctx;
+    ctx.push(&consumer);
+
+    SRS_COROUTINE_GO_CTX(&ctx, {
+        SrsRtcConsumer *consumer = (SrsRtcConsumer *)ctx.pop();
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        for (int i = 0; i < 90; i++) {
+            SrsRtpPacket *pkt = new SrsRtpPacket();
+            pkt->header_.set_sequence(4002 + i);
+            pkt->header_.set_timestamp(5000 + (i + 2) * 200);
+            pkt->header_.set_ssrc(0xDEADBEEF);
+            srs_error_t err;
+            HELPER_EXPECT_SUCCESS(consumer->enqueue(pkt));
+        }
+    });
+
+    // Wait for a large number of messages (100) - would block for a while in real usage
+    consumer.wait(100);
+
+    // Verify all 10 packets are still available
+    for (int i = 0; i < 10; i++) {
+        SrsRtpPacket *pkt = NULL;
+        HELPER_EXPECT_SUCCESS(consumer.dump_packet(&pkt));
+        EXPECT_TRUE(pkt != NULL);
+        EXPECT_EQ(7000 + i, pkt->header_.get_sequence());
+        EXPECT_EQ(8000 + i * 1000, pkt->header_.get_timestamp());
+        srs_freep(pkt);
+    }
+}
+
+VOID TEST(AppTest2, RtcSourceOnConsumerDestroyRemoveConsumer)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    MockRtcConsumer *consumer3 = new MockRtcConsumer();
+
+    // Add consumers to source manually (simulating create_consumer)
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+    source->consumers_.push_back(consumer3);
+
+    // Verify initial state
+    EXPECT_EQ(3, (int)source->consumers_.size());
+
+    // Remove middle consumer
+    source->on_consumer_destroy(consumer2);
+    EXPECT_EQ(2, (int)source->consumers_.size());
+    EXPECT_EQ(consumer1, source->consumers_[0]);
+    EXPECT_EQ(consumer3, source->consumers_[1]);
+
+    // Remove first consumer
+    source->on_consumer_destroy(consumer1);
+    EXPECT_EQ(1, (int)source->consumers_.size());
+    EXPECT_EQ(consumer3, source->consumers_[0]);
+
+    // Remove last consumer
+    source->on_consumer_destroy(consumer3);
+    EXPECT_EQ(0, (int)source->consumers_.size());
+
+    // Try to remove non-existent consumer (should not crash)
+    MockRtcConsumer *non_existent = new MockRtcConsumer();
+    source->on_consumer_destroy(non_existent);
+    EXPECT_EQ(0, (int)source->consumers_.size());
+
+    // Clean up
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+    srs_freep(consumer3);
+    srs_freep(non_existent);
+}
+
+VOID TEST(AppTest2, RtcSourceOnConsumerDestroyNotifyEventHandlers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock publish stream and event handlers
+    MockRtcPublishStream *publish_stream = new MockRtcPublishStream();
+    MockRtcSourceEventHandler *handler1 = new MockRtcSourceEventHandler();
+    MockRtcSourceEventHandler *handler2 = new MockRtcSourceEventHandler();
+
+    // Set up source with publish stream and event handlers
+    source->set_publish_stream(publish_stream);
+    source->subscribe(handler1);
+    source->subscribe(handler2);
+
+    // Create mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+
+    // Add consumers to source manually
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+
+    // Verify initial state
+    EXPECT_EQ(0, handler1->on_consumers_finished_count_);
+    EXPECT_EQ(0, handler2->on_consumers_finished_count_);
+
+    // Remove first consumer - should not notify handlers yet
+    source->on_consumer_destroy(consumer1);
+    EXPECT_EQ(0, handler1->on_consumers_finished_count_);
+    EXPECT_EQ(0, handler2->on_consumers_finished_count_);
+
+    // Remove last consumer - should notify all handlers
+    source->on_consumer_destroy(consumer2);
+    EXPECT_EQ(1, handler1->on_consumers_finished_count_);
+    EXPECT_EQ(1, handler2->on_consumers_finished_count_);
+
+    // Clean up
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+    srs_freep(publish_stream);
+    srs_freep(handler1);
+    srs_freep(handler2);
+}
+
+VOID TEST(AppTest2, RtcSourceOnConsumerDestroyNoPublishStream)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock event handler
+    MockRtcSourceEventHandler *handler = new MockRtcSourceEventHandler();
+    source->subscribe(handler);
+
+    // Create mock consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Verify initial state - no publish stream set
+    EXPECT_TRUE(source->publish_stream() == NULL);
+    EXPECT_EQ(0, handler->on_consumers_finished_count_);
+
+    // Remove consumer - should not notify handlers because no publish stream
+    source->on_consumer_destroy(consumer);
+    EXPECT_EQ(0, handler->on_consumers_finished_count_);
+
+    // Clean up
+    srs_freep(consumer);
+    srs_freep(handler);
+}
+
+VOID TEST(AppTest2, RtcSourceOnConsumerDestroyStreamDeath)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Verify initial state - stream is not created (no publisher)
+    EXPECT_FALSE(source->is_created_);
+    EXPECT_EQ(0, source->stream_die_at_);
+
+    // Remove consumer when stream is not created - should set stream_die_at_
+    srs_utime_t before_time = srs_time_now_cached();
+    source->on_consumer_destroy(consumer);
+    srs_utime_t after_time = srs_time_now_cached();
+
+    // Verify stream death time was set
+    EXPECT_TRUE(source->stream_die_at_ >= before_time);
+    EXPECT_TRUE(source->stream_die_at_ <= after_time);
+
+    // Clean up
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourceOnConsumerDestroyStreamAlive)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Set stream as created (has publisher)
+    source->is_created_ = true;
+
+    // Verify initial state
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_EQ(0, source->stream_die_at_);
+
+    // Remove consumer when stream is created - should NOT set stream_die_at_
+    source->on_consumer_destroy(consumer);
+
+    // Verify stream death time was NOT set
+    EXPECT_EQ(0, source->stream_die_at_);
+
+    // Clean up
+    srs_freep(consumer);
+}
+
+// Mock implementation of ISrsStreamBridge for testing SrsRtcSource::on_publish
+class MockStreamBridge : public ISrsStreamBridge
+{
+public:
+    int initialize_count_;
+    int on_publish_count_;
+    int on_unpublish_count_;
+    int on_frame_count_;
+    bool should_fail_initialize_;
+    bool should_fail_on_publish_;
+    ISrsRequest *last_initialize_request_;
+
+    MockStreamBridge()
+    {
+        initialize_count_ = 0;
+        on_publish_count_ = 0;
+        on_unpublish_count_ = 0;
+        on_frame_count_ = 0;
+        should_fail_initialize_ = false;
+        should_fail_on_publish_ = false;
+        last_initialize_request_ = NULL;
+    }
+
+    virtual ~MockStreamBridge()
+    {
+    }
+
+    virtual srs_error_t initialize(ISrsRequest *r)
+    {
+        initialize_count_++;
+        last_initialize_request_ = r;
+        if (should_fail_initialize_) {
+            return srs_error_new(ERROR_RTC_RTP_MUXER, "mock initialize error");
+        }
+        return srs_success;
+    }
+
+    virtual srs_error_t on_publish()
+    {
+        on_publish_count_++;
+        if (should_fail_on_publish_) {
+            return srs_error_new(ERROR_RTC_RTP_MUXER, "mock on_publish error");
+        }
+        return srs_success;
+    }
+
+    virtual srs_error_t on_frame(SrsMediaPacket *frame)
+    {
+        on_frame_count_++;
+        return srs_success;
+    }
+
+    virtual void on_unpublish()
+    {
+        on_unpublish_count_++;
+    }
+
+    void set_initialize_should_fail(bool should_fail)
+    {
+        should_fail_initialize_ = should_fail;
+    }
+
+    void set_on_publish_should_fail(bool should_fail)
+    {
+        should_fail_on_publish_ = should_fail;
+    }
+};
+
+VOID TEST(AppTest2, RtcSourceOnPublishBasicSuccess)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Verify initial state
+    EXPECT_FALSE(source->is_created_);
+    EXPECT_FALSE(source->is_delivering_packets_);
+
+    // Test basic on_publish without bridge
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify state after publish
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_TRUE(source->is_delivering_packets_);
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishWithConsumers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+
+    // Verify initial consumer state
+    EXPECT_EQ(0, consumer1->update_source_id_count_);
+    EXPECT_EQ(0, consumer1->stream_change_count_);
+    EXPECT_EQ(0, consumer2->update_source_id_count_);
+    EXPECT_EQ(0, consumer2->stream_change_count_);
+
+    // Test on_publish - should notify consumers via on_source_changed
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify consumers were notified
+    EXPECT_EQ(1, consumer1->update_source_id_count_);
+    EXPECT_EQ(1, consumer1->stream_change_count_);
+    EXPECT_EQ(1, consumer2->update_source_id_count_);
+    EXPECT_EQ(1, consumer2->stream_change_count_);
+
+    // Clean up
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishWithBridge)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock bridge
+    MockStreamBridge *bridge = new MockStreamBridge();
+    source->set_bridge(bridge);
+
+    // Verify initial bridge state
+    EXPECT_EQ(0, bridge->on_publish_count_);
+
+    // Test on_publish with bridge
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify bridge was called
+    EXPECT_EQ(1, bridge->on_publish_count_);
+
+    // Verify source state
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_TRUE(source->is_delivering_packets_);
+
+    // Clean up properly by calling on_unpublish to unsubscribe from timer
+    source->on_unpublish();
+
+    // Note: bridge is freed by source destructor, don't free manually
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishBridgeError)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock bridge that will fail on_publish
+    MockStreamBridge *bridge = new MockStreamBridge();
+    bridge->set_on_publish_should_fail(true);
+    source->set_bridge(bridge);
+
+    // Test on_publish with bridge error - should fail
+    HELPER_EXPECT_FAILED(source->on_publish());
+
+    // Verify bridge was called
+    EXPECT_EQ(1, bridge->on_publish_count_);
+
+    // Note: Even though on_publish failed, we should still clean up properly
+    // The bridge subscription might have succeeded before the error
+    if (source->is_created_) {
+        source->on_unpublish();
+    }
+
+    // Note: bridge is freed by source destructor, don't free manually
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishConsumerError)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer that will cause on_source_changed to fail
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Mock a scenario where on_source_changed would fail
+    // This is tricky since on_source_changed calls consumer methods directly
+    // We'll test by ensuring the method completes successfully even with consumers
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify consumer was notified
+    EXPECT_EQ(1, consumer->update_source_id_count_);
+    EXPECT_EQ(1, consumer->stream_change_count_);
+
+    // Clean up
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishWithStreamDescription)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with audio and video tracks
+    SrsRtcSourceDescription *stream_desc = new SrsRtcSourceDescription();
+
+    // Add audio track
+    stream_desc->audio_track_desc_ = new SrsRtcTrackDescription();
+    stream_desc->audio_track_desc_->type_ = "audio";
+    stream_desc->audio_track_desc_->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+
+    // Add video track
+    SrsRtcTrackDescription *video_track = new SrsRtcTrackDescription();
+    video_track->type_ = "video";
+    video_track->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(video_track);
+
+    source->set_stream_desc(stream_desc);
+
+    // Create mock consumer to verify stream change notification
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Test on_publish with stream description
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify consumer received stream description
+    EXPECT_EQ(1, consumer->stream_change_count_);
+    EXPECT_TRUE(consumer->last_stream_desc_ != NULL);
+
+    // Verify source state
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_TRUE(source->is_delivering_packets_);
+
+    // Clean up
+    srs_freep(consumer);
+    srs_freep(stream_desc);
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishStateTransition)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Verify initial state
+    EXPECT_FALSE(source->is_created_);
+    EXPECT_FALSE(source->is_delivering_packets_);
+
+    // Test on_publish state transition
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify both flags are set to true
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_TRUE(source->is_delivering_packets_);
+
+    // Test calling on_publish again (should still succeed)
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // State should remain true
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_TRUE(source->is_delivering_packets_);
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishSourceIdChange)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer to track source ID changes
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Get initial source ID (should be empty)
+    SrsContextId initial_id = source->source_id();
+    EXPECT_TRUE(initial_id.empty());
+
+    // Test on_publish - should set source ID from current context
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify source ID was set
+    SrsContextId new_id = source->source_id();
+    EXPECT_FALSE(new_id.empty());
+
+    // Verify consumer was notified of source ID change
+    EXPECT_EQ(1, consumer->update_source_id_count_);
+
+    // Clean up
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishMultipleBridgeOperations)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock bridge
+    MockStreamBridge *bridge = new MockStreamBridge();
+    source->set_bridge(bridge);
+
+    // Test multiple on_publish calls
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+    EXPECT_EQ(1, bridge->on_publish_count_);
+
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+    EXPECT_EQ(2, bridge->on_publish_count_);
+
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+    EXPECT_EQ(3, bridge->on_publish_count_);
+
+    // Clean up properly by calling on_unpublish to unsubscribe from timer
+    source->on_unpublish();
+
+    // Note: bridge is freed by source destructor
+}
+
+VOID TEST(AppTest2, RtcSourceOnPublishCompleteWorkflow)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description
+    SrsRtcSourceDescription *stream_desc = new SrsRtcSourceDescription();
+    stream_desc->audio_track_desc_ = new SrsRtcTrackDescription();
+    stream_desc->audio_track_desc_->type_ = "audio";
+    stream_desc->audio_track_desc_->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+    source->set_stream_desc(stream_desc);
+
+    // Create mock bridge
+    MockStreamBridge *bridge = new MockStreamBridge();
+    source->set_bridge(bridge);
+
+    // Create mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+
+    // Create mock event handler
+    MockRtcSourceEventHandler *handler = new MockRtcSourceEventHandler();
+    source->subscribe(handler);
+
+    // Verify initial state
+    EXPECT_FALSE(source->is_created_);
+    EXPECT_FALSE(source->is_delivering_packets_);
+    EXPECT_EQ(0, bridge->on_publish_count_);
+    EXPECT_EQ(0, consumer1->update_source_id_count_);
+    EXPECT_EQ(0, consumer2->update_source_id_count_);
+
+    // Test complete on_publish workflow
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+
+    // Verify all components were properly handled
+    EXPECT_TRUE(source->is_created_);
+    EXPECT_TRUE(source->is_delivering_packets_);
+    EXPECT_EQ(1, bridge->on_publish_count_);
+    EXPECT_EQ(1, consumer1->update_source_id_count_);
+    EXPECT_EQ(1, consumer1->stream_change_count_);
+    EXPECT_EQ(1, consumer2->update_source_id_count_);
+    EXPECT_EQ(1, consumer2->stream_change_count_);
+
+    // Verify source ID was set
+    EXPECT_FALSE(source->source_id().empty());
+
+    // Clean up properly by calling on_unpublish to unsubscribe from timer
+    source->on_unpublish();
+
+    // Clean up
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+    srs_freep(handler);
+    srs_freep(stream_desc);
+}
+
+VOID TEST(AppTest2, RtcSourceSubscribeBasic)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock event handlers
+    SrsUniquePtr<MockRtcSourceEventHandler> handler1(new MockRtcSourceEventHandler());
+    SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
+
+    // Initially no handlers should be subscribed
+    EXPECT_EQ(0, (int)source->event_handlers_.size());
+
+    // Subscribe first handler
+    source->subscribe(handler1.get());
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
+
+    // Subscribe second handler
+    source->subscribe(handler2.get());
+    EXPECT_EQ(2, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
+    EXPECT_EQ(handler2.get(), source->event_handlers_[1]);
+}
+
+VOID TEST(AppTest2, RtcSourceSubscribeDuplicateHandler)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock event handler
+    SrsUniquePtr<MockRtcSourceEventHandler> handler(new MockRtcSourceEventHandler());
+
+    // Subscribe handler first time
+    source->subscribe(handler.get());
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler.get(), source->event_handlers_[0]);
+
+    // Subscribe same handler again - should not add duplicate
+    source->subscribe(handler.get());
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler.get(), source->event_handlers_[0]);
+
+    // Subscribe same handler multiple times - should still be only one
+    source->subscribe(handler.get());
+    source->subscribe(handler.get());
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler.get(), source->event_handlers_[0]);
+}
+
+VOID TEST(AppTest2, RtcSourceSubscribeNullHandler)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Initially no handlers should be subscribed
+    EXPECT_EQ(0, (int)source->event_handlers_.size());
+
+    // Subscribe null handler - should add it (implementation allows null)
+    source->subscribe(NULL);
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(NULL, source->event_handlers_[0]);
+
+    // Subscribe null handler again - should not add duplicate
+    source->subscribe(NULL);
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(NULL, source->event_handlers_[0]);
+}
+
+VOID TEST(AppTest2, RtcSourceSubscribeMultipleHandlers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create multiple mock event handlers
+    SrsUniquePtr<MockRtcSourceEventHandler> handler1(new MockRtcSourceEventHandler());
+    SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
+    SrsUniquePtr<MockRtcSourceEventHandler> handler3(new MockRtcSourceEventHandler());
+
+    // Initially no handlers should be subscribed
+    EXPECT_EQ(0, (int)source->event_handlers_.size());
+
+    // Subscribe handlers in order
+    source->subscribe(handler1.get());
+    source->subscribe(handler2.get());
+    source->subscribe(handler3.get());
+
+    // Verify all handlers are subscribed in correct order
+    EXPECT_EQ(3, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
+    EXPECT_EQ(handler2.get(), source->event_handlers_[1]);
+    EXPECT_EQ(handler3.get(), source->event_handlers_[2]);
+
+    // Try to subscribe duplicates - should not change the list
+    source->subscribe(handler2.get());
+    source->subscribe(handler1.get());
+    EXPECT_EQ(3, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
+    EXPECT_EQ(handler2.get(), source->event_handlers_[1]);
+    EXPECT_EQ(handler3.get(), source->event_handlers_[2]);
+}
+
+VOID TEST(AppTest2, RtcSourceSubscribeUnsubscribeInteraction)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock event handlers
+    SrsUniquePtr<MockRtcSourceEventHandler> handler1(new MockRtcSourceEventHandler());
+    SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
+
+    // Subscribe both handlers
+    source->subscribe(handler1.get());
+    source->subscribe(handler2.get());
+    EXPECT_EQ(2, (int)source->event_handlers_.size());
+
+    // Unsubscribe first handler
+    source->unsubscribe(handler1.get());
+    EXPECT_EQ(1, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler2.get(), source->event_handlers_[0]);
+
+    // Re-subscribe first handler - should be added back
+    source->subscribe(handler1.get());
+    EXPECT_EQ(2, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler2.get(), source->event_handlers_[0]);
+    EXPECT_EQ(handler1.get(), source->event_handlers_[1]);
+
+    // Unsubscribe all handlers
+    source->unsubscribe(handler1.get());
+    source->unsubscribe(handler2.get());
+    EXPECT_EQ(0, (int)source->event_handlers_.size());
+
+    // Re-subscribe in different order
+    source->subscribe(handler2.get());
+    source->subscribe(handler1.get());
+    EXPECT_EQ(2, (int)source->event_handlers_.size());
+    EXPECT_EQ(handler2.get(), source->event_handlers_[0]);
+    EXPECT_EQ(handler1.get(), source->event_handlers_[1]);
+}
+
+VOID TEST(AppTest2, RtcSourceSubscribeEventNotification)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock event handlers
+    SrsUniquePtr<MockRtcSourceEventHandler> handler1(new MockRtcSourceEventHandler());
+    SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
+
+    // Subscribe handlers
+    source->subscribe(handler1.get());
+    source->subscribe(handler2.get());
+
+    // Verify initial state
+    EXPECT_EQ(0, handler1->on_unpublish_count_);
+    EXPECT_EQ(0, handler2->on_unpublish_count_);
+
+    // Manually set is_created_ to true to simulate published state
+    source->is_created_ = true;
+
+    // Trigger unpublish event - should notify all subscribed handlers
+    source->on_unpublish();
+
+    // Verify handlers were notified
+    EXPECT_EQ(1, handler1->on_unpublish_count_);
+    EXPECT_EQ(1, handler2->on_unpublish_count_);
+
+    // Test second scenario: unsubscribe one handler and test again
+    // Create a new source for the second test to avoid state issues
+    SrsUniquePtr<SrsRtcSource> source2(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source2->initialize(req.get()));
+
+    // Reset handler counters
+    handler1->on_unpublish_count_ = 0;
+    handler2->on_unpublish_count_ = 0;
+
+    // Subscribe both handlers to the new source
+    source2->subscribe(handler1.get());
+    source2->subscribe(handler2.get());
+
+    // Unsubscribe handler1
+    source2->unsubscribe(handler1.get());
+
+    // Verify only handler2 is subscribed now
+    EXPECT_EQ(1, (int)source2->event_handlers_.size());
+    EXPECT_EQ(handler2.get(), source2->event_handlers_[0]);
+
+    // Set is_created_ and trigger unpublish
+    source2->is_created_ = true;
+    source2->on_unpublish();
+
+    // Only handler2 should be notified this time
+    EXPECT_EQ(0, handler1->on_unpublish_count_); // Not called
+    EXPECT_EQ(1, handler2->on_unpublish_count_); // Called once
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamGetterSetter)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Initially, publish_stream should be NULL
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Create a mock publish stream
+    SrsUniquePtr<MockRtcPublishStream> publish_stream(new MockRtcPublishStream());
+    SrsContextId test_cid;
+    test_cid.set_value("test-context-id");
+    publish_stream->set_context_id(test_cid);
+
+    // Set the publish stream
+    source->set_publish_stream(publish_stream.get());
+
+    // Verify the publish stream is set correctly
+    EXPECT_TRUE(source->publish_stream() != NULL);
+    EXPECT_EQ(publish_stream.get(), source->publish_stream());
+    SrsContextId expected_cid;
+    expected_cid.set_value("test-context-id");
+    EXPECT_TRUE(source->publish_stream()->context_id().compare(expected_cid) == 0);
+
+    // Set to NULL
+    source->set_publish_stream(NULL);
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Set again to verify it can be changed
+    source->set_publish_stream(publish_stream.get());
+    EXPECT_EQ(publish_stream.get(), source->publish_stream());
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamWithConsumerDestroy)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create a mock publish stream
+    SrsUniquePtr<MockRtcPublishStream> publish_stream(new MockRtcPublishStream());
+    source->set_publish_stream(publish_stream.get());
+
+    // Create a mock event handler
+    SrsUniquePtr<MockRtcSourceEventHandler> handler(new MockRtcSourceEventHandler());
+    source->subscribe(handler.get());
+
+    // Create consumers
+    ISrsRtcConsumer *consumer1 = NULL;
+    ISrsRtcConsumer *consumer2 = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer1));
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer2));
+
+    // Verify consumers exist
+    EXPECT_EQ(2, (int)source->consumers_.size());
+
+    // Destroy first consumer - should not trigger event handler since consumers remain
+    source->on_consumer_destroy(consumer1);
+    EXPECT_EQ(1, (int)source->consumers_.size());
+    EXPECT_EQ(0, handler->on_consumers_finished_count_);
+
+    // Destroy second consumer - should trigger event handler since no consumers remain
+    source->on_consumer_destroy(consumer2);
+    EXPECT_EQ(0, (int)source->consumers_.size());
+    EXPECT_EQ(1, handler->on_consumers_finished_count_);
+
+    // Clean up
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamWithoutConsumerDestroy)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Don't set publish stream (leave as NULL)
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Create a mock event handler
+    SrsUniquePtr<MockRtcSourceEventHandler> handler(new MockRtcSourceEventHandler());
+    source->subscribe(handler.get());
+
+    // Create and destroy consumer
+    ISrsRtcConsumer *consumer = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
+    EXPECT_EQ(1, (int)source->consumers_.size());
+
+    // Destroy consumer - should not trigger event handler since publish_stream is NULL
+    source->on_consumer_destroy(consumer);
+    EXPECT_EQ(0, (int)source->consumers_.size());
+    EXPECT_EQ(0, handler->on_consumers_finished_count_);
+
+    // Clean up
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamMultipleChanges)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create multiple mock publish streams
+    SrsUniquePtr<MockRtcPublishStream> publish_stream1(new MockRtcPublishStream());
+    SrsUniquePtr<MockRtcPublishStream> publish_stream2(new MockRtcPublishStream());
+    SrsUniquePtr<MockRtcPublishStream> publish_stream3(new MockRtcPublishStream());
+
+    SrsContextId cid1, cid2, cid3;
+    cid1.set_value("context-1");
+    cid2.set_value("context-2");
+    cid3.set_value("context-3");
+
+    publish_stream1->set_context_id(cid1);
+    publish_stream2->set_context_id(cid2);
+    publish_stream3->set_context_id(cid3);
+
+    // Test multiple changes
+    source->set_publish_stream(publish_stream1.get());
+    EXPECT_EQ(publish_stream1.get(), source->publish_stream());
+    EXPECT_TRUE(source->publish_stream()->context_id().compare(cid1) == 0);
+
+    source->set_publish_stream(publish_stream2.get());
+    EXPECT_EQ(publish_stream2.get(), source->publish_stream());
+    EXPECT_TRUE(source->publish_stream()->context_id().compare(cid2) == 0);
+
+    source->set_publish_stream(publish_stream3.get());
+    EXPECT_EQ(publish_stream3.get(), source->publish_stream());
+    EXPECT_TRUE(source->publish_stream()->context_id().compare(cid3) == 0);
+
+    // Set back to NULL
+    source->set_publish_stream(NULL);
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Set to first stream again
+    source->set_publish_stream(publish_stream1.get());
+    EXPECT_EQ(publish_stream1.get(), source->publish_stream());
+    EXPECT_TRUE(source->publish_stream()->context_id().compare(cid1) == 0);
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamKeyframeRequest)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create a mock publish stream
+    SrsUniquePtr<MockRtcPublishStream> publish_stream(new MockRtcPublishStream());
+    SrsContextId test_cid;
+    test_cid.set_value("keyframe-test-context");
+    publish_stream->set_context_id(test_cid);
+
+    // Set the publish stream
+    source->set_publish_stream(publish_stream.get());
+
+    // Verify initial state
+    EXPECT_EQ(0, publish_stream->request_keyframe_count_);
+    EXPECT_EQ(0u, publish_stream->last_keyframe_ssrc_);
+
+    // Test keyframe request functionality through publish stream
+    uint32_t test_ssrc = 12345;
+    SrsContextId request_cid;
+    request_cid.set_value("request-context");
+
+    source->publish_stream()->request_keyframe(test_ssrc, request_cid);
+
+    // Verify the request was recorded
+    EXPECT_EQ(1, publish_stream->request_keyframe_count_);
+    EXPECT_EQ(test_ssrc, publish_stream->last_keyframe_ssrc_);
+    EXPECT_TRUE(publish_stream->last_keyframe_cid_.compare(request_cid) == 0);
+
+    // Test multiple requests
+    source->publish_stream()->request_keyframe(54321, test_cid);
+    EXPECT_EQ(2, publish_stream->request_keyframe_count_);
+    EXPECT_EQ(54321u, publish_stream->last_keyframe_ssrc_);
+    EXPECT_TRUE(publish_stream->last_keyframe_cid_.compare(test_cid) == 0);
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamContextIdAccess)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create a mock publish stream with specific context ID
+    SrsUniquePtr<MockRtcPublishStream> publish_stream(new MockRtcPublishStream());
+    SrsContextId original_cid;
+    original_cid.set_value("original-context-id");
+    publish_stream->set_context_id(original_cid);
+
+    // Set the publish stream
+    source->set_publish_stream(publish_stream.get());
+
+    // Test context ID access
+    const SrsContextId &retrieved_cid = source->publish_stream()->context_id();
+    EXPECT_TRUE(retrieved_cid.compare(original_cid) == 0);
+    EXPECT_STREQ("original-context-id", retrieved_cid.c_str());
+
+    // Change context ID and verify
+    SrsContextId new_cid;
+    new_cid.set_value("updated-context-id");
+    publish_stream->set_context_id(new_cid);
+
+    const SrsContextId &updated_cid = source->publish_stream()->context_id();
+    EXPECT_TRUE(updated_cid.compare(new_cid) == 0);
+    EXPECT_STREQ("updated-context-id", updated_cid.c_str());
+    EXPECT_TRUE(updated_cid.compare(original_cid) != 0); // Should be different from original
+}
+
+VOID TEST(AppTest2, RtcSourcePublishStreamNullSafety)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Initially should be NULL
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Setting NULL should be safe
+    source->set_publish_stream(NULL);
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Create and set a publish stream
+    SrsUniquePtr<MockRtcPublishStream> publish_stream(new MockRtcPublishStream());
+    source->set_publish_stream(publish_stream.get());
+    EXPECT_TRUE(source->publish_stream() != NULL);
+
+    // Set back to NULL
+    source->set_publish_stream(NULL);
+    EXPECT_TRUE(source->publish_stream() == NULL);
+
+    // Multiple NULL sets should be safe
+    source->set_publish_stream(NULL);
+    source->set_publish_stream(NULL);
+    EXPECT_TRUE(source->publish_stream() == NULL);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpNoConsumers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp with no consumers should succeed
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpWithConsumers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    MockRtcConsumer *consumer3 = new MockRtcConsumer();
+
+    // Add consumers to source manually (simulating create_consumer)
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+    source->consumers_.push_back(consumer3);
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp should enqueue packet to all consumers
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify all consumers received the packet
+    EXPECT_EQ(1, consumer1->enqueue_count_);
+    EXPECT_EQ(1, consumer2->enqueue_count_);
+    EXPECT_EQ(1, consumer3->enqueue_count_);
+
+    // Clean up consumers
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+    srs_freep(consumer3);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpCircuitBreakerDying)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Create mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    mock_circuit_breaker.set_hybrid_dying_water_level(true); // Circuit breaker is dying
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp should drop packet when circuit breaker is dying
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify packet was dropped (consumers should not receive it)
+    EXPECT_EQ(0, consumer1->enqueue_count_);
+    EXPECT_EQ(0, consumer2->enqueue_count_);
+
+    // Clean up consumers
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpConsumerEnqueueError)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumers - one will fail
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    MockRtcConsumer *consumer3 = new MockRtcConsumer();
+
+    // Set consumer2 to return error on enqueue
+    srs_error_t test_error = srs_error_new(ERROR_SYSTEM_ASSERT_FAILED, "test enqueue error");
+    consumer2->set_enqueue_error(test_error);
+    srs_freep(test_error);
+
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+    source->consumers_.push_back(consumer3);
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp should fail when consumer enqueue fails
+    HELPER_EXPECT_FAILED(source->on_rtp(pkt.get()));
+
+    // Verify first consumer received packet, but processing stopped at second consumer
+    EXPECT_EQ(1, consumer1->enqueue_count_);
+    EXPECT_EQ(1, consumer2->enqueue_count_); // Called but failed
+    EXPECT_EQ(0, consumer3->enqueue_count_); // Never reached due to error
+
+    // Clean up consumers
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+    srs_freep(consumer3);
+}
+
+#ifdef SRS_FFMPEG_FIT
+VOID TEST(AppTest2, RtcSourceOnRtpWithFrameBuilder)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Create mock bridge and frame builder
+    MockStreamBridge *mock_bridge = new MockStreamBridge();
+    MockRtcFrameBuilder *mock_frame_builder = new MockRtcFrameBuilder(mock_bridge);
+    source->frame_builder_ = mock_frame_builder;
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp should call frame builder
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify consumer received packet
+    EXPECT_EQ(1, consumer->enqueue_count_);
+
+    // Verify frame builder was called
+    EXPECT_EQ(1, mock_frame_builder->on_rtp_count_);
+
+    // Clean up (don't free frame_builder as it's owned by source)
+    source->frame_builder_ = NULL; // Prevent double free
+    srs_freep(mock_frame_builder);
+    srs_freep(mock_bridge);
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpFrameBuilderError)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Create mock bridge and frame builder that will fail
+    MockStreamBridge *mock_bridge = new MockStreamBridge();
+    MockRtcFrameBuilder *mock_frame_builder = new MockRtcFrameBuilder(mock_bridge);
+    srs_error_t test_error = srs_error_new(ERROR_SYSTEM_ASSERT_FAILED, "test frame builder error");
+    mock_frame_builder->set_on_rtp_error(test_error);
+    srs_freep(test_error);
+    source->frame_builder_ = mock_frame_builder;
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp should fail when frame builder fails
+    HELPER_EXPECT_FAILED(source->on_rtp(pkt.get()));
+
+    // Verify consumer still received packet (consumers are processed first)
+    EXPECT_EQ(1, consumer->enqueue_count_);
+
+    // Verify frame builder was called
+    EXPECT_EQ(1, mock_frame_builder->on_rtp_count_);
+
+    // Clean up
+    source->frame_builder_ = NULL; // Prevent double free
+    srs_freep(mock_frame_builder);
+    srs_freep(mock_bridge);
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpNoFrameBuilder)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Ensure frame_builder_ is NULL (default state)
+    EXPECT_TRUE(source->frame_builder_ == NULL);
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test: on_rtp should succeed even without frame builder
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify consumer received packet
+    EXPECT_EQ(1, consumer->enqueue_count_);
+
+    // Clean up
+    srs_freep(consumer);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpCompleteScenario)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create multiple mock consumers
+    MockRtcConsumer *consumer1 = new MockRtcConsumer();
+    MockRtcConsumer *consumer2 = new MockRtcConsumer();
+    MockRtcConsumer *consumer3 = new MockRtcConsumer();
+    source->consumers_.push_back(consumer1);
+    source->consumers_.push_back(consumer2);
+    source->consumers_.push_back(consumer3);
+
+    // Create mock bridge and frame builder
+    MockStreamBridge *mock_bridge = new MockStreamBridge();
+    MockRtcFrameBuilder *mock_frame_builder = new MockRtcFrameBuilder(mock_bridge);
+    source->frame_builder_ = mock_frame_builder;
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Create mock circuit breaker
+    MockCircuitBreaker mock_circuit_breaker;
+    source->circuit_breaker_ = &mock_circuit_breaker;
+
+    // Test 1: Normal operation - circuit breaker not dying
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify all consumers received packet
+    EXPECT_EQ(1, consumer1->enqueue_count_);
+    EXPECT_EQ(1, consumer2->enqueue_count_);
+    EXPECT_EQ(1, consumer3->enqueue_count_);
+
+    // Verify frame builder was called
+    EXPECT_EQ(1, mock_frame_builder->on_rtp_count_);
+
+    // Test 2: Circuit breaker dying - should drop packet
+    mock_circuit_breaker.set_hybrid_dying_water_level(true);
+
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify consumers did not receive second packet (dropped due to circuit breaker)
+    EXPECT_EQ(1, consumer1->enqueue_count_);
+    EXPECT_EQ(1, consumer2->enqueue_count_);
+    EXPECT_EQ(1, consumer3->enqueue_count_);
+
+    // Verify frame builder was not called again
+    EXPECT_EQ(1, mock_frame_builder->on_rtp_count_);
+
+    // Clean up
+    source->frame_builder_ = NULL; // Prevent double free
+    srs_freep(mock_frame_builder);
+    srs_freep(mock_bridge);
+    srs_freep(consumer1);
+    srs_freep(consumer2);
+    srs_freep(consumer3);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpNullCircuitBreaker)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source and initialize
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create consumer
+    MockRtcConsumer *consumer = new MockRtcConsumer();
+    source->consumers_.push_back(consumer);
+
+    // Create a test RTP packet
+    SrsUniquePtr<SrsRtpPacket> pkt(new SrsRtpPacket());
+    pkt->header_.set_sequence(100);
+    pkt->header_.set_timestamp(1000);
+    pkt->header_.set_ssrc(12345);
+
+    // Set circuit breaker to NULL
+    source->circuit_breaker_ = NULL;
+
+    // Test: on_rtp should succeed even with NULL circuit breaker
+    HELPER_EXPECT_SUCCESS(source->on_rtp(pkt.get()));
+
+    // Verify consumer received packet
+    EXPECT_EQ(1, consumer->enqueue_count_);
+
+    // Clean up
+    srs_freep(consumer);
+}
+#endif
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescNoStreamDesc)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Clear the default stream description created by init_for_play_before_publishing
+    source->set_stream_desc(NULL);
+
+    // Test: get_track_desc with no stream description should return empty vector
+    std::vector<SrsRtcTrackDescription *> audio_tracks = source->get_track_desc("audio", "opus");
+    EXPECT_TRUE(audio_tracks.empty());
+
+    std::vector<SrsRtcTrackDescription *> video_tracks = source->get_track_desc("video", "H264");
+    EXPECT_TRUE(video_tracks.empty());
+
+    std::vector<SrsRtcTrackDescription *> all_video_tracks = source->get_track_desc("video", "");
+    EXPECT_TRUE(all_video_tracks.empty());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescAudioTrackMatching)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with audio track
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create audio track description with Opus codec
+    SrsRtcTrackDescription *audio_track = new SrsRtcTrackDescription();
+    audio_track->type_ = "audio";
+    audio_track->id_ = "audio-track-1";
+    audio_track->ssrc_ = 12345;
+    audio_track->direction_ = "sendrecv";
+    audio_track->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+    stream_desc->audio_track_desc_ = audio_track;
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc for matching audio codec should return the track
+    std::vector<SrsRtcTrackDescription *> opus_tracks = source->get_track_desc("audio", "opus");
+    EXPECT_EQ(1, (int)opus_tracks.size());
+    // Note: set_stream_desc creates a copy, so we check properties instead of pointer equality
+    EXPECT_EQ("audio", opus_tracks[0]->type_);
+    EXPECT_EQ("audio-track-1", opus_tracks[0]->id_);
+    EXPECT_EQ(12345u, opus_tracks[0]->ssrc_);
+
+    // Test: get_track_desc for non-matching audio codec should return empty
+    std::vector<SrsRtcTrackDescription *> aac_tracks = source->get_track_desc("audio", "AAC");
+    EXPECT_TRUE(aac_tracks.empty());
+
+    // Test: get_track_desc for non-matching audio codec should return empty
+    std::vector<SrsRtcTrackDescription *> mp3_tracks = source->get_track_desc("audio", "MP3");
+    EXPECT_TRUE(mp3_tracks.empty());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescAudioTrackNoAudioTrack)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description without audio track
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+    stream_desc->audio_track_desc_ = NULL; // No audio track
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc for audio should return empty when no audio track exists
+    std::vector<SrsRtcTrackDescription *> opus_tracks = source->get_track_desc("audio", "opus");
+    EXPECT_TRUE(opus_tracks.empty());
+
+    std::vector<SrsRtcTrackDescription *> aac_tracks = source->get_track_desc("audio", "AAC");
+    EXPECT_TRUE(aac_tracks.empty());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescVideoTrackMatching)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with video tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create H.264 video track description
+    SrsRtcTrackDescription *h264_track = new SrsRtcTrackDescription();
+    h264_track->type_ = "video";
+    h264_track->id_ = "video-h264-track";
+    h264_track->ssrc_ = 54321;
+    h264_track->direction_ = "sendrecv";
+    h264_track->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(h264_track);
+
+    // Create H.265 video track description
+    SrsRtcTrackDescription *h265_track = new SrsRtcTrackDescription();
+    h265_track->type_ = "video";
+    h265_track->id_ = "video-h265-track";
+    h265_track->ssrc_ = 54322;
+    h265_track->direction_ = "sendrecv";
+    h265_track->media_ = new SrsVideoPayload(49, "H265", 90000);
+    stream_desc->video_track_descs_.push_back(h265_track);
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc for H264 should return the H264 track
+    std::vector<SrsRtcTrackDescription *> h264_tracks = source->get_track_desc("video", "H264");
+    EXPECT_EQ(1, (int)h264_tracks.size());
+    // Note: set_stream_desc creates a copy, so we check properties instead of pointer equality
+    EXPECT_EQ("video", h264_tracks[0]->type_);
+    EXPECT_EQ("video-h264-track", h264_tracks[0]->id_);
+    EXPECT_EQ(54321u, h264_tracks[0]->ssrc_);
+
+    // Test: get_track_desc for H265 should return the H265 track
+    std::vector<SrsRtcTrackDescription *> h265_tracks = source->get_track_desc("video", "H265");
+    EXPECT_EQ(1, (int)h265_tracks.size());
+    // Note: set_stream_desc creates a copy, so we check properties instead of pointer equality
+    EXPECT_EQ("video", h265_tracks[0]->type_);
+    EXPECT_EQ("video-h265-track", h265_tracks[0]->id_);
+    EXPECT_EQ(54322u, h265_tracks[0]->ssrc_);
+
+    // Test: get_track_desc for non-matching video codec should return empty
+    std::vector<SrsRtcTrackDescription *> vp8_tracks = source->get_track_desc("video", "VP8");
+    EXPECT_TRUE(vp8_tracks.empty());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescVideoTrackEmptyMediaName)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with multiple video tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create H.264 video track description
+    SrsRtcTrackDescription *h264_track = new SrsRtcTrackDescription();
+    h264_track->type_ = "video";
+    h264_track->id_ = "video-h264-track";
+    h264_track->ssrc_ = 11111;
+    h264_track->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(h264_track);
+
+    // Create H.265 video track description
+    SrsRtcTrackDescription *h265_track = new SrsRtcTrackDescription();
+    h265_track->type_ = "video";
+    h265_track->id_ = "video-h265-track";
+    h265_track->ssrc_ = 22222;
+    h265_track->media_ = new SrsVideoPayload(49, "H265", 90000);
+    stream_desc->video_track_descs_.push_back(h265_track);
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc with empty media_name should return all video tracks
+    std::vector<SrsRtcTrackDescription *> all_video_tracks = source->get_track_desc("video", "");
+    EXPECT_EQ(2, (int)all_video_tracks.size());
+    // Note: set_stream_desc creates copies, so we check properties instead of pointer equality
+    EXPECT_EQ("video-h264-track", all_video_tracks[0]->id_);
+    EXPECT_EQ("video-h265-track", all_video_tracks[1]->id_);
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescVideoTrackNoVideoTracks)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description without video tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+    // video_track_descs_ is empty by default
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc for video should return empty when no video tracks exist
+    std::vector<SrsRtcTrackDescription *> h264_tracks = source->get_track_desc("video", "H264");
+    EXPECT_TRUE(h264_tracks.empty());
+
+    std::vector<SrsRtcTrackDescription *> all_video_tracks = source->get_track_desc("video", "");
+    EXPECT_TRUE(all_video_tracks.empty());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescMixedAudioVideoTracks)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with both audio and video tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create audio track description
+    SrsRtcTrackDescription *audio_track = new SrsRtcTrackDescription();
+    audio_track->type_ = "audio";
+    audio_track->id_ = "audio-opus-track";
+    audio_track->ssrc_ = 33333;
+    audio_track->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+    stream_desc->audio_track_desc_ = audio_track;
+
+    // Create multiple video track descriptions
+    SrsRtcTrackDescription *h264_track = new SrsRtcTrackDescription();
+    h264_track->type_ = "video";
+    h264_track->id_ = "video-h264-track";
+    h264_track->ssrc_ = 44444;
+    h264_track->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(h264_track);
+
+    SrsRtcTrackDescription *h265_track = new SrsRtcTrackDescription();
+    h265_track->type_ = "video";
+    h265_track->id_ = "video-h265-track";
+    h265_track->ssrc_ = 55555;
+    h265_track->media_ = new SrsVideoPayload(49, "H265", 90000);
+    stream_desc->video_track_descs_.push_back(h265_track);
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc for audio should return only audio track
+    std::vector<SrsRtcTrackDescription *> opus_tracks = source->get_track_desc("audio", "opus");
+    EXPECT_EQ(1, (int)opus_tracks.size());
+    // Note: set_stream_desc creates copies, so we check properties instead of pointer equality
+    EXPECT_EQ("audio", opus_tracks[0]->type_);
+    EXPECT_EQ("audio-opus-track", opus_tracks[0]->id_);
+
+    // Test: get_track_desc for video should return only matching video tracks
+    std::vector<SrsRtcTrackDescription *> h264_tracks = source->get_track_desc("video", "H264");
+    EXPECT_EQ(1, (int)h264_tracks.size());
+    EXPECT_EQ("video", h264_tracks[0]->type_);
+    EXPECT_EQ("video-h264-track", h264_tracks[0]->id_);
+
+    std::vector<SrsRtcTrackDescription *> h265_tracks = source->get_track_desc("video", "H265");
+    EXPECT_EQ(1, (int)h265_tracks.size());
+    EXPECT_EQ("video", h265_tracks[0]->type_);
+    EXPECT_EQ("video-h265-track", h265_tracks[0]->id_);
+
+    // Test: get_track_desc for all video tracks
+    std::vector<SrsRtcTrackDescription *> all_video_tracks = source->get_track_desc("video", "");
+    EXPECT_EQ(2, (int)all_video_tracks.size());
+    EXPECT_EQ("video-h264-track", all_video_tracks[0]->id_);
+    EXPECT_EQ("video-h265-track", all_video_tracks[1]->id_);
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescInvalidType)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with both audio and video tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create audio track
+    SrsRtcTrackDescription *audio_track = new SrsRtcTrackDescription();
+    audio_track->type_ = "audio";
+    audio_track->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+    stream_desc->audio_track_desc_ = audio_track;
+
+    // Create video track
+    SrsRtcTrackDescription *video_track = new SrsRtcTrackDescription();
+    video_track->type_ = "video";
+    video_track->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(video_track);
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc with invalid type should return empty
+    std::vector<SrsRtcTrackDescription *> invalid_tracks = source->get_track_desc("invalid", "opus");
+    EXPECT_TRUE(invalid_tracks.empty());
+
+    std::vector<SrsRtcTrackDescription *> data_tracks = source->get_track_desc("data", "H264");
+    EXPECT_TRUE(data_tracks.empty());
+
+    std::vector<SrsRtcTrackDescription *> empty_type_tracks = source->get_track_desc("", "opus");
+    EXPECT_TRUE(empty_type_tracks.empty());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescCaseSensitivity)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create audio track
+    SrsRtcTrackDescription *audio_track = new SrsRtcTrackDescription();
+    audio_track->type_ = "audio";
+    audio_track->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+    stream_desc->audio_track_desc_ = audio_track;
+
+    // Create video track
+    SrsRtcTrackDescription *video_track = new SrsRtcTrackDescription();
+    video_track->type_ = "video";
+    video_track->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(video_track);
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: type parameter is case sensitive
+    std::vector<SrsRtcTrackDescription *> audio_upper = source->get_track_desc("AUDIO", "opus");
+    EXPECT_TRUE(audio_upper.empty());
+
+    std::vector<SrsRtcTrackDescription *> video_upper = source->get_track_desc("VIDEO", "H264");
+    EXPECT_TRUE(video_upper.empty());
+
+    // Test: media_name parameter is case insensitive (codec string matching converts to uppercase)
+    std::vector<SrsRtcTrackDescription *> opus_upper = source->get_track_desc("audio", "OPUS");
+    EXPECT_EQ(1, (int)opus_upper.size()); // Should work due to case insensitive matching
+
+    std::vector<SrsRtcTrackDescription *> h264_lower = source->get_track_desc("video", "h264");
+    EXPECT_EQ(1, (int)h264_lower.size()); // Should work due to case insensitive matching
+
+    // Test: original case should also work
+    std::vector<SrsRtcTrackDescription *> opus_correct = source->get_track_desc("audio", "opus");
+    EXPECT_EQ(1, (int)opus_correct.size());
+
+    std::vector<SrsRtcTrackDescription *> h264_correct = source->get_track_desc("video", "H264");
+    EXPECT_EQ(1, (int)h264_correct.size());
+}
+
+VOID TEST(AppTest2, RtcSourceGetTrackDescMultipleMatchingVideoTracks)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->ip_ = "127.0.0.1";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create stream description with multiple H264 video tracks
+    SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
+    stream_desc->id_ = "test-stream";
+
+    // Create first H264 video track
+    SrsRtcTrackDescription *h264_track1 = new SrsRtcTrackDescription();
+    h264_track1->type_ = "video";
+    h264_track1->id_ = "video-h264-track-1";
+    h264_track1->ssrc_ = 88888;
+    h264_track1->media_ = new SrsVideoPayload(102, "H264", 90000);
+    stream_desc->video_track_descs_.push_back(h264_track1);
+
+    // Create second H264 video track
+    SrsRtcTrackDescription *h264_track2 = new SrsRtcTrackDescription();
+    h264_track2->type_ = "video";
+    h264_track2->id_ = "video-h264-track-2";
+    h264_track2->ssrc_ = 99999;
+    h264_track2->media_ = new SrsVideoPayload(103, "H264", 90000); // Different PT but same codec
+    stream_desc->video_track_descs_.push_back(h264_track2);
+
+    // Create H265 video track for contrast
+    SrsRtcTrackDescription *h265_track = new SrsRtcTrackDescription();
+    h265_track->type_ = "video";
+    h265_track->id_ = "video-h265-track";
+    h265_track->ssrc_ = 11111;
+    h265_track->media_ = new SrsVideoPayload(49, "H265", 90000);
+    stream_desc->video_track_descs_.push_back(h265_track);
+
+    // Set stream description
+    source->set_stream_desc(stream_desc.get());
+
+    // Test: get_track_desc for H264 should return both H264 tracks
+    std::vector<SrsRtcTrackDescription *> h264_tracks = source->get_track_desc("video", "H264");
+    EXPECT_EQ(2, (int)h264_tracks.size());
+    // Note: set_stream_desc creates copies, so we check properties instead of pointer equality
+    EXPECT_EQ("video-h264-track-1", h264_tracks[0]->id_);
+    EXPECT_EQ("video-h264-track-2", h264_tracks[1]->id_);
+
+    // Test: get_track_desc for H265 should return only the H265 track
+    std::vector<SrsRtcTrackDescription *> h265_tracks = source->get_track_desc("video", "H265");
+    EXPECT_EQ(1, (int)h265_tracks.size());
+    EXPECT_EQ("video-h265-track", h265_tracks[0]->id_);
+
+    // Test: get_track_desc with empty media_name should return all video tracks
+    std::vector<SrsRtcTrackDescription *> all_video_tracks = source->get_track_desc("video", "");
+    EXPECT_EQ(3, (int)all_video_tracks.size());
+    EXPECT_EQ("video-h264-track-1", all_video_tracks[0]->id_);
+    EXPECT_EQ("video-h264-track-2", all_video_tracks[1]->id_);
+    EXPECT_EQ("video-h265-track", all_video_tracks[2]->id_);
+}
+

@@ -44,6 +44,7 @@ class SrsRtcFrameBuilder;
 class SrsLiveSource;
 class SrsRtpVideoBuilder;
 class ISrsRtcConsumer;
+class ISrsCircuitBreaker;
 
 // Firefox defaults as 109, Chrome is 111.
 const int kAudioPayloadType = 111;
@@ -219,6 +220,8 @@ public:
 class SrsRtcSource : public ISrsFastTimer, public ISrsRtcSourceForConsumer
 {
 private:
+    // Circuit breaker for protecting server resources.
+    ISrsCircuitBreaker *circuit_breaker_;
     // For publish, it's the publish client id.
     // For edge, it's the edge ingest id.
     // when source id changed, for example, the edge reconnect,

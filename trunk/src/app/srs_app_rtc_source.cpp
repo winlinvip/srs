@@ -202,7 +202,7 @@ srs_error_t SrsRtcConsumer::enqueue(SrsRtpPacket *pkt)
     queue_.push_back(pkt);
 
     if (mw_waiting_) {
-        if ((int)queue_.size() > mw_min_msgs_) {
+        if ((int)queue_.size() >= mw_min_msgs_) {
             srs_cond_signal(mw_wait_);
             mw_waiting_ = false;
             return err;
@@ -235,7 +235,7 @@ void SrsRtcConsumer::wait(int nb_msgs)
     mw_min_msgs_ = nb_msgs;
 
     // when duration ok, signal to flush.
-    if ((int)queue_.size() > mw_min_msgs_) {
+    if ((int)queue_.size() >= mw_min_msgs_) {
         return;
     }
 
@@ -400,6 +400,7 @@ SrsRtcSource::SrsRtcSource()
 #ifdef SRS_FFMPEG_FIT
     frame_builder_ = NULL;
 #endif
+    circuit_breaker_ = _srs_circuit_breaker;
 
     pli_for_rtmp_ = pli_elapsed_ = 0;
     stream_die_at_ = 0;
@@ -793,7 +794,7 @@ srs_error_t SrsRtcSource::on_rtp(SrsRtpPacket *pkt)
     srs_error_t err = srs_success;
 
     // If circuit-breaker is dying, drop packet.
-    if (_srs_circuit_breaker->hybrid_dying_water_level()) {
+    if (circuit_breaker_ && circuit_breaker_->hybrid_dying_water_level()) {
         _srs_pps_aloss2->sugar_ += (int64_t)consumers_.size();
         return err;
     }

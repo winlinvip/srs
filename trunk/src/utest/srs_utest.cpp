@@ -329,8 +329,23 @@ srs_error_t SrsHttpTestServer::start()
 {
     srs_error_t err = srs_success;
 
-    if ((err = srs_tcp_listen(ip_, port_, &fd_)) != srs_success) {
-        return srs_error_wrap(err, "listen %s:%d", ip_.c_str(), port_);
+    // Retry up to 3 times with different random ports if listen fails
+    for (int retry = 0; retry < 3; retry++) {
+        if ((err = srs_tcp_listen(ip_, port_, &fd_)) == srs_success) {
+            break;
+        }
+
+        // If this is not the last retry, generate a new random port and try again
+        if (retry < 2) {
+            srs_freep(err);
+            port_ = srs_rand_integer(30000, 60000);
+            srs_trace("HTTP test server listen failed on %s:%d, retry %d with new port %d",
+                      ip_.c_str(), port_, retry + 1, port_);
+        }
+    }
+
+    if (err != srs_success) {
+        return srs_error_wrap(err, "listen %s:%d after 3 retries", ip_.c_str(), port_);
     }
 
     return trd_->start();
@@ -418,8 +433,23 @@ srs_error_t SrsHttpsTestServer::start()
 {
     srs_error_t err = srs_success;
 
-    if ((err = srs_tcp_listen(ip_, port_, &fd_)) != srs_success) {
-        return srs_error_wrap(err, "listen %s:%d", ip_.c_str(), port_);
+    // Retry up to 3 times with different random ports if listen fails
+    for (int retry = 0; retry < 3; retry++) {
+        if ((err = srs_tcp_listen(ip_, port_, &fd_)) == srs_success) {
+            break;
+        }
+
+        // If this is not the last retry, generate a new random port and try again
+        if (retry < 2) {
+            srs_freep(err);
+            port_ = srs_rand_integer(30000, 60000);
+            srs_trace("HTTPS test server listen failed on %s:%d, retry %d with new port %d",
+                      ip_.c_str(), port_, retry + 1, port_);
+        }
+    }
+
+    if (err != srs_success) {
+        return srs_error_wrap(err, "listen %s:%d after 3 retries", ip_.c_str(), port_);
     }
 
     if ((err = trd_->start()) != srs_success) {
@@ -527,8 +557,23 @@ srs_error_t SrsRtmpTestServer::start()
 {
     srs_error_t err = srs_success;
 
-    if ((err = srs_tcp_listen(ip_, port_, &fd_)) != srs_success) {
-        return srs_error_wrap(err, "listen %s:%d", ip_.c_str(), port_);
+    // Retry up to 3 times with different random ports if listen fails
+    for (int retry = 0; retry < 3; retry++) {
+        if ((err = srs_tcp_listen(ip_, port_, &fd_)) == srs_success) {
+            break;
+        }
+
+        // If this is not the last retry, generate a new random port and try again
+        if (retry < 2) {
+            srs_freep(err);
+            port_ = srs_rand_integer(30000, 60000);
+            srs_trace("RTMP test server listen failed on %s:%d, retry %d with new port %d",
+                      ip_.c_str(), port_, retry + 1, port_);
+        }
+    }
+
+    if (err != srs_success) {
+        return srs_error_wrap(err, "listen %s:%d after 3 retries", ip_.c_str(), port_);
     }
 
     return trd_->start();
@@ -835,9 +880,23 @@ srs_error_t SrsUdpTestServer::start()
         return err;
     }
 
-    // Create UDP socket
-    if ((err = srs_udp_listen(host_, port_, &lfd_)) != srs_success) {
-        return srs_error_wrap(err, "udp listen %s:%d", host_.c_str(), port_);
+    // Create UDP socket - retry up to 3 times with different random ports if listen fails
+    for (int retry = 0; retry < 3; retry++) {
+        if ((err = srs_udp_listen(host_, port_, &lfd_)) == srs_success) {
+            break;
+        }
+
+        // If this is not the last retry, generate a new random port and try again
+        if (retry < 2) {
+            srs_freep(err);
+            port_ = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+            srs_trace("UDP test server listen failed on %s:%d, retry %d with new port %d",
+                      host_.c_str(), port_, retry + 1, port_);
+        }
+    }
+
+    if (err != srs_success) {
+        return srs_error_wrap(err, "udp listen %s:%d after 3 retries", host_.c_str(), port_);
     }
 
     // Get the actual port that was assigned

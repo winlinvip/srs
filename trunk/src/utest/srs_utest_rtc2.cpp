@@ -1516,19 +1516,19 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoFrameDetectorNullPacketHandling
 }
 
 // Mock bridge for testing SrsRtcFrameBuilder
-class MockStreamBridge : public ISrsStreamBridge
+class MockRtcFrameBuilderBridge : public ISrsStreamBridge
 {
 public:
     srs_error_t last_error;
     int frame_count;
 
-    MockStreamBridge()
+    MockRtcFrameBuilderBridge()
     {
-        last_error = srs_success;
+        last_error = NULL;
         frame_count = 0;
     }
 
-    virtual ~MockStreamBridge()
+    virtual ~MockRtcFrameBuilderBridge()
     {
         srs_freep(last_error);
     }
@@ -1577,7 +1577,7 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderPacketVideoRtmpNullPointerCrash)
     // but the start packet (100) is missing. With the fix, the function should use
     // packet 101 (first available) instead of crashing on the missing packet 100.
     if (true) {
-        MockStreamBridge bridge;
+        MockRtcFrameBuilderBridge bridge;
         SrsRtcFrameBuilder frame_builder(&bridge);
 
         // Skip initialization and directly set up the test scenario

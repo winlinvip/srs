@@ -396,10 +396,7 @@ SrsRtcSource::SrsRtcSource()
     stream_desc_ = NULL;
 
     req_ = NULL;
-    bridge_ = NULL;
-#ifdef SRS_FFMPEG_FIT
-    frame_builder_ = NULL;
-#endif
+    rtc_bridge_ = NULL;
     circuit_breaker_ = _srs_circuit_breaker;
 
     pli_for_rtmp_ = pli_elapsed_ = 0;
@@ -412,10 +409,7 @@ SrsRtcSource::~SrsRtcSource()
     // for all consumers are auto free.
     consumers_.clear();
 
-#ifdef SRS_FFMPEG_FIT
-    srs_freep(frame_builder_);
-#endif
-    srs_freep(bridge_);
+    srs_freep(rtc_bridge_);
     srs_freep(req_);
     srs_freep(stream_desc_);
 
@@ -591,15 +585,10 @@ SrsContextId SrsRtcSource::pre_source_id()
     return _pre_source_id;
 }
 
-void SrsRtcSource::set_bridge(ISrsStreamBridge *bridge)
+void SrsRtcSource::set_bridge(ISrsRtcBridge *bridge)
 {
-    srs_freep(bridge_);
-    bridge_ = bridge;
-
-#ifdef SRS_FFMPEG_FIT
-    srs_freep(frame_builder_);
-    frame_builder_ = new SrsRtcFrameBuilder(bridge);
-#endif
+    srs_freep(rtc_bridge_);
+    rtc_bridge_ = bridge;
 }
 
 srs_error_t SrsRtcSource::create_consumer(ISrsRtcConsumer *&consumer)
@@ -678,31 +667,30 @@ srs_error_t SrsRtcSource::on_publish()
         return srs_error_wrap(err, "source id change");
     }
 
+    // Setup the audio and video codec.
+    SrsAudioCodecId audio_codec = SrsAudioCodecIdOpus;
+    if (stream_desc_->audio_track_desc_ && stream_desc_->audio_track_desc_->media_) {
+        audio_codec = SrsAudioCodecId(stream_desc_->audio_track_desc_->media_->codec(false));
+    }
+
+    SrsVideoCodecId video_codec = SrsVideoCodecIdAVC;
+    if (stream_desc_->video_track_descs_.size() > 0) {
+        SrsRtcTrackDescription *track_desc = stream_desc_->video_track_descs_.at(0);
+        video_codec = SrsVideoCodecId(track_desc->media_->codec(true));
+    }
+
     // If bridge to other source, handle event and start timer to request PLI.
-    if (bridge_) {
-#ifdef SRS_FFMPEG_FIT
-        SrsAudioCodecId audio_codec = SrsAudioCodecIdOpus;
-        if (stream_desc_->audio_track_desc_ && stream_desc_->audio_track_desc_->media_) {
-            audio_codec = SrsAudioCodecId(stream_desc_->audio_track_desc_->media_->codec(false));
+    if (rtc_bridge_) {
+        if ((err = rtc_bridge_->initialize(req_)) != srs_success) {
+            return srs_error_wrap(err, "rtp bridge initialize");
         }
 
-        SrsVideoCodecId video_codec = SrsVideoCodecIdAVC;
-        if (stream_desc_->video_track_descs_.size() > 0) {
-            SrsRtcTrackDescription *track_desc = stream_desc_->video_track_descs_.at(0);
-            video_codec = SrsVideoCodecId(track_desc->media_->codec(true));
+        if ((err = rtc_bridge_->setup_codec(audio_codec, video_codec)) != srs_success) {
+            return srs_error_wrap(err, "rtp bridge setup codec");
         }
 
-        if ((err = frame_builder_->initialize(req_, audio_codec, video_codec)) != srs_success) {
-            return srs_error_wrap(err, "frame builder initialize");
-        }
-
-        if ((err = frame_builder_->on_publish()) != srs_success) {
-            return srs_error_wrap(err, "frame builder on publish");
-        }
-#endif
-
-        if ((err = bridge_->on_publish()) != srs_success) {
-            return srs_error_wrap(err, "bridge on publish");
+        if ((err = rtc_bridge_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtp bridge on publish");
         }
 
         // The PLI interval for RTC2RTMP.
@@ -741,17 +729,12 @@ void SrsRtcSource::on_unpublish()
     }
 
     // free bridge resource
-    if (bridge_) {
+    if (rtc_bridge_) {
         // For SrsRtcSource::on_timer()
         _srs_shared_timer->timer100ms()->unsubscribe(this);
 
-#ifdef SRS_FFMPEG_FIT
-        frame_builder_->on_unpublish();
-        srs_freep(frame_builder_);
-#endif
-
-        bridge_->on_unpublish();
-        srs_freep(bridge_);
+        rtc_bridge_->on_unpublish();
+        srs_freep(rtc_bridge_);
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
@@ -806,11 +789,9 @@ srs_error_t SrsRtcSource::on_rtp(SrsRtpPacket *pkt)
         }
     }
 
-#ifdef SRS_FFMPEG_FIT
-    if (frame_builder_ && (err = frame_builder_->on_rtp(pkt)) != srs_success) {
-        return srs_error_wrap(err, "frame builder consume packet");
+    if (rtc_bridge_ && (err = rtc_bridge_->on_rtp(pkt)) != srs_success) {
+        return srs_error_wrap(err, "rtp bridge consume packet");
     }
-#endif
 
     return err;
 }
@@ -1758,9 +1739,9 @@ void SrsRtcFrameBuilderAudioPacketCache::clear_all()
     audio_buffer_.clear();
 }
 
-SrsRtcFrameBuilder::SrsRtcFrameBuilder(ISrsStreamBridge *bridge)
+SrsRtcFrameBuilder::SrsRtcFrameBuilder(ISrsFrameTarget *target)
 {
-    bridge_ = bridge;
+    frame_target_ = target;
     is_first_audio_ = true;
     audio_transcoder_ = NULL;
     video_codec_ = SrsVideoCodecIdAVC;
@@ -1892,7 +1873,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
         SrsMediaPacket msg;
         out_rtmp.to_msg(&msg);
 
-        if ((err = bridge_->on_frame(&msg)) != srs_success) {
+        if ((err = frame_target_->on_frame(&msg)) != srs_success) {
             return srs_error_wrap(err, "source on audio");
         }
 
@@ -1922,7 +1903,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
         SrsMediaPacket msg;
         out_rtmp.to_msg(&msg);
 
-        if ((err = bridge_->on_frame(&msg)) != srs_success) {
+        if ((err = frame_target_->on_frame(&msg)) != srs_success) {
             err = srs_error_wrap(err, "source on audio");
             break;
         }
@@ -2099,7 +2080,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_avc(SrsRtpPacket *pkt,
     SrsMediaPacket msg;
     rtmp.to_msg(&msg);
 
-    if ((err = bridge_->on_frame(&msg)) != srs_success) {
+    if ((err = frame_target_->on_frame(&msg)) != srs_success) {
         return err;
     }
 
@@ -2196,7 +2177,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_hevc(SrsRtpPacket *pkt
     SrsMediaPacket msg;
     rtmp.to_msg(&msg);
 
-    if ((err = bridge_->on_frame(&msg)) != srs_success) {
+    if ((err = frame_target_->on_frame(&msg)) != srs_success) {
         return err;
     }
 
@@ -2452,7 +2433,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
     SrsMediaPacket msg;
     rtmp.to_msg(&msg);
 
-    if ((err = bridge_->on_frame(&msg)) != srs_success) {
+    if ((err = frame_target_->on_frame(&msg)) != srs_success) {
         srs_warn("fail to pack video frame: %s", srs_error_summary(err).c_str());
         srs_freep(err);
     }

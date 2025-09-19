@@ -24,6 +24,75 @@ class SrsRtpPacket;
 class SrsRtcRtpBuilder;
 class SrsRtspSource;
 class SrsRtspRtpBuilder;
+class SrsRtcFrameBuilder;
+class ISrsStreamBridge;
+
+// A target to feed AV frame, such as a RTMP live source.
+class ISrsFrameTarget
+{
+public:
+    ISrsFrameTarget();
+    virtual ~ISrsFrameTarget();
+
+public:
+    virtual srs_error_t on_frame(SrsMediaPacket *frame) = 0;
+};
+
+// A target to feed RTP packets, such as a RTC source.
+class ISrsRtpTarget
+{
+public:
+    ISrsRtpTarget();
+    virtual ~ISrsRtpTarget();
+
+public:
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt) = 0;
+};
+
+// A RTC RTP bridge is used to convert RTP packets to different protocols,
+// such as bridge for RTP and RTMP. Input is RTP packets, output is
+// different protocols that consumes frame media packet.
+class ISrsRtcBridge : public ISrsRtpTarget
+{
+public:
+    ISrsRtcBridge();
+    virtual ~ISrsRtcBridge();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r) = 0;
+    virtual srs_error_t setup_codec(SrsAudioCodecId acodec, SrsVideoCodecId vcodec) = 0;
+    virtual srs_error_t on_publish() = 0;
+    virtual void on_unpublish() = 0;
+};
+
+// A RTC bridge to convert RTP packets to RTMP stream.
+// First, it use a frame builder to convert RTP packets to RTMP frame packet.
+// Then, deliver the RTMP frame packet to stream bridge, which binds to a live source.
+class SrsRtcBridge : public ISrsRtcBridge
+{
+private:
+    ISrsRequest *req_;
+#ifdef SRS_FFMPEG_FIT
+    // Collect and build WebRTC RTP packets to AV frames.
+    SrsRtcFrameBuilder *frame_builder_;
+#endif
+    // The Source bridge, bridge stream to other source.
+    SrsSharedPtr<SrsLiveSource> rtmp_target_;
+
+public:
+    SrsRtcBridge();
+    virtual ~SrsRtcBridge();
+
+public:
+    void enable_rtc2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_target);
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r);
+    virtual srs_error_t setup_codec(SrsAudioCodecId acodec, SrsVideoCodecId vcodec);
+    virtual srs_error_t on_publish();
+    virtual void on_unpublish();
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
+};
 
 // A stream bridge is used to convert stream via different protocols, such as bridge for RTMP and RTC. Generally, we use
 // frame as message for bridge. A frame is a audio or video frame, such as an I/B/P frame, a general frame for decoder.

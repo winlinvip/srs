@@ -507,7 +507,7 @@ public:
 extern SrsLiveSourceManager *_srs_sources;
 
 // The live streaming source.
-class SrsLiveSource : public ISrsReloadHandler
+class SrsLiveSource : public ISrsReloadHandler, public ISrsFrameTarget
 {
     friend class SrsOriginHub;
 

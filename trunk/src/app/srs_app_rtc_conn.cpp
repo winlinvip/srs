@@ -1225,19 +1225,17 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     }
 
     // Bridge to rtmp
-#if defined(SRS_FFMPEG_FIT)
     bool rtc_to_rtmp = _srs_config->get_rtc_to_rtmp(req_->vhost_);
     if (rtc_to_rtmp) {
-        if ((err = _srs_sources->fetch_or_create(r, live_source)) != srs_success) {
-            return srs_error_wrap(err, "create source");
-        }
-
         // Disable GOP cache for RTC2RTMP bridge, to keep the streams in sync,
         // especially for stream merging.
         live_source->set_cache(false);
 
-        SrsCompositeBridge *bridge = new SrsCompositeBridge();
-        bridge->append(new SrsFrameToRtmpBridge(live_source));
+        // Create the bridge for RTC.
+        SrsRtcBridge *bridge = new SrsRtcBridge();
+
+        // Convert RTC to RTMP.
+        bridge->enable_rtc2rtmp(live_source);
 
         if ((err = bridge->initialize(r)) != srs_success) {
             srs_freep(bridge);
@@ -1246,7 +1244,6 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
 
         source_->set_bridge(bridge);
     }
-#endif
 
     return err;
 }

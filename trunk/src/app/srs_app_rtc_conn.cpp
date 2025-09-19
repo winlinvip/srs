@@ -1205,8 +1205,11 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     source_->set_publish_stream(this);
 
     // TODO: FIMXE: Check it in SrsRtcConnection::add_publisher?
-    SrsSharedPtr<SrsLiveSource> live_source = _srs_sources->fetch(r);
-    if (live_source.get() && !live_source->can_publish(false)) {
+    SrsSharedPtr<SrsLiveSource> live_source;
+    if ((err = _srs_sources->fetch_or_create(r, live_source)) != srs_success) {
+        return srs_error_wrap(err, "create live source");
+    }
+    if (!live_source->can_publish(false)) {
         return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp stream %s busy", r->get_stream_url().c_str());
     }
 
@@ -1224,26 +1227,34 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
         }
     }
 
-    // Bridge to rtmp
+    // Create the bridge for RTC.
+    SrsRtcBridge *bridge = new SrsRtcBridge();
+
+    // Bridge to RTMP.
+    // TODO: Support bridge to RTSP.
     bool rtc_to_rtmp = _srs_config->get_rtc_to_rtmp(req_->vhost_);
     if (rtc_to_rtmp) {
         // Disable GOP cache for RTC2RTMP bridge, to keep the streams in sync,
         // especially for stream merging.
         live_source->set_cache(false);
 
-        // Create the bridge for RTC.
-        SrsRtcBridge *bridge = new SrsRtcBridge();
-
         // Convert RTC to RTMP.
         bridge->enable_rtc2rtmp(live_source);
-
-        if ((err = bridge->initialize(r)) != srs_success) {
-            srs_freep(bridge);
-            return srs_error_wrap(err, "create bridge");
-        }
-
-        source_->set_bridge(bridge);
     }
+
+    if (bridge->empty()) {
+        srs_freep(bridge);
+    } else if ((err = bridge->initialize(r)) != srs_success) {
+        srs_freep(bridge);
+        return srs_error_wrap(err, "create bridge");
+    }
+
+    if ((err = bridge->initialize(r)) != srs_success) {
+        srs_freep(bridge);
+        return srs_error_wrap(err, "create bridge");
+    }
+
+    source_->set_bridge(bridge);
 
     return err;
 }

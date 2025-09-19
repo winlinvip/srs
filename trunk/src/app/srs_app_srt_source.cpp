@@ -291,7 +291,7 @@ void SrsSrtConsumer::wait(int nb_msgs, srs_utime_t timeout)
     srs_cond_timedwait(mw_wait_, timeout);
 }
 
-SrsSrtFrameBuilder::SrsSrtFrameBuilder(ISrsStreamBridge *bridge)
+SrsSrtFrameBuilder::SrsSrtFrameBuilder(ISrsFrameTarget *target)
 {
     ts_ctx_ = new SrsTsContext();
 
@@ -300,7 +300,7 @@ SrsSrtFrameBuilder::SrsSrtFrameBuilder(ISrsStreamBridge *bridge)
     pps_ = "";
 
     req_ = NULL;
-    bridge_ = bridge;
+    frame_target_ = target;
 
     video_streamid_ = 1;
     audio_streamid_ = 2;
@@ -510,7 +510,7 @@ srs_error_t SrsSrtFrameBuilder::check_sps_pps_change(SrsTsMessage *msg)
     SrsMediaPacket frame;
     rtmp.to_msg(&frame);
 
-    if ((err = bridge_->on_frame(&frame)) != srs_success) {
+    if ((err = frame_target_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp sps/pps");
     }
 
@@ -568,7 +568,7 @@ srs_error_t SrsSrtFrameBuilder::on_h264_frame(SrsTsMessage *msg, vector<pair<cha
     SrsMediaPacket frame;
     rtmp.to_msg(&frame);
 
-    if ((err = bridge_->on_frame(&frame)) != srs_success) {
+    if ((err = frame_target_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt ts video to rtmp");
     }
 
@@ -703,7 +703,7 @@ srs_error_t SrsSrtFrameBuilder::check_vps_sps_pps_change(SrsTsMessage *msg)
     SrsMediaPacket frame;
     rtmp.to_msg(&frame);
 
-    if ((err = bridge_->on_frame(&frame)) != srs_success) {
+    if ((err = frame_target_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp vps/sps/pps");
     }
 
@@ -759,7 +759,7 @@ srs_error_t SrsSrtFrameBuilder::on_hevc_frame(SrsTsMessage *msg, vector<pair<cha
     SrsMediaPacket frame;
     rtmp.to_msg(&frame);
 
-    if ((err = bridge_->on_frame(&frame)) != srs_success) {
+    if ((err = frame_target_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt ts hevc video to rtmp");
     }
 
@@ -873,7 +873,7 @@ srs_error_t SrsSrtFrameBuilder::check_audio_sh_change(SrsTsMessage *msg, uint32_
     SrsMediaPacket frame;
     rtmp.to_msg(&frame);
 
-    if ((err = bridge_->on_frame(&frame)) != srs_success) {
+    if ((err = frame_target_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp audio sh");
     }
 
@@ -901,7 +901,7 @@ srs_error_t SrsSrtFrameBuilder::on_aac_frame(SrsTsMessage *msg, uint32_t pts, ch
     SrsMediaPacket frame;
     rtmp.to_msg(&frame);
 
-    if ((err = bridge_->on_frame(&frame)) != srs_success) {
+    if ((err = frame_target_->on_frame(&frame)) != srs_success) {
         return srs_error_wrap(err, "srt to rtmp audio sh");
     }
 
@@ -912,8 +912,7 @@ SrsSrtSource::SrsSrtSource()
 {
     req_ = NULL;
     can_publish_ = true;
-    frame_builder_ = NULL;
-    bridge_ = NULL;
+    srt_bridge_ = NULL;
     stream_die_at_ = 0;
 }
 
@@ -923,8 +922,7 @@ SrsSrtSource::~SrsSrtSource()
     // for all consumers are auto free.
     consumers_.clear();
 
-    srs_freep(frame_builder_);
-    srs_freep(bridge_);
+    srs_freep(srt_bridge_);
     srs_freep(req_);
 
     SrsContextId cid = _source_id;
@@ -1013,13 +1011,10 @@ void SrsSrtSource::update_auth(ISrsRequest *r)
     req_->update_auth(r);
 }
 
-void SrsSrtSource::set_bridge(ISrsStreamBridge *bridge)
+void SrsSrtSource::set_bridge(ISrsSrtBridge *bridge)
 {
-    srs_freep(bridge_);
-    bridge_ = bridge;
-
-    srs_freep(frame_builder_);
-    frame_builder_ = new SrsSrtFrameBuilder(bridge);
+    srs_freep(srt_bridge_);
+    srt_bridge_ = bridge;
 }
 
 srs_error_t SrsSrtSource::create_consumer(SrsSrtConsumer *&consumer)
@@ -1073,18 +1068,8 @@ srs_error_t SrsSrtSource::on_publish()
         return srs_error_wrap(err, "source id change");
     }
 
-    if (bridge_) {
-        if ((err = frame_builder_->initialize(req_)) != srs_success) {
-            return srs_error_wrap(err, "frame builder initialize");
-        }
-
-        if ((err = frame_builder_->on_publish()) != srs_success) {
-            return srs_error_wrap(err, "frame builder on publish");
-        }
-
-        if ((err = bridge_->on_publish()) != srs_success) {
-            return srs_error_wrap(err, "bridge on publish");
-        }
+    if (srt_bridge_ && (err = srt_bridge_->on_publish()) != srs_success) {
+        return srs_error_wrap(err, "bridge on publish");
     }
 
     SrsStatistic *stat = SrsStatistic::instance();
@@ -1105,12 +1090,9 @@ void SrsSrtSource::on_unpublish()
     SrsStatistic *stat = SrsStatistic::instance();
     stat->on_stream_close(req_);
 
-    if (bridge_) {
-        frame_builder_->on_unpublish();
-        srs_freep(frame_builder_);
-
-        bridge_->on_unpublish();
-        srs_freep(bridge_);
+    if (srt_bridge_) {
+        srt_bridge_->on_unpublish();
+        srs_freep(srt_bridge_);
     }
 
     // Destroy and cleanup source when no publishers and consumers.
@@ -1130,7 +1112,7 @@ srs_error_t SrsSrtSource::on_packet(SrsSrtPacket *packet)
         }
     }
 
-    if (frame_builder_ && (err = frame_builder_->on_packet(packet)) != srs_success) {
+    if (srt_bridge_ && (err = srt_bridge_->on_packet(packet)) != srs_success) {
         return srs_error_wrap(err, "bridge consume message");
     }
 

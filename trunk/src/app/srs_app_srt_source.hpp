@@ -117,7 +117,7 @@ public:
 class SrsSrtFrameBuilder : public ISrsTsHandler
 {
 public:
-    SrsSrtFrameBuilder(ISrsStreamBridge *bridge);
+    SrsSrtFrameBuilder(ISrsFrameTarget *target);
     virtual ~SrsSrtFrameBuilder();
 
 public:
@@ -143,7 +143,7 @@ private:
     srs_error_t on_hevc_frame(SrsTsMessage *msg, std::vector<std::pair<char *, int> > &ipb_frames);
 
 private:
-    ISrsStreamBridge *bridge_;
+    ISrsFrameTarget *frame_target_;
 
 private:
     SrsTsContext *ts_ctx_;
@@ -171,7 +171,8 @@ private:
     SrsAlonePithyPrint *pp_audio_duration_;
 };
 
-class SrsSrtSource
+// A SRT source is a stream, to publish and to play with.
+class SrsSrtSource : public ISrsSrtTarget
 {
 public:
     SrsSrtSource();
@@ -194,7 +195,7 @@ public:
     virtual void update_auth(ISrsRequest *r);
 
 public:
-    void set_bridge(ISrsStreamBridge *bridge);
+    void set_bridge(ISrsSrtBridge *bridge);
 
 public:
     // Create consumer
@@ -226,8 +227,7 @@ private:
     srs_utime_t stream_die_at_;
 
 private:
-    SrsSrtFrameBuilder *frame_builder_;
-    ISrsStreamBridge *bridge_;
+    ISrsSrtBridge *srt_bridge_;
 };
 
 #endif

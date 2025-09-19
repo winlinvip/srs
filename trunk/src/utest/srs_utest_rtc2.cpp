@@ -1515,45 +1515,6 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoFrameDetectorNullPacketHandling
     }
 }
 
-// Mock bridge for testing SrsRtcFrameBuilder
-class MockRtcFrameBuilderBridge : public ISrsStreamBridge
-{
-public:
-    srs_error_t last_error;
-    int frame_count;
-
-    MockRtcFrameBuilderBridge()
-    {
-        last_error = NULL;
-        frame_count = 0;
-    }
-
-    virtual ~MockRtcFrameBuilderBridge()
-    {
-        srs_freep(last_error);
-    }
-
-    virtual srs_error_t initialize(ISrsRequest *r)
-    {
-        return srs_success;
-    }
-
-    virtual srs_error_t on_publish()
-    {
-        return srs_success;
-    }
-
-    virtual srs_error_t on_frame(SrsMediaPacket *frame)
-    {
-        frame_count++;
-        return srs_success;
-    }
-
-    virtual void on_unpublish()
-    {
-    }
-};
-
 VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderSequenceWrapAroundFix)
 {
     // Test for the sequence number wraparound assertion fix

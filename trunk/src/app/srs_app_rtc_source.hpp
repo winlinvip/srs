@@ -29,7 +29,6 @@ class SrsMediaPacket;
 class SrsRtmpCommonMessage;
 class SrsMessageArray;
 class SrsRtcSource;
-class SrsFrameToRtcBridge;
 class SrsAudioTranscoder;
 class SrsRtpPacket;
 class SrsNaluSample;

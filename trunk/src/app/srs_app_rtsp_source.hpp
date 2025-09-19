@@ -26,7 +26,6 @@ class SrsRtcSourceDescription;
 class SrsResourceManager;
 class SrsRtspConnection;
 class SrsRtpVideoBuilder;
-class SrsFrameToRtspBridge;
 
 // The RTSP stream consumer, consume packets from RTSP stream source.
 class SrsRtspConsumer

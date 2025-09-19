@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-09-19, Merge [#4503](https://github.com/ossrs/srs/pull/4503): AI: Refine RTMP/SRT/RTC bridge. v7.0.90 (#4503)
 * v7.0, 2025-09-15, RTC2RTMP: Fix sequence number wraparound assertion crashes. v7.0.89 (#4491)
 * v7.0, 2025-09-14, Merge [#4489](https://github.com/ossrs/srs/pull/4489): Improve coverage for kernel. v7.0.88 (#4489)
 * v7.0, 2025-09-14, Merge [#4488](https://github.com/ossrs/srs/pull/4488): AI: Add utests for kernel and protocol. v7.0.87 (#4488)

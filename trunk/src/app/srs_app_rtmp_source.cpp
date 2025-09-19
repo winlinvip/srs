@@ -1706,7 +1706,7 @@ SrsLiveSource::SrsLiveSource()
     stream_die_at_ = 0;
     publisher_idle_at_ = 0;
 
-    bridge_ = NULL;
+    rtmp_bridge_ = NULL;
 
     play_edge_ = new SrsPlayEdge();
     publish_edge_ = new SrsPublishEdge();
@@ -1740,7 +1740,7 @@ SrsLiveSource::~SrsLiveSource()
     srs_freep(gop_cache_);
 
     srs_freep(req_);
-    srs_freep(bridge_);
+    srs_freep(rtmp_bridge_);
 
     SrsContextId cid = _source_id;
     if (cid.empty())
@@ -1852,10 +1852,10 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsR
     return err;
 }
 
-void SrsLiveSource::set_bridge(ISrsStreamBridge *v)
+void SrsLiveSource::set_bridge(ISrsRtmpBridge *v)
 {
-    srs_freep(bridge_);
-    bridge_ = v;
+    srs_freep(rtmp_bridge_);
+    rtmp_bridge_ = v;
 }
 
 srs_error_t SrsLiveSource::on_source_id_changed(SrsContextId id)
@@ -2049,7 +2049,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
     }
 
     // For bridge to consume the message.
-    if (bridge_ && (err = bridge_->on_frame(msg)) != srs_success) {
+    if (rtmp_bridge_ && (err = rtmp_bridge_->on_frame(msg)) != srs_success) {
         return srs_error_wrap(err, "bridge consume audio");
     }
 
@@ -2170,7 +2170,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
     }
 
     // For bridge to consume the message.
-    if (bridge_ && (err = bridge_->on_frame(msg)) != srs_success) {
+    if (rtmp_bridge_ && (err = rtmp_bridge_->on_frame(msg)) != srs_success) {
         return srs_error_wrap(err, "bridge consume video");
     }
 
@@ -2332,7 +2332,7 @@ srs_error_t SrsLiveSource::on_publish()
         return srs_error_wrap(err, "handle publish");
     }
 
-    if (bridge_ && (err = bridge_->on_publish()) != srs_success) {
+    if (rtmp_bridge_ && (err = rtmp_bridge_->on_publish()) != srs_success) {
         return srs_error_wrap(err, "bridge publish");
     }
 
@@ -2383,9 +2383,9 @@ void SrsLiveSource::on_unpublish()
 
     handler->on_unpublish(req_);
 
-    if (bridge_) {
-        bridge_->on_unpublish();
-        srs_freep(bridge_);
+    if (rtmp_bridge_) {
+        rtmp_bridge_->on_unpublish();
+        srs_freep(rtmp_bridge_);
     }
 
     // no consumer, stream is die.

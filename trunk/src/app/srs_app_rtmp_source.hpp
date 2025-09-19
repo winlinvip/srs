@@ -539,7 +539,7 @@ private:
     // The time of the packet we just got.
     int64_t last_packet_time_;
     // The source bridge for other source.
-    ISrsStreamBridge *bridge_;
+    ISrsRtmpBridge *rtmp_bridge_;
     // The edge control service
     SrsPlayEdge *play_edge_;
     SrsPublishEdge *publish_edge_;
@@ -576,7 +576,7 @@ public:
     // Initialize the hls with handlers.
     virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r);
     // Bridge to other source, forward packets to it.
-    void set_bridge(ISrsStreamBridge *v);
+    void set_bridge(ISrsRtmpBridge *v);
 
 public:
     // The source id changed.

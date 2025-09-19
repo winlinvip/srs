@@ -875,9 +875,9 @@ srs_error_t SrsRtcSource::on_timer(srs_utime_t interval)
 
 #ifdef SRS_FFMPEG_FIT
 
-SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source)
+SrsRtcRtpBuilder::SrsRtcRtpBuilder(ISrsRtpTarget *target, SrsSharedPtr<SrsRtcSource> source)
 {
-    bridge_ = bridge;
+    rtp_target_ = target;
     source_ = source;
 
     req_ = NULL;
@@ -1136,7 +1136,7 @@ srs_error_t SrsRtcRtpBuilder::transcode(SrsParsedAudioPacket *audio)
             break;
         }
 
-        if ((err = bridge_->on_rtp(pkt.get())) != srs_success) {
+        if ((err = rtp_target_->on_rtp(pkt.get())) != srs_success) {
             err = srs_error_wrap(err, "consume opus");
             break;
         }
@@ -1228,7 +1228,7 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsMediaPacket *msg)
             return srs_error_wrap(err, "package stap-a");
         }
 
-        if ((err = bridge_->on_rtp(pkt.get())) != srs_success) {
+        if ((err = rtp_target_->on_rtp(pkt.get())) != srs_success) {
             return srs_error_wrap(err, "consume sps/pps");
         }
     }
@@ -1364,7 +1364,7 @@ srs_error_t SrsRtcRtpBuilder::consume_packets(vector<SrsRtpPacket *> &pkts)
     // TODO: FIXME: Consume a range of packets.
     for (int i = 0; i < (int)pkts.size(); i++) {
         SrsRtpPacket *pkt = pkts[i];
-        if ((err = bridge_->on_rtp(pkt)) != srs_success) {
+        if ((err = rtp_target_->on_rtp(pkt)) != srs_success) {
             err = srs_error_wrap(err, "consume sps/pps");
             break;
         }

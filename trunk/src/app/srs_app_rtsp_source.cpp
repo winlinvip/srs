@@ -503,9 +503,9 @@ void SrsRtspSource::set_video_desc(SrsRtcTrackDescription *video_desc)
     video_desc_ = video_desc->copy();
 }
 
-SrsRtspRtpBuilder::SrsRtspRtpBuilder(SrsFrameToRtspBridge *bridge, SrsSharedPtr<SrsRtspSource> source)
+SrsRtspRtpBuilder::SrsRtspRtpBuilder(ISrsRtpTarget *target, SrsSharedPtr<SrsRtspSource> source)
 {
-    bridge_ = bridge;
+    rtp_target_ = target;
     source_ = source;
 
     req_ = NULL;
@@ -746,7 +746,7 @@ srs_error_t SrsRtspRtpBuilder::on_audio(SrsMediaPacket *msg)
         return srs_error_new(ERROR_NOT_IMPLEMENTED, "codec %d not implemented", acodec);
     }
 
-    if ((err = bridge_->on_rtp(pkt.get())) != srs_success) {
+    if ((err = rtp_target_->on_rtp(pkt.get())) != srs_success) {
         return srs_error_wrap(err, "consume audio packet");
     }
 
@@ -876,7 +876,7 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsMediaPacket *msg)
             return srs_error_wrap(err, "package stap-a");
         }
 
-        if ((err = bridge_->on_rtp(pkt.get())) != srs_success) {
+        if ((err = rtp_target_->on_rtp(pkt.get())) != srs_success) {
             return srs_error_wrap(err, "consume sps/pps");
         }
     }
@@ -975,7 +975,7 @@ srs_error_t SrsRtspRtpBuilder::consume_packets(vector<SrsRtpPacket *> &pkts)
     // TODO: FIXME: Consume a range of packets.
     for (int i = 0; i < (int)pkts.size(); i++) {
         SrsRtpPacket *pkt = pkts[i];
-        if ((err = bridge_->on_rtp(pkt)) != srs_success) {
+        if ((err = rtp_target_->on_rtp(pkt)) != srs_success) {
             err = srs_error_wrap(err, "consume sps/pps");
             break;
         }

@@ -337,7 +337,7 @@ class SrsRtcRtpBuilder
 {
 private:
     ISrsRequest *req_;
-    SrsFrameToRtcBridge *bridge_;
+    ISrsRtpTarget *rtp_target_;
     // The format, codec information.
     SrsRtmpFormat *format_;
     // The metadata cache.
@@ -364,7 +364,7 @@ private:
     bool video_initialized_;
 
 public:
-    SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source);
+    SrsRtcRtpBuilder(ISrsRtpTarget *target, SrsSharedPtr<SrsRtcSource> source);
     virtual ~SrsRtcRtpBuilder();
 
 private:

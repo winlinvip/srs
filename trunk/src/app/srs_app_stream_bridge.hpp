@@ -50,8 +50,7 @@ public:
 };
 
 // A RTC RTP bridge is used to convert RTP packets to different protocols,
-// such as bridge for RTP and RTMP. Input is RTP packets, output is
-// different protocols that consumes frame media packet.
+// such as bridge to RTMP.
 class ISrsRtcBridge : public ISrsRtpTarget
 {
 public:
@@ -65,9 +64,55 @@ public:
     virtual void on_unpublish() = 0;
 };
 
+// A RTMP bridge is used to convert RTMP stream to different protocols,
+// such as bridge to RTC and RTSP.
+class ISrsRtmpBridge : public ISrsFrameTarget
+{
+public:
+    ISrsRtmpBridge();
+    virtual ~ISrsRtmpBridge();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r) = 0;
+    virtual srs_error_t on_publish() = 0;
+    virtual void on_unpublish() = 0;
+};
+
+// A RTMP bridge to convert RTMP stream to different protocols, such as RTC and RTSP.
+// First, it use a RTP builder to convert RTMP frame to RTP packets.
+// Then, deliver the RTP packets to RTP target, which binds to a RTC/RTSP source.
+class SrsRtmpBridge : public ISrsRtmpBridge
+{
+private:
+#ifdef SRS_FFMPEG_FIT
+    SrsRtcRtpBuilder *rtp_builder_;
+#endif
+#ifdef SRS_RTSP
+    SrsRtspRtpBuilder *rtsp_builder_;
+#endif
+    // The Source bridge, bridge stream to other source.
+    SrsSharedPtr<SrsRtcSource> rtc_target_;
+    SrsSharedPtr<SrsRtspSource> rtsp_target_;
+
+public:
+    SrsRtmpBridge();
+    virtual ~SrsRtmpBridge();
+
+public:
+    bool empty();
+    void enable_rtmp2rtc(SrsSharedPtr<SrsRtcSource> rtc_source);
+    void enable_rtmp2rtsp(SrsSharedPtr<SrsRtspSource> rtsp_source);
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r);
+    virtual srs_error_t on_publish();
+    virtual void on_unpublish();
+    virtual srs_error_t on_frame(SrsMediaPacket *frame);
+};
+
 // A RTC bridge to convert RTP packets to RTMP stream.
 // First, it use a frame builder to convert RTP packets to RTMP frame packet.
-// Then, deliver the RTMP frame packet to stream bridge, which binds to a live source.
+// Then, deliver the RTMP frame packet to RTMP target, which binds to a live source.
 class SrsRtcBridge : public ISrsRtcBridge
 {
 private:
@@ -132,7 +177,7 @@ public:
 };
 
 // A bridge to covert AV frame to WebRTC stream.
-class SrsFrameToRtcBridge : public ISrsStreamBridge
+class SrsFrameToRtcBridge : public ISrsStreamBridge, public ISrsRtpTarget
 {
 private:
     SrsSharedPtr<SrsRtcSource> source_;
@@ -155,7 +200,7 @@ public:
 
 #ifdef SRS_RTSP
 // A bridge to covert AV frame to RTSP stream.
-class SrsFrameToRtspBridge : public ISrsStreamBridge
+class SrsFrameToRtspBridge : public ISrsStreamBridge, public ISrsRtpTarget
 {
 private:
     SrsSharedPtr<SrsRtspSource> source_;

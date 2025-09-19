@@ -29,7 +29,7 @@ class ISrsStreamBridge;
 class SrsSrtFrameBuilder;
 class SrsSrtPacket;
 
-// A target to feed AV frame, such as a RTMP live source, or a RTMP bridge 
+// A target to feed AV frame, such as a RTMP live source, or a RTMP bridge
 // that take frame and converts to RTC packets, or a SRT bridge that converts
 // SRT packets to media frames then delivers to RTMP or RTC targets.
 class ISrsFrameTarget

@@ -1248,6 +1248,13 @@ srs_error_t SrsRtcPublishStream::initialize(SrsRequest* r, SrsRtcSourceDescripti
     // Bridge to rtmp
 #if defined(SRS_RTC) && defined(SRS_FFMPEG_FIT)
     bool rtc_to_rtmp = _srs_config->get_rtc_to_rtmp(req_->vhost);
+    bool edge = _srs_config->get_vhost_is_edge(req_->vhost);
+
+    if (rtc_to_rtmp && edge) {
+        rtc_to_rtmp = false;
+        srs_warn("disable WebRTC to RTMP for edge vhost=%s", req_->vhost.c_str());
+    }
+
     if (rtc_to_rtmp) {
         if ((err = _srs_sources->fetch_or_create(r, _srs_hybrid->srs()->instance(), live_source)) != srs_success) {
             return srs_error_wrap(err, "create source");

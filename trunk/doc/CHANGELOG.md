@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v6-changes"></a>
 
 ## SRS 6.0 Changelog
+* v6.0, 2025-09-27, For Edge, only support RTMP or HTTP-FLV. v6.0.179 (#4512)
 * v6.0, 2025-09-20, Fix WHIP with transcoding bug. v6.0.178 (#4495)
 * v6.0, 2025-09-15, RTC2RTMP: Fix sequence number wraparound assertion crashes. v6.0.177 (#4491)
 * v6.0, 2025-09-05, RTX: Fix race condition for timer. v6.0.176 (#4470) (#4474)

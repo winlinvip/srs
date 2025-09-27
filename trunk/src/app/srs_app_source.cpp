@@ -1896,7 +1896,7 @@ SrsLiveSource::SrsLiveSource()
     play_edge = new SrsPlayEdge();
     publish_edge = new SrsPublishEdge();
     gop_cache = new SrsGopCache();
-    hub = new SrsOriginHub();
+    hub = NULL;  // Will be created conditionally in initialize() if not edge
     meta = new SrsMetaCache();
     format_ = new SrsRtmpFormat();
     
@@ -1934,18 +1934,21 @@ SrsLiveSource::~SrsLiveSource()
 
 void SrsLiveSource::dispose()
 {
-    hub->dispose();
+    if (hub) {
+        hub->dispose();
+    }
     meta->dispose();
     gop_cache->dispose();
 }
 
 srs_error_t SrsLiveSource::cycle()
 {
-    srs_error_t err = hub->cycle();
-    if (err != srs_success) {
+    srs_error_t err = srs_success;
+
+    if (hub && (err = hub->cycle()) != srs_success) {
         return srs_error_wrap(err, "hub cycle");
     }
-    
+
     return srs_success;
 }
 
@@ -1968,7 +1971,7 @@ bool SrsLiveSource::stream_is_dead()
     }
 
     // Origin hub delay cleanup.
-    if (now < stream_die_at_ + hub->cleanup_delay()) {
+    if (hub && now < stream_die_at_ + hub->cleanup_delay()) {
         return false;
     }
     
@@ -2005,8 +2008,16 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, SrsRe
 
     // Setup the SPS/PPS parsing strategy.
     format_->try_annexb_first = _srs_config->try_annexb_first(r->vhost);
-    
-    if ((err = hub->initialize(wrapper, req)) != srs_success) {
+
+    // Create and initialize origin hub only for origin servers, not edge servers
+    bool edge = _srs_config->get_vhost_is_edge(req->vhost);
+    if (!edge) {
+        srs_freep(hub);
+        hub = new SrsOriginHub();
+    } else {
+        srs_warn("disable OriginHub creation for edge vhost=%s", req->vhost.c_str());
+    }
+    if (hub && (err = hub->initialize(wrapper, req)) != srs_success) {
         return srs_error_wrap(err, "hub");
     }
     
@@ -2217,7 +2228,11 @@ srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage* msg, SrsOnMetaDataPack
     }
     
     // Copy to hub to all utilities.
-    return hub->on_meta_data(meta->data(), metadata);
+    if (hub && (err = hub->on_meta_data(meta->data(), metadata)) != srs_success) {
+        return srs_error_wrap(err, "hub consume metadata");
+    }
+
+    return err;
 }
 
 srs_error_t SrsLiveSource::on_audio(SrsCommonMessage* shared_audio)
@@ -2305,7 +2320,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage* msg)
     }
     
     // Copy to hub to all utilities.
-    if ((err = hub->on_audio(msg)) != srs_success) {
+    if (hub && (err = hub->on_audio(msg)) != srs_success) {
         return srs_error_wrap(err, "consume audio");
     }
 
@@ -2428,7 +2443,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsSharedPtrMessage* msg)
     }
     
     // Copy to hub to all utilities.
-    if ((err = hub->on_video(msg, is_sequence_header)) != srs_success) {
+    if (hub && (err = hub->on_video(msg, is_sequence_header)) != srs_success) {
         return srs_error_wrap(err, "hub consume video");
     }
 
@@ -2586,7 +2601,7 @@ srs_error_t SrsLiveSource::on_publish()
     last_packet_time = 0;
     
     // Notify the hub about the publish event.
-    if ((err = hub->on_publish()) != srs_success) {
+    if (hub && (err = hub->on_publish()) != srs_success) {
         return srs_error_wrap(err, "hub publish");
     }
     
@@ -2619,7 +2634,9 @@ void SrsLiveSource::on_unpublish()
     }
     
     // Notify the hub about the unpublish event.
-    hub->on_unpublish();
+    if (hub) {
+        hub->on_unpublish();
+    }
     
     // only clear the gop cache,
     // donot clear the sequence header, for it maybe not changed,
@@ -2704,7 +2721,8 @@ srs_error_t SrsLiveSource::consumer_dumps(SrsLiveConsumer* consumer, bool ds, bo
     }
 
     // If stream is publishing, dumps the sequence header and gop cache.
-    if (hub->active()) {
+    bool hub_active = hub ? hub->active() : false;
+    if (hub_active) {
         // Copy metadata and sequence header to consumer.
         if ((err = meta->dumps(consumer, atc, jitter_algorithm, dm, ds)) != srs_success) {
             return srs_error_wrap(err, "meta dumps");
@@ -2718,9 +2736,9 @@ srs_error_t SrsLiveSource::consumer_dumps(SrsLiveConsumer* consumer, bool ds, bo
 
     // print status.
     if (dg) {
-        srs_trace("create consumer, active=%d, queue_size=%dms, jitter=%d", hub->active(), srsu2msi(queue_size), jitter_algorithm);
+        srs_trace("create consumer, active=%d, queue_size=%dms, jitter=%d", hub_active, srsu2msi(queue_size), jitter_algorithm);
     } else {
-        srs_trace("create consumer, active=%d, ignore gop cache, jitter=%d", hub->active(), jitter_algorithm);
+        srs_trace("create consumer, active=%d, ignore gop cache, jitter=%d", hub_active, jitter_algorithm);
     }
 
     return err;

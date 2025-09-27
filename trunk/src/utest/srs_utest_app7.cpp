@@ -516,7 +516,7 @@ VOID TEST(SrsRtcPublishStreamTest, UpdateRttTypicalScenario)
 
     // Test typical RTT update scenario for audio track
     uint32_t test_ssrc = 0x87654321; // Matches audio track SSRC
-    int test_rtt = 50; // 50ms RTT
+    int test_rtt = 50;               // 50ms RTT
 
     // Call update_rtt - should find audio track and update its RTT
     publish_stream->update_rtt(test_ssrc, test_rtt);

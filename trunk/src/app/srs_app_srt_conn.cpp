@@ -286,7 +286,7 @@ srs_error_t SrsMpegtsSrtConn::do_cycle()
         srs_warn("disable SRT for edge vhost=%s", req_->vhost_.c_str());
     }
 
-    if (! srt_enabled) {
+    if (!srt_enabled) {
         return srs_error_new(ERROR_SRT_CONN, "srt disabled, vhost=%s", req_->vhost_.c_str());
     }
 

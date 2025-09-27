@@ -1021,6 +1021,13 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
     SrsSharedPtr<SrsRtcSource> rtc;
     bool rtc_server_enabled = _srs_config->get_rtc_server_enabled();
     bool rtc_enabled = _srs_config->get_rtc_enabled(req->vhost_);
+    bool edge = _srs_config->get_vhost_is_edge(req->vhost_);
+
+    if (rtc_enabled && edge) {
+        rtc_enabled = false;
+        srs_warn("disable WebRTC for edge vhost=%s", req->vhost_.c_str());
+    }
+
     if (rtc_server_enabled && rtc_enabled && !info_->edge_) {
         if ((err = _srs_rtc_sources->fetch_or_create(req, rtc)) != srs_success) {
             return srs_error_wrap(err, "create source");
@@ -1062,7 +1069,13 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
     SrsRtmpBridge *bridge = new SrsRtmpBridge();
 
 #if defined(SRS_FFMPEG_FIT)
-    if (rtc.get() && _srs_config->get_rtc_from_rtmp(req->vhost_)) {
+    bool rtmp_to_rtc = _srs_config->get_rtc_from_rtmp(req->vhost_);
+    if (rtmp_to_rtc && edge) {
+        rtmp_to_rtc = false;
+        srs_warn("disable RTMP to WebRTC for edge vhost=%s", req->vhost_.c_str());
+    }
+
+    if (rtc.get() && rtmp_to_rtc) {
         bridge->enable_rtmp2rtc(rtc);
     }
 #endif

@@ -278,7 +278,15 @@ srs_error_t SrsMpegtsSrtConn::do_cycle()
         req_->vhost_ = parsed_vhost->arg0();
     }
 
-    if (!_srs_config->get_srt_enabled(req_->vhost_)) {
+    bool srt_enabled = _srs_config->get_srt_enabled(req_->vhost_);
+    bool edge = _srs_config->get_vhost_is_edge(req_->vhost_);
+
+    if (srt_enabled && edge) {
+        srt_enabled = false;
+        srs_warn("disable SRT for edge vhost=%s", req_->vhost_.c_str());
+    }
+
+    if (! srt_enabled) {
         return srs_error_new(ERROR_SRT_CONN, "srt disabled, vhost=%s", req_->vhost_.c_str());
     }
 
@@ -403,7 +411,13 @@ srs_error_t SrsMpegtsSrtConn::acquire_publish()
     bool rtc_server_enabled = _srs_config->get_rtc_server_enabled();
     bool rtc_enabled = _srs_config->get_rtc_enabled(req_->vhost_);
     bool edge = _srs_config->get_vhost_is_edge(req_->vhost_);
-    if (rtc_server_enabled && rtc_enabled && !edge) {
+
+    if (rtc_enabled && edge) {
+        rtc_enabled = false;
+        srs_warn("disable WebRTC for edge vhost=%s", req_->vhost_.c_str());
+    }
+
+    if (rtc_server_enabled && rtc_enabled) {
         if ((err = _srs_rtc_sources->fetch_or_create(req_, rtc)) != srs_success) {
             return srs_error_wrap(err, "create source");
         }
@@ -416,11 +430,23 @@ srs_error_t SrsMpegtsSrtConn::acquire_publish()
     // Bridge to RTMP and RTC streaming.
     SrsSrtBridge *bridge = new SrsSrtBridge();
 
-    if (_srs_config->get_srt_to_rtmp(req_->vhost_)) {
+    bool srt_to_rtmp = _srs_config->get_srt_to_rtmp(req_->vhost_);
+    if (srt_to_rtmp && edge) {
+        srt_to_rtmp = false;
+        srs_warn("disable SRT to RTMP for edge vhost=%s", req_->vhost_.c_str());
+    }
+
+    if (srt_to_rtmp) {
         bridge->enable_srt2rtmp(live_source);
     }
 
-    if (rtc.get() && _srs_config->get_rtc_from_rtmp(req_->vhost_)) {
+    bool rtmp_to_rtc = _srs_config->get_rtc_from_rtmp(req_->vhost_);
+    if (rtmp_to_rtc && edge) {
+        rtmp_to_rtc = false;
+        srs_warn("disable RTMP to WebRTC for edge vhost=%s", req_->vhost_.c_str());
+    }
+
+    if (rtc.get() && rtmp_to_rtc) {
         bridge->enable_srt2rtc(rtc);
     }
 

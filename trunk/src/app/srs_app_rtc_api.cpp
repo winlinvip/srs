@@ -206,6 +206,13 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     // Whether enabled.
     bool server_enabled = _srs_config->get_rtc_server_enabled();
     bool rtc_enabled = _srs_config->get_rtc_enabled(ruc->req_->vhost_);
+    bool edge = _srs_config->get_vhost_is_edge(ruc->req_->vhost_);
+
+    if (rtc_enabled && edge) {
+        rtc_enabled = false;
+        srs_warn("disable WebRTC for edge vhost=%s", ruc->req_->vhost_.c_str());
+    }
+
     if (server_enabled && !rtc_enabled) {
         srs_warn("RTC disabled in vhost %s", ruc->req_->vhost_.c_str());
     }
@@ -222,7 +229,13 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     }
 
     // For RTMP to RTC, fail if disabled and RTMP is active, see https://github.com/ossrs/srs/issues/2728
-    if (!is_rtc_stream_active && !_srs_config->get_rtc_from_rtmp(ruc->req_->vhost_)) {
+    bool rtmp_to_rtc = _srs_config->get_rtc_from_rtmp(ruc->req_->vhost_);
+    if (rtmp_to_rtc && edge) {
+        rtmp_to_rtc = false;
+        srs_warn("disable RTMP to WebRTC for edge vhost=%s", ruc->req_->vhost_.c_str());
+    }
+
+    if (!is_rtc_stream_active && !rtmp_to_rtc) {
         SrsSharedPtr<SrsLiveSource> live_source = _srs_sources->fetch(ruc->req_);
         if (live_source.get() && !live_source->inactive()) {
             return srs_error_new(ERROR_RTC_DISABLED, "Disabled rtmp_to_rtc of %s, see #2728", ruc->req_->vhost_.c_str());
@@ -494,6 +507,13 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
     // Whether enabled.
     bool server_enabled = _srs_config->get_rtc_server_enabled();
     bool rtc_enabled = _srs_config->get_rtc_enabled(ruc->req_->vhost_);
+    bool edge = _srs_config->get_vhost_is_edge(ruc->req_->vhost_);
+
+    if (rtc_enabled && edge) {
+        rtc_enabled = false;
+        srs_warn("disable WebRTC for edge vhost=%s", ruc->req_->vhost_.c_str());
+    }
+
     if (server_enabled && !rtc_enabled) {
         srs_warn("RTC disabled in vhost %s", ruc->req_->vhost_.c_str());
     }

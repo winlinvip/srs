@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-09-27, Merge [#4513](https://github.com/ossrs/srs/pull/4513): For Edge, only support RTMP or HTTP-FLV. v7.0.94 (#4513)
 * v7.0, 2025-09-21, Merge [#4505](https://github.com/ossrs/srs/pull/4505): improve blackbox test for rtsp. v7.0.93 (#4505)
 * v7.0, 2025-09-21, Fix WHIP with transcoding bug. v7.0.92 (#4495)
 * v7.0, 2025-09-20, Merge [#4504](https://github.com/ossrs/srs/pull/4504): fix rtsp compiling warning. v7.0.91 (#4504)

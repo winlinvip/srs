@@ -708,6 +708,8 @@ public:
     virtual int get_srto_pbkeylen();
     // Get the default app.
     virtual std::string get_default_app_name();
+    // Get the default streamid when client doesn't provide one.
+    virtual std::string get_srt_default_streamid();
 private:
     SrsConfDirective* get_srt(std::string vhost);
 public:

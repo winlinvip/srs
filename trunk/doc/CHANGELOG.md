@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-10-20, Merge [#4537](https://github.com/ossrs/srs/pull/4537): Forward: Reject RTMPS destinations with clear error message. v7.0.100 (#4537)
 * v7.0, 2025-10-17, Merge [#4534](https://github.com/ossrs/srs/pull/4534): HLS: Fix a iterator bug in hls_ctx cleanup function. v7.0.99 (#4534)
 * v7.0, 2025-10-16, Merge [#4530](https://github.com/ossrs/srs/pull/4530): fix crash issue caused by reload configuration file. v7.0.98 (#4530)
 * v7.0, 2025-10-15, Merge [#4520](https://github.com/ossrs/srs/pull/4520): srs_app_rtc_conn: fix illegal memory access. v7.0.97 (#4520)

@@ -75,6 +75,12 @@ srs_error_t SrsForwarder::initialize(ISrsRequest *r, string ep)
     // the ep(endpoint) to forward to
     ep_forward_ = ep;
 
+    // Check if the forward destination is RTMPS URL
+    // SRS forward only supports plain RTMP protocol, not RTMPS (RTMP over SSL/TLS)
+    if (ep_forward_.find("rtmps://") != string::npos) {
+        return srs_error_new(ERROR_NOT_SUPPORTED, "forward does not support RTMPS destination=%s", ep_forward_.c_str());
+    }
+
     // Remember the source context id.
     source_cid_ = _srs_context->get_id();
 

@@ -893,6 +893,21 @@ documentation:
   description: |
     SRS documentation source files are located in the 3rdparty/srs-docs directory
   usage: |
-    When looking for documentation or need to update docs, check this directory for markdown 
+    When looking for documentation or need to update docs, check this directory for markdown
     files and documentation structure. Do not search ossrs.io or ossrs.net for documentation,
     use the local files instead.
+faq:
+  rtmps_forward:
+    question: "Why doesn't SRS support RTMPS in the forward feature? Why does SRS only support RTMPS server but not forwarding to RTMPS endpoints?"
+
+    answer: |
+      SRS doesn't support RTMPS (RTMP over SSL/TLS) in the forward feature because:
+      1. SRS SSL is designed for server-side only (accepting connections), not client-side (initiating connections)
+      2. Forward feature uses SrsSimpleRtmpClient which only supports plain RTMP protocol
+      3. Adding RTMPS client support would add significant complexity for a rare use case
+
+      Recommended solution: Use FFmpeg with SRS HTTP Hooks
+      - on_publish event: Automatically start FFmpeg to relay stream to RTMPS destination (e.g., AWS IVS)
+      - on_unpublish event: Automatically stop FFmpeg process when stream ends
+      - This provides fully automated, production-ready RTMPS relay without adding complexity to SRS core
+

@@ -2892,6 +2892,38 @@ VOID TEST(AppOriginHubTest, CreateBackendForwardersTypicalScenario)
     srs_freep(mock_hooks);
 }
 
+// Unit test for SrsForwarder RTMPS detection
+VOID TEST(AppForwarderTest, RejectRtmpsDestination)
+{
+    srs_error_t err;
+
+    // Create mock origin hub
+    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    SrsUniquePtr<SrsOriginHub> hub(new SrsOriginHub());
+    hub->source_ = mock_source;
+
+    // Create forwarder
+    SrsUniquePtr<SrsForwarder> forwarder(new SrsForwarder(hub.get()));
+
+    // Create mock request
+    SrsUniquePtr<MockHlsRequest> req(new MockHlsRequest());
+
+    // Test the hostport spliting
+    std::string server;
+    int port = SRS_CONSTS_RTMP_DEFAULT_PORT;
+    srs_net_split_hostport("rtmps://fake.demo.ossrs.io:443/app", server, port);
+    EXPECT_STREQ("rtmps://fake.demo.ossrs.io:443/app", server.c_str());
+
+    // Test 1: RTMPS URL should be rejected
+    HELPER_ASSERT_FAILED(forwarder->initialize(req.get(), "rtmps://fake.demo.ossrs.io:443/app"));
+
+    // Test 2: Plain RTMP URL should be accepted
+    HELPER_EXPECT_SUCCESS(forwarder->initialize(req.get(), "127.0.0.1:1935"));
+
+    // Cleanup
+    srs_freep(mock_source);
+}
+
 VOID TEST(SrsLiveSourceTest, OnAggregateSelectionTypical)
 {
     srs_error_t err;

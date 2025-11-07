@@ -1142,6 +1142,74 @@ VOID TEST(KernelErrorTest, ErrorChaining)
     srs_freep(level3);
 }
 
+VOID TEST(KernelErrorTest, SrsCplxErrorTransform)
+{
+    srs_error_t err;
+
+    // Test transform with real error - changes error code
+    srs_error_t original = srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "stream busy");
+    err = srs_error_transform(ERROR_SYSTEM_AUTH, original, "authentication failed");
+
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_SYSTEM_AUTH, srs_error_code(err)); // Should have new code
+
+    // Check description contains both messages and code transformation info
+    std::string desc = srs_error_desc(err);
+    EXPECT_TRUE(desc.find("authentication failed") != std::string::npos);
+    EXPECT_TRUE(desc.find("stream busy") != std::string::npos);
+    EXPECT_TRUE(desc.find("code transformed") != std::string::npos);
+    EXPECT_TRUE(desc.find("1028") != std::string::npos); // Original code ERROR_SYSTEM_STREAM_BUSY
+    EXPECT_TRUE(desc.find("1102") != std::string::npos); // New code ERROR_SYSTEM_AUTH
+
+    srs_freep(err);
+
+    // Test transform with NULL error
+    err = srs_error_transform(ERROR_HTTP_STATUS_INVALID, srs_success, "transform null error");
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_HTTP_STATUS_INVALID, srs_error_code(err)); // Should have specified code
+
+    desc = srs_error_desc(err);
+    EXPECT_TRUE(desc.find("transform null error") != std::string::npos);
+    EXPECT_TRUE(desc.find("code transformed") != std::string::npos);
+
+    srs_freep(err);
+
+    // Test transform with formatted message
+    srs_error_t inner = srs_error_new(ERROR_RTC_SDP_DECODE, "invalid sdp format");
+    err = srs_error_transform(ERROR_HTTP_STATUS_INVALID, inner, "http error: %s", "bad request");
+
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_HTTP_STATUS_INVALID, srs_error_code(err));
+
+    desc = srs_error_desc(err);
+    EXPECT_TRUE(desc.find("http error: bad request") != std::string::npos);
+    EXPECT_TRUE(desc.find("invalid sdp format") != std::string::npos);
+    EXPECT_TRUE(desc.find("code transformed") != std::string::npos);
+    // Verify the code transformation shows both old and new codes
+    std::string code_transform_msg = srs_fmt_sprintf("(%d => %d)", ERROR_RTC_SDP_DECODE, ERROR_HTTP_STATUS_INVALID);
+    EXPECT_TRUE(desc.find(code_transform_msg) != std::string::npos);
+
+    srs_freep(err);
+
+    // Test chaining: wrap -> transform -> wrap
+    srs_error_t level1 = srs_error_new(ERROR_SOCKET_READ, "socket read failed");
+    srs_error_t level2 = srs_error_wrap(level1, "connection error");
+    srs_error_t level3 = srs_error_transform(ERROR_SYSTEM_AUTH, level2, "auth check failed");
+    srs_error_t level4 = srs_error_wrap(level3, "publish rejected");
+
+    EXPECT_TRUE(level4 != srs_success);
+    EXPECT_EQ(ERROR_SYSTEM_AUTH, srs_error_code(level4)); // Should have transformed code
+
+    desc = srs_error_desc(level4);
+    EXPECT_TRUE(desc.find("socket read failed") != std::string::npos);
+    EXPECT_TRUE(desc.find("connection error") != std::string::npos);
+    EXPECT_TRUE(desc.find("auth check failed") != std::string::npos);
+    EXPECT_TRUE(desc.find("publish rejected") != std::string::npos);
+    EXPECT_TRUE(desc.find("code transformed") != std::string::npos);
+
+    srs_freep(level4);
+}
+
 VOID TEST(KernelErrorTest, ErrorDescriptionFormatting)
 {
     srs_error_t err;

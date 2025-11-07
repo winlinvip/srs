@@ -7,7 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
-* v7.0, 2025-11-07, AI: Kernel: Add srs_error_transform to wrap errors with new error codes. v7.0.121 (#4502)
+* v7.0, 2025-11-07, AI: WHIP: Return detailed HTTP error responses with proper status codes. v7.0.121 (#4502)
 * v7.0, 2025-11-07, AI: HLS: Support query string in hls_key_url for JWT tokens. v7.0.120 (#4426)
 * v7.0, 2025-11-07, AI: RTC: Support keep_original_ssrc to preserve SSRC and timestamps. v7.0.119 (#3850)
 * v7.0, 2025-11-05, AI: WebRTC: Report video/audio codec info and frame stats in HTTP API. v7.0.118 (#4554)

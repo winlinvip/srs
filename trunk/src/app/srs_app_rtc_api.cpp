@@ -554,12 +554,12 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
     }
 
     if ((err = security_->check(SrsRtcConnPublish, ruc->req_->ip_, ruc->req_)) != srs_success) {
-        return srs_error_wrap(err, "RTC: security check");
+        return srs_error_transform(ERROR_SYSTEM_AUTH, err, "RTC: security check");
     }
 
     // We must do hook after stat, because depends on it.
     if ((err = http_hooks_on_publish(ruc->req_)) != srs_success) {
-        return srs_error_wrap(err, "RTC: http_hooks_on_publish");
+        return srs_error_transform(ERROR_SYSTEM_AUTH, err, "RTC: http_hooks_on_publish");
     }
 
     ostringstream os;
@@ -662,6 +662,44 @@ SrsGoApiRtcWhip::~SrsGoApiRtcWhip()
 
 srs_error_t SrsGoApiRtcWhip::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
+    int code = 0;
+    string code_str;
+    if (true) {
+        srs_error_t err = srs_success;
+        
+        err = serve_http_with(w, r);
+        if (err == srs_success) {
+            return err;
+        }
+
+        code = srs_error_code(err);
+        code_str = srs_error_code_str(err);
+        srs_warn("WHIP: serve http for %s with err %d:%s, %s", 
+            r->url().c_str(), code, code_str.c_str(), srs_error_desc(err).c_str());
+        srs_freep(err);
+    }
+
+    if (code == ERROR_RTC_INVALID_SDP || code == ERROR_RTC_SDP_DECODE || code == ERROR_RTC_SDP_EXCHANGE) {
+        string msg = srs_fmt_sprintf("%d: %s", code, code_str.c_str());
+        return srs_go_http_error(w, SRS_CONSTS_HTTP_BadRequest, msg);
+    }
+
+    if (code == ERROR_SYSTEM_STREAM_BUSY) {
+        string msg = srs_fmt_sprintf("%d: %s", code, code_str.c_str());
+        return srs_go_http_error(w, SRS_CONSTS_HTTP_Conflict, msg);
+    }
+
+    if (code == ERROR_SYSTEM_AUTH) {
+        string msg = srs_fmt_sprintf("%d: %s", code, code_str.c_str());
+        return srs_go_http_error(w, SRS_CONSTS_HTTP_Unauthorized, msg);
+    }
+
+    string msg = srs_fmt_sprintf("%d: %s", code, code_str.c_str());
+    return srs_go_http_error(w, SRS_CONSTS_HTTP_InternalServerError, msg);
+}
+
+srs_error_t SrsGoApiRtcWhip::serve_http_with(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+{
     srs_error_t err = srs_success;
 
     // For each RTC session, we use short-term HTTP connection.
@@ -691,14 +729,14 @@ srs_error_t SrsGoApiRtcWhip::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     }
 
     SrsRtcUserConfig ruc;
-    if ((err = do_serve_http(w, r, &ruc)) != srs_success) {
+    if ((err = do_serve_http_with(w, r, &ruc)) != srs_success) {
         return srs_error_wrap(err, "serve");
-    }
-    if (ruc.local_sdp_str_.empty()) {
-        return srs_go_http_error(w, SRS_CONSTS_HTTP_InternalServerError);
     }
 
     // The SDP to response.
+    if (ruc.local_sdp_str_.empty()) {
+        return srs_error_new(ERROR_RTC_INVALID_SDP, "empty local sdp");
+    }
     string sdp = ruc.local_sdp_str_;
 
     // Setup the content type to SDP.
@@ -714,7 +752,7 @@ srs_error_t SrsGoApiRtcWhip::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     return w->write((char *)sdp.data(), (int)sdp.length());
 }
 
-srs_error_t SrsGoApiRtcWhip::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRtcUserConfig *ruc)
+srs_error_t SrsGoApiRtcWhip::do_serve_http_with(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRtcUserConfig *ruc)
 {
     srs_error_t err = srs_success;
 
@@ -796,6 +834,9 @@ srs_error_t SrsGoApiRtcWhip::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // TODO: FIXME: It seems remote_sdp doesn't represents the full SDP information.
     ruc->remote_sdp_str_ = remote_sdp_str;
+    if (ruc->remote_sdp_str_.empty()) {
+        return srs_error_new(ERROR_RTC_INVALID_SDP, "empty remote sdp");
+    }
     if ((err = ruc->remote_sdp_.parse(remote_sdp_str)) != srs_success) {
         return srs_error_wrap(err, "parse sdp failed: %s", remote_sdp_str.c_str());
     }

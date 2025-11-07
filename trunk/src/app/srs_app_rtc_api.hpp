@@ -119,7 +119,8 @@ public:
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    virtual srs_error_t do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRtcUserConfig *ruc);
+    virtual srs_error_t serve_http_with(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
+    virtual srs_error_t do_serve_http_with(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRtcUserConfig *ruc);
 };
 
 class SrsGoApiRtcNACK : public ISrsHttpHandler

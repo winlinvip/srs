@@ -327,22 +327,48 @@ SrsCplxError *SrsCplxError::wrap(const char *func, const char *file, int line, S
     int r0 = vsnprintf(buffer, maxLogBuf, fmt, ap);
     va_end(ap);
 
+    // Ensure buffer is null-terminated even if vsnprintf failed or truncated.
+    if (r0 < 0) {
+        buffer[0] = '\0';
+    } else if (r0 >= maxLogBuf) {
+        buffer[maxLogBuf - 1] = '\0';
+    }
+
     SrsCplxError *err = new SrsCplxError();
 
     err->func_ = func;
     err->file_ = file;
     err->line_ = line;
-    if (v) {
-        err->code_ = v->code_;
-    }
+    err->code_ = srs_error_code(v);
     err->rerrno_ = rerrno;
-    if (r0 > 0 && r0 < maxLogBuf) {
-        err->msg_ = string(buffer, r0);
-    }
+    err->msg_ = string(buffer);
     err->wrapped_ = v;
     if (_srs_context) {
         err->cid_ = _srs_context->get_id();
     }
+
+    return err;
+}
+
+SrsCplxError *SrsCplxError::transform(const char *func, const char *file, int line, int code, SrsCplxError *v, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    static char *buffer = new char[maxLogBuf];
+    int r0 = vsnprintf(buffer, maxLogBuf, fmt, ap);
+    va_end(ap);
+
+    // Ensure buffer is null-terminated even if vsnprintf failed or truncated.
+    if (r0 < 0) {
+        buffer[0] = '\0';
+    } else if (r0 >= maxLogBuf) {
+        buffer[maxLogBuf - 1] = '\0';
+    }
+
+    // Wrap the error with additional context showing the code transformation.
+    SrsCplxError *err = NULL;
+    err = wrap(func, file, line, v, "code transformed (%d => %d): %s", srs_error_code(v), code, buffer);
+    err->code_ = code;
 
     return err;
 }

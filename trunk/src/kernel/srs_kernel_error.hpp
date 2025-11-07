@@ -111,7 +111,9 @@
     XX(ERROR_STREAM_DISPOSING, 1098, "StreamDisposing", "Stream is disposing")                                         \
     XX(ERROR_NOT_IMPLEMENTED, 1099, "NotImplemented", "Feature is not implemented")                                    \
     XX(ERROR_NOT_SUPPORTED, 1100, "NotSupported", "Feature is not supported")                                          \
-    XX(ERROR_SYSTEM_FILE_UNLINK, 1101, "FileUnlink", "Failed to unlink file")
+    XX(ERROR_SYSTEM_FILE_UNLINK, 1101, "FileUnlink", "Failed to unlink file") \
+    XX(ERROR_SYSTEM_AUTH, 1102, "SystemAuth", "Failed to authenticate stream")
+
 
 /**************************************************/
 /* RTMP protocol error. */
@@ -380,7 +382,8 @@
     XX(ERROR_RTSP_NO_TRACK, 5039, "RtspNoTrack", "Drop RTSP packet for track not found")                                                              \
     XX(ERROR_RTSP_TOKEN_NOT_NORMAL, 5040, "RtspToken", "Invalid RTSP token state not normal")                                                         \
     XX(ERROR_RTSP_REQUEST_HEADER_EOF, 5041, "RtspHeaderEof", "Invalid RTSP request for header EOF")                                                   \
-    XX(ERROR_RTSP_NEED_MORE_DATA, 5042, "RtspNeedMoreData", "Need more data to complete RTCP frame parsing")
+    XX(ERROR_RTSP_NEED_MORE_DATA, 5042, "RtspNeedMoreData", "Need more data to complete RTCP frame parsing") \
+    XX(ERROR_RTC_INVALID_SDP, 5043, "RtcInvalidSdp", "Invalid SDP for RTC")
 
 /**************************************************/
 /* SRT protocol error. */
@@ -465,6 +468,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 public:
     static SrsCplxError *create(const char *func, const char *file, int line, int code, const char *fmt, ...);
     static SrsCplxError *wrap(const char *func, const char *file, int line, SrsCplxError *err, const char *fmt, ...);
+    static SrsCplxError *transform(const char *func, const char *file, int line, int code, SrsCplxError *err, const char *fmt, ...);
     static SrsCplxError *success();
     static SrsCplxError *copy(SrsCplxError *from);
     static std::string description(SrsCplxError *err);
@@ -479,13 +483,73 @@ public:
 
 // Error helpers, should use these functions to new or wrap an error.
 #define srs_success NULL // SrsCplxError::success()
-#define srs_error_new(ret, fmt, ...) SrsCplxError::create(__FUNCTION__, __FILE__, __LINE__, ret, fmt, ##__VA_ARGS__)
+
+// Create a new error with the specified error code and message.
+//
+// Example:
+//      if (fd < 0) {
+//          return srs_error_new(ERROR_SOCKET_CREATE, "create socket fd=%d", fd);
+//      }
+#define srs_error_new(code, fmt, ...) SrsCplxError::create(__FUNCTION__, __FILE__, __LINE__, code, fmt, ##__VA_ARGS__)
+
+// Wrap an existing error with additional context. The error code is 
+// preserved from the wrapped error.
+//
+// Example:
+//      if ((err = do_connect(host, port)) != srs_success) {
+//          return srs_error_wrap(err, "connect to %s:%d", host.c_str(), port);
+//      }
 #define srs_error_wrap(err, fmt, ...) SrsCplxError::wrap(__FUNCTION__, __FILE__, __LINE__, err, fmt, ##__VA_ARGS__)
+
+// Transform an error by wrapping it and changing its error code. Useful 
+// for converting internal errors to protocol-specific error codes (e.g., 
+// HTTP, RTMP). The wrapped error chain is preserved.
+//
+// Example:
+//      if ((err = http_hooks_on_publish(ruc->req_)) != srs_success) {
+//          return srs_error_transform(ERROR_SYSTEM_AUTH, err, "RTC: http_hooks_on_publish");
+//      }
+#define srs_error_transform(code, err, fmt, ...) SrsCplxError::transform(__FUNCTION__, __FILE__, __LINE__, code, err, fmt, ##__VA_ARGS__)
+
+// Copy an error object. Returns a new error object with the same content.
+//
+// Example:
+//      srs_error_t err_copy = srs_error_copy(err);
 #define srs_error_copy(err) SrsCplxError::copy(err)
+
+// Get the full description of an error including the entire error chain.
+//
+// Example:
+//      srs_error_t err = do_something();
+//      srs_warn("error: %s", srs_error_desc(err).c_str());
 #define srs_error_desc(err) SrsCplxError::description(err)
+
+// Get a brief summary of an error (only the top-level message).
+//
+// Example:
+//      srs_error_t err = do_something();
+//      srs_trace("error summary: %s", srs_error_summary(err).c_str());
 #define srs_error_summary(err) SrsCplxError::summary(err)
+
+// Get the error code as an integer.
+//
+// Example:
+//      int code = srs_error_code(err);
+//      if (code == ERROR_SOCKET_TIMEOUT) { ... }
 #define srs_error_code(err) SrsCplxError::error_code(err)
+
+// Get the error code as a short string (e.g., "SocketTimeout").
+//
+// Example:
+//      string code_str = srs_error_code_str(err);
+//      srs_trace("error code: %s", code_str.c_str());
 #define srs_error_code_str(err) SrsCplxError::error_code_str(err)
+
+// Get the error code description (e.g., "Socket io timeout").
+//
+// Example:
+//      string desc = srs_error_code_strlong(err);
+//      srs_warn("error description: %s", desc.c_str());
 #define srs_error_code_strlong(err) SrsCplxError::error_code_strlong(err)
 
 #ifndef srs_assert

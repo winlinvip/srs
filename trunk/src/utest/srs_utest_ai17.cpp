@@ -2437,7 +2437,7 @@ VOID TEST(SrsGoApiRtcWhipTest, DoServeHttpPublishSuccess)
     SrsUniquePtr<SrsRtcUserConfig> ruc(new SrsRtcUserConfig());
 
     // Call do_serve_http - major use scenario
-    HELPER_EXPECT_SUCCESS(whip->do_serve_http(mock_writer.get(), mock_request.get(), ruc.get()));
+    HELPER_EXPECT_SUCCESS(whip->do_serve_http_with(mock_writer.get(), mock_request.get(), ruc.get()));
 
     // Verify request fields were populated correctly
     EXPECT_STREQ("192.168.1.100", ruc->req_->ip_.c_str());

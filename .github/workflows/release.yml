@@ -210,7 +210,6 @@ jobs:
             --build-arg CONFARGS='--sanitizer=off --gb28181=on' \
             -f Dockerfile .
       # Docker alias images
-      # TODO: FIXME: If stable, please set the latest from 5.0 to 6.0
       - name: Docker alias images for ossrs/srs
         uses: akhilerm/tag-push-action@85bf542f43f5f2060ef76262a67ee3607cb6db37 # v2.1.0
         with:
@@ -221,6 +220,7 @@ jobs:
             ossrs/srs:v${{ env.SRS_MAJOR }}
             ossrs/srs:${{ env.SRS_XYZ }}
             ossrs/srs:v${{ env.SRS_XYZ }}
+            ossrs/srs:latest
     runs-on: ubuntu-22.04
 
   aliyun-srs:
@@ -238,7 +238,6 @@ jobs:
           echo "SRS_MAJOR=${{ needs.envs.outputs.SRS_MAJOR }}" >> $GITHUB_ENV
           echo "SRS_XYZ=${{ needs.envs.outputs.SRS_XYZ }}" >> $GITHUB_ENV
       # Aliyun ACR
-      # TODO: FIXME: If stable, please set the latest from 5.0 to 6.0
       - name: Login aliyun hub
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
         with:
@@ -256,6 +255,7 @@ jobs:
             registry.cn-hangzhou.aliyuncs.com/ossrs/srs:v${{ env.SRS_MAJOR }}
             registry.cn-hangzhou.aliyuncs.com/ossrs/srs:${{ env.SRS_XYZ }}
             registry.cn-hangzhou.aliyuncs.com/ossrs/srs:v${{ env.SRS_XYZ }}
+            registry.cn-hangzhou.aliyuncs.com/ossrs/srs:latest
     runs-on: ubuntu-22.04
 
   update:
@@ -348,8 +348,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
       # Create release.
-      # TODO: FIXME: Refine the release when 6.0 released
-      # TODO: FIXME: Change prerelease to false and makeLatest to true when 6.0 released
       - name: Update release
         id: update_release
         uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1.12.0

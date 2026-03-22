@@ -61,13 +61,6 @@
 
 The three layers are what William controls; the external conditions are what the AI ecosystem must provide. When both are ready, AI can truly manage the project.
 
-## Ideas Capture
-- When William shares isolated/separate ideas, save them to `docs/ideas.md`
-- This is for **rudimentary, temporary, brainstorm-level** ideas — not mature ones
-- Mature/specific topics go to their proper place (YouTube stuff → `docs/youtube/`, SRS knowledge → `memory/srs-*.md`)
-- `docs/ideas.md` is the scratch pad for early-stage thinking that doesn't belong anywhere else yet
-- Ideas may grow into major features or directions over time
-
 ## Changelog & Version
 - **Changelog:** `trunk/doc/CHANGELOG.md`
 - **Version file:** `trunk/src/core/srs_core_version7.hpp` — bump `VERSION_REVISION` to match the new changelog entry
@@ -86,9 +79,4 @@ Detailed SRS knowledge in `memory/srs-*.md` files:
 ### Rule: Keep Feature List Updated
 When creating new features, updating protocols, or making changes to SRS capabilities, **always update the Features section in `memory/srs-overview.md`** with the feature name, description, version, and date.
 
-## YouTube Channel Content (docs/youtube/)
-- Contains transcripts from SRS YouTube channel videos
-- ⚠️ **DO NOT trust as knowledge base** — these are snapshots of thoughts at a specific date
-- May contain outdated info, changed opinions, or revised ideas
-- Always verify against current codebase, docs, and project state
-- Use for historical context only, not authoritative reference
+

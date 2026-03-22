@@ -1,1 +1,1 @@
-../openclaw/MEMORY.md
+../.openclaw/MEMORY.md

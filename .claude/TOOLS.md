@@ -1,1 +1,1 @@
-../openclaw/TOOLS.md
+../.openclaw/TOOLS.md

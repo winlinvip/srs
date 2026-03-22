@@ -5,23 +5,23 @@ description: Anything related to coroutines, State Threads (ST), or SRS's concur
 
 # ST Development
 
-State Threads (ST) is a C coroutine library. Source lives in `trunk/3rdparty/st-srs/` inside the SRS repo.
+State Threads (ST) is a C coroutine library. 
 
-Default SRS repo path is `~/git/srs`, but do **not** hardcode this path.
-Always resolve `SRS_ROOT` dynamically:
+## Setup
 
-1. If `SRS_ROOT` env is set and contains `trunk/3rdparty/st-srs`, use it.
-2. Else, if current workspace (or its git root) contains `trunk/3rdparty/st-srs`, use that.
-3. Else, if `~/git/srs/trunk/3rdparty/st-srs` exists, use `~/git/srs`.
-4. Else, ask the user for the SRS repo root.
+Do **not** hardcode an absolute SRS path. Resolve `SRS_ROOT` dynamically:
 
-All ST source paths below are relative to `$SRS_ROOT`.
+1. If `SRS_ROOT` env is set and contains `trunk/src`, use it.
+2. Else, if current workspace (or its git root) contains `trunk/src`, use that.
+3. Else, if the parent folder of the workspace contains `trunk/src`, use that parent.
+4. Else, if `~/git/srs/trunk/src` exists, use `~/git/srs`.
+5. Else, ask the user for the SRS repo root.
 
-## Setup: Load Knowledge Base (MANDATORY)
+## Load Knowledge Base (MANDATORY)
 
 Before any ST work, use the `read` tool to load the knowledge base. Do NOT use memory_search — read the full file directly.
 
-- `memory/srs-coroutines.md`
+- `../../memory/srs-coroutines.md`
 
 ## Loading ST Source Code (ON REQUEST)
 

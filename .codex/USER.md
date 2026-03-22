@@ -1,1 +1,1 @@
-../openclaw/USER.md
+../.openclaw/USER.md

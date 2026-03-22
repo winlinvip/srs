@@ -1,1 +1,1 @@
-../../openclaw/AGENTS.md
+../../.openclaw/AGENTS.md

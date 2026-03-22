@@ -11,23 +11,22 @@ This skill is for **answering questions and providing guidance**. If the user wa
 
 ## Setup
 
-Resolve `SRS_ROOT` dynamically (do not hardcode paths):
+Do **not** hardcode an absolute SRS path. Resolve `SRS_ROOT` dynamically:
 
-1. If `SRS_ROOT` env is set and contains `openclaw/memory/srs-overview.md`, use it.
-2. Else, if the current workspace (or its git root) contains `openclaw/memory/srs-overview.md`, use that.
-3. Else, if `~/git/srs/openclaw/memory/srs-overview.md` exists, use `~/git/srs`.
-4. Else, ask the user for their SRS repo root.
-
-All paths below are relative to `$SRS_ROOT`.
+1. If `SRS_ROOT` env is set and contains `trunk/src`, use it.
+2. Else, if current workspace (or its git root) contains `trunk/src`, use that.
+3. Else, if the parent folder of the workspace contains `trunk/src`, use that parent.
+4. Else, if `~/git/srs/trunk/src` exists, use `~/git/srs`.
+5. Else, ask the user for the SRS repo root.
 
 ## Loading Knowledge
 
 Load knowledge selectively based on the question topic:
 
-- **Always load first:** `openclaw/memory/srs-overview.md` — this covers protocols, codecs, transmuxing, configuration, features, ecosystem, performance, and most support questions.
-- **Load on demand:** `openclaw/memory/srs-coroutines.md` — only load this when the question is specifically about SRS architecture internals, coroutines, State Threads, or how SRS handles concurrency. Most user questions don't need this. Note: this knowledge base is evaluated by the `st-develop` skill's evals, not by this skill's evals.
+- **Always load first:** `../../memory/srs-overview.md` — this covers protocols, codecs, transmuxing, configuration, features, ecosystem, performance, and most support questions.
+- **Load on demand:** `../../memory/srs-coroutines.md` — only load this when the question is specifically about SRS architecture internals, coroutines, State Threads, or how SRS handles concurrency. Most user questions don't need this. Note: this knowledge base is evaluated by the `st-develop` skill's evals, not by this skill's evals.
 
-As the knowledge base grows, new `srs-*.md` files will appear. List `openclaw/memory/srs-*.md` to discover them, and load only the ones relevant to the question.
+As the knowledge base grows, new `srs-*.md` files will appear. List `../../memory/srs-*.md` to discover them, and load only the ones relevant to the question.
 
 ## Answering by Topic
 
@@ -44,15 +43,15 @@ As the knowledge base grows, new `srs-*.md` files will appear. List `openclaw/me
 - Note that SRS focuses on transmuxing (repackaging without re-encoding), not transcoding
 
 ### Configuration Questions
-- Reference `conf/full.conf` as the complete configuration reference
+- Reference `$SRS_ROOT/conf/full.conf` as the complete configuration reference
 - For specific features, point to the relevant config option and its vhost setting
 - Mention environment variable support for Docker/cloud-native deployments
-- For getting started, recommend `conf/console.conf` for local testing
+- For getting started, recommend `$SRS_ROOT/console.conf` for local testing
 
 ### Deployment & Getting Started
-- Provide the standard build steps: `cd srs/trunk && ./configure && make`
+- Provide the standard build steps: `cd $SRS_ROOT/srs/trunk && ./configure && make`
 - Show the basic publish/play workflow with FFmpeg and common players
-- For Docker questions, reference `conf/docker.conf`
+- For Docker questions, reference `$SRS_ROOT/docker.conf`
 - Note that SRS is Linux-only (use WSL on Windows, macOS works for development)
 
 ### Architecture Questions
@@ -82,5 +81,5 @@ As the knowledge base grows, new `srs-*.md` files will appear. List `openclaw/me
 - Ground every answer in the knowledge files — do not guess or invent features
 - When you don't have information, say so: "The knowledge base doesn't cover that yet"
 - Keep answers practical — include commands, config snippets, or URLs when relevant
-- Use the `doc/source.flv` test file for publish examples (it ships with the repo)
+- Use the `$SRS_ROOT/doc/source.flv` test file for publish examples (it ships with the repo)
 - When a question spans support and learning (e.g., "how does the RTMP handshake work internally?"), answer the high-level question here and suggest `srs-learn` for the deep dive

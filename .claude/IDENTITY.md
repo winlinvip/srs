@@ -1,1 +1,1 @@
-../openclaw/IDENTITY.md
+../.openclaw/IDENTITY.md

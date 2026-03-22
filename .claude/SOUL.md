@@ -1,1 +1,1 @@
-../openclaw/SOUL.md
+../.openclaw/SOUL.md

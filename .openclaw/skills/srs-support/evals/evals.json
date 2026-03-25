@@ -175,7 +175,7 @@
     },
     {
       "id": 4,
-      "prompt": "I need to serve 10,000 RTMP viewers. SRS is single-threaded — how do I scale it?",
+      "prompt": "I need to serve 10,000 RTMP viewers. SRS is single-threaded \u2014 how do I scale it?",
       "expected_output": "Should explain edge cluster for scaling viewers (deprecated, RTMP only), distinguish from origin cluster (for more streams), mention single-threaded design, and HLS cluster option.",
       "files": [],
       "assertions": [
@@ -287,7 +287,7 @@
         },
         {
           "name": "v5_vs_v6_rewrite",
-          "description": "Answer mentions GB28181 supported since v5.0 but completely rewritten in v6 — v5 had an embedded SIP server, v6 removed it and requires external srs-sip",
+          "description": "Answer mentions GB28181 supported since v5.0 but completely rewritten in v6 \u2014 v5 had an embedded SIP server, v6 removed it and requires external srs-sip",
           "type": "contains_concept"
         },
         {
@@ -299,7 +299,7 @@
     },
     {
       "id": 7,
-      "prompt": "I keep hearing \"transmuxing\" and \"transcoding\" — what's the difference? Which one does SRS do?",
+      "prompt": "I keep hearing \"transmuxing\" and \"transcoding\" \u2014 what's the difference? Which one does SRS do?",
       "expected_output": "Should explain transmuxing vs transcoding, SRS focus on transmuxing, built-in audio-only transcoding, and external FFmpeg for video transcoding.",
       "files": [],
       "assertions": [
@@ -320,12 +320,12 @@
         },
         {
           "name": "builtin_audio_transcoding_only",
-          "description": "Answer mentions SRS has built-in audio transcoding only (AAC↔Opus) for WebRTC interop",
+          "description": "Answer mentions SRS has built-in audio transcoding only (AAC\u2194Opus) for WebRTC interop",
           "type": "contains_concept"
         },
         {
           "name": "no_builtin_video_transcoding",
-          "description": "Answer clarifies no built-in video transcoding — use external FFmpeg for that",
+          "description": "Answer clarifies no built-in video transcoding \u2014 use external FFmpeg for that",
           "type": "contains_concept"
         },
         {
@@ -391,7 +391,7 @@
       "assertions": [
         {
           "name": "dvr_support",
-          "description": "Answer mentions SRS supports DVR — recording streams to files",
+          "description": "Answer mentions SRS supports DVR \u2014 recording streams to files",
           "type": "contains_concept"
         },
         {
@@ -429,12 +429,12 @@
       "assertions": [
         {
           "name": "webrtc_lowest_latency",
-          "description": "Answer states WebRTC has the lowest latency — sub-second, real-time",
+          "description": "Answer states WebRTC has the lowest latency \u2014 sub-second, real-time",
           "type": "contains_concept"
         },
         {
           "name": "srt_low_latency",
-          "description": "Answer mentions SRT also offers low latency — around 500ms to 1s, widely used in live streaming",
+          "description": "Answer mentions SRT also offers low latency \u2014 around 500ms to 1s, widely used in live streaming",
           "type": "contains_concept"
         },
         {
@@ -444,12 +444,12 @@
         },
         {
           "name": "hls_latency",
-          "description": "Answer mentions HLS has 3–5 seconds latency due to segmenting",
+          "description": "Answer mentions HLS has 3\u20135 seconds latency due to segmenting",
           "type": "contains_concept"
         },
         {
           "name": "player_side_latency_trap",
-          "description": "Answer warns that latency is an end-to-end problem and the player matters — VLC adds huge latency even with low-latency protocols, use browsers with WebRTC for true low latency",
+          "description": "Answer warns that latency is an end-to-end problem and the player matters \u2014 VLC adds huge latency even with low-latency protocols, use browsers with WebRTC for true low latency",
           "type": "contains_concept"
         },
         {
@@ -500,7 +500,7 @@
       "assertions": [
         {
           "name": "http_callback_auth",
-          "description": "Answer mentions HTTP callback for authentication — listen to publish/play events and accept or reject clients",
+          "description": "Answer mentions HTTP callback for authentication \u2014 listen to publish/play events and accept or reject clients",
           "type": "contains_concept"
         },
         {
@@ -520,7 +520,7 @@
         },
         {
           "name": "no_builtin_user_management",
-          "description": "Answer clarifies no built-in username/password system — use HTTP callback to integrate with your own auth service",
+          "description": "Answer clarifies no built-in username/password system \u2014 use HTTP callback to integrate with your own auth service",
           "type": "contains_concept"
         },
         {
@@ -548,7 +548,7 @@
         },
         {
           "name": "env_variables",
-          "description": "Answer mentions SRS supports environment variables for configuration — useful for Docker/cloud-native deployments",
+          "description": "Answer mentions SRS supports environment variables for configuration \u2014 useful for Docker/cloud-native deployments",
           "type": "contains_concept"
         },
         {
@@ -581,7 +581,7 @@
         },
         {
           "name": "sfu_stream_count",
-          "description": "Answer explains SRS is an SFU — for 3 participants that means 9 streams to forward",
+          "description": "Answer explains SRS is an SFU \u2014 for 3 participants that means 9 streams to forward",
           "type": "contains_concept"
         },
         {
@@ -602,6 +602,39 @@
         {
           "name": "no_hallucination",
           "description": "Answer does not hallucinate built-in room management, MCU, or conferencing features",
+          "type": "absence"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "do you know any skills about SRS?",
+      "expected_output": "Should confirm knowledge of SRS and describe the main topic areas covered: protocols (RTMP, SRT, WebRTC, HLS, DASH, HTTP-FLV, RTSP, GB28181), codecs, configuration, deployment, architecture, performance, ecosystem tools, and troubleshooting.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "confirms_srs_knowledge",
+          "description": "Answer confirms the skill has knowledge about SRS",
+          "type": "contains_concept"
+        },
+        {
+          "name": "mentions_protocols",
+          "description": "Answer lists or describes the protocols SRS supports (e.g., RTMP, SRT, WebRTC, HLS)",
+          "type": "contains_concept"
+        },
+        {
+          "name": "mentions_topic_areas",
+          "description": "Answer describes the main topic areas covered: protocols, codecs, configuration, deployment, or ecosystem",
+          "type": "contains_concept"
+        },
+        {
+          "name": "offers_to_help",
+          "description": "Answer invites the user to ask specific questions or offers to help with SRS topics",
+          "type": "contains_concept"
+        },
+        {
+          "name": "no_hallucination",
+          "description": "Answer does not claim knowledge about features or protocols not supported by SRS",
           "type": "absence"
         }
       ]

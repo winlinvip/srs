@@ -7,79 +7,85 @@ description: Answer SRS (Simple Realtime Server) questions for developers and us
 
 Answer questions about SRS — a simple, high-efficiency, real-time media server — using the project's knowledge base.
 
-This skill is for **answering questions and providing guidance**. If the user wants to learn SRS internals, write code, or work through hands-on exercises, hand off to `srs-learn` or `st-develop` instead.
+This skill is for **answering questions and providing guidance**. If the user wants to:
+- Learn SRS coroutine/State Threads internals, hand off to `st-develop` instead.
 
-## Setup
+## Workflow
 
-Do **not** hardcode an absolute SRS path. Resolve `SRS_ROOT` dynamically:
+Follow these three steps in order for every question.
 
-1. If `SRS_ROOT` env is set and contains `trunk/src`, use it.
-2. Else, if current workspace (or its git root) contains `trunk/src`, use that.
-3. Else, if the parent folder of the workspace contains `trunk/src`, use that parent.
-4. Else, if `~/git/srs/trunk/src` exists, use `~/git/srs`.
-5. Else, ask the user for the SRS repo root.
+## Step 1: Setup
 
-## Loading Knowledge
+All files are in the current working directory. Find everything from here — no discovery logic needed.
 
-Load knowledge selectively based on the question topic:
+Available directories: `trunk/`, `cmd/`, `internal/`, `cmake/`, `docs/`, `memory/`
 
-- **Always load first:** `../../memory/srs-overview.md` — this covers protocols, codecs, transmuxing, configuration, features, ecosystem, performance, and most support questions.
-- **Load on demand:** `../../memory/srs-coroutines.md` — only load this when the question is specifically about SRS architecture internals, coroutines, State Threads, or how SRS handles concurrency. Most user questions don't need this. Note: this knowledge base is evaluated by the `st-develop` skill's evals, not by this skill's evals.
+All AI tools — OpenClaw, Codex, Claude Code, Kiro CLI — see the same relative paths.
 
-As the knowledge base grows, new `srs-*.md` files will appear. List `../../memory/srs-*.md` to discover them, and load only the ones relevant to the question.
+## Step 2: Load Knowledge
 
-## Answering by Topic
+Load knowledge in layers. Start minimal, expand only if needed.
 
-### Protocol Questions
+**Layer 1 — Always load:**
+- `memory/srs-overview.md` — covers protocols, codecs, transmuxing, configuration, features, ecosystem, performance. This answers most questions.
+
+**Layer 2 — Load on demand (if the overview doesn't fully answer the question):**
+- `memory/srs-coroutines.md` — load when the question is about SRS architecture internals, coroutines, State Threads, or concurrency. Most user questions don't need this. Note: this knowledge base is evaluated by the `st-develop` skill's evals, not by this skill's evals.
+
+**Layer 3 — Last resort (if knowledge files don't answer the question and you need source code):**
+- `memory/srs-codebase-map.md` — load the **entire file** (do not truncate or read partial content). Then: reason about which module/files are relevant to the question based on the map's descriptions, and search only those specific files. **DO NOT grep broadly** (e.g., `trunk/src/` or the repository root). The map exists so you can go directly to the right 2-3 files instead of scanning the whole tree. This rule applies to all code searching — config lookups, feature investigations, implementation details.
+
+## Step 3: Answer by Topic
+
+Classify the question into one of the topics below, then apply that topic's strategy. If a question spans multiple topics, combine the relevant strategies.
+
+**Answering rules (apply to all topics):**
+- Ground every answer in the knowledge files — do not guess or invent features
+- When you don't have information, say so: "The knowledge base doesn't cover that yet"
+- Keep answers practical — include commands, config snippets, or URLs when relevant
+- Use the `trunk/doc/source.flv` test file for publish examples (it ships with the repo)
+
+**Protocol Questions**
 - State which protocols SRS supports and their role (publish, play, or both)
 - Include the version and date when a protocol was added (from the Features list in srs-overview.md)
 - Clarify transport: which protocols use TCP vs UDP
 - For protocol comparisons, explain the tradeoffs (latency, compatibility, performance)
 
-### Codec Questions
+**Codec Questions**
 - Clarify codec support per protocol — not all codecs work with all protocols
 - When discussing transcoding, specify the direction (e.g., AAC→Opus for RTMP-to-WebRTC)
 - Distinguish built-in transcoding (audio only: AAC↔Opus, MP3→Opus) from external FFmpeg transcoding (video)
 - Note that SRS focuses on transmuxing (repackaging without re-encoding), not transcoding
 
-### Configuration Questions
-- Reference `$SRS_ROOT/conf/full.conf` as the complete configuration reference
+**Configuration Questions**
+- Reference `trunk/conf/full.conf` as the complete configuration reference
 - For specific features, point to the relevant config option and its vhost setting
 - Mention environment variable support for Docker/cloud-native deployments
-- For getting started, recommend `$SRS_ROOT/console.conf` for local testing
+- For getting started, recommend `trunk/conf/console.conf` for local testing
 
-### Deployment & Getting Started
-- Provide the standard build steps: `cd $SRS_ROOT/srs/trunk && ./configure && make`
+**Deployment & Getting Started**
+- Provide the standard build steps: `cd trunk && ./configure && make`
 - Show the basic publish/play workflow with FFmpeg and common players
-- For Docker questions, reference `$SRS_ROOT/docker.conf`
+- For Docker questions, reference `trunk/conf/docker.conf`
 - Note that SRS is Linux-only (use WSL on Windows, macOS works for development)
 
-### Architecture Questions
+**Architecture Questions**
 - SRS is C++ built on State Threads (ST) — a coroutine library providing Go-like concurrency
 - Single-threaded by design — scale horizontally via clustering, not multi-threading
-- Load `srs-coroutines.md` only if the user wants deeper architectural detail
-- For deep-dive architecture learning, suggest using the `srs-learn` skill instead
+- For deep-dive coroutine/ST internals, suggest using the `st-develop` skill instead
 
-### Performance Questions
+**Performance Questions**
 - TCP protocols (RTMP, HTTP-FLV) handle thousands of connections
 - UDP protocols (WebRTC, SRT) handle hundreds; with audio transcoding, dozens
 - Single-threaded — use origin cluster to scale across CPUs
 
-### Comparison Questions
+**Comparison Questions**
 - Compare against Nginx-RTMP, Janus, Red5 using facts from the knowledge base
 - Focus on protocol coverage, language/performance, and use case fit
 - Be objective — acknowledge where alternatives have strengths
 
-### Ecosystem Questions
+**Ecosystem Questions**
 - **srs-bench** — Benchmarking tool for RTMP, WebRTC, HTTP-FLV, HLS, GB28181
 - **state-threads** — Coroutine library, the foundation of SRS
 - **Oryx** — Mention it exists as an integrated solution but don't go into detail (out of scope for this skill)
 - SRS only maintains server-side projects — it doesn't maintain client-side tools
-
-## Answering Guidelines
-
-- Ground every answer in the knowledge files — do not guess or invent features
-- When you don't have information, say so: "The knowledge base doesn't cover that yet"
-- Keep answers practical — include commands, config snippets, or URLs when relevant
-- Use the `$SRS_ROOT/doc/source.flv` test file for publish examples (it ships with the repo)
-- When a question spans support and learning (e.g., "how does the RTMP handshake work internally?"), answer the high-level question here and suggest `srs-learn` for the deep dive

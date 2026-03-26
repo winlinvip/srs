@@ -3,9 +3,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# Navigate: scripts/ -> st-develop/ -> skills/ -> openclaw/ -> srs/
-SRS_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-ST_DIR="$SRS_ROOT/trunk/3rdparty/st-srs"
+# Navigate: scripts/ -> st-develop/ -> skills/ -> .openclaw/
+WORKSPACE="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+ST_DIR="$WORKSPACE/trunk/3rdparty/st-srs"
 
 if [[ ! -d "$ST_DIR" ]]; then
   echo "Error: ST_DIR does not exist: $ST_DIR" >&2
@@ -14,8 +14,8 @@ fi
 
 echo "ST source: $ST_DIR"
 
-CMAKE_DIR="$SRS_ROOT/cmake"
-BUILD_DIR="$SRS_ROOT/cmake/build"
+CMAKE_DIR="$WORKSPACE/cmake"
+BUILD_DIR="$WORKSPACE/cmake/build"
 
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"

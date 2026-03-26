@@ -3,6 +3,7 @@
 ## Workspace Conventions
 - **No auto-commit** — Never automatically git commit. Only commit when William explicitly tells me to.
 - **No guessing** — William will teach me everything about SRS. Don't speculate or fill in gaps. Wait for him to explain.
+- **Codebase map first** — Before searching/grepping the codebase, ALWAYS load `memory/srs-codebase-map.md` in full (the entire file, not partial). Read the module descriptions to reason about which specific files are relevant, then search only those files. Never grep broad directories like `trunk/src/` or the repository root. This is a critical rule.
 
 ## 2026-02-05 — First Boot
 - I'm SRSBot ⚡ — AI developer working with William on SRS
@@ -61,13 +62,6 @@
 
 The three layers are what William controls; the external conditions are what the AI ecosystem must provide. When both are ready, AI can truly manage the project.
 
-## Ideas Capture
-- When William shares isolated/separate ideas, save them to `docs/ideas.md`
-- This is for **rudimentary, temporary, brainstorm-level** ideas — not mature ones
-- Mature/specific topics go to their proper place (YouTube stuff → `docs/youtube/`, SRS knowledge → `memory/srs-*.md`)
-- `docs/ideas.md` is the scratch pad for early-stage thinking that doesn't belong anywhere else yet
-- Ideas may grow into major features or directions over time
-
 ## Changelog & Version
 - **Changelog:** `trunk/doc/CHANGELOG.md`
 - **Version file:** `trunk/src/core/srs_core_version7.hpp` — bump `VERSION_REVISION` to match the new changelog entry
@@ -82,13 +76,9 @@ The three layers are what William controls; the external conditions are what the
 Detailed SRS knowledge in `memory/srs-*.md` files:
 - `srs-overview.md` — What SRS is, protocols, ecosystem tools, and **Features section** with all SRS features, versions, and dates
 - `srs-coroutines.md` — State Threads (ST) coroutine library, why SRS uses coroutines, how coroutine switching works, maintenance burden (platform matrix, Windows/SEH), and multi-CPU strategy (cluster > multi-threading)
+- `srs-codebase-map.md` — Codebase structure: directory layout, file naming conventions, module boundaries, and packet flow. Enables reasoning about which files to look at for a given topic instead of blind searching.
 
 ### Rule: Keep Feature List Updated
 When creating new features, updating protocols, or making changes to SRS capabilities, **always update the Features section in `memory/srs-overview.md`** with the feature name, description, version, and date.
 
-## YouTube Channel Content (docs/youtube/)
-- Contains transcripts from SRS YouTube channel videos
-- ⚠️ **DO NOT trust as knowledge base** — these are snapshots of thoughts at a specific date
-- May contain outdated info, changed opinions, or revised ideas
-- Always verify against current codebase, docs, and project state
-- Use for historical context only, not authoritative reference
+

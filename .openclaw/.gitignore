@@ -1,6 +1,11 @@
-/.openclaw/workspace-state.json
+# For OpenClaw
+/workspace-state.json
 /.clawhub
 /.pi
 /extensions
 /skills/llm-switcher
-/personal
+
+# For speical folders.
+/personal*
+/support*
+/*srs-consults*

@@ -27,13 +27,13 @@ func InstallSignals(ctx context.Context, cancel context.CancelFunc) {
 
 	go func() {
 		for s := range sc {
-			logger.Df(ctx, "Got signal %v", s)
+			logger.Debug(ctx, "Got signal %v", s)
 			cancel()
 		}
 	}()
 }
 
-func InstallForceQuit(ctx context.Context, environment env.Environment) error {
+func InstallForceQuit(ctx context.Context, environment env.ProxyEnvironment) error {
 	var forceTimeout time.Duration
 	timeoutStr := environment.ForceQuitTimeout()
 	if t, err := time.ParseDuration(timeoutStr); err != nil {
@@ -45,7 +45,7 @@ func InstallForceQuit(ctx context.Context, environment env.Environment) error {
 	go func() {
 		<-ctx.Done()
 		time.Sleep(forceTimeout)
-		logger.Wf(ctx, "Force to exit by timeout")
+		logger.Warn(ctx, "Force to exit by timeout")
 		osExit(1)
 	}()
 	return nil

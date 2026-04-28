@@ -18,7 +18,7 @@ import (
 // MemoryLoadBalancer stores state in memory.
 type MemoryLoadBalancer struct {
 	// The environment interface.
-	environment env.Environment
+	environment env.ProxyEnvironment
 	// All available SRS servers, key is server ID.
 	servers sync.Map[string, *SRSServer]
 	// The picked server to service client by specified stream URL, key is stream url.
@@ -34,7 +34,7 @@ type MemoryLoadBalancer struct {
 }
 
 // NewMemoryLoadBalancer creates a new memory-based load balancer.
-func NewMemoryLoadBalancer(environment env.Environment) SRSLoadBalancer {
+func NewMemoryLoadBalancer(environment env.ProxyEnvironment) SRSLoadBalancer {
 	return &MemoryLoadBalancer{
 		environment:  environment,
 		servers:      sync.NewMap[string, *SRSServer](),
@@ -65,12 +65,12 @@ func (v *MemoryLoadBalancer) Initialize(ctx context.Context) error {
 					return
 				case <-time.After(30 * time.Second):
 					if err := v.Update(ctx, server); err != nil {
-						logger.Wf(ctx, "update default SRS %+v failed, %+v", server, err)
+						logger.Warn(ctx, "update default SRS %+v failed, %+v", server, err)
 					}
 				}
 			}
 		}()
-		logger.Df(ctx, "MemoryLB: Initialize default SRS media server, %+v", server)
+		logger.Debug(ctx, "MemoryLB: Initialize default SRS media server, %+v", server)
 	}
 	return nil
 }

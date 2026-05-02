@@ -1,6 +1,6 @@
 ---
 name: srs-develop
-description: Develop, modify, debug, and maintain the next-generation SRS media server written in Go — including the proxy, origin, and edge servers. This is the AI-maintained successor to the first-generation C++ SRS server. Use for all development tasks, for example, adding features, fixing bugs, refactoring code, understanding code architecture, reviewing changes, and writing tests for the Go codebase. NOT for end-user support, usage questions, configuration help, or learning how to use SRS — use the srs-support skill for those. Only activate when the task is explicitly about developing or modifying the Go SRS codebase.
+description: Develop, modify, debug, and maintain the next-generation SRS media server written in Go. This is the AI-maintained successor to the first-generation C++ SRS server. Currently, planned changes are supported for the Go proxy server only; the next-generation Go origin and edge server workflows are not yet supported. Use for all development tasks, for example, adding features, fixing bugs, refactoring code, understanding code architecture, reviewing changes, and writing tests for the Go codebase. NOT for end-user support, usage questions, configuration help, or learning how to use SRS — use the srs-support skill for those. Only activate when the task is explicitly about developing or modifying the Go SRS codebase.
 ---
 
 # SRS Development
@@ -100,7 +100,7 @@ Do NOT attempt unsupported tasks.
 | Service | Route To | Status |
 |---|---|---|
 | **Proxy server** | → [Proxy Server](#proxy-server) | ✅ Supported |
-| **Origin server** | → [Origin Server](#origin-server) | ✅ Supported |
+| **Origin server** | → [Origin Server](#origin-server) | ❌ Not yet supported |
 | **Edge server** | → [Edge Server](#edge-server) | ❌ Not yet supported |
 
 **If the routed service is not yet supported**, stop and tell the user:
@@ -143,9 +143,22 @@ Only after the user confirms the routing do you proceed to Step 2.
    ```
    bash scripts/proxy-utest.sh --coverage
    ```
-4. Run the proxy E2E test (starts proxy + SRS origin, publishes RTMP, verifies playback):
+4. Run the proxy E2E tests:
+   - Single-origin RTMP proxy test (starts proxy + one SRS origin, publishes RTMP, verifies playback):
    ```
    bash scripts/proxy-e2e-test.sh
+   ```
+   - Multi-origin cluster routing test (starts proxy + two SRS origins, publishes multiple streams, verifies streams are assigned to different origins):
+   ```
+   bash scripts/proxy-e2e-cluster-test.sh
+   ```
+   - Redis multi-proxy routing test (requires local Redis; starts two proxy instances with Redis LB, publishes through one proxy, verifies playback through the other):
+   ```
+   bash scripts/proxy-e2e-redis-test.sh
+   ```
+   - RTMP transmuxing test (starts proxy + one SRS origin, publishes RTMP, verifies RTMP/HTTP-FLV/HLS playback, and verifies WebRTC WHEP playback when `PROXY_TRANSMUX_TEST_RTC=on`):
+   ```
+   bash scripts/proxy-e2e-transmux-test.sh
    ```
 5. If any tests fail, fix the issues and re-run until all tests pass.
 
@@ -153,7 +166,7 @@ All script paths are relative to this skill's directory.
 
 ### Origin Server
 
-*(workflow steps to be defined)*
+**Not yet supported.** This refers to the next-generation Go origin server workflow. The first-generation C++ origin server still exists, but it is in maintenance mode and only bug fixes are accepted there.
 
 ### Edge Server
 

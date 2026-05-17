@@ -9,14 +9,14 @@ import (
 )
 
 func TestVersionComponents(t *testing.T) {
-	if got := VersionMajor(); got != 7 {
-		t.Fatalf("VersionMajor = %d, want 7", got)
+	if got := VersionMajor(); got != 8 {
+		t.Fatalf("VersionMajor = %d, want 8", got)
 	}
 	if got := VersionMinor(); got != 0 {
 		t.Fatalf("VersionMinor = %d, want 0", got)
 	}
-	if got := VersionRevision(); got <= 0 {
-		t.Fatalf("VersionRevision = %d, want > 0", got)
+	if got := VersionRevision(); got < 0 {
+		t.Fatalf("VersionRevision = %d, want >= 0", got)
 	}
 }
 

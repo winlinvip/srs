@@ -6,7 +6,7 @@ package version
 import "fmt"
 
 func VersionMajor() int {
-	return 7
+	return 8
 }
 
 // VersionMinor specifies the typical version of SRS we adapt to.
@@ -15,7 +15,7 @@ func VersionMinor() int {
 }
 
 func VersionRevision() int {
-	return 148
+	return 0
 }
 
 func Version() string {

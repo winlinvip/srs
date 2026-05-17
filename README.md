@@ -202,6 +202,3 @@ Please read [MIRRORS](trunk/doc/Resources.md#mirrors).
 
 Please read [DOCKERS](trunk/doc/Dockers.md).
 
-Beijing, 2013.10<br/>
-Winlin
-

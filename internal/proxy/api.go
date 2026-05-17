@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Winlin
 //
 // SPDX-License-Identifier: MIT
-package server
+package proxy
 
 import (
 	"context"
@@ -20,45 +20,70 @@ import (
 	"srsx/internal/version"
 )
 
-// HTTPAPIServer is the proxy for SRS HTTP API, to proxy the WebRTC HTTP API like WHIP and WHEP,
+// HTTPAPIProxyServer is the proxy for SRS HTTP API, to proxy the WebRTC HTTP API like WHIP and WHEP,
 // to proxy other HTTP API of SRS like the streams and clients, etc.
-type HTTPAPIServer interface {
+type HTTPAPIProxyServer interface {
 	Run(ctx context.Context) error
 	Close() error
 }
 
-type httpAPIServer struct {
+type httpAPIProxyServer struct {
 	// The environment interface.
 	environment env.ProxyEnvironment
 	// The underlayer HTTP server.
-	server *http.Server
+	server httpServer
 	// The WebRTC server.
-	rtc WebRTCServer
+	rtc WebRTCProxyServer
 	// The gracefully quit timeout, wait server to quit.
 	gracefulQuitTimeout time.Duration
 	// The wait group for all goroutines.
 	wg sync.WaitGroup
+	// shutdown gracefully shuts down the underlying HTTP server. Defaults to
+	// v.server.Shutdown; tests may override via a functional option to verify
+	// the shutdown contract without binding a real socket.
+	shutdown func(ctx context.Context) error
+	// newServer constructs the underlying HTTP server bound to addr and the
+	// ServeMux that handlers are registered on. Defaults to a real http.Server
+	// and ServeMux; tests may override via a functional option to supply a fake
+	// server that does not bind a real port.
+	newServer func(addr string) (httpServer, *http.ServeMux)
 }
 
-func NewHTTPAPIServer(environment env.ProxyEnvironment, gracefulQuitTimeout time.Duration, rtc WebRTCServer) HTTPAPIServer {
-	v := &httpAPIServer{
+func NewHTTPAPIProxyServer(environment env.ProxyEnvironment, gracefulQuitTimeout time.Duration, rtc WebRTCProxyServer, opts ...func(*httpAPIProxyServer)) HTTPAPIProxyServer {
+	v := &httpAPIProxyServer{
 		environment:         environment,
 		gracefulQuitTimeout: gracefulQuitTimeout,
 		rtc:                 rtc,
 	}
+
+	// Default shutdown: delegate to the underlying http.Server. The closure
+	// captures v rather than v.server so the dereference happens at call time,
+	// after Run() has assigned v.server.
+	v.shutdown = func(ctx context.Context) error {
+		return v.server.Shutdown(ctx)
+	}
+	// Default newServer: a real http.Server and ServeMux pair.
+	v.newServer = func(addr string) (httpServer, *http.ServeMux) {
+		mux := http.NewServeMux()
+		return &http.Server{Addr: addr, Handler: mux}, mux
+	}
+
+	for _, opt := range opts {
+		opt(v)
+	}
 	return v
 }
 
-func (v *httpAPIServer) Close() error {
+func (v *httpAPIProxyServer) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), v.gracefulQuitTimeout)
 	defer cancel()
-	v.server.Shutdown(ctx)
+	v.shutdown(ctx)
 
 	v.wg.Wait()
 	return nil
 }
 
-func (v *httpAPIServer) Run(ctx context.Context) error {
+func (v *httpAPIProxyServer) Run(ctx context.Context) error {
 	// Parse address to listen.
 	addr := v.environment.HttpAPI()
 	if !strings.Contains(addr, ":") {
@@ -66,8 +91,8 @@ func (v *httpAPIServer) Run(ctx context.Context) error {
 	}
 
 	// Create server and handler.
-	mux := http.NewServeMux()
-	v.server = &http.Server{Addr: addr, Handler: mux}
+	server, mux := v.newServer(addr)
+	v.server = server
 	logger.Debug(ctx, "HTTP API server listen at %v", addr)
 
 	// Shutdown the server gracefully when quiting.
@@ -78,7 +103,7 @@ func (v *httpAPIServer) Run(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(context.Background(), v.gracefulQuitTimeout)
 		defer cancel()
 
-		v.server.Shutdown(ctx)
+		v.shutdown(ctx)
 	}()
 
 	// The basic version handler, also can be used as health check API.
@@ -147,18 +172,46 @@ func (v *httpAPIServer) Run(ctx context.Context) error {
 type systemAPI struct {
 	// The environment interface.
 	environment env.ProxyEnvironment
+	// The load balancer for origin servers.
+	loadBalancer lb.OriginLoadBalancer
 	// The underlayer HTTP server.
-	server *http.Server
+	server httpServer
 	// The gracefully quit timeout, wait server to quit.
 	gracefulQuitTimeout time.Duration
 	// The wait group for all goroutines.
 	wg sync.WaitGroup
+	// shutdown gracefully shuts down the underlying HTTP server. Defaults to
+	// v.server.Shutdown; tests may override via a functional option to verify
+	// the shutdown contract without binding a real socket.
+	shutdown func(ctx context.Context) error
+	// newServer constructs the underlying HTTP server bound to addr and the
+	// ServeMux that handlers are registered on. Defaults to a real http.Server
+	// and ServeMux; tests may override via a functional option to supply a fake
+	// server that does not bind a real port.
+	newServer func(addr string) (httpServer, *http.ServeMux)
 }
 
-func NewSystemAPI(environment env.ProxyEnvironment, gracefulQuitTimeout time.Duration) *systemAPI {
+func NewSystemAPI(environment env.ProxyEnvironment, loadBalancer lb.OriginLoadBalancer, gracefulQuitTimeout time.Duration, opts ...func(*systemAPI)) *systemAPI {
 	v := &systemAPI{
 		environment:         environment,
+		loadBalancer:        loadBalancer,
 		gracefulQuitTimeout: gracefulQuitTimeout,
+	}
+
+	// Default shutdown: delegate to the underlying http.Server. The closure
+	// captures v rather than v.server so the dereference happens at call time,
+	// after Run() has assigned v.server.
+	v.shutdown = func(ctx context.Context) error {
+		return v.server.Shutdown(ctx)
+	}
+	// Default newServer: a real http.Server and ServeMux pair.
+	v.newServer = func(addr string) (httpServer, *http.ServeMux) {
+		mux := http.NewServeMux()
+		return &http.Server{Addr: addr, Handler: mux}, mux
+	}
+
+	for _, opt := range opts {
+		opt(v)
 	}
 	return v
 }
@@ -166,7 +219,7 @@ func NewSystemAPI(environment env.ProxyEnvironment, gracefulQuitTimeout time.Dur
 func (v *systemAPI) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), v.gracefulQuitTimeout)
 	defer cancel()
-	v.server.Shutdown(ctx)
+	v.shutdown(ctx)
 
 	v.wg.Wait()
 	return nil
@@ -180,8 +233,8 @@ func (v *systemAPI) Run(ctx context.Context) error {
 	}
 
 	// Create server and handler.
-	mux := http.NewServeMux()
-	v.server = &http.Server{Addr: addr, Handler: mux}
+	server, mux := v.newServer(addr)
+	v.server = server
 	logger.Debug(ctx, "System API server listen at %v", addr)
 
 	// Shutdown the server gracefully when quiting.
@@ -192,7 +245,7 @@ func (v *systemAPI) Run(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(context.Background(), v.gracefulQuitTimeout)
 		defer cancel()
 
-		v.server.Shutdown(ctx)
+		v.shutdown(ctx)
 	}()
 
 	// The basic version handler, also can be used as health check API.
@@ -255,14 +308,14 @@ func (v *systemAPI) Run(ctx context.Context) error {
 				return errors.Errorf("empty rtmp")
 			}
 
-			server := lb.NewSRSServer(func(srs *lb.SRSServer) {
+			server := lb.NewOriginServer(func(srs *lb.OriginServer) {
 				srs.IP, srs.DeviceID = ip, deviceID
 				srs.ServerID, srs.ServiceID, srs.PID = serverID, serviceID, pid
 				srs.RTMP, srs.HTTP, srs.API = rtmp, stream, api
 				srs.SRT, srs.RTC = srt, rtc
 				srs.UpdatedAt = time.Now()
 			})
-			if err := lb.SrsLoadBalancer.Update(ctx, server); err != nil {
+			if err := v.loadBalancer.Update(ctx, server); err != nil {
 				return errors.Wrapf(err, "update SRS server %+v", server)
 			}
 

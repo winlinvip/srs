@@ -6,11 +6,16 @@
 set -e
 
 SCRIPT_DIR="$(cd -P "$(dirname "$0")" && pwd)"
-# Navigate: scripts/ -> srs-develop/ -> skills/ -> .openclaw/ -> srs
-WORKSPACE="$(cd -P "$SCRIPT_DIR/../../../.." && pwd)"
+# Walk up from SCRIPT_DIR looking for go.mod. This avoids brittle "../../../.."
+# counting when the skills directory is reached via a symlink (which changes
+# the symbolic vs. physical depth).
+WORKSPACE="$SCRIPT_DIR"
+while [[ "$WORKSPACE" != "/" && ! -f "$WORKSPACE/go.mod" ]]; do
+  WORKSPACE="$(dirname "$WORKSPACE")"
+done
 
 if [[ ! -f "$WORKSPACE/go.mod" ]]; then
-  echo "Error: go.mod not found in WORKSPACE: $WORKSPACE" >&2
+  echo "Error: go.mod not found walking up from: $SCRIPT_DIR" >&2
   exit 1
 fi
 
@@ -38,7 +43,12 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 SOURCE_FLV="$WORKSPACE/trunk/doc/source.flv"
 SRS_BINARY="$WORKSPACE/trunk/objs/srs"
-TEST_STREAM_URL="__defaultVhost__/live/livestream"
+# Randomize per run so each invocation uses unique Redis keys and never shares
+# state with sibling E2E tests or a developer's local proxy that publishes to
+# "live/livestream".
+STREAM_NAME="redis$(date +%s)"
+STREAM_PATH="live/$STREAM_NAME"
+TEST_STREAM_URL="__defaultVhost__/$STREAM_PATH"
 
 # PIDs to clean up on exit.
 PROXY_A_PID=""
@@ -279,7 +289,7 @@ echo "SRS origin started and registered in Redis."
 # --- Step 6: Publish RTMP stream to proxy A ---
 echo "=== Step 6: Publishing RTMP stream to proxy A ==="
 ffmpeg -stream_loop -1 -re -i "$SOURCE_FLV" -c copy -f flv \
-  "rtmp://localhost:$PROXY_A_RTMP_PORT/live/livestream" >/tmp/srs-ffmpeg-redis-e2e.log 2>&1 &
+  "rtmp://localhost:$PROXY_A_RTMP_PORT/$STREAM_PATH" >/tmp/srs-ffmpeg-redis-e2e.log 2>&1 &
 FFMPEG_PID=$!
 echo "FFmpeg publisher PID: $FFMPEG_PID"
 
@@ -296,7 +306,7 @@ echo "Stream publishing through proxy A."
 # --- Step 7: Verify RTMP playback through proxy B ---
 echo "=== Step 7: Verifying RTMP playback through proxy B ==="
 PROBE_OUTPUT=$(ffprobe -v error -show_streams \
-  "rtmp://localhost:$PROXY_B_RTMP_PORT/live/livestream" 2>&1 || true)
+  "rtmp://localhost:$PROXY_B_RTMP_PORT/$STREAM_PATH" 2>&1 || true)
 
 if echo "$PROBE_OUTPUT" | grep -q "codec_type=video"; then
   echo "PASS: Video stream detected through proxy B."

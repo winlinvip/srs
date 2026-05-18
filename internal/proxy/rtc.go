@@ -6,6 +6,7 @@ package proxy
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -241,13 +242,17 @@ func (v *webRTCProxyServer) proxyApiToBackend(
 		localSDPAnswer = strings.Replace(localSDPAnswer, from, to, -1)
 	}
 
-	// Fetch the ice-ufrag and ice-pwd from local SDP answer.
-	remoteICEUfrag, remoteICEPwd, err := utils.ParseIceUfragPwd(remoteSDPOffer)
+	// Fetch the ice-ufrag and ice-pwd from local SDP answer. The legacy SRS
+	// /rtc/v1/play/ and /rtc/v1/publish/ APIs wrap the SDP in a JSON envelope
+	// like {"sdp":"v=0\r\n..."}, so unwrap it before parsing ICE attributes.
+	// The forwarded bytes and the in-body candidate port rewrite still operate
+	// on the raw envelope, which is what the client expects to see back.
+	remoteICEUfrag, remoteICEPwd, err := utils.ParseIceUfragPwd(unwrapSDPEnvelope(remoteSDPOffer))
 	if err != nil {
 		return errors.Wrapf(err, "parse remote sdp offer")
 	}
 
-	localICEUfrag, localICEPwd, err := utils.ParseIceUfragPwd(localSDPAnswer)
+	localICEUfrag, localICEPwd, err := utils.ParseIceUfragPwd(unwrapSDPEnvelope(localSDPAnswer))
 	if err != nil {
 		return errors.Wrapf(err, "parse local sdp answer")
 	}
@@ -297,8 +302,12 @@ func (v *webRTCProxyServer) Run(ctx context.Context) error {
 	go func() {
 		defer v.wg.Done()
 
+		// Reuse a single receive buffer across iterations. handleClientUDP and the
+		// downstream HandlePacket consume the slice synchronously (kernel sendto
+		// copies bytes; STUN parsing copies the username via string()), so no caller
+		// retains the slice past the call.
+		buf := make([]byte, 4096)
 		for ctx.Err() == nil {
-			buf := make([]byte, 4096)
 			n, addr, err := listener.ReadFrom(buf)
 			if err != nil {
 				// If context is canceled or connection is closed, exit gracefully without logging error.
@@ -414,6 +423,11 @@ type rtcConnection struct {
 	// dialBackendUDP opens a UDP connection to a backend SRS server. Defaults to a real
 	// UDP dial; tests may override via a functional option to supply a fake connection.
 	dialBackendUDP func(ctx context.Context, ip string, port int) (io.ReadWriteCloser, error)
+
+	// Guards the spawn of the backend->client reader goroutine. HandlePacket is
+	// called on every inbound client packet (STUN keepalives + RTCP feedback at
+	// steady state) but the reader must only start once per connection.
+	startReader stdSync.Once
 }
 
 func newRTCConnection(opts ...func(*rtcConnection)) *rtcConnection {
@@ -462,24 +476,31 @@ func (v *rtcConnection) HandlePacket(addr net.Addr, data []byte) error {
 		return nil
 	}
 
-	// Proxy all messages from backend to client.
-	go func() {
-		for ctx.Err() == nil {
+	// Spawn the backend->client reader exactly once per connection. Previously
+	// this goroutine was launched unconditionally here on every inbound client
+	// packet, which leaked tens of thousands of goroutines under steady-state
+	// WHEP load (STUN keepalives + RTCP feedback). The buffer is reused across
+	// iterations: WriteTo copies into the kernel before returning, so the next
+	// Read can safely overwrite.
+	v.startReader.Do(func() {
+		go func() {
 			buf := make([]byte, 4096)
-			n, err := v.backendUDP.Read(buf)
-			if err != nil {
-				// TODO: If backend server closed unexpectedly, we should notice the stream to quit.
-				logger.Warn(ctx, "read from backend failed, err=%v", err)
-				break
-			}
+			for ctx.Err() == nil {
+				n, err := v.backendUDP.Read(buf)
+				if err != nil {
+					// TODO: If backend server closed unexpectedly, we should notice the stream to quit.
+					logger.Warn(ctx, "read from backend failed, err=%v", err)
+					return
+				}
 
-			if _, err = v.listenerUDP.WriteTo(buf[:n], v.clientUDP); err != nil {
-				// TODO: If backend server closed unexpectedly, we should notice the stream to quit.
-				logger.Warn(ctx, "write to client failed, err=%v", err)
-				break
+				if _, err = v.listenerUDP.WriteTo(buf[:n], v.clientUDP); err != nil {
+					// TODO: If backend server closed unexpectedly, we should notice the stream to quit.
+					logger.Warn(ctx, "write to client failed, err=%v", err)
+					return
+				}
 			}
-		}
-	}()
+		}()
+	})
 
 	if _, err := v.backendUDP.Write(data); err != nil {
 		return errors.Wrapf(err, "write to backend %v", v.StreamURL)
@@ -518,6 +539,25 @@ func (v *rtcConnection) connectBackend(ctx context.Context) error {
 	v.backendUDP = backendUDP
 
 	return nil
+}
+
+// unwrapSDPEnvelope returns the SDP string carried inside the legacy SRS RTC
+// JSON envelope used by /rtc/v1/play/ and /rtc/v1/publish/, e.g. body of the
+// form {"sdp":"v=0\r\n...", ...}. For standards-based WHIP/WHEP bodies (raw
+// SDP), or any input we can't recognise, the original body is returned
+// unchanged so the caller can parse it as raw SDP.
+func unwrapSDPEnvelope(body string) string {
+	trimmed := strings.TrimLeft(body, " \t\r\n")
+	if !strings.HasPrefix(trimmed, "{") {
+		return body
+	}
+	var env struct {
+		SDP string `json:"sdp"`
+	}
+	if err := json.Unmarshal([]byte(trimmed), &env); err != nil || env.SDP == "" {
+		return body
+	}
+	return env.SDP
 }
 
 type rtcICEPair struct {

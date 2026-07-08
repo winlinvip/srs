@@ -61,28 +61,11 @@ To learn more about RTMP, HLS, HTTP-FLV, SRT, MPEG-DASH, WebRTC protocols, clust
 HTTP API, DVR, and transcoding, please check the documents in [English](https://ossrs.io) 
 or [Chinese](https://ossrs.net).
 
-If you want to use an IDE, VSCode is recommended. VSCode supports macOS, and Linux
-platforms. The settings are ready. All you need to do is open the folder with VSCode and 
-enjoy the efficiency brought by the IDE. See [VSCode README](.vscode/README.md) for details.
-
-## Sponsor
-
-Would you like additional assistance from us? By becoming a sponsor or backer of SRS, we can provide you 
-with the support you need:
-
-* Backer: $5 per month, online text chat support through Discord.
-* Sponsor: $100 per month, online text chat plus online meeting support.
-
-Please visit [OpenCollective](https://opencollective.com/srs-server) to become a backer or sponsor, and send 
-us a direct message on [Discord](https://discord.gg/yZ4BnPmHAd). We are currently providing support to the 
-developers listed below:
-
-[![](https://opencollective.com/srs-server/backers.svg?width=800&button=false)](https://opencollective.com/srs-server)
-
-At SRS, our goal is to create a free, open-source community that helps developers all over the world 
-build high-quality streaming and RTC platforms for their businesses.
+I recommend to use AI to understand and maintain your SRS, please follow the wiki
+[AI Agent](trunk/3rdparty/srs-docs/doc/getting-started-ai.md) for details.
 
 <a name="authors"></a>
+<a name="sponsor"></a>
 
 ## Contributing
 
@@ -109,6 +92,10 @@ A huge `THANK YOU` goes out to:
 
 We're really thankful to everyone in the community for helping us find bugs and improve the project. 
 To stay in touch and keep helping our community, please check out this [guide](https://github.com/ossrs/srs/contribute).
+
+Of course, financial support is very important to us, so we can build the website and use AI tools to 
+maintain the community. Please visit [OpenCollective](https://opencollective.com/srs-server) to become 
+a backer or sponsor.
 
 ## LICENSE
 

@@ -9,6 +9,41 @@ description: Develop, modify, debug, and maintain the next-generation SRS media 
 
 **Code and documents are the only truth.** Issue descriptions may be inaccurate. Pull requests may be misleading. Feature descriptions may be insufficient. Always ground your understanding in the actual source code and project documentation. Documents capture design intent, architecture rationale, and complex background that code alone cannot express — they are another form of code. When code and documents conflict, investigate rather than assume one is wrong.
 
+## Skill Dependencies
+
+- `skills/internal-docs-for-srs/SKILL.md` — Route and load project documentation. This skill remains responsible for the development workflow and final result.
+- `skills/internal-codemap-for-srs/SKILL.md` — Route code navigation and verification to the relevant server map. This skill remains responsible for the development workflow and final result.
+
+## Git Workflow
+
+Apply these rules whenever a task produces a commit:
+
+- Never run `git add`; William stages the files he approves.
+- Never run `git push`; William pushes the branch.
+- Commit only when William explicitly asks.
+- Before committing, run `git diff --cached`, understand the staged changes, and write an appropriate title and description.
+- Prefix the commit title with the tool that made the changes: `OpenClaw:`, `Claude:`, or `Codex:`.
+- If Claude made changes, use this exact commit message format:
+  ```
+  Commit title.
+
+  Commit description.
+
+  ---------
+
+  Co-authored-by: Claude Fable 5 <noreply@anthropic.com>
+  ```
+- If Codex made changes, use this exact commit message format:
+  ```
+  Commit title.
+
+  Commit description.
+
+  ---------
+
+  Co-authored-by: chatgpt-codex-connector[bot] <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>
+  ```
+
 ---
 
 ## Task Router
@@ -83,6 +118,14 @@ Do not modify issues or create Truth Records.
 4. Publish the approved record to the issue.
 5. Replace the issue entry in `references/issues.md` with the same record and comment URL.
 
+### Usage-error exception
+
+Use this only when verification shows user misuse already covered by the documentation or SRS AI, not a bug, feature request, or documentation gap.
+
+1. Write and publish a normal, detailed Truth Record explaining the report, evidence, correct usage, and why it is not a bug; close the issue after approval.
+2. As an exception to Step 4.5, keep its `references/issues.md` entry very brief: issue and Truth Record links, verification/closure status, and one or two sentences stating the misuse and correct usage.
+3. Do not change code, documentation, the knowledge base, or skills solely for that issue when the existing guidance is already sufficient.
+
 ---
 
 ## Task: Learn Code
@@ -100,7 +143,6 @@ Do not modify issues or create Truth Records.
 **Scope:** Walk the pending changes on the current branch (relative to `develop`), summarize them, sync any stale navigation docs, then bump the version and add a changelog entry once the user supplies the PR number.
 
 **Guiding rules**
-- **The user drives staging.** Never `git add` on your own. After each step, stop and wait for the user to review and stage the files they approve. Only run `git commit` when they say so.
 - **Docs are navigation, not tutorials.** When a code change makes an entry stale, *correct* it — don't expand it. Only *add* a new entry when a new file or module was introduced; never to describe a refactor inside an existing module.
 
 **Step 1: Survey the changes**
@@ -112,9 +154,9 @@ Do not modify issues or create Truth Records.
 
 **Step 2: Correct stale navigation docs**
 
-1. Check `memory/srs-codebase-map.md` for entries covering any module touched in this PR.
+1. Load `skills/internal-codemap-for-srs/SKILL.md`, route to the next-generation Go server map, and check the entries covering each module touched in this PR.
 2. For each entry whose description is no longer accurate, make the **smallest** correction needed to match the new code. Keep the one-line summary style; do not expand into implementation detail.
-3. Stop. Let the user review. When they `git add` the files they accept, commit with a short message in the existing style, e.g. `Claude: Sync srs-codebase-map with internal/<modules>.`.
+3. Stop and let the user review and stage the files they accept. After an explicit commit request, use a short message such as `<Tool>: Sync internal Go code map with internal/<modules>.`.
 
 **Step 3: Bump the version and update the changelog**
 
@@ -127,7 +169,7 @@ Do not modify issues or create Truth Records.
    * v8.0, YYYY-MM-DD, Merge [#PR](URL): <Prefix>: <one-line summary>. v8.0.<rev> (#PR)
    ```
    Propose the summary to the user; don't invent one unilaterally.
-4. Stop. Let the user review. When they `git add` the version files and changelog, commit with a short message like `Proxy: Bump to v8.0.<rev> for #<PR>.`.
+4. Stop and let the user review and stage the version files and changelog. After an explicit commit request, use a short message such as `<Tool>: Bump to v8.0.<rev> for #<PR>.`.
 
 ---
 
@@ -157,15 +199,16 @@ The proxy server is a complex, growing product — not a small app. It has many 
 
 **Step 1: Module Routing (MANDATORY)**
 
-1. Read the codebase map: `memory/srs-codebase-map.md` — both the **Next-Generation Server Code** section (code modules: `cmd/` + `internal/`) and the **Next-Generation Server Docs** section (documentation: `docs/proxy/`).
-2. Study the module descriptions and doc descriptions. Understand what each covers and its boundaries.
-3. Reason about which module(s) and which doc(s) are relevant to the user's request. Consider:
+1. Load `skills/internal-codemap-for-srs/SKILL.md`, then use its Reference Router to select the next-generation Go server code map.
+2. Load `skills/internal-docs-for-srs/SKILL.md`, then use its Reference Router to select the relevant next-generation server documentation references.
+3. Study the routed module and document descriptions. Understand what each covers and its boundaries.
+4. Reason about which module(s) and which document(s) are relevant to the user's request. Consider:
    - Which module owns the functionality being changed?
    - Which modules might be affected as dependencies?
    - Which docs cover the design/architecture of this area?
    - Is this a new module or a change to an existing one?
-4. **Present your reasoning to the user — both the module(s) and doc(s) you identified — and ask for confirmation.** Even if you are confident, you MUST ask. Do not proceed without confirmation.
-5. If you are unsure, stop and ask the user to clarify. Do not guess.
+5. **Present your reasoning to the user — both the module(s) and document(s) you identified — and ask for confirmation.** Even if you are confident, you MUST ask. Do not proceed without confirmation.
+6. If you are unsure, stop and ask the user to clarify. Do not guess.
 
 Only after the user confirms the routing do you proceed to Step 2.
 
@@ -183,42 +226,9 @@ Only after the user confirms the routing do you proceed to Step 2.
    ```
    make generate
    ```
-3. Run the proxy unit tests to verify:
-   ```
-   bash scripts/proxy-utest.sh --coverage
-   ```
-4. Run **all** of the proxy E2E tests below — every one, not just the first. Run them one at a time (they bind fixed ports, so they cannot run in parallel), and do not stop early: a later test can fail even when the earlier ones pass.
-   - Single-origin RTMP proxy test (starts proxy + one SRS origin, publishes RTMP, verifies playback):
-   ```
-   bash scripts/proxy-e2e-test.sh
-   ```
-   - Multi-origin cluster routing test (starts proxy + two SRS origins, publishes multiple streams, verifies streams are assigned to different origins):
-   ```
-   bash scripts/proxy-e2e-cluster-test.sh
-   ```
-   - Proxy + SRS edge + SRS origin three-tier topology (starts proxy + one SRS edge in `mode remote` registered with the proxy + one upstream SRS origin, publishes RTMP via proxy→edge→origin, then plays the same stream with two concurrent RTMP players where the second joins after a delay as a late joiner on the active edge-pull):
-   ```
-   bash scripts/proxy-e2e-edge-test.sh
-   ```
-   - Redis multi-proxy routing test (requires local Redis; starts two proxy instances with Redis LB, publishes through one proxy, verifies playback through the other):
-   ```
-   bash scripts/proxy-e2e-redis-test.sh
-   ```
-   - RTMP transmuxing test (starts proxy + one SRS origin, publishes RTMP, verifies RTMP/HTTP-FLV/HLS playback; WebRTC WHEP is a placeholder):
-   ```
-   bash scripts/proxy-e2e-transmux-test.sh
-   ```
-   - SRT proxy + transmuxing test (starts proxy + one SRS origin, publishes SRT, verifies SRT/RTMP/HTTP-FLV/HLS playback; WebRTC WHEP is a placeholder). Requires an ffmpeg built with libsrt; the script auto-runs `scripts/setup-ffmpeg-with-whip.sh` to build one into `~/.local/` if no SRT-capable ffmpeg is found:
-   ```
-   bash scripts/proxy-e2e-srt-test.sh
-   ```
-   - WHIP proxy + transmuxing test (starts proxy + one SRS origin, publishes WebRTC via WHIP, verifies RTMP/HTTP-FLV/HLS playback; WebRTC WHEP is a placeholder). Requires an ffmpeg with the `whip` muxer (built with `--enable-openssl`); the script auto-runs `scripts/setup-ffmpeg-with-whip.sh` if no suitable ffmpeg is found:
-   ```
-   bash scripts/proxy-e2e-whip-test.sh
-   ```
-5. If any tests fail, fix the issues and re-run until all tests pass.
-
-All script paths are relative to this skill's directory.
+3. Use `skills/internal-codemap-for-srs/SKILL.md` to route to the testing and verification map.
+4. Run the proxy unit test and every proxy E2E test required by that map, sequentially and without stopping early.
+5. If any test fails, fix the issue and re-run until all required tests pass.
 
 ### Origin Server
 

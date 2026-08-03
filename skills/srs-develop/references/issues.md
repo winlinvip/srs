@@ -2,6 +2,44 @@
 
 Record only verified maintenance status and the latest maintainer-approved Truth Record. Never copy unverified issue discussion.
 
+## #4690 — CURRENT
+
+- Issue: https://github.com/ossrs/srs/issues/4690
+- Truth Record: https://github.com/ossrs/srs/issues/4690#issuecomment-5125571911
+- Verified: 2026-07-29
+- Branch: `forge`
+- Commit: `65108f23edeeb9dd73ecbe5e804804ec50a3980e`
+- Version: SRS `8.0.4`
+- Environment: macOS 26.5.2, arm64; Go 1.25.0
+- Changes: None
+- Verification: Source, documentation, unit tests, and runtime reproduction
+
+**Current state**
+
+The proxy registration endpoint `/api/v1/srs/register` currently has no authentication by design. With a port-only configuration such as `PROXY_SYSTEM_API=12025`, it listens on all interfaces.
+
+Testing confirmed that an unauthenticated caller who can reach this endpoint can register caller-controlled backend addresses. A subsequent HTTP-FLV request was routed to the injected backend and returned its content. Both memory and Redis load-balancer deployments share this registration path.
+
+This does not immediately replace every existing stream mapping: existing mappings are sticky, while new streams select among registered backends. An attacker can still influence selection by registering multiple identities. In memory mode, the 300-second period is not a strict expiry because stale registrations and sticky mappings may remain usable.
+
+**Current workaround**
+
+Treat the System API as a trusted internal control-plane endpoint. Restrict it with private networking or firewall rules.
+
+For authenticated access, bind it to loopback:
+
+```bash
+PROXY_SYSTEM_API=127.0.0.1:12025
+```
+
+Then expose an authenticated NGINX or application proxy that forwards approved registration requests to the loopback endpoint.
+
+**Conclusion**
+
+The reported exposure is real, but authentication is not part of the current API design. Built-in registration authentication is a valuable future security feature.
+
+SRS is currently prioritizing the project foundation required for reliable AI maintenance, so authentication will not be implemented in the short term. No immediate project change is planned; keep the issue open for future support.
+
 ## #4686 — CURRENT
 
 - Issue: https://github.com/ossrs/srs/issues/4686
@@ -72,3 +110,99 @@ External FFmpeg ingest is a separate process. However, ordinary inbound publishi
 SRS does not currently provide an internal workaround for blocking DNS resolution. Avoid configuring domain names for SRS-managed outbound connections. Use numeric IP addresses or localhost instead.
 
 For HTTP hooks or callbacks that must ultimately reach a domain name, run a local sidecar or worker HTTP service, for example in Go. Configure SRS to send the callback to `127.0.0.1`; the sidecar performs DNS resolution and forwards the request to the remote domain. This keeps DNS resolution outside the SRS business thread.
+
+## #4681 — CURRENT
+
+- Issue: https://github.com/ossrs/srs/issues/4681
+- Truth Record: https://github.com/ossrs/srs/issues/4681#issuecomment-5084234253
+- Verified: 2026-07-26
+- Branch: `forge`
+- Commit: `21f94c953735675f159405ba00f426c3f7e98305`
+- Version: SRS `8.0.4`
+- Environment: macOS 26.5.2, arm64; FFmpeg 8.1.1
+- Supersedes: None
+- Changes and tests: No project change. Reproduced with one H.264 video track and two AAC audio tracks.
+
+**Current state**
+
+SRS does not currently support Enhanced RTMP v2 multitrack audio. Publishing a stream containing Enhanced RTMP v2 audio headers causes SRS to reject `SoundFormat=9` as unsupported.
+
+The limitation exists in both the reported SRS 7.0.147 source and the current SRS 8.0.4 source. The current media model maintains one audio codec, parser, and sequence header per live stream and has no per-track state.
+
+The targeted reproduction generated a two-second FLV stream containing one H.264 video track and two independent AAC audio tracks. `ffprobe` confirmed all three tracks. Publishing it to the locally built SRS 8.0.4 terminated the publisher with `Broken pipe`; SRS reported:
+
+```text
+rtmp: consume audio : format consume audio : unsupported audio codec=9(Other)
+```
+
+FFmpeg 8 supports multitrack audio and video using Enhanced FLV v2. In the Enhanced RTMP v2 specification, `SoundFormat=9` identifies the extended audio header used for features including multitrack audio:
+
+- https://github.com/FFmpeg/FFmpeg/blob/master/Changelog
+- https://github.com/veovera/enhanced-rtmp/blob/main/docs/enhanced/enhanced-rtmp-v2.md
+
+**Project direction**
+
+Enhanced RTMP v2 multitrack support is a valuable feature that SRS intends to support in the future. It belongs to the same class of substantial protocol work as Media over QUIC and other next-generation media protocols.
+
+This feature is not the current priority. SRS is presently refining its code structure, documentation, knowledge base, development methods, and verification workflows so that AI can reliably manage and maintain the project.
+
+After this AI-maintenance foundation is mature, the project can revisit Enhanced RTMP v2 and other major protocol features.
+
+**Conclusion**
+
+This is a valid future feature request, not a regression bug. Keep the issue open for future consideration. No immediate project change is required.
+
+**Current workarounds**
+
+Publish only one selected audio track, mix the tracks into one audio stream before publishing, or publish independent tracks under separate stream URLs.
+
+**Unknowns**
+
+- Implementation schedule
+- Whether support belongs in the C++ server or the next-generation Go server
+- Required capability negotiation and interoperability
+- Track-selection behavior for RTMP playback, forwarding, HLS, WebRTC, recording, and other outputs
+- Whether the first implementation should support audio only or complete Enhanced RTMP v2 audio and video multitrack functionality
+
+## #4671 — CURRENT
+
+- Issue: https://github.com/ossrs/srs/issues/4671
+- Truth Record: https://github.com/ossrs/srs/issues/4671#issuecomment-5151313612
+- Verified: 2026-08-01
+- Branch: `forge`
+- Commit: `65108f23edeeb9dd73ecbe5e804804ec50a3980e`
+- Version: SRS `8.0.4`; issue reported against SRS `7.0.145`
+- Environment: macOS 26.5.2, arm64; source, history, documentation, and PR review only
+- Related PR: https://github.com/ossrs/srs/pull/4644
+- Changes and tests: None; no runtime reproduction
+- Supersedes: None
+
+**Current state**
+
+SRS supports NACK when the publisher resends the original RTP packet with the same SSRC, payload type, and sequence number.
+
+SRS does not fully support RFC 4588 retransmission using a separate RTX SSRC:
+
+1. FID association fails because negotiation searches inactive tracks, leaving `rtx_ssrc_ = 0`.
+2. RTX packets are not unwrapped to the original SSRC, payload type, and sequence number.
+3. The WHIP SDP answer does not advertise RTX.
+
+Therefore, RTX RTP and Sender Reports can be rejected as unknown SSRCs.
+
+**Related PR**
+
+PR #4644 fixes FID association and RTX packet unwrapping, but it is still open and conflicting. It does not yet cover SDP answer negotiation, RTX RTCP handling, or end-to-end verification.
+
+**Conclusion**
+
+This is a valid missing feature with a confirmed initialization bug, not a regression in same-SSRC NACK retransmission. Handle this issue together with PR #4644; do not use the proposed early `is_active_ = true` workaround as the final fix.
+
+## #4663 — CURRENT
+
+- Issue: https://github.com/ossrs/srs/issues/4663
+- Truth Record: https://github.com/ossrs/srs/issues/4663#issuecomment-5151376223
+- Verified: 2026-08-01; closed as a usage error with no project change
+
+**Conclusion**
+
+The publisher used stream `livestream`, but WHEP requested `livestream.flv`. WHEP treats `.flv` as part of the stream name; it is only appropriate for HTTP-FLV URLs. Use `stream=livestream`. This is user URL misuse, not an SRS bug, and the existing documentation is sufficient.

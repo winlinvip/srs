@@ -107,6 +107,9 @@ public:
     // This is called automatically when the token is destroyed.
     // @param stream_url The stream URL to release the token for
     void release_token(const std::string &stream_url);
+
+    // Whether a publisher currently owns the token for the stream URL.
+    bool is_acquired(const std::string &stream_url);
 };
 
 // Global instance accessor

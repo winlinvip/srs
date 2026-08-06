@@ -317,3 +317,170 @@ The candidate change remains uncommitted and unreleased pending maintainer revie
 ### Unknowns
 
 The original deployments did not provide enough scheduling-level evidence to prove that every reported occurrence followed this exact race. However, the deterministic reproduction matches the reported publisher-active, player-`active=0`, and HLS-still-playing behavior.
+
+## #4647 — CURRENT
+
+- **Issue:** https://github.com/ossrs/srs/issues/4647
+- **Truth Record:** https://github.com/ossrs/srs/issues/4647#issuecomment-5173896319
+- **Verified:** 2026-08-03
+- **Branch:** `develop`
+- **Commit:** `b6b70164cd3bc665040d387105a77420ced22fd3`
+- **Version:** SRS `8.0.6`
+- **Environment:** macOS 26.5.2, arm64; Go 1.25.0
+- **Merged PR:** https://github.com/ossrs/srs/pull/4694
+- **Earlier PR:** https://github.com/ossrs/srs/pull/4650 — closed without merging
+- **Supersedes:** None; no previous authorized Truth Record
+
+### Reported problem
+
+The proxy used a fixed 300-second lifetime for origin registrations. Some deployments have shorter heartbeat and failover requirements and need to configure this lifetime.
+
+### Current state
+
+SRS Proxy now supports:
+
+```bash
+PROXY_ORIGIN_SERVER_TTL=45s
+```
+
+The value accepts positive Go duration syntax such as `45s` or `2m`. Invalid, zero, and negative values cause load-balancer initialization to fail. When unset, the default remains 300 seconds.
+
+One parser, `parseOriginServerTTL`, owns the default and validation. Both memory and Redis load balancers obtain the configured value during initialization.
+
+### Load-balancer behavior
+
+- **Memory load balancer:** Origins with heartbeats inside the configured lifetime are preferred. As before, if no origins are healthy, it falls back to all registered origins.
+- **Redis load balancer:** The configured lifetime is applied directly to each origin-registration Redis key. An expired registration is unavailable for new routing.
+- Stream mappings remain persistent and are not controlled by this setting.
+
+### Scope decision
+
+Only the origin-registration lifetime is configurable.
+
+The fixed 120-second HLS and WebRTC session-cache lifetimes remain unchanged. They represent internal transient session state, are unrelated to origin heartbeat/failover requirements, and currently have no demonstrated need for operator configuration.
+
+The earlier PR #4650 proposed configuring all three lifetimes. The merged implementation intentionally uses only `PROXY_ORIGIN_SERVER_TTL`.
+
+### Verification
+
+- Proxy unit tests with coverage passed: **65.5%**
+- Single-origin RTMP E2E passed
+- Multi-origin memory load-balancer E2E passed
+- Proxy-edge-origin E2E passed
+- Redis multi-proxy E2E passed
+- RTMP transmux E2E passed
+- SRT proxy E2E passed
+- WHIP proxy E2E passed
+- Final targeted `internal/lb` unit tests passed
+- `git diff --check` passed
+
+Unit coverage verifies the default, custom duration, invalid value, zero, and negative cases. It also verifies configured memory-LB health selection and the Redis registration-key TTL.
+
+### Conclusion
+
+Issue #4647 is resolved in SRS 8.0.6. Operators can configure the origin-registration lifetime consistently for memory and Redis load balancers while the default behavior remains backward compatible.
+
+### Unknowns
+
+No dedicated E2E test waits for a short configured lifetime to expire in real time. The TTL parsing and both load-balancer applications are covered by unit tests, while the complete default-configuration proxy workflows are covered by E2E tests.
+
+## #4646 — CURRENT
+
+- **Issue:** https://github.com/ossrs/srs/issues/4646
+- **Truth Record:** https://github.com/ossrs/srs/issues/4646#issuecomment-5180281566
+- **Verified:** 2026-08-04
+- **Branch:** `forge`
+- **Commit:** `ae221b5e2c13bbfb9f51ffe70ed57ae32da423cf`
+- **Version:** SRS `8.0.6`
+- **Environment:** macOS 26.5.2, arm64; Go 1.25.0
+- **Changes/tests:** None
+
+SRS Proxy supports registering origins but does not provide APIs for querying registered origins or stream-to-origin mappings.
+
+An origin query API would be valuable for debugging and verifying registrations. A stream mapping API would also be useful. However, these APIs—and other operational APIs—need careful, comprehensive design.
+
+This is a valuable feature request, but it is deferred while higher-priority bugs are addressed. Keep the issue open and revisit it when there is time to design the API properly.
+
+## #4645 — CURRENT
+
+- **Issue:** https://github.com/ossrs/srs/issues/4645
+- **Truth Record:** https://github.com/ossrs/srs/issues/4645#issuecomment-5180983219
+- **Verified:** 2026-08-04
+- **Branch:** `forge`
+- **Commit:** `df73ac14de5e26bec66fa4ded4b9a159dec4b9f1`, with a staged candidate fix
+- **Version:** SRS `8.0.6`
+- **Environment:** macOS 26.5.2, arm64; Node.js 22.22.0
+- **Supersedes:** None; no previous authorized Truth Record
+- **Release state:** Uncommitted and unreleased
+
+### Reported problem
+
+The browser HTTP-FLV/HLS player generated incorrect media URLs when accessed through HTTP or HTTPS reverse proxies.
+
+Without explicit query overrides, `build_default_flv_url()` always selected HTTP port 8080. HTTPS selected port 1935. This could bypass the public reverse proxy, produce mixed-content requests, or target a closed port.
+
+### Confirmed root cause
+
+The browser player constructed its default media endpoint from inconsistent inputs:
+
+- Hostname came from `window.location.hostname`.
+- Scheme defaulted to `http`.
+- Port defaulted to 8080 for HTTP and 1935 otherwise.
+- The public page protocol and port were ignored.
+
+`is_default_port()` itself was correct. Explicit HTTP port 80 and HTTPS port 443 were already omitted properly.
+
+`parse_query_string()` was also working as designed: optional `schema`, `server`, `port`, `vhost`, `app`, and `stream` properties appear only when supplied in the query string.
+
+### Candidate fix
+
+`trunk/research/players/js/srs.page.js` now:
+
+1. Uses the player page's protocol and public port by default.
+2. Omits standard HTTP port 80 and HTTPS port 443.
+3. Preserves direct SRS access on port 8080.
+4. Preserves explicit `schema`, `server`, `port`, and `vhost` overrides.
+5. Uses the standard port for an explicitly selected protocol when it differs from the page protocol.
+
+### Regression coverage
+
+Added:
+
+```text
+skills/srs-develop/scripts/browser-page-url-test.js
+```
+
+Run with:
+
+```bash
+node skills/srs-develop/scripts/browser-page-url-test.js
+```
+
+The testing command is recorded in:
+
+```text
+skills/internal-codemap-for-srs/references/testing.md
+```
+
+All six cases passed:
+
+- Direct SRS HTTP server on port 8080
+- Public HTTP origin on port 80
+- Public HTTPS origin on port 443
+- Custom reverse-proxy port
+- Explicit protocol change without a port
+- Explicit target overrides
+
+JavaScript syntax checks and `git diff --check` also passed.
+
+### Conclusion
+
+The default browser URL-generation bug is confirmed, and the staged candidate fixes it for player URLs without explicit target overrides.
+
+The fix is uncommitted and unreleased pending maintainer review.
+
+### Remaining unknowns
+
+- A real browser/reverse-proxy playback test has not been performed.
+- The issue's example page URL explicitly contains `port=8080`. Explicit overrides remain authoritative. If another page or console automatically inserts that parameter, its URL generator requires a separate fix.
+- The reporter did not provide the exact SRS version, browser, or complete reverse-proxy configuration.

@@ -2,7 +2,7 @@
 
 Record only verified maintenance status and the latest maintainer-approved Truth Record. Never copy unverified issue discussion.
 
-## #4690 — CURRENT
+## #4690 [SECURITY] Unauthenticated proxy registration endpoint
 
 - Issue: https://github.com/ossrs/srs/issues/4690
 - Truth Record: https://github.com/ossrs/srs/issues/4690#issuecomment-5125571911
@@ -40,7 +40,7 @@ The reported exposure is real, but authentication is not part of the current API
 
 SRS is currently prioritizing the project foundation required for reliable AI maintenance, so authentication will not be implemented in the short term. No immediate project change is planned; keep the issue open for future support.
 
-## #4686 — CURRENT
+## #4686 [FEATURE] Media over QUIC support
 
 - Issue: https://github.com/ossrs/srs/issues/4686
 - Truth Record: https://github.com/ossrs/srs/issues/4686#issuecomment-5004294564
@@ -66,7 +66,7 @@ No project change is required. Retain the issue and revisit it after the next-ge
 
 Schedule, MOQT versus moq-lite, origin/edge/relay roles, media formats, codecs, and browser interoperability.
 
-## #4684 — CURRENT
+## #4684 [BUG] Blocking DNS resolution stalls State Threads
 
 - Issue: https://github.com/ossrs/srs/issues/4684
 - Truth Record: https://github.com/ossrs/srs/issues/4684#issuecomment-5011850798
@@ -111,7 +111,7 @@ SRS does not currently provide an internal workaround for blocking DNS resolutio
 
 For HTTP hooks or callbacks that must ultimately reach a domain name, run a local sidecar or worker HTTP service, for example in Go. Configure SRS to send the callback to `127.0.0.1`; the sidecar performs DNS resolution and forwards the request to the remote domain. This keeps DNS resolution outside the SRS business thread.
 
-## #4681 — CURRENT
+## #4681 [FEATURE] Enhanced RTMP v2 multitrack audio
 
 - Issue: https://github.com/ossrs/srs/issues/4681
 - Truth Record: https://github.com/ossrs/srs/issues/4681#issuecomment-5084234253
@@ -164,7 +164,7 @@ Publish only one selected audio track, mix the tracks into one audio stream befo
 - Track-selection behavior for RTMP playback, forwarding, HLS, WebRTC, recording, and other outputs
 - Whether the first implementation should support audio only or complete Enhanced RTMP v2 audio and video multitrack functionality
 
-## #4671 — CURRENT
+## #4671 [BUG] Incomplete WebRTC RTX handling
 
 - Issue: https://github.com/ossrs/srs/issues/4671
 - Truth Record: https://github.com/ossrs/srs/issues/4671#issuecomment-5151313612
@@ -197,7 +197,7 @@ PR #4644 fixes FID association and RTX packet unwrapping, but it is still open a
 
 This is a valid missing feature with a confirmed initialization bug, not a regression in same-SSRC NACK retransmission. Handle this issue together with PR #4644; do not use the proposed early `is_active_ = true` workaround as the final fix.
 
-## #4663 — CURRENT
+## #4663 [USAGE] WHEP stream name incorrectly includes `.flv`
 
 - Issue: https://github.com/ossrs/srs/issues/4663
 - Truth Record: https://github.com/ossrs/srs/issues/4663#issuecomment-5151376223
@@ -207,7 +207,7 @@ This is a valid missing feature with a confirmed initialization bug, not a regre
 
 The publisher used stream `livestream`, but WHEP requested `livestream.flv`. WHEP treats `.flv` as part of the stream name; it is only appropriate for HTTP-FLV URLs. Use `stream=livestream`. This is user URL misuse, not an SRS bug, and the existing documentation is sufficient.
 
-## #4656 — CURRENT
+## #4656 [BUG] Live-source cleanup can separate publishers and players
 
 - Issue: https://github.com/ossrs/srs/issues/4656
 - Truth Record: https://github.com/ossrs/srs/issues/4656#issuecomment-5161223806
@@ -318,7 +318,7 @@ The candidate change remains uncommitted and unreleased pending maintainer revie
 
 The original deployments did not provide enough scheduling-level evidence to prove that every reported occurrence followed this exact race. However, the deterministic reproduction matches the reported publisher-active, player-`active=0`, and HLS-still-playing behavior.
 
-## #4647 — CURRENT
+## #4647 [FEATURE] Configurable proxy origin registration TTL
 
 - **Issue:** https://github.com/ossrs/srs/issues/4647
 - **Truth Record:** https://github.com/ossrs/srs/issues/4647#issuecomment-5173896319
@@ -384,7 +384,7 @@ Issue #4647 is resolved in SRS 8.0.6. Operators can configure the origin-registr
 
 No dedicated E2E test waits for a short configured lifetime to expire in real time. The TTL parsing and both load-balancer applications are covered by unit tests, while the complete default-configuration proxy workflows are covered by E2E tests.
 
-## #4646 — CURRENT
+## #4646 [FEATURE] Proxy origin and stream-mapping query APIs
 
 - **Issue:** https://github.com/ossrs/srs/issues/4646
 - **Truth Record:** https://github.com/ossrs/srs/issues/4646#issuecomment-5180281566
@@ -401,7 +401,7 @@ An origin query API would be valuable for debugging and verifying registrations.
 
 This is a valuable feature request, but it is deferred while higher-priority bugs are addressed. Keep the issue open and revisit it when there is time to design the API properly.
 
-## #4645 — CURRENT
+## #4645 [BUG] Browser player URLs fail behind reverse proxies
 
 - **Issue:** https://github.com/ossrs/srs/issues/4645
 - **Truth Record:** https://github.com/ossrs/srs/issues/4645#issuecomment-5180983219
@@ -485,7 +485,7 @@ The fix is uncommitted and unreleased pending maintainer review.
 - The issue's example page URL explicitly contains `port=8080`. Explicit overrides remain authoritative. If another page or console automatically inserts that parameter, its URL generator requires a separate fix.
 - The reporter did not provide the exact SRS version, browser, or complete reverse-proxy configuration.
 
-## #4642 — CURRENT
+## #4642 [BUG] Duplicate WebRTC TCP owner can leave a stale session pointer
 
 - **Issue:** https://github.com/ossrs/srs/issues/4642
 - **Truth Record:** https://github.com/ossrs/srs/issues/4642#issuecomment-5207071995
@@ -613,7 +613,7 @@ This issue is **partially confirmed**.
 - The reporter's exact Docker image digest.
 - Whether a production ASAN reproducer would show the same sequence.
 
-## #4641 — CURRENT
+## #4641 [USAGE] IPv6 RTMP listener requires explicit configuration
 
 - **Issue:** https://github.com/ossrs/srs/issues/4641
 - **Truth Record:** https://github.com/ossrs/srs/issues/4641#issuecomment-5203763730
@@ -635,7 +635,7 @@ The report provides no SRS version, configuration, logs, or network details, so 
 
 No project change is required. The reporter should use the IPv6 listener configuration and provide complete logs and configuration if the problem remains.
 
-## #4634 — CURRENT
+## #4634 [USAGE] Classic edge does not support WebRTC
 
 - **Issue:** https://github.com/ossrs/srs/issues/4634
 - **Truth Record:** https://github.com/ossrs/srs/issues/4634#issuecomment-5216829576
@@ -648,7 +648,7 @@ No project change is required. The reporter should use the IPv6 listener configu
 
 Edge RTC disable is expected and already documented: classic Edge supports RTMP/HTTP-FLV, not WebRTC. Users should check Edge docs or ask SRS AI before opening usage questions already covered by docs.
 
-## #4633 — CURRENT
+## #4633 [USAGE] Configure HTTP-FLV header track flags
 
 - **Issue:** https://github.com/ossrs/srs/issues/4633
 - **Truth Record:** https://github.com/ossrs/srs/issues/4633#issuecomment-5216986292
@@ -661,7 +661,7 @@ Edge RTC disable is expected and already documented: classic Edge supports RTMP/
 
 The reported `0x01` is the HTTP-FLV header flag for video-only, not an RTMP header. SRS already supports the requested behavior: for RTC-to-HTTP-FLV playback that must advertise both tracks from the first FLV header, configure `http_remux { has_audio on; has_video on; guess_has_av off; }`; users should read the HTTP-FLV docs or ask SRS AI before opening documented-configuration issues.
 
-## #4632 — CURRENT
+## #4632 [USAGE] Origin RTMP handshake timeout keeps the edge publisher busy
 
 - **Issue:** https://github.com/ossrs/srs/issues/4632
 - **Truth Record:** https://github.com/ossrs/srs/issues/4632#issuecomment-5217342826
@@ -674,7 +674,7 @@ The reported `0x01` is the HTTP-FLV header flag for video-only, not an RTMP head
 
 The edge established TCP, but the origin did not complete the RTMP handshake within 30 seconds. During that wait, the current publisher owns the edge stream, so another publisher for the same stream is correctly rejected as busy; the state resets after timeout. No SRS defect was confirmed.
 
-## #4631 — CURRENT
+## #4631 [BUG] Forward backend failure leaves the live source busy
 
 - **Issue:** https://github.com/ossrs/srs/issues/4631
 - **Truth Record:** https://github.com/ossrs/srs/issues/4631#issuecomment-5218171343
@@ -701,7 +701,7 @@ The regression test performs two consecutive backend failures and verifies that 
 
 For released versions, return HTTP 200 with `code: 0` and empty `urls` to accept publishing without forwarding. Restart SRS to clear an already stuck stream.
 
-## #4639 — CURRENT
+## #4639 [BUG] Missing CRLF after SDP SSRC group
 
 - **Issue:** https://github.com/ossrs/srs/issues/4639
 - **Truth Record:** Pending maintainer publication
@@ -746,3 +746,152 @@ Before the production fix, both regression tests failed. After the fix:
 ### Unknowns
 
 Current `SrsMediaDesc::encode()` does not appear to serialize `ssrc_groups_` in the normal media-description path, so the exact runtime path from the report depends on the downlink SSRC-group usage path.
+
+## #4629 [USAGE] GB28181 uses one shared media listener
+
+- **Issue:** https://github.com/ossrs/srs/issues/4629
+- **Truth Record:** https://github.com/ossrs/srs/issues/4629#issuecomment-5223834511
+- **Verified:** 2026-08-07
+- **Branch:** `forge`
+- **Commit:** `ce50bbe975912458ffb85ff82f8c6795c221c8bb`
+- **Version:** SRS `8.0.9`
+- **Changes:** None
+- **Closure:** Expected behavior; issue closed.
+
+SRS supports one GB28181 media listener by design; all cameras should use that configured port. The old `sip.listen` was a separate embedded SIP service, not another media listener, and current versions require an external SIP server. Users should read the GB28181 documentation or ask SRS AI before opening usage questions about documented behavior.
+
+## #4626 [UNCONFIRMED] WHEP playback has no media on an old SRS version
+
+- **Issue:** https://github.com/ossrs/srs/issues/4626
+- **Truth Record:** https://github.com/ossrs/srs/issues/4626#issuecomment-5229451675
+- **Verified:** 2026-08-07
+- **Reported version:** SRS `7.0.89`
+- **Current checked version:** SRS `8.0.10`
+- **Changes:** None
+
+The original WHEP URL used `stream=test.flv`, but the published stream was `test`. The correct WHEP parameter is `stream=test`.
+
+The reporter also tried the correct stream name but still received no media. Logs show that WHEP signaling, ICE, and DTLS succeeded.
+
+SRS `7.0.89` had a known source-cleanup problem that could cause a publisher and player to use different source objects, resulting in playback without media. This was fixed in SRS `7.0.127` and later strengthened in SRS `8.0.5`.
+
+The available evidence is consistent with that old defect, but does not prove it was the exact cause.
+
+**Conclusion:** No new bug is confirmed in the current version. Please upgrade to a current SRS release, use `stream=test`, and report back with complete logs and publishing details if the problem remains.
+
+## #4628 [USAGE] Kick HLS viewers through the client API
+
+- **Issue:** https://github.com/ossrs/srs/issues/4628
+- **Truth Record:** https://github.com/ossrs/srs/issues/4628#issuecomment-5225936717
+- **Verified:** 2026-08-08
+- **Closure:** Expected behavior; issue closed with no project changes.
+
+SRS already supports kicking HLS viewers: query `hls-play` clients through `/api/v1/clients/` and delete the client ID. An HLS viewer correctly reports `publish: false`; users should read the HLS and HTTP API documentation or ask SRS AI before opening documented-usage issues.
+
+## #4627 [USAGE] RTMP does not support PCMA audio
+
+- **Issue:** https://github.com/ossrs/srs/issues/4627
+- **Truth Record:** https://github.com/ossrs/srs/issues/4627#issuecomment-5229356765
+- **Verified:** 2026-08-08
+- **Closure:** Unsupported usage; issue closed with no project changes.
+
+SRS does not support PCMA/G.711 A-law in RTMP. Use AAC or MP3, transcode before publishing, or use G.711 only with the documented WebRTC WHIP/WHEP workflow.
+
+## #4625 [BUG] MP4 DVR timeline inflated by repeated DTS samples
+
+- **Issue:** https://github.com/ossrs/srs/issues/4625
+- **Truth Record:** https://github.com/ossrs/srs/issues/4625#issuecomment-5233336576
+- **Reported version:** SRS 6.0.184 (`63edbef90864d425a6303c64bae9600631a4c0f9`)
+- **Verified branch/commit:** `forge` at `2f1f67a8125ae4051ed46e74143b15acc7a5ce54`
+- **Current SRS version:** 8.0.10
+- **Environment:** macOS 26.5.2 arm64; FFmpeg n8.1.1; ASAN C++ unit-test build
+- **Supersedes:** None; this is the first Truth Record for this issue.
+
+### Confirmed problem
+
+The reporter's MP4 is internally inconsistent:
+
+- MP4 header duration (`mvhd`/`tkhd`/`mdhd`/`elst`): **30.259 seconds**.
+- Duration obtained by accumulating the video `stts` sample table: **140.099 seconds**.
+- Video samples: **3,857**.
+- Samples containing pictures: **964** (`31` IDR and `933` non-IDR).
+- Auxiliary/non-picture samples: **2,893** (`1,928` SEI, `964` AUD, and `1` type-13 NAL).
+
+This explains the observed behavior: VLC lists the file as approximately 30 seconds from the MP4 header, but playback follows the much longer sample timeline and reaches approximately 140 seconds. SEI/AUD-only samples do not decode a new picture, so the previous picture remains visible while their incorrect durations consume playback time.
+
+### Root cause
+
+SRS DVR records every RTMP video message as an MP4 sample. Consecutive messages from this stream can share the same DTS, for example a picture followed by separate SEI/AUD messages at the same timestamp. Their legitimate MP4 timing delta is therefore zero.
+
+`SrsMp4SampleManager::write_track` used `sample_delta_ == 0` to determine whether the current `stts` entry was uninitialized. A real zero-duration entry was consequently mistaken for an empty entry. When the next positive DTS delta arrived, SRS replaced the zero delta instead of starting a new `stts` entry, assigning elapsed time to the accumulated same-DTS samples and inflating the playback timeline.
+
+### Concrete timing example
+
+This simplified example shows the failure mode. It illustrates the confirmed same-DTS condition; it is not a claim that the exact original RTMP sequence can be reconstructed from the MP4.
+
+There are only two decoded video pictures:
+
+| RTMP video message | H.264 content | DTS | Decoded picture? |
+|---|---|---:|---|
+| 1 | IDR picture | 0 ms | Yes |
+| 2 | SEI metadata | 0 ms | No |
+| 3 | AUD delimiter | 0 ms | No |
+| 4 | P-picture | 30 ms | Yes |
+
+SEI and AUD are H.264 auxiliary NAL units, not additional video frames. The IDR, SEI, and AUD messages belong to the same timestamp group, so the clock must not advance between them. The intended timeline is therefore:
+
+```text
+0 ms                              30 ms
+|                                   |
+IDR + SEI + AUD                     P-picture
+```
+
+The correct timing deltas are effectively:
+
+```text
+0 ms, 0 ms, 0 ms, 30 ms
+```
+
+Only one 30 ms interval passes between the two real pictures. However, the old `stts` builder treated the legitimate zero-delta entry as uninitialized. When the 30 ms delta arrived, it replaced the accumulated zero delta and effectively assigned 30 ms to each message:
+
+```text
+30 ms, 30 ms, 30 ms, 30 ms
+```
+
+That group consequently consumed about 120 ms instead of 30 ms. Repeating this pattern throughout the recording inflated the MP4 sample timeline even though the source DTS range, and therefore the MP4 header duration, remained approximately correct.
+
+The original RTMP message timestamps are not independently preserved in the resulting MP4, so their exact original sequence cannot be reconstructed solely from this attachment. The malformed `stts` table and NAL distribution directly prove the file inconsistency, and a controlled RTMP reproduction confirms the same-DTS failure mode.
+
+### Fix
+
+Commit `2f1f67a8125ae4051ed46e74143b15acc7a5ce54` changes the `stts` initialization test to use `sample_count_ == 0`. This preserves zero as a valid DTS delta. It also adds regression test `ReproduceIssue4625.PreserveZeroDtsInMp4Stts`.
+
+For the regression sequence `9, 9, 9, 9, 39` ms:
+
+- Correct `stts`: `(1,9), (3,0), (1,30)`; total duration `39` ms.
+- Before the fix: `(1,9), (4,30)`; total duration `129` ms.
+- After the fix: the correct entries and duration are preserved.
+
+### Runtime reproduction
+
+A deterministic H.264/FLV sample was generated with four RTMP video packets per DTS and published through RTMP into SRS DVR MP4:
+
+- Before the fix: MP4 header **28.920 seconds**, `stts` timeline **115.710 seconds**, 3,858 samples.
+- After the fix: MP4 header **28.920 seconds**, `stts` timeline **28.920 seconds**, 3,858 samples.
+- Post-fix entries preserve repeated zero deltas, such as `(4,0), (1,30), (3,0), (1,30)`.
+
+### Verification
+
+- Targeted ASAN unit test: passed.
+- Full ASAN C++ unit suite: **2,191 tests passed** from 275 suites.
+- Blackbox DVR tests passed:
+  - `TestFast_RtmpPublish_DvrFlv_Basic`
+  - `TestFast_RtmpPublish_DvrMp4_Basic`
+- Controlled FFmpeg → RTMP → SRS DVR MP4 integration: passed; header and `stts` durations match after the fix.
+- `git diff --check`: passed.
+
+### Conclusion
+
+The report is a confirmed SRS MP4 DVR timing bug caused by treating a legitimate zero DTS delta as an uninitialized `stts` entry. It is fixed and regression-tested in commit `2f1f67a8125ae4051ed46e74143b15acc7a5ce54` on the local `forge` branch.
+
+The fix has not yet been merged or released. Confirmation against a fresh capture of the reporter's original RTMP input and confirmation in a released SRS version remain pending.

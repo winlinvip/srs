@@ -779,6 +779,15 @@ The available evidence is consistent with that old defect, but does not prove it
 
 **Conclusion:** No new bug is confirmed in the current version. Please upgrade to a current SRS release, use `stream=test`, and report back with complete logs and publishing details if the problem remains.
 
+## #4624 [FIXED] Live source removed during publisher activation
+
+- **Issue:** https://github.com/ossrs/srs/issues/4624
+- **Truth Record:** https://github.com/ossrs/srs/issues/4624#issuecomment-5234396855
+- **Verified:** 2026-08-09
+- **Changes:** None
+
+SRS `v6.0-r0` had a live-source cleanup race during publisher activation. It is fixed in SRS `7.0.151+` and `8.0.5+`; affected users should upgrade to a current SRS release.
+
 ## #4628 [USAGE] Kick HLS viewers through the client API
 
 - **Issue:** https://github.com/ossrs/srs/issues/4628
@@ -895,3 +904,12 @@ A deterministic H.264/FLV sample was generated with four RTMP video packets per 
 The report is a confirmed SRS MP4 DVR timing bug caused by treating a legitimate zero DTS delta as an uninitialized `stts` entry. It is fixed and regression-tested in commit `2f1f67a8125ae4051ed46e74143b15acc7a5ce54` on the local `forge` branch.
 
 The fix has not yet been merged or released. Confirmation against a fresh capture of the reporter's original RTMP input and confirmation in a released SRS version remain pending.
+
+## #4623 [USAGE] Private origin address registered across unrelated networks
+
+- **Issue:** https://github.com/ossrs/srs/issues/4623
+- **Truth Record:** https://github.com/ossrs/srs/issues/4623#issuecomment-5234472135
+- **Verified:** 2026-08-09
+- **Closure:** Networking/configuration usage error; issue closed with no project changes.
+
+The origin registered a private IP that the remote proxy could not reach. Set `SRS_DEVICE_IP` to an origin IP reachable by the proxy, and read the documentation or ask SRS AI for deployment guidance.

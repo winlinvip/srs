@@ -2,6 +2,32 @@
 
 Record only verified maintenance status and the latest maintainer-approved Truth Record. Never copy unverified issue discussion.
 
+## #4697 [ENHANCEMENT] RTC audio pause/resume compatibility
+
+- Issue: https://github.com/ossrs/srs/issues/4697
+- Truth Record: https://github.com/ossrs/srs/issues/4697#issuecomment-5242316171
+- Verified: 2026-08-10
+- Branch: `develop`
+- Commit: `8cba52441cc144d9b4f7e7963c7924e6e0849a10`
+- Version: SRS `8.0.10`
+- Environment: macOS 26.5.2, arm64
+- Changes: None
+- Closure: Declined compatibility enhancement; closed as not planned
+
+**Background**
+
+Normal WebRTC audio muting uses continuous encoded silence or negotiated Opus DTX while maintaining a correct RTP timeline. The reporter corrected the original DTX explanation: DTX was not negotiated, and the affected `flutter_webrtc` desktop stack uses a `webrtc-sdk` fork that sends no audio RTP packets while `track.enabled=false`, then resumes the lane later.
+
+**Impact**
+
+In this workflow, an audio pause of approximately N seconds can leave resumed audio approximately N seconds behind continuing video. This can produce one HLS segment approximately as long as the pause and temporarily increase `EXT-X-TARGETDURATION`.
+
+**Why SRS does not support it**
+
+Server-side compatibility logic would need to distinguish an intentional mute from DTX, packet loss, a network interruption, or publisher failure, then safely synthesize or rewrite timestamps. This would add substantial implementation and regression-test complexity across RTC synchronization, audio transcoding, audio-only and mixed streams, RTMP, and HLS.
+
+Use a publisher that sends silent audio, correctly negotiates DTX, or preserves the RTP timestamp and RTCP sender-report timeline while its audio lane is stopped. SRS will not add complex timestamp heuristics for this client-specific behavior.
+
 ## #4690 [SECURITY] Unauthenticated proxy registration endpoint
 
 - Issue: https://github.com/ossrs/srs/issues/4690
@@ -914,6 +940,64 @@ The fix has not yet been merged or released. Confirmation against a fresh captur
 
 The origin registered a private IP that the remote proxy could not reach. Set `SRS_DEVICE_IP` to an origin IP reachable by the proxy, and read the documentation or ask SRS AI for deployment guidance.
 
+## #4620 [FEATURE] Generated names for SRT publishers without stream IDs
+
+- **Issue:** https://github.com/ossrs/srs/issues/4620
+- **Truth Record:** https://github.com/ossrs/srs/issues/4620#issuecomment-5241943782
+- **Verified:** 2026-08-10
+- **Closure:** Proposal rejected; issue closed as not planned with no project changes.
+
+SRS intentionally uses the configured `default_streamid` when a publisher supplies no stream ID. A random per-connection name would be unknown to consumers and unstable across reconnections. Publishers must use stable, distinct stream IDs.
+
+## #4617 [USAGE] Enable RTC-to-RTMP conversion
+
+- **Issue:** https://github.com/ossrs/srs/issues/4617
+- **Truth Record:** https://github.com/ossrs/srs/issues/4617#issuecomment-5242032033
+- **Verified:** 2026-08-10
+- **Closure:** Configuration usage issue; closed with no project changes.
+
+RTC-to-RTMP conversion is disabled by default. Use `conf/rtc2rtmp.conf` or enable `rtc_to_rtmp`, and use the same vhost, app, and stream for WebRTC publishing and RTMP playback.
+
+## #4616 [USAGE] Incorrect GB28181 Docker configuration
+
+- **Issue:** https://github.com/ossrs/srs/issues/4616
+- **Truth Record:** https://github.com/ossrs/srs/issues/4616#issuecomment-5247039175
+- **Verified:** 2026-08-10
+- **Closure:** Configuration usage error; closed with no project changes.
+
+The configuration exposed GB28181 media port 9000 as UDP instead of TCP, used an unreachable hard-coded candidate, and omitted the final vhost brace; current SRS also requires an external SIP server.
+
+## #4609 [BUG] Graceful disconnects inflated client error metrics
+
+- Issue: https://github.com/ossrs/srs/issues/4609
+- Truth Record: https://github.com/ossrs/srs/issues/4609#issuecomment-5247423361
+- Verified: 2026-08-10
+- Branch: `forge`, synchronized with `winlin/develop`
+- Commit: `aff1e7d2b4457fc13a61e65e7b1dbec3c4f95afb`
+- Version: SRS `8.0.14`; reproduced on SRS `6.0.185`
+- Status: Fixed and tested on `winlin/develop`; not yet merged into `ossrs/srs:develop` or released
+
+**Confirmed bug**
+
+`SrsStatistic::on_disconnect()` counted every nonzero disconnect code as an error before the connection lifecycle classified graceful termination. This incorrectly increased `srs_clients_errs_total` for `ERROR_SOCKET_READ`, `ERROR_SOCKET_READ_FULLY`, `ERROR_SOCKET_WRITE`, `ERROR_SRT_IO`, and `ERROR_HTTP_STREAM_EOF`.
+
+The fix excludes existing client- and server-graceful-close classifications while preserving genuine error counting. The regression test covers all five codes, and the final ASAN run passed 2249 tests from 291 suites. Runtime verification confirmed that normal RTMP player exits no longer increase `srs_clients_errs_total`.
+
+**Unconfirmed claim**
+
+The reported historical-maximum behavior of `srs_clients` was not reproduced; controlled tests returned it to the active-client count. Falling `srs_clients_total` values in the issue graph cannot originate from one uninterrupted verified SRS process and may involve restarts, multiple targets, or time-series configuration.
+
+**Next action**
+
+Merge the fix into `ossrs/srs:develop` and release it. If the `srs_clients` anomaly persists, collect the exact image digest, raw `/metrics`, PID/build samples, and Prometheus target and relabeling configuration.
+
+## #4611 [BUG] HTTP-FLV on-demand playback regression
+
+- **Issue:** https://github.com/ossrs/srs/issues/4611
+- **Truth Record:** https://github.com/ossrs/srs/issues/4611#issuecomment-5247064760
+- **Verified:** 2026-08-10
+- **Closure:** Fixed in SRS 7.0.150 and 8.0.2 by PR #4678; issue closed with no additional project changes.
+
 ## #4622 [BUG] RTMP callback parameters duplicated when tcUrl is parsed twice
 
 - **Issue:** https://github.com/ossrs/srs/issues/4622
@@ -952,3 +1036,32 @@ Issue #4622 is a confirmed SRS bug.
 Commit `778623fa6459a7080847a5ddee83f1f43bd1eb48` makes URL reconstruction idempotent, avoids appending parameters already contained in `tcUrl`, preserves legacy RTMP URL compatibility, and adds regression coverage.
 
 All 2,247 ASAN unit tests passed. Merge, release, whole-server callback verification, and reporter confirmation remain pending.
+
+## #4621 [BUG] HTTP-FLV discarded the forwarded client IP
+
+- **Issue:** https://github.com/ossrs/srs/issues/4621
+- **Truth Record:** https://github.com/ossrs/srs/issues/4621#issuecomment-5241813445
+- **Verified:** 2026-08-10
+- **Branch/commit:** `develop` at `34f635a1af69aabaaa232598b8ad2b04da3dff63`
+- **Version:** SRS `8.0.14`
+- **Merged PR:** https://github.com/ossrs/srs/pull/4711
+- **Supersedes:** None; first authorized Truth Record
+
+### Confirmed problem
+
+Nginx Proxy Manager sent `X-Forwarded-For` and `X-Real-IP`, but SRS displayed the proxy address for HTTP-FLV clients. `real_ip on;` is not an SRS configuration directive.
+
+SRS parsed the forwarded address correctly, but `SrsLiveStream::serve_http_impl()` overwrote it with the proxy's TCP peer address before recording client statistics and applying playback security.
+
+### Fix and verification
+
+HTTP-FLV now uses the first `X-Forwarded-For` address, then `X-Real-IP`, and finally the TCP peer address as fallback. The same address is used for client statistics and playback security.
+
+- Regression test `ReproduceIssue4621.PreserveForwardedIpForHttpFlvClient`: passed.
+- Existing proxy-header parser test: passed.
+- Full ASAN C++ unit suite: **2,248 tests passed**.
+- Runtime reproduction confirmed `/api/v1/clients/` reports the forwarded address.
+
+### Conclusion
+
+The confirmed bug is fixed and merged in SRS 8.0.14. Only trusted reverse proxies should be allowed to supply forwarding headers; a configurable trusted-proxy allowlist remains outside this fix.

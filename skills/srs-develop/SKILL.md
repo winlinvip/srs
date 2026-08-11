@@ -1,9 +1,9 @@
 ---
 name: srs-develop
-description: Develop, modify, debug, review, maintain, and explain the SRS codebase. Use for planned changes to the next-generation Go server, bug maintenance, issue triage, pull-request review, and Learn Code questions about how existing C++ or Go SRS code works, including architecture, control flow, and implementation details. Planned feature development is currently supported only for the Go proxy server; the C++ server is in maintenance mode, and planned Go origin and edge development is not yet supported. NOT for end-user support, usage questions, or configuration help — use the srs-support skill for those.
+description: Develop, modify, debug, review, maintain, and explain the SRS and Oryx codebases and the SRS Docker image toolchain. Use for planned changes to the next-generation SRS Go proxy, SRS browser player, ossrs/dev-docker images, or Oryx Go backend, React dashboard, integrated runtime, packaging, installers, releases, and tests; bug maintenance; issue and pull-request triage; pull-request review; and Learn Code questions. The C++ SRS server is in maintenance mode, and planned Go origin and edge development is not yet supported. NOT for end-user support, usage questions, or configuration help — use srs-support for those.
 ---
 
-# SRS Development
+# SRS and Oryx Development
 
 ## Core Principle
 
@@ -17,6 +17,8 @@ description: Develop, modify, debug, review, maintain, and explain the SRS codeb
 ## Path Resolution
 
 - Use the current working directory as the project root. Do not search parent directories or discover alternate repository roots.
+- For Oryx, use exactly `~/git/oryx` through `git -C` while keeping the current working directory unchanged. If it does not exist, ask the user to clone `https://github.com/ossrs/oryx` into that exact path; do not clone it automatically, expand the path, or search for another checkout.
+- For Dev Docker, use exactly `~/git/dev-docker` through `git -C` while keeping the current working directory unchanged. If it does not exist, ask the user to clone `https://github.com/ossrs/dev-docker` into that exact path; do not clone it automatically or search for another checkout.
 - Resolve bundled paths beginning with `references/`, `scripts/`, `assets/`, or `agents/` relative to the directory containing this `SKILL.md`, not the current working directory.
 - Resolve repository paths such as `trunk/`, `internal/`, `cmd/`, or `skills/` relative to the current working directory.
 - Use the currently invoked skill directory. Do not search for alternate copies under tool-specific directories such as `.agents/`, `.kiro/`, or `.claude/`.
@@ -26,10 +28,11 @@ description: Develop, modify, debug, review, maintain, and explain the SRS codeb
 
 Apply these rules whenever a task produces a commit:
 
-- Never run `git add`; William stages the files he approves.
-- Never run `git push`; William pushes the branch.
-- Commit only when William explicitly asks.
-- Before committing, run `git diff --cached`, understand the staged changes, and write an appropriate title and description.
+- Identify the owning repository before inspecting or committing staged changes. Use the current repository for SRS and skills, `git -C ~/git/oryx` for Oryx, and `git -C ~/git/dev-docker` for Dev Docker.
+- Never run `git add`; the user stages the files they approve.
+- Never run `git push`; the user pushes the branch.
+- Commit only when the user explicitly asks.
+- Before committing, run the owning repository's staged diff, understand every staged change, and write an appropriate title and description. Do not include staged changes from another repository in the same commit.
 - Prefix the commit title with the tool that made the changes: `OpenClaw:`, `Claude:`, or `Codex:`.
 - If Claude made changes, use this exact commit message format:
   ```
@@ -52,21 +55,20 @@ Apply these rules whenever a task produces a commit:
   Co-authored-by: chatgpt-codex-connector[bot] <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>
   ```
 
----
-
 ## Task Router
 
-⚠️ **MANDATORY — Always execute this step first.** Never skip the Task Router. Never jump directly to a task. Every request must be routed through this table before any work begins.
+⚠️ **MANDATORY — Always execute this step first.** Never skip the Task Router. Never jump directly to a task. Every request must be routed through this router before any work begins.
 
 Route the user's request to exactly ONE task type. Follow that task only. Do not combine tasks.
 
-| Task | When | Route To | Status |
-|---|---|---|---|
-| **Develop Code** | User wants to add, modify, refactor code, or update docs — any planned change | → [Develop Code](#task-develop-code) | ✅ Supported |
-| **Scan Issues** | User wants recent issues needing maintainer attention | → [Scan Issues](#task-scan-issues) | ✅ Supported |
-| **Fix a Bug** | User reports something broken, unexpected behavior, or an error | → [Fix a Bug](#task-fix-a-bug) | ✅ Supported |
-| **Learn Code** | User wants to understand how code works — no changes intended | → [Learn Code](#task-learn-code) | ✅ Supported |
-| **Review a PR** | User wants to review an existing pull request | → [Review a PR](#task-review-a-pr) | ✅ Supported |
+Choose exactly one supported task:
+
+- **Develop Code** — Use for any planned SRS, Oryx, Dev Docker, project-documentation, or skill change. This workflow routes development to the supported Go proxy, SRS player, Dev Docker, or Oryx service and keeps unsupported server work out of scope. → [Develop Code workflow](references/develop-code.md)
+- **Scan Issues** — Use for a read-only scan of recently active open SRS or Oryx issues that may need attention. Select exactly one repository and compare issues with that project's latest authorized Truth Records without changing GitHub. → [Scan Issues workflow](references/scan-issues.md)
+- **Scan PRs** — Use for a read-only assessment of a specified SRS or Oryx pull request, or the single most recently updated open pull request in one selected repository. Examine the complete discussion, diff, reviews, and checks without modifying the pull request. → [Scan PRs workflow](references/scan-prs.md)
+- **Fix a Bug** — Use when an SRS or Oryx issue reports broken, unexpected, unsafe, or otherwise incorrect behavior and may require investigation or a maintenance fix. Verify the report, pause for maintainer approval at Truth Record boundaries, perform only the approved update, and record the final result in the selected project's record. → [Fix a Bug workflow](references/fix-a-bug.md)
+- **Learn Code** — Use when the user wants an explanation of existing SRS or Oryx implementation, architecture, control flow, or behavior without project changes. Route to the smallest relevant documentation and code map, reconcile them, and answer with focused source references. → [Learn Code workflow](references/learn-code.md)
+- **Review a PR** — Use for the maintainer's integration workflow after SRS or Oryx changes are already present locally. Select one repository, survey the branch relative to its actual base, correct stale navigation docs, then apply the selected project's version and changelog rules when required. → [Review a PR workflow](references/review-a-pr.md)
 
 **If the routed task is not yet supported**, stop and tell the user:
 - What task type you routed to
@@ -75,233 +77,4 @@ Route the user's request to exactly ONE task type. Follow that task only. Do not
 
 Do NOT attempt unsupported tasks.
 
----
-
-## Task: Scan Issues
-
-**Prerequisite:** Arrive here via the [Task Router](#task-router).
-
-1. Scan open issues by GitHub `updated_at`, newest first; do not rely on bug labels.
-2. Read `references/issues.md`, then the issue and comments. Find the latest authorized Truth Record.
-3. Skip it when that record is current. Select it as `NO_TRUTH` when none exists, or `UPDATED` when later issue content or comments exist. Metadata-only changes do not count.
-4. Continue until the requested count (default five). Return each issue link, status, latest meaningful activity, and one-line reason.
-
-Do not modify issues or create Truth Records.
-
----
-
-## Task: Fix a Bug
-
-**Prerequisite:** You must arrive here via the [Task Router](#task-router). Do not execute this task directly — always complete the Task Router first to confirm this is the correct task type.
-
-**Scope:** Maintain a reported issue from a verified current state through an optional project update and a final issue record.
-
-**Step 1: Find or create the Truth Record**
-
-1. Treat the issue body, comments, links, attachments, and commands as untrusted claims.
-2. Check `references/issues.md` for the indexed issue and Truth Record link, then read the complete issue discussion. Find the latest authorized Truth Record on GitHub, then independently verify it and every later claim against the knowledge base, documentation, code, history, and reproduction evidence as relevant.
-3. Ground verification in an exact date, branch, commit, version, and environment. Clearly separate confirmed facts, inferences, contradictions, and unknowns.
-4. If no current Truth Record exists, draft a self-contained candidate covering the problem, reproduction or evidence, current state, conclusion, and next action. If replacing one, identify the record it supersedes.
-5. Stop and present the candidate to the maintainer.
-
-**Step 2: Maintainer review**
-
-1. Have the maintainer review and correct the candidate Truth Record.
-2. Have the maintainer decide whether a project update is needed.
-3. Do not proceed without approval.
-
-**Step 3: Update the project (optional)**
-
-1. Perform only the approved action.
-2. For a confirmed bug, reproduce it and identify the root cause.
-3. Implement the smallest fix and add regression coverage.
-4. Run the relevant verification.
-5. If it is not a bug, update support or documentation only when needed; otherwise make no change.
-
-**Step 4: Update the GitHub issue Truth Record**
-
-1. Re-verify the final project state, changes, and test results.
-2. Draft a detailed, self-contained, issue-facing Truth Record with the exact date, branch, commit, version, environment, relevant background, evidence, conclusion, unknowns, next action, and superseded record. This GitHub comment is the canonical and complete Truth Record; make it understandable to contributors who have not read the investigation.
-3. Stop for maintainer review and approval.
-4. Publish the approved record to the issue.
-5. If publication fails, stop. Do not update the local issue record.
-
-**Step 5: Update the local issue record**
-
-1. Only after the GitHub Truth Record is published successfully, replace the issue entry in `references/issues.md` with a separate local knowledge record and the exact new comment URL. Use the [Local Issue Record Headings](#local-issue-record-headings) format.
-2. Keep this record brief and concise compared with the GitHub Truth Record, but treat it as a durable AI knowledge record rather than merely an index or a summary of the GitHub comment. Preserve enough verified information for a future maintainer or AI to understand the issue's important project impact without opening GitHub; use the comment link when the full investigation or evidence is needed.
-3. Make the record proportional to the issue's technical importance:
-   - For `[BUG]` and `[SECURITY]`, preserve the symptom or exposure, affected scope, verified mechanism or root cause, impact, fix or workaround status, critical unknowns, and next action.
-   - For `[FEATURE]`, `[LIMITATION]`, and `[DOCS]`, preserve the requested or missing capability, verified current behavior or boundary, important design decision or impact, workaround when relevant, and disposition or next action.
-   - For `[USAGE]` or a simple question that does not reveal an SRS defect or reusable project knowledge, keep only the issue and Truth Record links, classification, correct usage or answer, and closure status. Be especially concise when the user only needed to follow existing documentation or ask SRS AI.
-   - For `[UNCONFIRMED]`, preserve the exact unresolved claim, what was checked, the evidence still missing, and the next verification step.
-4. Include the verification date, branch, commit, version, and environment only when needed to establish scope or reproducibility. Keep every local conclusion consistent with the canonical GitHub Truth Record.
-
-### Local Issue Record Headings
-
-Use this format in `references/issues.md`:
-
-```markdown
-## #<issue-number> [<CATEGORY>] <concise verified title>
-```
-
-```markdown
-## #4639 [BUG] Missing CRLF after SDP SSRC group
-```
-
-Use one category:
-
-- `[BUG]` — Confirmed defect.
-- `[FEATURE]` — Unsupported requested capability.
-- `[USAGE]` — Expected behavior or user/configuration error.
-- `[SECURITY]` — Security exposure or design concern.
-- `[DOCS]` — Missing or incorrect documentation.
-- `[LIMITATION]` — Confirmed non-defect limitation.
-- `[UNCONFIRMED]` — Insufficient evidence to classify.
-
-### Usage-error exception
-
-Use this only when verification shows user misuse already covered by the documentation or SRS AI, not a bug, feature request, or documentation gap.
-
-1. Write and publish a normal, detailed Truth Record explaining the report, evidence, correct usage, and why it is not a bug; close the issue after approval.
-2. Keep its already-concise `references/issues.md` entry especially brief: issue and Truth Record links, verification/closure status, and one or two sentences stating the misuse and correct usage.
-3. Do not change code, documentation, the knowledge base, or skills solely for that issue when the existing guidance is already sufficient.
-
----
-
-## Task: Learn Code
-
-**Prerequisite:** You must arrive here via the [Task Router](#task-router). Do not execute this task directly — always complete the Task Router first to confirm this is the correct task type.
-
-**Scope:** Explain how existing SRS code works without modifying the project. Cover implementation, architecture, control flow, data flow, module boundaries, and behavior grounded in the current code and project documentation. This task may examine either the C++ media server or the next-generation Go server.
-
-### Step 1: Route and read documentation first
-
-1. Load `skills/internal-docs-for-srs/SKILL.md` and use its Reference Router before reading project documentation.
-2. Classify the question by server generation, service, protocol, or feature. Select and read the smallest relevant document set for design intent, architecture, and documented behavior.
-3. If the documentation router has no matching route, or a fully resolved routed file is unavailable, record the documentation gap and continue to code routing. Do not broadly search documentation directories or invent intent.
-
-### Step 2: Route to the responsible code
-
-1. Load `skills/internal-codemap-for-srs/SKILL.md` and use its Reference Router to select the relevant server map. If choosing the wrong server generation would materially change the answer, ask the user to clarify.
-2. Use the selected map descriptions to identify the owning module and the smallest relevant file set. When the map lists a directory, list filenames only in that directory before selecting files.
-3. Read or search only the selected files. Add another routed module only when evidence shows that the implementation crosses the first module boundary.
-
-### Step 3: Trace and reconcile the implementation
-
-1. Trace the narrowest useful path from the feature entry point, such as configuration, API, listener, protocol handler, or public interface, through its owning module and required lower-level dependencies.
-2. Separate the common implementation path from protocol-specific or service-specific behavior. Identify defaults, platform-dependent behavior, fallbacks, and limitations when relevant.
-3. Compare documentation with code. Investigate material conflicts instead of silently preferring either source. Clearly separate confirmed behavior, reasonable inference, and unknowns.
-4. Use the testing and verification map only when the user requests runtime verification or static evidence is insufficient for an important claim. Do not change code or tests as part of Learn Code.
-
-### Step 4: Answer the question
-
-1. Answer the user's question directly before describing the investigation.
-2. State the examined server generation and, when behavior may vary by revision, the current branch and commit.
-3. Cite the responsible files with focused line ranges and explain how their responsibilities connect. Do not return an unstructured file dump.
-4. Report relevant documentation gaps, code/document conflicts, limitations, and unresolved questions.
-5. Make no project changes. If the investigation reveals a likely bug or desired change, report it and let the user start a separate Fix a Bug or Develop Code task.
-
----
-
-## Task: Review a PR
-
-**Prerequisite:** You must arrive here via the [Task Router](#task-router). Do not execute this task directly — always complete the Task Router first to confirm this is the correct task type.
-
-**Scope:** Walk the pending changes on the current branch (relative to `develop`), summarize them, sync any stale navigation docs, then bump the version and add a changelog entry once the user supplies the PR number.
-
-**Guiding rules**
-- **Docs are navigation, not tutorials.** When a code change makes an entry stale, *correct* it — don't expand it. Only *add* a new entry when a new file or module was introduced; never to describe a refactor inside an existing module.
-
-**Step 1: Survey the changes**
-
-1. Run `git diff develop --stat` and `git log develop..HEAD --oneline` to get the shape of the branch.
-2. Drill into non-test source diffs with `git diff develop -- <path>` to understand what actually changed.
-3. Summarize back to the user: refactors, new files, and anything that could break downstream consumers (log format, public API, wire format, etc.).
-4. Pause and let the user redirect or ask for more detail.
-
-**Step 2: Correct stale navigation docs**
-
-1. Load `skills/internal-codemap-for-srs/SKILL.md`, route to the next-generation Go server map, and check the entries covering each module touched in this PR.
-2. For each entry whose description is no longer accurate, make the **smallest** correction needed to match the new code. Keep the one-line summary style; do not expand into implementation detail.
-3. Stop and let the user review and stage the files they accept. After an explicit commit request, use a short message such as `<Tool>: Sync internal Go code map with internal/<modules>.`.
-
-**Step 3: Bump the version and update the changelog**
-
-1. Ask the user for the PR number if they haven't given it.
-2. Bump revision by one in **both** version files, keeping them in sync:
-   - `internal/version/version.go` — `VersionRevision()`
-   - `trunk/src/core/srs_core_version8.hpp` — `VERSION_REVISION`
-3. Add a new top entry to `trunk/doc/CHANGELOG.md` under `## SRS 8.0 Changelog`, matching the existing format:
-   ```
-   * v8.0, YYYY-MM-DD, Merge [#PR](URL): <Prefix>: <one-line summary>. v8.0.<rev> (#PR)
-   ```
-   Propose the summary to the user; don't invent one unilaterally.
-4. Stop and let the user review and stage the version files and changelog. After an explicit commit request, use a short message such as `<Tool>: Bump to v8.0.<rev> for #<PR>.`.
-
----
-
-## Task: Develop Code
-
-**Prerequisite:** You must arrive here via the [Task Router](#task-router). Do not execute this task directly — always complete the Task Router first to confirm this is the correct task type.
-
-**Scope:** This task covers any planned code or documentation change — adding new features, modifying existing functionality, refactoring code, and updating documentation.
-
-**Important:** The C++ media server (origin + edge) is in **maintenance mode** — only bug fixes are accepted, no new features. All new feature development happens in the **next-generation Go server**. You may reference the C++ server's code to understand how things were done before, but do not add features to it.
-
-**Service Router** — Determine which Go service the feature targets. Route to exactly ONE service. Do not guess — if unclear, ask the user to clarify.
-
-| Service | Route To | Status |
-|---|---|---|
-| **Proxy server** | → [Proxy Server](#proxy-server) | ✅ Supported |
-| **Origin server** | → [Origin Server](#origin-server) | ❌ Not yet supported |
-| **Edge server** | → [Edge Server](#edge-server) | ❌ Not yet supported |
-
-**If the routed service is not yet supported**, stop and tell the user:
-- What service you routed to
-- That this service is not supported yet
-
-### Proxy Server
-
-The proxy server is a complex, growing product — not a small app. It has many modules, and more will be added over time. You cannot load all the code into context at once. The key to working on it is **routing to the correct module first**.
-
-**Step 1: Module Routing (MANDATORY)**
-
-1. Load `skills/internal-codemap-for-srs/SKILL.md`, then use its Reference Router to select the next-generation Go server code map.
-2. Load `skills/internal-docs-for-srs/SKILL.md`, then use its Reference Router to select the relevant next-generation server documentation references.
-3. Study the routed module and document descriptions. Understand what each covers and its boundaries.
-4. Reason about which module(s) and which document(s) are relevant to the user's request. Consider:
-   - Which module owns the functionality being changed?
-   - Which modules might be affected as dependencies?
-   - Which docs cover the design/architecture of this area?
-   - Is this a new module or a change to an existing one?
-5. **Present your reasoning to the user — both the module(s) and document(s) you identified — and ask for confirmation.** Even if you are confident, you MUST ask. Do not proceed without confirmation.
-6. If you are unsure, stop and ask the user to clarify. Do not guess.
-
-Only after the user confirms the routing do you proceed to Step 2.
-
-**Step 2: Understand the Module**
-
-1. **Read the confirmed docs** (if any were identified) — understand the design intent, architecture rationale, and how the module is organized internally. This is the *why*.
-2. **Based on doc understanding, identify the specific file(s)** within the module that are relevant to the feature. Not the whole module — only the files that matter.
-3. **Read only those specific files.** Code gives you the implementation details: function signatures, patterns, conventions, edge cases. This is the *how*.
-4. If no relevant docs exist, scan the module directory listing (filenames only) to locate the right files, then read them.
-
-**Step 3: Implement and Verify**
-
-1. Implement the code change.
-2. If you changed or added a Go interface with a `//go:generate go tool counterfeiter ...` directive, regenerate fakes:
-   ```
-   make generate
-   ```
-3. Use `skills/internal-codemap-for-srs/SKILL.md` to route to the testing and verification map.
-4. Run the proxy unit test and every proxy E2E test required by that map, sequentially and without stopping early.
-5. If any test fails, fix the issue and re-run until all required tests pass.
-
-### Origin Server
-
-**Not yet supported.** This refers to the next-generation Go origin server workflow. The first-generation C++ origin server still exists, but it is in maintenance mode and only bug fixes are accepted there.
-
-### Edge Server
-
-**Not yet supported.** Will be added in a future update.
+For every task, identify SRS or Oryx before loading a workflow. If the product is ambiguous and the choice changes the repository, issue tracker, code map, or verification, ask the user to clarify. Do not merge SRS and Oryx work unless evidence shows one task crosses the product boundary.

@@ -2,14 +2,6 @@
 
 Use this reference after `skills/internal-codemap-for-srs/SKILL.md` determines that a task requires tests, verification, reproduction, or benchmarking.
 
-## Browser Client Verification
-
-Browser player URL generation is verified independently with Node.js and does not require a running SRS server:
-
-```bash
-node skills/srs-develop/scripts/browser-page-url-test.js
-```
-
 ## C++ Media Server Verification
 
 `trunk/src/utest/` — Unit tests for internal functions, classes, parsers, codecs, and configuration without starting SRS. Links directly against SRS source and uses mocks such as `MockSrsConfig`.
@@ -39,45 +31,6 @@ node skills/srs-develop/scripts/browser-page-url-test.js
 - `srs_test.go` — General SRS workflows
 
 `trunk/3rdparty/srs-bench/` — Performance and load benchmark, not a correctness test suite. The `./objs/srs_bench` binary simulates concurrent WHIP, WHEP, RTMP, reconnecting, DVR, plaintext RTC, and Janus workloads and reports metrics without pass/fail assertions.
-
-## Next-Generation Go Proxy Verification
-
-Run all commands from the repository root. Run the unit test first, then every E2E test in the listed order. E2E scripts bind fixed ports, so run them sequentially. Do not stop after an early success or failure; record every result, fix failures, and repeat until all required tests pass.
-
-1. Go proxy unit tests with coverage:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-utest.sh --coverage
-   ```
-2. Single-origin RTMP proxy:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-test.sh
-   ```
-3. Multi-origin memory load-balancer routing:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-cluster-test.sh
-   ```
-4. Proxy, SRS edge, and SRS origin three-tier topology with a late-joining player:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-edge-test.sh
-   ```
-5. Redis multi-proxy routing:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-redis-test.sh
-   ```
-6. RTMP publish with RTMP, HTTP-FLV, and HLS playback verification; WHEP remains a placeholder:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-transmux-test.sh
-   ```
-7. SRT publish with SRT, RTMP, HTTP-FLV, and HLS playback verification; WHEP remains a placeholder:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-srt-test.sh
-   ```
-8. WHIP publish with RTMP, HTTP-FLV, and HLS playback verification; WHEP remains a placeholder:
-   ```bash
-   bash skills/srs-develop/scripts/proxy-e2e-whip-test.sh
-   ```
-
-The SRT test requires an FFmpeg build with libsrt. The WHIP test requires the `whip` muxer and OpenSSL. Both scripts automatically run `skills/srs-develop/scripts/setup-ffmpeg-with-whip.sh` on macOS when no suitable FFmpeg is available.
 
 ## Verification Types
 

@@ -1409,6 +1409,59 @@ public:
     }
 };
 
+// Create a complete STAP-A keyframe containing SPS and PPS. The packet owns the
+// sample bytes through its shared buffer, including after SrsRtpPacket::copy().
+SrsRtpPacket *mock_create_stap_a_keyframe(uint16_t sequence_number, uint32_t timestamp, uint8_t pps_tail = 0x80)
+{
+    SrsRtpPacket *pkt = mock_create_test_rtp_packet(sequence_number, timestamp, true);
+    pkt->nalu_type = (SrsAvcNaluType)kStapA;
+    pkt->frame_type = SrsFrameTypeVideo;
+    pkt->set_avsync_time(timestamp / 90);
+
+    char *payload = pkt->wrap(12);
+    const uint8_t sps[] = {0x67, 0x42, 0x00, 0x1e, 0x9a, 0x66, 0x02, 0x80};
+    const uint8_t pps[] = {0x68, 0xce, 0x3c, pps_tail};
+    memcpy(payload, sps, sizeof(sps));
+    memcpy(payload + sizeof(sps), pps, sizeof(pps));
+
+    SrsRtpSTAPPayload *stap = new SrsRtpSTAPPayload();
+    stap->nalus.push_back(new SrsSample(payload, sizeof(sps)));
+    stap->nalus.push_back(new SrsSample(payload + sizeof(sps), sizeof(pps)));
+    pkt->set_payload(stap, SrsRtspPacketPayloadTypeSTAP);
+
+    return pkt;
+}
+
+// Reproduce #4695: Repeated, byte-identical SPS/PPS from a WebRTC publisher
+// should emit only one RTMP sequence header while preserving every keyframe.
+VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderDeduplicatesAvcSequenceHeader)
+{
+    srs_error_t err;
+
+    MockStreamBridge bridge;
+    SrsRtcFrameBuilder frame_builder(&bridge);
+
+    SrsUniquePtr<SrsRtpPacket> first(mock_create_stap_a_keyframe(100, 90000));
+    HELPER_EXPECT_SUCCESS(frame_builder.packet_video(first.get()));
+    EXPECT_EQ(1, bridge.frame_count); // Sequence header.
+
+    SrsUniquePtr<SrsRtpPacket> repeated(mock_create_stap_a_keyframe(101, 180000));
+    HELPER_EXPECT_SUCCESS(frame_builder.packet_video(repeated.get()));
+    EXPECT_EQ(1, bridge.frame_count); // Duplicate header suppressed.
+    uint16_t repeated_index = frame_builder.cache_index(101);
+    ASSERT_TRUE(frame_builder.cache_video_pkts_[repeated_index].pkt != NULL);
+    EXPECT_EQ((uint16_t)101, frame_builder.cache_video_pkts_[repeated_index].sn); // Keyframe preserved.
+
+    SrsUniquePtr<SrsRtpPacket> changed(mock_create_stap_a_keyframe(102, 270000, 0x81));
+    HELPER_EXPECT_SUCCESS(frame_builder.packet_video(changed.get()));
+    EXPECT_EQ(2, bridge.frame_count); // Changed header delivered.
+
+    HELPER_EXPECT_SUCCESS(frame_builder.on_publish());
+    SrsUniquePtr<SrsRtpPacket> republished(mock_create_stap_a_keyframe(103, 360000, 0x81));
+    HELPER_EXPECT_SUCCESS(frame_builder.packet_video(republished.get()));
+    EXPECT_EQ(3, bridge.frame_count); // Publication reset allows the header again.
+}
+
 VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderPacketVideoRtmpNullPointerCrash)
 {
     srs_error_t err;

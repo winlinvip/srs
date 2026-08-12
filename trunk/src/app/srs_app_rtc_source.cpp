@@ -1443,12 +1443,15 @@ srs_error_t SrsRtcFrameBuilder::initialize(SrsRequest* r)
         return srs_error_wrap(err, "bridge initialize");
     }
 
+    last_video_sequence_header_.clear();
+
     return err;
 }
 
 srs_error_t SrsRtcFrameBuilder::on_publish()
 {
     is_first_audio_ = true;
+    last_video_sequence_header_.clear();
 
     return srs_success;
 }
@@ -1677,8 +1680,13 @@ srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket* pkt)
             return srs_error_wrap(err, "create message");
         }
 
-        if ((err = bridge_->on_frame(&msg)) != srs_success) {
-            return err;
+        // Repeated SPS/PPS must not mark each open HLS segment as discontinuous.
+        if (sh != last_video_sequence_header_) {
+            if ((err = bridge_->on_frame(&msg)) != srs_success) {
+                return err;
+            }
+
+            last_video_sequence_header_ = sh;
         }
     }
 

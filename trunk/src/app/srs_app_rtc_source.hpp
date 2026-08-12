@@ -342,6 +342,10 @@ private:
     // For OBS WHIP, send SPS/PPS in dedicated RTP packet.
     SrsRtpPacket* obs_whip_sps_;
     SrsRtpPacket* obs_whip_pps_;
+private:
+    // Last video sequence header delivered to the RTMP bridge. WebRTC publishers
+    // may repeat unchanged SPS/PPS with every keyframe.
+    std::string last_video_sequence_header_;
 public:
     SrsRtcFrameBuilder(ISrsStreamBridge* bridge);
     virtual ~SrsRtcFrameBuilder();

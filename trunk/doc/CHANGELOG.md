@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v6-changes"></a>
 
 ## SRS 6.0 Changelog
+* v6.0, 2026-08-12, Merge [#4704](https://github.com/ossrs/srs/pull/4704): Codex: Fix MP4 DVR timing for repeated DTS samples. v6.0.189 (#4704)
 * v6.0, 2026-08-12, Merge [#4701](https://github.com/ossrs/srs/pull/4701): Codex: Terminate SSRC group SDP lines. v6.0.188 (#4701)
 * v6.0, 2026-08-12, Merge [#4699](https://github.com/ossrs/srs/pull/4699): Codex: Reject duplicate WebRTC TCP owners. v6.0.187 (#4699)
 * v6.0, 2026-05-19, Merge [#4678](https://github.com/ossrs/srs/pull/4678): Edge: Fix RTMP late-join missing sequence headers. v6.0.186 (#4678)

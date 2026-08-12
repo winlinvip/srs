@@ -5115,7 +5115,8 @@ srs_error_t SrsMp4SampleManager::write_track(SrsFrameType track,
         if (stts) {
             if (previous) {
                 uint32_t delta = (uint32_t)(sample->dts - previous->dts);
-                if (stts_entry.sample_delta == 0 || stts_entry.sample_delta == delta) {
+                bool stts_entry_empty = stts_entry.sample_count == 0;
+                if (stts_entry_empty || stts_entry.sample_delta == delta) {
                     stts_entry.sample_delta = delta;
                     stts_entry.sample_count++;
                 } else {

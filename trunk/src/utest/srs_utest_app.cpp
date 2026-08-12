@@ -11,6 +11,7 @@ using namespace std;
 #include <srs_app_fragment.hpp>
 #include <srs_app_security.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_statistic.hpp>
 
 #include <srs_app_st.hpp>
 #include <srs_protocol_conn.hpp>
@@ -32,6 +33,63 @@ public:
         return "";
     }
 };
+
+class MockStatisticExpire : public ISrsExpire
+{
+public:
+    virtual void expire() {
+    }
+};
+
+VOID TEST(StatisticTest, GracefulDisconnectsDoNotIncrementErrors)
+{
+    srs_error_t err = srs_success;
+
+    SrsStatistic stat;
+    SrsRequest req;
+    req.vhost = "test.vhost";
+    req.app = "live";
+    req.stream = "livestream";
+    MockStatisticExpire conn;
+
+    int graceful_codes[] = {
+        ERROR_SOCKET_READ,
+        ERROR_SOCKET_READ_FULLY,
+        ERROR_SOCKET_WRITE,
+        ERROR_SRT_IO,
+        ERROR_HTTP_STREAM_EOF,
+    };
+    int nb_graceful_codes = sizeof(graceful_codes) / sizeof(int);
+
+    for (int i = 0; i < nb_graceful_codes; i++) {
+        stringstream ss;
+        ss << "client-" << i;
+        string client_id = ss.str();
+        HELPER_EXPECT_SUCCESS(stat.on_client(client_id, &req, &conn, SrsRtmpConnPlay));
+
+        srs_error_t graceful_close = srs_error_new(graceful_codes[i], "gracefully closed");
+        EXPECT_TRUE(srs_is_client_gracefully_close(graceful_close) || srs_is_server_gracefully_close(graceful_close));
+        stat.on_disconnect(client_id, graceful_close);
+        srs_freep(graceful_close);
+    }
+
+    HELPER_EXPECT_SUCCESS(stat.on_client("failed-client", &req, &conn, SrsRtmpConnPlay));
+    srs_error_t failure = srs_error_new(ERROR_RTMP_HANDSHAKE, "genuine failure");
+    stat.on_disconnect("failed-client", failure);
+    srs_freep(failure);
+
+    int64_t send_bytes = 0;
+    int64_t recv_bytes = 0;
+    int64_t nstreams = 0;
+    int64_t nclients = 0;
+    int64_t total_nclients = 0;
+    int64_t nerrs = 0;
+    HELPER_EXPECT_SUCCESS(stat.dumps_metrics(send_bytes, recv_bytes, nstreams, nclients, total_nclients, nerrs));
+
+    EXPECT_EQ(0, nclients);
+    EXPECT_EQ(nb_graceful_codes + 1, total_nclients);
+    EXPECT_EQ(1, nerrs);
+}
 
 VOID TEST(AppResourceManagerTest, FindByFastID)
 {

@@ -15,6 +15,7 @@ using namespace std;
 #include <srs_protocol_kbps.hpp>
 #include <srs_app_conn.hpp>
 #include <srs_app_config.hpp>
+#include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_utility.hpp>
@@ -468,7 +469,8 @@ void SrsStatistic::on_disconnect(std::string id, srs_error_t err)
     stream->nb_clients--;
     vhost->nb_clients--;
 
-    if (srs_error_code(err) != ERROR_SUCCESS) {
+    bool is_graceful_close = srs_is_client_gracefully_close(err) || srs_is_server_gracefully_close(err);
+    if (srs_error_code(err) != ERROR_SUCCESS && !is_graceful_close) {
         nb_errs_++;
     }
 

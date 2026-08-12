@@ -182,7 +182,8 @@ bool srs_is_client_gracefully_close(srs_error_t err)
     int error_code = srs_error_code(err);
     return error_code == ERROR_SOCKET_READ
         || error_code == ERROR_SOCKET_READ_FULLY
-        || error_code == ERROR_SOCKET_WRITE;
+        || error_code == ERROR_SOCKET_WRITE
+        || error_code == ERROR_SRT_IO;
 }
 
 bool srs_is_server_gracefully_close(srs_error_t err)

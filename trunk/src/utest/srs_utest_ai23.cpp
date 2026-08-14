@@ -67,6 +67,7 @@ void MockGbMuxer::reset()
 MockAppConfigForGbSession::MockAppConfigForGbSession()
 {
     stream_caster_output_ = "";
+    media_connect_timeout_ = 10 * SRS_UTIME_SECONDS;
 }
 
 MockAppConfigForGbSession::~MockAppConfigForGbSession()
@@ -76,6 +77,11 @@ MockAppConfigForGbSession::~MockAppConfigForGbSession()
 std::string MockAppConfigForGbSession::get_stream_caster_output(SrsConfDirective *conf)
 {
     return stream_caster_output_;
+}
+
+srs_utime_t MockAppConfigForGbSession::get_stream_caster_media_connect_timeout(SrsConfDirective *conf)
+{
+    return media_connect_timeout_;
 }
 
 void MockAppConfigForGbSession::set_stream_caster_output(const std::string &output)
@@ -114,6 +120,9 @@ VOID TEST(GB28181Test, SessionSetupAndOwner)
 
     // Setup mock config to return test output
     mock_config->set_stream_caster_output("rtmp://127.0.0.1/live/test_stream");
+    mock_config->media_connect_timeout_ = 500 * SRS_UTIME_MILLISECONDS;
+
+    EXPECT_EQ(0, session->media_connect_timeout_);
 
     // Test setup() method
     SrsConfDirective *conf = NULL;
@@ -122,6 +131,7 @@ VOID TEST(GB28181Test, SessionSetupAndOwner)
     // Verify muxer->setup() was called with correct output
     EXPECT_TRUE(mock_muxer->setup_called_);
     EXPECT_STREQ("rtmp://127.0.0.1/live/test_stream", mock_muxer->setup_output_.c_str());
+    EXPECT_EQ(500 * SRS_UTIME_MILLISECONDS, session->media_connect_timeout_);
 
     // Test setup_owner() method
     SrsSharedResource<ISrsGbSession> *wrapper = NULL;
@@ -364,10 +374,65 @@ VOID TEST(GB28181Test, SessionOnMediaTransport)
 
     // Verify that the session's context ID was passed to the media transport
     EXPECT_EQ(0, mock_media->received_cid_.compare(session_cid));
+    EXPECT_EQ(0, session->connecting_starttime_);
 
     // Clean up - set to NULL to avoid double-free
     session->muxer_ = NULL;
     srs_freep(mock_muxer);
+}
+
+// Test that an API-created session expires while waiting for its media TCP
+// connection, but stops using that timeout as soon as a transport binds.
+VOID TEST(GB28181Test, SessionMediaConnectionTimeout)
+{
+    srs_error_t err = srs_success;
+    SrsUniquePtr<MockAppConfigForGbSession> mock_config(new MockAppConfigForGbSession());
+    MockGbMuxer *mock_muxer = new MockGbMuxer();
+    SrsUniquePtr<SrsGbSession> session(new SrsGbSession());
+
+    session->config_ = mock_config.get();
+    session->muxer_ = mock_muxer;
+    mock_config->media_connect_timeout_ = 500 * SRS_UTIME_MILLISECONDS;
+    session->setup(NULL);
+
+    session->connecting_starttime_ = srs_time_now_realtime();
+    HELPER_EXPECT_SUCCESS(session->drive_state());
+
+    session->connecting_starttime_ = srs_time_now_realtime() - 10 * SRS_UTIME_SECONDS;
+    err = session->drive_state();
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_SUCCESS, srs_error_code(err));
+    srs_freep(err);
+
+    MockGbMediaTcpConn *media = new MockGbMediaTcpConn();
+    SrsSharedResource<ISrsGbMediaTcpConn> media_resource(media);
+    session->on_media_transport(media_resource);
+    HELPER_EXPECT_SUCCESS(session->drive_state());
+
+    session->muxer_ = NULL;
+    srs_freep(mock_muxer);
+}
+
+// Test SrsGbSession::on_media_disconnected - only the current transport may
+// terminate the session, while a stale transport must be ignored.
+VOID TEST(GB28181Test, SessionOnMediaDisconnected)
+{
+    SrsUniquePtr<SrsGbSession> session(new SrsGbSession());
+    SrsUniquePtr<MockInterruptableForRtcTcpConn> owner(new MockInterruptableForRtcTcpConn());
+
+    MockGbMediaTcpConn *current = new MockGbMediaTcpConn();
+    MockGbMediaTcpConn *stale = new MockGbMediaTcpConn();
+    SrsSharedResource<ISrsGbMediaTcpConn> current_resource(current);
+    SrsSharedResource<ISrsGbMediaTcpConn> stale_resource(stale);
+
+    session->setup_owner(NULL, owner.get(), NULL);
+    session->on_media_transport(current_resource);
+
+    session->on_media_disconnected(stale);
+    EXPECT_FALSE(owner->interrupt_called_);
+
+    session->on_media_disconnected(current);
+    EXPECT_TRUE(owner->interrupt_called_);
 }
 
 // Test SrsGbSession::drive_state - covers the major use scenario:
@@ -391,6 +456,7 @@ VOID TEST(GB28181Test, SessionDriveState)
     session->muxer_ = mock_muxer;
     session->media_ = SrsSharedResource<ISrsGbMediaTcpConn>(mock_media);
     session->device_id_ = "test-device-123";
+    session->setup(NULL);
 
     // Verify initial state is Init
     EXPECT_EQ(SrsGbSessionStateInit, session->state_);
@@ -794,6 +860,10 @@ void MockGbSessionForMediaConn::on_media_transport(SrsSharedResource<ISrsGbMedia
 {
     on_media_transport_called_ = true;
     received_media_ = media;
+}
+
+void MockGbSessionForMediaConn::on_media_disconnected(ISrsGbMediaTcpConn *media)
+{
 }
 
 void MockGbSessionForMediaConn::on_ps_pack(ISrsPackContext *ctx, SrsPsPacket *ps, const std::vector<SrsTsMessage *> &msgs)
@@ -1313,6 +1383,10 @@ void MockGbSessionForMuxer::setup_owner(SrsSharedResource<ISrsGbSession> *wrappe
 }
 
 void MockGbSessionForMuxer::on_media_transport(SrsSharedResource<ISrsGbMediaTcpConn> media)
+{
+}
+
+void MockGbSessionForMuxer::on_media_disconnected(ISrsGbMediaTcpConn *media)
 {
 }
 
@@ -2130,6 +2204,10 @@ void MockGbSessionForApiPublish::setup_owner(SrsSharedResource<ISrsGbSession> *w
 }
 
 void MockGbSessionForApiPublish::on_media_transport(SrsSharedResource<ISrsGbMediaTcpConn> media)
+{
+}
+
+void MockGbSessionForApiPublish::on_media_disconnected(ISrsGbMediaTcpConn *media)
 {
 }
 

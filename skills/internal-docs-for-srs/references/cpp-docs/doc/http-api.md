@@ -93,12 +93,25 @@ http_api {
         # Always off by https://github.com/ossrs/srs/issues/2653
         #allow_update off;
     }
-    # the auth is authentication for http api
+    # Authentication for the HTTP API. Basic and Bearer authentication protect APIs under /api/.
+    # Bearer authentication can optionally protect WebRTC signaling APIs under /rtc/.
     auth {
         # whether enable the HTTP AUTH.
         # Overwrite by env SRS_HTTP_API_AUTH_ENABLED
         # default: off
         enabled         on;
+        # The authentication type. Supported values are basic and bearer.
+        # Required when authentication is enabled.
+        # Overwrite by env SRS_HTTP_API_AUTH_TYPE
+        type            basic;
+        # The token of Bearer authentication. Required when type is bearer.
+        # Overwrite by env SRS_HTTP_API_AUTH_TOKEN
+        token           secret-token;
+        # Whether Bearer authentication also protects WebRTC signaling APIs under /rtc/,
+        # including WHIP and WHEP. Requires enabled on and type bearer.
+        # Overwrite by env SRS_HTTP_API_AUTH_RTC_BEARER_ENABLED
+        # default: off
+        rtc_bearer_enabled off;
         # The username of Basic authentication:
         # Overwrite by env SRS_HTTP_API_AUTH_USERNAME
         username        admin;
@@ -496,13 +509,16 @@ Other RAW APIs are disabled by SRS 4.0.
 
 Starting from version `5.0.152+` or `6.0.40+`, SRS supports HTTP API authentication, which can be enabled by configuring `http_api.auth`.
 
+### Basic Authentication
+
 ```bash
-# conf/http.api.auth.conf
+# conf/http.api.auth.basic.conf
 http_api {
     enabled on;
     listen 1985;
     auth {
         enabled on;
+        type basic;
         username admin;
         password admin;
     }
@@ -513,7 +529,8 @@ Otherwise, you can use environment variables to enable it:
 
 ```bash
 env SRS_HTTP_API_ENABLED=on SRS_HTTP_SERVER_ENABLED=on \
-    SRS_HTTP_API_AUTH_ENABLED=on SRS_HTTP_API_AUTH_USERNAME=admin SRS_HTTP_API_AUTH_PASSWORD=admin \
+    SRS_HTTP_API_AUTH_ENABLED=on SRS_HTTP_API_AUTH_TYPE=basic \
+    SRS_HTTP_API_AUTH_USERNAME=admin SRS_HTTP_API_AUTH_PASSWORD=admin \
     ./objs/srs -e
 ```
 
@@ -524,10 +541,77 @@ Then, you can access the following urls to verify it:
 To clean up the username and password, you can access the HTTP API with the username only:
 - http://admin@localhost:1985/api/v1/versions
 
-> Note: authentication is only enabled for the HTTP APIs, neither for the HTTP server nor the WebRTC HTTP APIs.
+### Bearer Token Authentication
+
+Bearer authentication protects the SRS HTTP API with a token sent in the
+`Authorization` request header. By default, WebRTC signaling APIs remain
+unprotected by Bearer authentication. Set the type to `bearer` and configure a
+non-empty token:
+
+```bash
+# conf/http.api.auth.bearer.conf
+http_api {
+    enabled on;
+    listen 1985;
+    auth {
+        enabled on;
+        type bearer;
+        token srs-api-token;
+        rtc_bearer_enabled off;
+    }
+}
+```
+
+The equivalent environment variables are:
+
+```bash
+env SRS_HTTP_API_AUTH_ENABLED=on \
+    SRS_HTTP_API_AUTH_TYPE=bearer \
+    SRS_HTTP_API_AUTH_TOKEN=srs-api-token \
+    ./objs/srs -c conf/srs.conf
+```
+
+Include the token in each API request:
+
+```bash
+curl -H 'Authorization: Bearer srs-api-token' \
+    http://127.0.0.1:1985/api/v1/versions
+```
+
+To protect WHIP, WHEP, and other WebRTC signaling requests under `/rtc/`, also
+enable RTC Bearer authentication:
+
+```bash
+SRS_HTTP_API_AUTH_RTC_BEARER_ENABLED=on
+```
+
+Or set `rtc_bearer_enabled on;` in `http_api.auth`. The WHIP and WHEP clients
+must then send the same header:
+
+```bash
+curl -H 'Authorization: Bearer srs-api-token' \
+    -H 'Content-Type: application/sdp' --data-binary @offer.sdp \
+    'http://127.0.0.1:1985/rtc/v1/whip/?app=live&stream=livestream'
+```
+
+Requests with a missing or incorrect token receive HTTP `401 Unauthorized` and
+the response header `WWW-Authenticate: Bearer`.
+
+`SRS_HTTP_API_AUTH_TOKEN` protects the SRS server's own HTTP API and, when
+`SRS_HTTP_API_AUTH_RTC_BEARER_ENABLED=on`, its WebRTC signaling APIs. It is
+separate from proxy registration authentication and heartbeat credentials.
+
+> Note: Basic and Bearer authentication protect APIs under `/api/`. Basic does
+> not apply to WebRTC signaling APIs. Bearer protects `/rtc/` only when
+> `rtc_bearer_enabled` is on. Neither type protects files served by the HTTP
+> server.
+
+Bearer authentication can be combined with [HTTP callbacks](./http-callback.md).
+When RTC Bearer authentication is enabled, a WHIP or WHEP request must first
+pass Bearer authentication, and SRS then invokes `on_publish` or `on_play` for
+stream-specific authorization. When RTC Bearer authentication is disabled, the
+HTTP callback can authorize WHIP and WHEP by itself.
 
 Winlin 2015.8
 
 ![](https://ossrs.io/gif/v1/sls.gif?site=ossrs.io&path=/lts/doc/en/v7/http-api)
-
-

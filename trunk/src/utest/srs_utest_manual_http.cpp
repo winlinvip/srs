@@ -1274,7 +1274,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/index.html", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(true, "admin", "admin"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "admin")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
@@ -1299,7 +1299,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(true, "admin", "123456"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "123456")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         EXPECT_EQ(401, w.w->status_);
@@ -1324,7 +1324,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(true, "admin", "admin"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "admin")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         EXPECT_EQ(401, w.w->status_);
@@ -1349,7 +1349,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(true, "admin", "admin"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "admin")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         EXPECT_EQ(401, w.w->status_);
@@ -1374,7 +1374,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(true, "admin", "admin"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "admin")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         EXPECT_EQ(401, w.w->status_);
@@ -1394,7 +1394,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(true, "admin", "admin"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "admin")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         EXPECT_EQ(401, w.w->status_);
@@ -1414,7 +1414,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(false, "admin", "admin"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(NULL));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
@@ -1439,13 +1439,13 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/clients/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(false, "admin", "123456"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(NULL));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
     }
 
-    // always response with 200 ok, for /rtc/*/
+    // Basic authentication does not protect WebRTC HTTP APIs.
     if (true) {
         SrsHttpServeMux s;
         HELPER_ASSERT_SUCCESS(s.initialize());
@@ -1458,19 +1458,19 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         r.set_basic(HTTP_REQUEST, HTTP_POST, (llhttp_status_t)200, -1);
 
         SrsHttpHeader h;
-        h.set("Authorization", "Basic YWRtaW46YWRtaW4="); // admin:admin
+        h.set("Authorization", "Basic invalid");
         r.set_header(&h, false);
 
         HELPER_ASSERT_SUCCESS(r.set_url("/rtc/play/", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(false, "admin", "123456"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(new SrsHttpBasicAuthenticator("admin", "admin")));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
     }
 
-    // always response with 200 ok, for /rtc/*/
+    // Authentication does not protect files served by the HTTP server.
     if (true) {
         SrsHttpServeMux s;
         HELPER_ASSERT_SUCCESS(s.initialize());
@@ -1489,10 +1489,137 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerAuth)
         HELPER_ASSERT_SUCCESS(r.set_url("/index.html", false));
 
         SrsHttpAuthMux auth(&s);
-        HELPER_ASSERT_SUCCESS(auth.initialize(false, "admin", "123456"));
+        HELPER_ASSERT_SUCCESS(auth.initialize(NULL));
 
         HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
         __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
+    }
+}
+
+static srs_error_t srs_utest_initialize_bearer_auth(SrsHttpAuthMux *auth, string token, bool rtc_bearer_enabled = false)
+{
+    return auth->initialize(new SrsHttpBearerAuthenticator(token, rtc_bearer_enabled));
+}
+
+VOID TEST(ProtocolHTTPTest, HTTPServerMuxerBearerAuth)
+{
+    srs_error_t err;
+
+    // A matching Bearer token authorizes HTTP API requests.
+    if (true) {
+        SrsHttpServeMux s;
+        HELPER_ASSERT_SUCCESS(s.initialize());
+        HELPER_ASSERT_SUCCESS(s.handle("/", new MockHttpHandler("Hello, world!")));
+
+        MockResponseWriter w;
+        SrsHttpMessage r(NULL, NULL);
+        r.set_basic(HTTP_REQUEST, HTTP_GET, (llhttp_status_t)200, -1);
+        HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/versions", false));
+
+        SrsHttpHeader h;
+        h.set("Authorization", "Bearer secret-token");
+        r.set_header(&h, false);
+
+        SrsHttpAuthMux auth(&s);
+        HELPER_ASSERT_SUCCESS(srs_utest_initialize_bearer_auth(&auth, "secret-token"));
+        HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
+        __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
+    }
+
+    // A wrong Bearer token is rejected with a Bearer challenge.
+    if (true) {
+        SrsHttpServeMux s;
+        HELPER_ASSERT_SUCCESS(s.initialize());
+        HELPER_ASSERT_SUCCESS(s.handle("/", new MockHttpHandler("Hello, world!")));
+
+        MockResponseWriter w;
+        SrsHttpMessage r(NULL, NULL);
+        r.set_basic(HTTP_REQUEST, HTTP_GET, (llhttp_status_t)200, -1);
+        HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/versions", false));
+
+        SrsHttpHeader h;
+        h.set("Authorization", "Bearer wrong-token");
+        r.set_header(&h, false);
+
+        SrsHttpAuthMux auth(&s);
+        HELPER_ASSERT_SUCCESS(srs_utest_initialize_bearer_auth(&auth, "secret-token"));
+        HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
+        EXPECT_EQ(401, w.w->status_);
+        EXPECT_STREQ("Bearer", w.header()->get("WWW-Authenticate").c_str());
+    }
+
+    // A missing Authorization header is rejected with a Bearer challenge.
+    if (true) {
+        SrsHttpServeMux s;
+        HELPER_ASSERT_SUCCESS(s.initialize());
+        HELPER_ASSERT_SUCCESS(s.handle("/", new MockHttpHandler("Hello, world!")));
+
+        MockResponseWriter w;
+        SrsHttpMessage r(NULL, NULL);
+        r.set_basic(HTTP_REQUEST, HTTP_GET, (llhttp_status_t)200, -1);
+        HELPER_ASSERT_SUCCESS(r.set_url("/api/v1/versions", false));
+
+        SrsHttpAuthMux auth(&s);
+        HELPER_ASSERT_SUCCESS(srs_utest_initialize_bearer_auth(&auth, "secret-token"));
+        HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
+        EXPECT_EQ(401, w.w->status_);
+        EXPECT_STREQ("Bearer", w.header()->get("WWW-Authenticate").c_str());
+    }
+
+    // Bearer authentication does not protect WHIP and WHEP signaling requests by default.
+    if (true) {
+        SrsHttpServeMux s;
+        HELPER_ASSERT_SUCCESS(s.initialize());
+        HELPER_ASSERT_SUCCESS(s.handle("/", new MockHttpHandler("Hello, world!")));
+
+        MockResponseWriter w;
+        SrsHttpMessage r(NULL, NULL);
+        r.set_basic(HTTP_REQUEST, HTTP_POST, (llhttp_status_t)200, -1);
+        HELPER_ASSERT_SUCCESS(r.set_url("/rtc/v1/whip/?app=live&stream=livestream", false));
+
+        SrsHttpAuthMux auth(&s);
+        HELPER_ASSERT_SUCCESS(srs_utest_initialize_bearer_auth(&auth, "secret-token"));
+        HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
+        __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
+    }
+
+    // A matching Bearer token authorizes WHIP and WHEP signaling requests when explicitly enabled.
+    if (true) {
+        SrsHttpServeMux s;
+        HELPER_ASSERT_SUCCESS(s.initialize());
+        HELPER_ASSERT_SUCCESS(s.handle("/", new MockHttpHandler("Hello, world!")));
+
+        MockResponseWriter w;
+        SrsHttpMessage r(NULL, NULL);
+        r.set_basic(HTTP_REQUEST, HTTP_POST, (llhttp_status_t)200, -1);
+        HELPER_ASSERT_SUCCESS(r.set_url("/rtc/v1/whip/?app=live&stream=livestream", false));
+
+        SrsHttpHeader h;
+        h.set("Authorization", "Bearer secret-token");
+        r.set_header(&h, false);
+
+        SrsHttpAuthMux auth(&s);
+        HELPER_ASSERT_SUCCESS(srs_utest_initialize_bearer_auth(&auth, "secret-token", true));
+        HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
+        __MOCK_HTTP_EXPECT_STREQ(200, "Hello, world!", w);
+    }
+
+    // A WHIP or WHEP request without a Bearer token is rejected when explicitly enabled.
+    if (true) {
+        SrsHttpServeMux s;
+        HELPER_ASSERT_SUCCESS(s.initialize());
+        HELPER_ASSERT_SUCCESS(s.handle("/", new MockHttpHandler("Hello, world!")));
+
+        MockResponseWriter w;
+        SrsHttpMessage r(NULL, NULL);
+        r.set_basic(HTTP_REQUEST, HTTP_POST, (llhttp_status_t)200, -1);
+        HELPER_ASSERT_SUCCESS(r.set_url("/rtc/v1/whep/?app=live&stream=livestream", false));
+
+        SrsHttpAuthMux auth(&s);
+        HELPER_ASSERT_SUCCESS(srs_utest_initialize_bearer_auth(&auth, "secret-token", true));
+        HELPER_ASSERT_SUCCESS(auth.serve_http(&w, &r));
+        EXPECT_EQ(401, w.w->status_);
+        EXPECT_STREQ("Bearer", w.header()->get("WWW-Authenticate").c_str());
     }
 }
 

@@ -1915,10 +1915,36 @@ srs_error_t SrsConfig::check_normal_config()
             if (n == "auth") {
                 for (int j = 0; j < (int)obj->directives_.size(); j++) {
                     string m = obj->at(j)->name_;
-                    if (m != "enabled" && m != "username" && m != "password") {
+                    if (m != "enabled" && m != "type" && m != "token" && m != "rtc_bearer_enabled" && m != "username" && m != "password") {
                         return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal http_api.auth.%s", m.c_str());
                     }
                 }
+            }
+        }
+
+        if (get_http_api_auth_enabled()) {
+            string auth_type = get_http_api_auth_type();
+            if (auth_type.empty()) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "SRS_HTTP_API_AUTH_TYPE is required when HTTP API authentication is enabled");
+            }
+            if (auth_type != "basic" && auth_type != "bearer") {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "invalid SRS_HTTP_API_AUTH_TYPE=%s, supported types are basic and bearer", auth_type.c_str());
+            }
+            if (auth_type == "bearer" && get_http_api_auth_token().empty()) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "SRS_HTTP_API_AUTH_TOKEN is required for bearer authentication");
+            }
+        }
+        if (get_http_api_auth_rtc_bearer_enabled()) {
+            if (!get_http_api_auth_enabled()) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "SRS_HTTP_API_AUTH_ENABLED must be on when RTC Bearer authentication is enabled");
+            }
+            if (get_http_api_auth_type() != "bearer") {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "SRS_HTTP_API_AUTH_TYPE must be bearer when RTC Bearer authentication is enabled");
             }
         }
     }
@@ -1944,8 +1970,33 @@ srs_error_t SrsConfig::check_normal_config()
         SrsConfDirective *conf = get_heartbeat();
         for (int i = 0; conf && i < (int)conf->directives_.size(); i++) {
             string n = conf->at(i)->name_;
-            if (n != "enabled" && n != "interval" && n != "url" && n != "device_id" && n != "summaries" && n != "ports") {
+            if (n != "enabled" && n != "interval" && n != "url" && n != "device_id" && n != "summaries" && n != "ports" && n != "auth") {
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal heartbeat.%s", n.c_str());
+            }
+
+            if (n == "auth") {
+                for (int j = 0; j < (int)conf->at(i)->directives_.size(); j++) {
+                    string m = conf->at(i)->at(j)->name_;
+                    if (m != "enabled" && m != "type" && m != "token") {
+                        return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal heartbeat.auth.%s", m.c_str());
+                    }
+                }
+            }
+        }
+
+        if (get_heartbeat_auth_enabled()) {
+            string auth_type = get_heartbeat_auth_type();
+            if (auth_type.empty()) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "SRS_HEARTBEAT_AUTH_TYPE is required when heartbeat authentication is enabled");
+            }
+            if (auth_type != "bearer") {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "invalid SRS_HEARTBEAT_AUTH_TYPE=%s, only bearer is supported", auth_type.c_str());
+            }
+            if (get_heartbeat_auth_token().empty()) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID,
+                                     "SRS_HEARTBEAT_AUTH_TOKEN is required for heartbeat bearer authentication");
             }
         }
     }
@@ -7202,6 +7253,78 @@ bool SrsConfig::get_http_api_auth_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
+std::string SrsConfig::get_http_api_auth_type()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.auth.type"); // SRS_HTTP_API_AUTH_TYPE
+
+    static string DEFAULT = "";
+
+    SrsConfDirective *conf = root_->get("http_api");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("auth");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("type");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
+}
+
+std::string SrsConfig::get_http_api_auth_token()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.auth.token"); // SRS_HTTP_API_AUTH_TOKEN
+
+    static string DEFAULT = "";
+
+    SrsConfDirective *conf = root_->get("http_api");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("auth");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("token");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
+}
+
+bool SrsConfig::get_http_api_auth_rtc_bearer_enabled()
+{
+    SRS_OVERWRITE_BY_ENV_BOOL("srs.http_api.auth.rtc_bearer_enabled"); // SRS_HTTP_API_AUTH_RTC_BEARER_ENABLED
+
+    static bool DEFAULT = false;
+
+    SrsConfDirective *conf = root_->get("http_api");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("auth");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("rtc_bearer_enabled");
+    if (!conf || conf->arg0().empty()) {
+        return DEFAULT;
+    }
+
+    return SRS_CONF_PREFER_FALSE(conf->arg0());
+}
+
 std::string SrsConfig::get_http_api_auth_username()
 {
     SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.auth.username"); // SRS_HTTP_API_AUTH_USERNAME
@@ -8329,6 +8452,78 @@ bool SrsConfig::get_heartbeat_ports()
     }
 
     return SRS_CONF_PREFER_FALSE(conf->arg0());
+}
+
+bool SrsConfig::get_heartbeat_auth_enabled()
+{
+    SRS_OVERWRITE_BY_ENV_BOOL("srs.heartbeat.auth.enabled"); // SRS_HEARTBEAT_AUTH_ENABLED
+
+    static bool DEFAULT = false;
+
+    SrsConfDirective *conf = get_heartbeat();
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("auth");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("enabled");
+    if (!conf || conf->arg0().empty()) {
+        return DEFAULT;
+    }
+
+    return SRS_CONF_PREFER_FALSE(conf->arg0());
+}
+
+string SrsConfig::get_heartbeat_auth_type()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.heartbeat.auth.type"); // SRS_HEARTBEAT_AUTH_TYPE
+
+    static string DEFAULT = "";
+
+    SrsConfDirective *conf = get_heartbeat();
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("auth");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("type");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
+}
+
+string SrsConfig::get_heartbeat_auth_token()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.heartbeat.auth.token"); // SRS_HEARTBEAT_AUTH_TOKEN
+
+    static string DEFAULT = "";
+
+    SrsConfDirective *conf = get_heartbeat();
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("auth");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("token");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
 }
 
 SrsConfDirective *SrsConfig::get_stats()

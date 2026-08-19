@@ -191,6 +191,13 @@ Description about some fields:
 
 > Note: The callbacks for streaming are `on_publish` and `on_unpublish`, while the callbacks for playback are `on_play` and `on_stop`.
 
+> Note: These callbacks also apply to WebRTC. WHIP publishing invokes
+> `on_publish`, and WHEP playback invokes `on_play`. The callbacks can authorize
+> WHIP and WHEP by themselves because RTC Bearer authentication is disabled by
+> default. When combined with [Bearer authentication](./http-api.md#bearer-token-authentication),
+> enable `rtc_bearer_enabled`; the WHIP or WHEP request must then pass Bearer
+> authentication before SRS invokes the callback.
+
 > Note: Before SRS 4, there were `on_connect` and `on_close`, which are events defined by RTMP and only applicable to RTMP streams. These events overlap with streaming and playback events, so their use is not recommended.
 
 > Note: You can refer to the hooks.callback.vhost.com example in the conf/full.conf configuration file.
@@ -261,6 +268,17 @@ heartbeat {
     # Overwrite by env SRS_HEARTBEAT_SUMMARIES
     # default: off
     summaries off;
+    # Optional authentication for the heartbeat request.
+    auth {
+        # Overwrite by env SRS_HEARTBEAT_AUTH_ENABLED
+        # default: off
+        enabled off;
+        # Overwrite by env SRS_HEARTBEAT_AUTH_TYPE
+        # only bearer is supported
+        type bearer;
+        # Overwrite by env SRS_HEARTBEAT_AUTH_TOKEN
+        token proxy-registration-token;
+    }
 }
 ```
 
@@ -422,5 +440,3 @@ The HttpCallback can used to snapshot, please read [snapshot](./snapshot.md#http
 Winlin 2015.1
 
 ![](https://ossrs.io/gif/v1/sls.gif?site=ossrs.io&path=/lts/doc/en/v7/http-callback)
-
-

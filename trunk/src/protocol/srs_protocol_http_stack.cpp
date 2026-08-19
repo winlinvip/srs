@@ -26,6 +26,8 @@ using namespace std;
 
 #define SRS_HTTP_AUTH_SCHEME_BASIC "Basic"
 #define SRS_HTTP_AUTH_PREFIX_BASIC SRS_HTTP_AUTH_SCHEME_BASIC " "
+#define SRS_HTTP_AUTH_SCHEME_BEARER "Bearer"
+#define SRS_HTTP_AUTH_PREFIX_BEARER SRS_HTTP_AUTH_SCHEME_BEARER " "
 
 // Calculate the output size needed to base64-encode x bytes to a null-terminated string.
 #define SRS_AV_BASE64_SIZE(x) (((x) + 2) / 3 * 4 + 1)
@@ -1142,21 +1144,123 @@ ISrsHttpAuthMux::~ISrsHttpAuthMux()
 {
 }
 
+ISrsHttpAuthenticator::ISrsHttpAuthenticator()
+{
+}
+
+ISrsHttpAuthenticator::~ISrsHttpAuthenticator()
+{
+}
+
+SrsHttpBasicAuthenticator::SrsHttpBasicAuthenticator(string username, string password)
+{
+    username_ = username;
+    password_ = password;
+}
+
+SrsHttpBasicAuthenticator::~SrsHttpBasicAuthenticator()
+{
+}
+
+bool SrsHttpBasicAuthenticator::match(ISrsHttpMessage *r)
+{
+    // Basic authentication only protects the HTTP API.
+    return r->path().find("/api/") != string::npos;
+}
+
+srs_error_t SrsHttpBasicAuthenticator::authenticate(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+{
+    srs_error_t err = srs_success;
+
+    string auth = r->header()->get("Authorization");
+    if (auth.empty()) {
+        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BASIC);
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "empty Authorization");
+    }
+
+    if (!srs_strings_contains(auth, SRS_HTTP_AUTH_PREFIX_BASIC)) {
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid auth %s, should start with %s", auth.c_str(), SRS_HTTP_AUTH_PREFIX_BASIC);
+    }
+
+    string token = srs_erase_first_substr(auth, SRS_HTTP_AUTH_PREFIX_BASIC);
+    if (token.empty()) {
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "empty token from auth %s", auth.c_str());
+    }
+
+    string plaintext;
+    if ((err = srs_av_base64_decode(token, plaintext)) != srs_success) {
+        return srs_error_wrap(err, "decode token %s", token.c_str());
+    }
+
+    // The token format must be username:password
+    vector<string> user_pwd = srs_strings_split(plaintext, ":");
+    if (user_pwd.size() != 2) {
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid token %s", plaintext.c_str());
+    }
+
+    if (username_ != user_pwd[0] || password_ != user_pwd[1]) {
+        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BASIC);
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid token %s:%s", user_pwd[0].c_str(), user_pwd[1].c_str());
+    }
+
+    return err;
+}
+
+SrsHttpBearerAuthenticator::SrsHttpBearerAuthenticator(string token, bool rtc_bearer_enabled)
+{
+    token_ = token;
+    rtc_bearer_enabled_ = rtc_bearer_enabled;
+}
+
+SrsHttpBearerAuthenticator::~SrsHttpBearerAuthenticator()
+{
+}
+
+bool SrsHttpBearerAuthenticator::match(ISrsHttpMessage *r)
+{
+    // Bearer authentication always protects the HTTP API and optionally protects WebRTC signaling APIs.
+    string path = r->path();
+    return path.find("/api/") != string::npos || (rtc_bearer_enabled_ && path.find("/rtc/") != string::npos);
+}
+
+srs_error_t SrsHttpBearerAuthenticator::authenticate(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+{
+    string auth = r->header()->get("Authorization");
+    if (auth.empty()) {
+        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BEARER);
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "empty Authorization");
+    }
+    if (!srs_strings_starts_with(auth, SRS_HTTP_AUTH_PREFIX_BEARER)) {
+        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BEARER);
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid bearer auth");
+    }
+
+    string token = auth.substr(sizeof(SRS_HTTP_AUTH_PREFIX_BEARER) - 1);
+    if (token.empty() || token != token_) {
+        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BEARER);
+        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid bearer token");
+    }
+
+    return srs_success;
+}
+
 SrsHttpAuthMux::SrsHttpAuthMux(ISrsHttpHandler *h)
 {
     next_ = h;
-    enabled_ = false;
+    authenticator_ = NULL;
 }
 
 SrsHttpAuthMux::~SrsHttpAuthMux()
 {
+    srs_freep(authenticator_);
 }
 
-srs_error_t SrsHttpAuthMux::initialize(bool enabled, std::string username, std::string password)
+srs_error_t SrsHttpAuthMux::initialize(ISrsHttpAuthenticator *authenticator)
 {
-    enabled_ = enabled;
-    username_ = username;
-    password_ = password;
+    if (authenticator_ != authenticator) {
+        srs_freep(authenticator_);
+        authenticator_ = authenticator;
+    }
 
     return srs_success;
 }
@@ -1179,48 +1283,11 @@ srs_error_t SrsHttpAuthMux::do_auth(ISrsHttpResponseWriter *w, ISrsHttpMessage *
 {
     srs_error_t err = srs_success;
 
-    if (!enabled_) {
+    if (!authenticator_ || !authenticator_->match(r)) {
         return err;
     }
 
-    // We only apply for api starts with /api/ for HTTP API.
-    // We don't apply for other apis such as /rtc/, for which we use http callback.
-    if (r->path().find("/api/") == std::string::npos) {
-        return err;
-    }
-
-    std::string auth = r->header()->get("Authorization");
-    if (auth.empty()) {
-        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BASIC);
-        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "empty Authorization");
-    }
-
-    if (!srs_strings_contains(auth, SRS_HTTP_AUTH_PREFIX_BASIC)) {
-        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid auth %s, should start with %s", auth.c_str(), SRS_HTTP_AUTH_PREFIX_BASIC);
-    }
-
-    std::string token = srs_erase_first_substr(auth, SRS_HTTP_AUTH_PREFIX_BASIC);
-    if (token.empty()) {
-        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "empty token from auth %s", auth.c_str());
-    }
-
-    std::string plaintext;
-    if ((err = srs_av_base64_decode(token, plaintext)) != srs_success) {
-        return srs_error_wrap(err, "decode token %s", token.c_str());
-    }
-
-    // The token format must be username:password
-    std::vector<std::string> user_pwd = srs_strings_split(plaintext, ":");
-    if (user_pwd.size() != 2) {
-        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid token %s", plaintext.c_str());
-    }
-
-    if (username_ != user_pwd[0] || password_ != user_pwd[1]) {
-        w->header()->set("WWW-Authenticate", SRS_HTTP_AUTH_SCHEME_BASIC);
-        return srs_error_new(SRS_CONSTS_HTTP_Unauthorized, "invalid token %s:%s", user_pwd[0].c_str(), user_pwd[1].c_str());
-    }
-
-    return err;
+    return authenticator_->authenticate(w, r);
 }
 
 ISrsHttpMessage::ISrsHttpMessage()

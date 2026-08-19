@@ -287,10 +287,23 @@ srs_error_t SrsHttpConn::set_auth_enabled(bool auth_enabled)
 {
     srs_error_t err = srs_success;
 
-    // initialize the auth, which will proxy to mux.
-    if ((err = auth_->initialize(auth_enabled,
-                                 config_->get_http_api_auth_username(),
-                                 config_->get_http_api_auth_password())) != srs_success) {
+    ISrsHttpAuthenticator *authenticator = NULL;
+    if (auth_enabled) {
+        string type = config_->get_http_api_auth_type();
+        if (type == "basic") {
+            authenticator = new SrsHttpBasicAuthenticator(
+                config_->get_http_api_auth_username(), config_->get_http_api_auth_password());
+        } else if (type == "bearer") {
+            authenticator = new SrsHttpBearerAuthenticator(
+                config_->get_http_api_auth_token(), config_->get_http_api_auth_rtc_bearer_enabled());
+        } else {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "invalid http api auth type=%s", type.c_str());
+        }
+    }
+
+    // Initialize the auth mux, which owns the authenticator.
+    if ((err = auth_->initialize(authenticator)) != srs_success) {
+        srs_freep(authenticator);
         return srs_error_wrap(err, "init auth");
     }
 

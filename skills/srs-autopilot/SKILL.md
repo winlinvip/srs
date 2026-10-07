@@ -19,7 +19,7 @@ These override the `srs-develop` git rules for tasks run by this skill:
 - Never `git push`. The one exception is `srs-develop` `scripts/st-windows-test.sh`: to test on another OS, it pushes the commit to its branch's upstream, such as a personal fork, only to sync the branch to the test host. It never pushes to `origin`.
 - Never commit the task file or the tracker; `tasks/` is outside the repositories.
 - Never touch the review branch or worktree while running tasks; only a review (below) changes them.
-- When unsure, or a change is risky or needs the user's review, do not commit; stop the loop and ask the user.
+- Decide on your own: when unsure, choose the best option, log it as a decision, and go on. Stop and ask the user only for a dangerous operation or a severe, unexpected situation.
 
 ## Plan a Task File
 
@@ -69,7 +69,7 @@ Task prompt:
 ```
 Do exactly one task of tasks/<topic>.md.
 Read the task file in full; it is the plan, the rules, and the state. Pick the first unfinished task.
-If it needs the user (an open decision, installing software, or anything the task says to ask about), do not start it; report the question.
+Decide open choices yourself: pick the best option and log it as a decision. Stop and report only for a dangerous operation or a severe, unexpected situation.
 Follow the srs-autopilot skill's git rules and the srs-develop skill for the work.
 Run only plain commands and script files; never a multi-line shell blob such as bash -c '...'. If the task needs a new check, write it as a script file.
 Mark the task [~], write tests first, implement, and run the tests until they pass.

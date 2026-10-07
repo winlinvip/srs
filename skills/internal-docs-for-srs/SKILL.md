@@ -108,13 +108,13 @@ For Oryx, prefer the getting-started guide, FAQ, and repository documentation. T
 
 For State Threads design and usage, select the smallest relevant document:
 
-- `state-threads/README.md` — Build and usage per OS, supported platforms, GDB and Valgrind notes, unit tests, coverage, and links to the design discussions.
+- `state-threads/README.md` — Build and usage per OS, supported platforms, GDB and Valgrind notes, unit tests, testing every CPU with QEMU and Rosetta, coverage, and links to the design discussions.
 - `state-threads/CHANGELOG.md` — Versioned changes of the srs branch, including CPU, OS, and feature support history.
 - `state-threads/docs/st.html` — Design paper: definitions, existing server architectures, and how the State Threads model scales Internet applications.
 - `state-threads/docs/reference.html` — API reference: types, errors, initialization, thread control, per-thread data, synchronization, timing, I/O, program structure, and the list of blocking functions.
 - `state-threads/docs/notes.html` — Programming notes: porting, signals, intra- and inter-process synchronization, non-network I/O, and timeouts.
 - `state-threads/docs/timeout_heap.txt` — Design of the timeout heap that holds sleeping threads.
-- `state-threads/docs/win64_coroutine.md` — How threads switch and start on native Windows x64 (MSVC): the jmpbuf slots, the save-then-patch-SP start on other platforms, the `_st_md_thread_start` assembly entry, SEH and unwind tables, and the TIB stack bounds.
+- `state-threads/docs/win64_coroutine.md` — How threads switch on native Windows x64 (MSVC) and start on every CPU: the jmpbuf slots, the old save-then-patch-SP start that only Cygwin64 keeps, the `_st_md_thread_start` assembly entry on every other CPU, SEH and unwind tables, and the TIB stack bounds.
 
 ### Media Streaming Standards
 

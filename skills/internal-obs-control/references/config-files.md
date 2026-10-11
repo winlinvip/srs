@@ -26,11 +26,23 @@ why a setting did not stick. Source: `frontend/OBSApp.cpp`, `frontend/widgets/OB
 | macOS | `~/Library/Application Support/obs-studio` |
 | Linux | `~/.config/obs-studio` (`$XDG_CONFIG_HOME/obs-studio`); Flatpak: `~/.var/app/com.obsproject.Studio/config/obs-studio` |
 | Windows | `%APPDATA%\obs-studio` |
-| portable mode (`--portable`, Windows/Linux builds with a `portable_mode` file) | `<install>/config/obs-studio` |
+| portable mode (official Windows builds only) | `<install>\config\obs-studio` |
+
+Portable mode:
+
+- **Trigger**: `--portable`, or a `portable_mode`, `obs_portable_mode`, `portable_mode.txt` or
+  `obs_portable_mode.txt` file at `../..` from the working directory (`frontend/obs-main.cpp`).
+- **Config dir**: `../../config/obs-studio` from the working directory, so launch from `<install>\bin\64bit`
+  (`frontend/OBSApp.cpp` `BASE_PATH`).
+- **Other OSes**: macOS and Linux get it only from a build with `ENABLE_PORTABLE_CONFIG`; official builds do
+  not have it.
 
 `global.ini [Locations]` can redirect `Configuration`, `SceneCollections`, `Profiles`,
 `PluginManagerSettings` to another base dir; OBS appends `obs-studio/basic/{profiles,scenes}` to it.
-`obsws.py probe` prints the resolved paths.
+
+- **Windows paths** are written with doubled backslashes (`Configuration=C:\\Users\\me\\AppData\\Roaming`);
+  OBS unescapes them when it reads the file. Write new values the same way.
+- `obsws.py probe` prints the resolved paths.
 
 ## Layout
 
@@ -66,7 +78,7 @@ FirstRun=true               ; false on a fresh install until the auto-config wiz
 Profile=SRS Test            ; display name of the current profile
 ProfileDir=SRS_Test         ; its directory
 SceneCollection=SRS Test    ; display name
-SceneCollectionFile=SRS_Test ; file name without .json
+SceneCollectionFile=SRS_Test.json ; file name, .json included (macOS and Windows)
 ConfigOnNewProfile=false    ; last "run wizard for new profile" choice in the GUI
 [BasicWindow]
 SysTrayEnabled=true
@@ -111,12 +123,12 @@ NVENCPreset2=p5
 UseAdvanced=false           ; enable custom encoder settings string
 x264Settings=               ; e.g. "keyint=60"
 RecQuality=Stream
-FilePath=~/Movies
-RecFormat2=hybrid_mov
+FilePath=~/Movies           ; per OS: Windows %USERPROFILE%\Videos
+RecFormat2=hybrid_mov       ; per OS: Windows hybrid_mp4
 
 [AdvOut]                    ; used when Mode=Advanced
 Encoder=obs_x264            ; encoder id: obs_x264, com.apple.videotoolbox.videoencoder.ave.avc, jim_nvenc, obs_qsv11_v2, ...
-AudioEncoder=CoreAudio_AAC  ; CoreAudio_AAC | ffmpeg_aac | ffmpeg_opus
+AudioEncoder=CoreAudio_AAC  ; CoreAudio_AAC | ffmpeg_aac | ffmpeg_opus; per OS: macOS CoreAudio_AAC, Windows ffmpeg_aac
 TrackIndex=1
 ApplyServiceSettings=true
 UseRescale=false

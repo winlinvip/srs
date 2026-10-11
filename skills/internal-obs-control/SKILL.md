@@ -24,15 +24,32 @@ The **obs-websocket plugin is required**. It ships inside OBS (`obs-websocket.pl
 so nothing is downloaded; it only has to be *enabled* in its `config.json`, which OBS reads at startup.
 Step 1 checks this and fixes it.
 
-## Path resolution
+## Running the scripts
 
 - `scripts/` and `references/` resolve relative to the directory containing this `SKILL.md`.
 - Run scripts with `python3` (3.9+, standard library only; no pip packages). They work on macOS, Linux and
-  Windows and locate OBS and its config directory themselves (`OBS_BINARY`, `OBS_CONFIG_DIR`,
-  `OBS_WS_HOST`, `OBS_WS_PORT` and `OBS_WS_PASSWORD` override). Every script bounds its own waits, so do not wrap them in coreutils
-  `timeout` (absent on macOS).
+  Windows.
+- Every script bounds its own waits, so do not wrap them in coreutils `timeout` (absent on macOS).
 - The user's SRS repository is the current working directory when this skill runs inside it; SRS itself may
   be the local build `trunk/objs/srs` or a remote server. Never `cd` away permanently.
+
+The scripts find OBS and its config themselves. These variables override that, for the main OBS:
+
+- **`OBS_BINARY`**: the OBS executable to launch.
+- **`OBS_CONFIG_DIR`**: the OBS config directory, the one holding `basic/` and `plugin_config/`.
+- **`OBS_WS_HOST`**: the websocket host, default `127.0.0.1`.
+- **`OBS_WS_PORT`**: the websocket port, default from the websocket `config.json`, else 4455.
+- **`OBS_WS_PASSWORD`**: the websocket password, default from the websocket `config.json`.
+
+These variables select a run or an instance:
+
+- **`OBS_RUN`**: the run id, same as `--run`; see [Runs](#runs-every-resource-carries-a-run-id).
+- **`OBS_INSTANCE`**: the instance id, same as `--instance`; `OBS_WS_HOST`, `OBS_WS_PORT` and
+  `OBS_WS_PASSWORD` are then ignored. See [Parallel tests](#parallel-tests-one-isolated-instance-per-test).
+- **`OBS_CONTROL_HOME`**: the state root, default `$HOME/.cache/internal-obs-control`, holding `instances/`
+  and `runs/`.
+- **`OBS_CONTROL_WS_PORTS`**: the websocket port range for new instances, such as `14000-14099`; default
+  4460 and up.
 
 ## Runs: every resource carries a run id
 

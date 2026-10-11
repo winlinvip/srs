@@ -101,4 +101,4 @@ A version bump is not a release. Bumping happens on every merged change; releasi
 
 Do not force a version bump for documentation, skill, issue-template, or maintenance-only work when the maintainer does not intend a release. Ask rather than infer.
 
-Stop and let the user review and stage the version and changelog files. After an explicit commit request, follow `SKILL.md`'s repository-aware Git Workflow.
+Stop and let the user review and stage the version and changelog files. After an explicit commit request, follow the repository-aware Git Workflow in `references/git-workflow.md`.

@@ -149,5 +149,45 @@ check test "$(SRS_TEST_OBS=0 bash "$WIN")" = 'SKIP SRS_TEST_OBS=0'
 check test "$(SRS_TEST_WINDOWS_HOST= bash "$WIN")" = 'SKIP windows: SRS_TEST_WINDOWS_HOST is not set'
 check test "$(bash "$WIN" --bogus >/dev/null 2>&1; echo $?)" = 3
 check test "$(bash "$WIN" --host-case srt 127.0.0.1 >/dev/null 2>&1; echo $?)" = 3
+# The Linux run: gates, the Docker build and the SRS container, checked with a
+# fake docker and a fake OBS probe on PATH.
+LINUX="$SCRIPT_DIR/obs-linux-test.sh"
+FAKE=/tmp/srs-obs-lib-regression/bin
+mkdir -p "$FAKE"
+printf '%s\n' '#!/bin/bash' 'echo "$*" >> /tmp/srs-obs-lib-regression/docker.args' \
+  'case "$1" in' \
+  '  info) [[ -z "${FAKE_DOCKER_DOWN:-}" ]] || exit 1; echo arm64;;' \
+  '  run) if [[ " $* " == *" -d "* ]]; then echo cid123; else cat >/dev/null; fi;;' \
+  '  inspect) echo false;;' \
+  'esac' > "$FAKE/docker"
+printf '%s\n' '#!/bin/bash' 'echo "{\"obs_binary\":\"OBS\",\"websocket_plugin\":\"plugin\"}"' > "$FAKE/fake-python"
+chmod +x "$FAKE/docker" "$FAKE/fake-python"
+linux_run() { PATH="$FAKE:$PATH" OBS_PYTHON=fake-python bash "$LINUX" "$@"; }
+check test "$(SRS_TEST_OBS=0 bash "$LINUX")" = 'SKIP SRS_TEST_OBS=0'
+check test "$(FAKE_DOCKER_DOWN=1 linux_run)" = 'SKIP linux: unverified: Docker not available'
+check test "$(bash "$LINUX" --bogus >/dev/null 2>&1; echo $?)" = 3
+check test "$(SRS_TEST_PORT_BASE=1000 linux_run >/dev/null 2>&1; echo $?)" = 3
+# --build copies the tracked trunk files into the named volume and builds there, without OBS.
+linux_build() {
+  local output
+  : > /tmp/srs-obs-lib-regression/docker.args
+  output=$(OBS_PYTHON=false PATH="$FAKE:$PATH" bash "$LINUX" --build) || return 1
+  [[ "$output" == "BUILD linux $(git -C "$SCRIPT_DIR" rev-parse --short HEAD)"* ]] || return 1
+  grep -q -- '-v srs-obs-linux-build:/build ' /tmp/srs-obs-lib-regression/docker.args \
+    && grep -q -- ':/src:ro ' /tmp/srs-obs-lib-regression/docker.args \
+    && grep -q -- ' --container-build$' /tmp/srs-obs-lib-regression/docker.args \
+    && ! grep -q -- 'run -d' /tmp/srs-obs-lib-regression/docker.args
+}
+check linux_build
+# SRS exiting in its container fails the run, and the EXIT trap removes that container.
+linux_srs_exits() {
+  local output status=0
+  : > /tmp/srs-obs-lib-regression/docker.args
+  output=$(SRS_TEST_PORT_BASE=15400 linux_run 2>&1) || status=$?
+  [[ $status -eq 1 && "$output" == *'FAIL SRS exited in the Linux container'* ]] || return 1
+  grep -q -- 'run -d .*-p 127.0.0.1:15400:15400 -p 127.0.0.1:15401:15401 -p 127.0.0.1:15402:15402 -p 127.0.0.1:15403:15403/udp -p 127.0.0.1:15404:15404/udp ' \
+    /tmp/srs-obs-lib-regression/docker.args && tail -n 1 /tmp/srs-obs-lib-regression/docker.args | grep -q '^rm -f cid123$'
+}
+check linux_srs_exits
 rm -rf /tmp/srs-obs-lib-regression
 echo "PASS $checks harness regressions"

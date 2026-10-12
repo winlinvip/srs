@@ -21,6 +21,7 @@ obs_test_command() {
   local limit=$1 deadline status=0
   shift
   deadline=$((SECONDS + limit))
+  OBS_COMMAND_TIMED_OUT=
   "$@" &
   OBS_COMMAND_PID=$!
   while kill -0 "$OBS_COMMAND_PID" 2>/dev/null; do
@@ -30,6 +31,7 @@ obs_test_command() {
       kill -KILL "$OBS_COMMAND_PID" 2>/dev/null || true
       wait "$OBS_COMMAND_PID" 2>/dev/null || true
       OBS_COMMAND_PID=
+      OBS_COMMAND_TIMED_OUT=1
       obs_test_fail 'command timed out'
       return 1
     fi
@@ -105,7 +107,7 @@ obs_test_init() {
   OBS_API_URL="http://127.0.0.1:$OBS_API_PORT"
   OBS_HTTP_URL="http://127.0.0.1:$OBS_HTTP_PORT"
   OBS_PASS_COUNT=0 OBS_KNOWN_COUNT=0
-  OBS_INSTANCE_ID= OBS_SRS_PID= OBS_LAUNCH_PID= OBS_COMMAND_PID=
+  OBS_INSTANCE_ID= OBS_SRS_PID= OBS_LAUNCH_PID= OBS_COMMAND_PID= OBS_COMMAND_TIMED_OUT=
   for dep in python3 ffmpeg ffprobe jq curl; do
     command -v "$dep" >/dev/null || { obs_test_fail "missing dependency $dep"; return 1; }
   done
@@ -169,25 +171,37 @@ obs_test_start() {
 }
 
 obs_test_setup() {
-  local status=0 probe
+  local status=0 probe relaunch=
   obs_test_setup_once "$@" || status=$?
-  if [[ $status -eq 2 ]]; then
+  if [[ -n "${OBS_COMMAND_TIMED_OUT:-}" ]]; then
+    # When several instances reset video at once, OBS can hang in
+    # obs_reset_video, joining a graphics thread that keeps rendering; the
+    # websocket stops answering while the process lives. Replace it once.
+    echo 'OBS stopped answering during setup; relaunching the isolated instance once'
+    obs_test_command 10 python3 "$OBS_WS" quit --instance "$OBS_INSTANCE_ID" --force --timeout 3 \
+      >>"$OBS_TEST_DIR/launch.log" 2>&1 || true
+    relaunch=1
+  elif [[ $status -eq 2 ]]; then
     probe=$(python3 "$OBS_WS" probe --instance "$OBS_INSTANCE_ID" --json) || probe='{}'
     # Some macOS OBS versions exit on their first CreateProfile. Recover once,
     # only when the owned process exited; never retry a running/modal OBS.
     if echo "$probe" | jq -e '.obs_running == false and .live.connected == false' >/dev/null; then
       echo 'OBS exited during setup; relaunching the isolated instance once'
-      obs_test_command 15 python3 "$OBS_WS" launch --instance "$OBS_INSTANCE_ID" --wait 10 --minimize-to-tray \
-        >>"$OBS_TEST_DIR/launch.log" 2>&1 || return 1
-      status=0
-      obs_test_setup_once "$@" || status=$?
+      relaunch=1
     fi
+  fi
+  if [[ -n "$relaunch" ]]; then
+    obs_test_command 15 python3 "$OBS_WS" launch --instance "$OBS_INSTANCE_ID" --wait 10 --minimize-to-tray \
+      >>"$OBS_TEST_DIR/launch.log" 2>&1 || return 1
+    status=0
+    obs_test_setup_once "$@" || status=$?
   fi
   [[ $status -eq 0 ]] || { obs_test_fail "OBS setup/publish (see $OBS_TEST_DIR/setup.log)"; return 1; }
 }
 
+# 20 s bounds a hung OBS early enough for one relaunch inside the 60 s budget.
 obs_test_setup_once() {
-  obs_test_command 30 python3 "$OBS_RECIPE" setup --instance "$OBS_INSTANCE_ID" \
+  obs_test_command 20 python3 "$OBS_RECIPE" setup --instance "$OBS_INSTANCE_ID" \
     --width 640 --height 360 --fps 30 --video-bitrate 800 --preset ultrafast \
     --media-file "$OBS_CLIP" --srs-api "$OBS_API_URL" --http-url "$OBS_HTTP_URL" \
     "$@" --start --verify >>"$OBS_TEST_DIR/setup.log" 2>&1
@@ -210,6 +224,17 @@ obs_test_assert_api() {
     sleep 0.1
   done
   obs_test_fail "API expected active live/$OBS_INSTANCE_ID $video/$audio 640x360"
+}
+
+# SRS flushes an RTC publisher's frame count to the statistic only every 288
+# frames, and the RTC-to-RTMP bridge counts none, so a fresh WHIP publisher
+# reads frames=0: report that as the known finding, never as a pass.
+obs_test_assert_frames() {
+  local frames
+  frames=$(obs_test_read_stream 2>/dev/null | jq -r --arg name "$OBS_INSTANCE_ID" \
+    '[.streams[]? | select(.app == "live" and .name == $name) | .frames // 0] | first // 0') || frames=0
+  case "$frames" in ''|*[!0-9]*) frames=0;; esac
+  if [[ $frames -gt 0 ]]; then obs_test_pass "API frames $frames"; else obs_test_known 'F2 API frames 0'; fi
 }
 
 obs_test_media_matches() {

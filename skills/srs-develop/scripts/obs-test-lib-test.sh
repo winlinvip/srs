@@ -66,6 +66,18 @@ OBS_KNOWN_COUNT=0
 obs_test_known F2 'API frame count'
 check test "$OBS_PASS_COUNT" = 0
 check test "$OBS_KNOWN_COUNT" = 1
+# A zero frame count is the known SRS finding, excluded from the pass count.
+OBS_PASS_COUNT=0
+OBS_KNOWN_COUNT=0
+fixture='{"code":0,"streams":[{"app":"live","name":"test","publish":{"active":true},"frames":0}]}'
+check test "$(obs_test_assert_frames)" = 'KNOWN F2 API frames 0'
+fixture='{"code":0,"streams":[{"app":"live","name":"other","publish":{"active":true},"frames":90}]}'
+check test "$(obs_test_assert_frames)" = 'KNOWN F2 API frames 0'
+fixture='{"code":0,"streams":[{"app":"live","name":"test","publish":{"active":true},"frames":57}]}'
+check test "$(obs_test_assert_frames)" = 'PASS API frames 57'
+obs_test_assert_frames >/dev/null
+check test "$OBS_PASS_COUNT" = 1
+check test "$OBS_KNOWN_COUNT" = 0
 crashed_profile_retry() (
   OBS_WS=unused OBS_RECIPE=recipe OBS_CLIP=clip OBS_HTTP_URL=http://127.0.0.1:15101
   local calls=0
@@ -75,6 +87,23 @@ crashed_profile_retry() (
   [[ $calls -eq 3 ]]
 )
 check crashed_profile_retry
+# A setup whose OBS stops answering is force-quit, relaunched and retried once.
+hung_setup_retry() (
+  OBS_WS=unused OBS_RECIPE=recipe OBS_CLIP=clip OBS_HTTP_URL=http://127.0.0.1:15101 OBS_INSTANCE_ID=t12345
+  local calls=0 log=/tmp/srs-obs-lib-regression/hung.args
+  : > "$log"
+  obs_test_command() {
+    calls=$((calls + 1)); shift
+    printf '%s\n' "$*" >> "$log"
+    OBS_COMMAND_TIMED_OUT=
+    [[ $calls -ne 1 ]] || { OBS_COMMAND_TIMED_OUT=1; return 1; }
+  }
+  python3() { return 1; }
+  obs_test_setup --rtmp rtmp://127.0.0.1:15100/live/test || return 1
+  [[ $calls -eq 4 ]] && grep -q '^python3 unused quit --instance t12345 --force' "$log" \
+    && grep -q '^python3 unused launch --instance t12345 ' "$log"
+)
+check hung_setup_retry
 cleanup_failure() (
   OBS_WS=unused OBS_INSTANCE_ID=t12345 OBS_SRS_PID=
   python3() { return 1; }

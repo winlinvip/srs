@@ -46,6 +46,7 @@ Run feature-specific bundled tests in addition to this matrix when the routed wo
 
 | Script | Covers |
 |---|---|
+| `obs-rtmp-publish-test.sh` | Isolated OBS H.264/AAC RTMP publish: API active and 640×360, HTTP-FLV and HLS video/audio playback; owned cleanup and a 60 s budget. Requires OBS, Python 3.9+, FFmpeg, jq and curl; `SRS_TEST_OBS=0` skips. |
 | `browser-page-url-test.js` | Browser player page URL parsing, for `trunk/research/players` changes. |
 | `gb28181-api-timeout-test.sh` | External-SIP GB28181 API session timeout cleanup. |
 | `gb28181-tcp-disconnect-test.sh` | External-SIP GB28181 TCP disconnect cleanup. |
@@ -208,7 +209,9 @@ Each test process binds ports only from its own range, so the parallel lanes nev
 | 12100–12999 | The other bundled scripts, one 100-port slot each at `SRS_TEST_PORT_BASE`, by default 12100 `srs-config-file`, 12200 `srs-reload`, 12300 and 12400 `gb28181-*`, 12500 to 12800 `rtc-*`, 12900 `forward-status` | 900 | 31 | 869, inside the existing slots |
 | 13000–13999 | The regression SRS at `SRS_TEST_PORT_BASE`, by default 13000, through the `SRS_*_LISTEN` env and the `srs_test` port flags | 1,000 | 6 | 994 |
 | 14000–14999 | The `srs-integ` suite in `cmd/integ`, the main process from 14000–14799 and the timer process from 14800–14999, moved by `SRS_INTEG_PORTS` | 1,000 | Allocated per server | 0, owned by the allocator |
-| 15000–20999 | Reserved for new test layers, except the proxy defaults 18000, 18080 and 20080 | 6,000 | 0 | 5,997 |
+| 15000–15099 | Isolated OBS websocket allocation, moved by `OBS_CONTROL_WS_PORTS` | 100 | Random, per instance | 0, owned by the allocator |
+| 15100–15199 | `obs-rtmp-publish-test.sh` at `SRS_TEST_PORT_BASE`: RTMP +0, HTTP +1, API +2, RTC UDP +3, SRT UDP +4 | 100 | 5 | 95, inside the existing slot |
+| 15200–20999 | Reserved for new test layers, except the proxy defaults 18000, 18080 and 20080 | 5,800 | 0 | 5,797 |
 | 21000–25999 | Black-box SRS servers, from `SRSPortAllocator` in `trunk/3rdparty/srs-bench/blackbox`, moved by `SRS_BLACKBOX_PORTS` | 5,000 | Random, per test | 0, owned by the allocator |
 | 26000–29999 | C++ unit tests, from `srs_utest_random_port()`, `_srs_tmp_port` and `_srs_tmp_srt_port`, moved by `SRS_UTEST_PORTS` | 4,000 | Random, per test | 0, owned by the allocator |
 | 30000–32767 | Reserved for new test layers | 2,768 | 0 | 2,768 |

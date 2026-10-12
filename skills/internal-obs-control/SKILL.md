@@ -214,7 +214,7 @@ What it does, in order (each step is also available as a single `obsws.py call`)
 Then observe and steer:
 
 ```bash
-python3 scripts/obs_srs_test.py stream status|start|stop
+python3 scripts/obs_srs_test.py stream status|start|stop|restart
 python3 scripts/obs_srs_test.py verify --srs-api http://localhost:1985 --app live --stream livestream
 python3 scripts/obsws.py screenshot --out /tmp/program.png --width 640 --height 360   # see what is streamed
 python3 scripts/obsws.py events --types StreamStateChanged --timeout 60                 # reconnect behaviour
@@ -268,6 +268,13 @@ What you changed or worked around:
 - **Dialogs** you had to dismiss or avoid.
 - **The user's own OBS**: enabled websocket, restarted OBS, created or removed profiles or scene
   collections.
+
+## Gotchas
+
+- **Stream restart**: use `obs_srs_test.py stream restart` to stop, wait for inactive plus
+  one second, then start and wait for active. `stream start` also waits before starting an
+  inactive output. If start times out with no new OBS log output, it switches away from the
+  current profile and back, then retries once; at least two profiles must exist.
 
 ## Reference material (load as needed)
 

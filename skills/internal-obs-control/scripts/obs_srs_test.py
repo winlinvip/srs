@@ -623,15 +623,48 @@ def cmd_setup(args):
     return 0
 
 
+def stream_log_state():
+    path = obsws.latest_log()
+    try:
+        return (path, os.path.getsize(path)) if path else None
+    except OSError:
+        return None
+
+
+def start_stream(c, timeout):
+    # outputActive clears before OBS finishes releasing its output handler.
+    wait_stream(c, active=False, timeout=timeout)
+    time.sleep(1.0)
+    before = stream_log_state()
+    c.call("StartStream")
+    try:
+        return wait_stream(c, active=True, timeout=timeout)
+    except obsws.TimeoutError_:
+        if before is None or stream_log_state() != before or c.call("GetStreamStatus").get("outputActive"):
+            raise
+        # A successful request with no output activity/logs is the OBS restart race.
+        profiles = c.call("GetProfileList")
+        if len(profiles["profiles"]) < 2:
+            raise
+        log("stream start stalled without new logs; reloading the current profile")
+        reload_profile(c, profiles["currentProfileName"], profiles["profiles"])
+        c.call("StartStream")
+        return wait_stream(c, active=True, timeout=timeout)
+
+
 def cmd_stream(args):
     c = obsws.connect(args)
     try:
-        if args.action == "start":
-            if c.call("GetStreamStatus").get("outputActive"):
+        if args.action in ("start", "restart"):
+            active = c.call("GetStreamStatus").get("outputActive")
+            if args.action == "restart" and active:
+                c.call("StopStream")
+                active = False
+            if active:
                 log("stream already active")
+                s = wait_stream(c, active=True, timeout=args.timeout)
             else:
-                c.call("StartStream")
-            s = wait_stream(c, active=True, timeout=args.timeout)
+                s = start_stream(c, args.timeout)
         elif args.action == "stop":
             if not c.call("GetStreamStatus").get("outputActive"):
                 log("stream already inactive")
@@ -802,9 +835,9 @@ def main(argv=None):
     p.add_argument("--srs-api", help="SRS HTTP API base (default: http://<target host>:1985)")
     p.set_defaults(func=cmd_setup, timeout=30.0)
 
-    p = sub.add_parser("stream", help="start | stop | status")
+    p = sub.add_parser("stream", help="start | stop | restart | status")
     obsws.add_conn_args(p)
-    p.add_argument("action", choices=["start", "stop", "status"])
+    p.add_argument("action", choices=["start", "stop", "restart", "status"])
     p.set_defaults(func=cmd_stream, timeout=30.0)
 
     p = sub.add_parser("verify", help="check the SRS HTTP API for the published stream")

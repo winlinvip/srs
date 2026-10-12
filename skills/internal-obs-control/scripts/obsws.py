@@ -33,7 +33,8 @@ without sharing profiles, scene collections, sources, sentinels or logs:
   obsws.py launch --instance $ID --wait 90 && obsws.py call GetVersion --instance $ID
   obsws.py instance list
   obsws.py instance remove --instance $ID     (quit it and delete its config dir; --all for every one)
-macOS and Linux only (OBS reads its config dir from CFFIXED_USER_HOME / XDG_CONFIG_HOME).
+macOS and Linux point OBS at the private config with CFFIXED_USER_HOME / XDG_CONFIG_HOME. Windows runs
+OBS in portable mode from directory junctions to the install, started on the logged-in desktop.
 
 Runs (resource ownership): every profile, scene collection, scene and source a test creates carries a run
 id in its name ("SRS Test r3f9a2"), and the run's ledger ($OBS_CONTROL_HOME/runs/ID/run.json) lists the
@@ -543,10 +544,15 @@ def current_profile_and_collection():
 # profile/collection), the same websocket port, the same profiles, scene collections, sentinels and
 # logs. An instance gives one OBS a private home so OBS derives a private config dir from it
 # (macOS: CFFIXED_USER_HOME feeds NSSearchPathForDirectoriesInDomains; Linux: XDG_CONFIG_HOME).
+# Windows OBS has no such variable, but official builds allow portable mode: --portable makes the config
+# dir ../../config from the working directory (frontend/OBSApp.cpp BASE_PATH). The instance dir gets
+# junctions bin, data and obs-plugins to the install and its own config, and OBS runs from
+# <instance>\bin\64bit, so nothing is written to the install or to %APPDATA%\obs-studio.
 INSTANCE = None
 INSTANCE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 FIRST_INSTANCE_PORT = 4460
 LAST_INSTANCE_PORT = 5459
+WINDOWS_INSTALL_LINKS = ("bin", "data", "obs-plugins")
 
 
 def instance_port_range():
@@ -566,9 +572,6 @@ def set_instance(name):
     if name:
         if not INSTANCE_RE.match(name):
             raise LocalStateError("instance id %r: use 1-32 letters, digits, '-' or '_', starting with a letter or digit" % name)
-        if system() == "Windows":
-            raise LocalStateError("isolated instances need OBS to take its config dir from the environment, which "
-                                  "OBS on Windows does not; use one portable OBS copy per test (OBS_BINARY + --portable)")
     INSTANCE = name or None
 
 
@@ -594,6 +597,8 @@ def instance_home(name):
 
 
 def instance_config_dir(name):
+    if system() == "Windows":
+        return os.path.join(instance_dir(name), "config", "obs-studio")
     home = instance_home(name)
     if system() == "Darwin":
         return os.path.join(home, "Library", "Application Support", "obs-studio")
@@ -604,7 +609,7 @@ def instance_env(name):
     env = dict(os.environ)
     if system() == "Darwin":
         env["CFFIXED_USER_HOME"] = instance_home(name)
-    else:
+    elif system() != "Windows":
         env["XDG_CONFIG_HOME"] = os.path.join(instance_home(name), ".config")
     return env
 
@@ -727,6 +732,14 @@ def instance_names():
 
 
 def pid_is_obs(pid):
+    if system() == "Windows":
+        # os.kill(pid, 0) would terminate the process on Windows, so ask tasklist instead.
+        try:
+            out = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid, "/FO", "CSV", "/NH"],
+                                 capture_output=True, text=True, timeout=10).stdout
+        except (OSError, subprocess.SubprocessError):
+            return True
+        return any(line.startswith('"obs64.exe","%d"' % pid) for line in out.splitlines())
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -763,15 +776,30 @@ class instances_lock:
     """Serialises port allocation so instances launched at the same moment never pick the same port."""
 
     def __enter__(self):
-        import fcntl
         os.makedirs(instances_root(), exist_ok=True)
         self.f = open(os.path.join(instances_root(), ".lock"), "a+")
-        fcntl.flock(self.f, fcntl.LOCK_EX)
+        if os.name == "nt":
+            import msvcrt
+            while True:
+                self.f.seek(0)
+                try:
+                    msvcrt.locking(self.f.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.05)
+        else:
+            import fcntl
+            fcntl.flock(self.f, fcntl.LOCK_EX)
         return self
 
     def __exit__(self, *exc):
-        import fcntl
-        fcntl.flock(self.f, fcntl.LOCK_UN)
+        if os.name == "nt":
+            import msvcrt
+            self.f.seek(0)
+            msvcrt.locking(self.f.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(self.f, fcntl.LOCK_UN)
         self.f.close()
 
 
@@ -840,6 +868,109 @@ def seed_instance(name):
         if not os.path.isfile(user_ini):
             write_ini(user_ini, {"General": {"FirstRun": "true", "ConfirmOnExit": "false"}})
     return port
+
+
+def windows_task_name(name):
+    return "internal-obs-control-" + name
+
+
+def powershell(script, timeout=60):
+    """Run a PowerShell script passed as -EncodedCommand, so no quoting reaches the command line."""
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    return subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+                          capture_output=True, text=True, timeout=timeout)
+
+
+def ps_quote(text):
+    return "'" + text.replace("'", "''") + "'"
+
+
+def link_windows_instance(name, binary):
+    """Give the instance junctions bin, data and obs-plugins to the install of <install>\\bin\\64bit\\obs64.exe
+    (no admin needed) and return the instance's obs64.exe."""
+    install = os.path.dirname(os.path.dirname(os.path.dirname(binary)))
+    for sub in WINDOWS_INSTALL_LINKS:
+        # normpath: expanduser gives C:\Users\me/.cache, and cmd reads "/.cache" as a switch.
+        link = os.path.normpath(os.path.join(instance_dir(name), sub))
+        if os.path.lexists(link):
+            continue
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", link, os.path.normpath(os.path.join(install, sub))],
+                           capture_output=True, text=True, timeout=15)
+        if r.returncode:
+            raise LocalStateError("cannot link %s to the OBS install: %s" % (link, (r.stdout + r.stderr).strip()))
+    return os.path.normpath(os.path.join(instance_dir(name), "bin", "64bit", "obs64.exe"))
+
+
+def unlink_windows_instance(name):
+    """Remove the instance's junctions, never the install they point to: rmdir without /s removes a junction
+    and refuses a real directory that has files. Returns the links that are still there."""
+    left = []
+    for sub in WINDOWS_INSTALL_LINKS:
+        link = os.path.normpath(os.path.join(instance_dir(name), sub))
+        if os.path.lexists(link):
+            subprocess.run(["cmd", "/c", "rmdir", link], capture_output=True, text=True, timeout=15)
+            if os.path.lexists(link):
+                left.append(link)
+    return left
+
+
+def start_windows_instance(name, exe, extra):
+    """Start the instance's OBS through a scheduled task on the logged-in desktop: OBS needs the interactive
+    session, and an SSH session would start it where nothing can render. Returns the OBS pid."""
+    script = "\n".join([
+        "$ErrorActionPreference = 'Stop'",
+        "$action = New-ScheduledTaskAction -Execute %s -Argument %s -WorkingDirectory %s"
+        % (ps_quote(exe), ps_quote(subprocess.list2cmdline(extra)), ps_quote(os.path.dirname(exe))),
+        "$principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) "
+        "-LogonType Interactive",
+        "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries "
+        "-ExecutionTimeLimit ([TimeSpan]::Zero)",
+        "Register-ScheduledTask -TaskName %s -Action $action -Principal $principal -Settings $settings -Force | Out-Null"
+        % ps_quote(windows_task_name(name)),
+        "Start-ScheduledTask -TaskName %s" % ps_quote(windows_task_name(name)),
+        "$exe = %s" % ps_quote(exe.lower()),
+        "$end = (Get-Date).AddSeconds(15)",
+        "while ((Get-Date) -lt $end) {",
+        "  $p = Get-CimInstance Win32_Process -Filter \"Name='obs64.exe'\" | "
+        "Where-Object { $_.CommandLine -and $_.CommandLine.ToLower().Contains($exe) } | Select-Object -First 1",
+        "  if ($p) { Write-Output $p.ProcessId; exit 0 }",
+        "  Start-Sleep -Milliseconds 200",
+        "}",
+        "exit 3",
+    ])
+    r = powershell(script)
+    pid = r.stdout.strip().splitlines()[-1] if r.returncode == 0 and r.stdout.strip() else ""
+    if not pid.isdigit():
+        raise LocalStateError("OBS instance %s did not start on the desktop; a user must be logged in on the "
+                              "Windows desktop (exit %s: %s)" % (name, r.returncode, (r.stdout + r.stderr).strip()))
+    return int(pid)
+
+
+def close_windows_instance(name, pids):
+    """Ask the instance's OBS to close from the desktop: taskkill without /F posts WM_CLOSE, which an SSH
+    session cannot deliver to a window on the desktop, so a one-shot scheduled task runs it there."""
+    task = ps_quote(windows_task_name(name) + "-quit")
+    powershell("\n".join([
+        "$ErrorActionPreference = 'Stop'",
+        "$action = New-ScheduledTaskAction -Execute 'taskkill.exe' -Argument %s"
+        % ps_quote(" ".join("/PID %d" % pid for pid in pids)),
+        "$principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) "
+        "-LogonType Interactive",
+        "Register-ScheduledTask -TaskName %s -Action $action -Principal $principal -Force | Out-Null" % task,
+        "Start-ScheduledTask -TaskName %s" % task,
+        "$end = (Get-Date).AddSeconds(10)",
+        "while ((Get-Date) -lt $end) {",
+        "  $t = Get-ScheduledTask -TaskName %s" % task,
+        "  if ($t.State -eq 'Ready' -and ($t | Get-ScheduledTaskInfo).LastTaskResult -ne 267011) { break }",
+        "  Start-Sleep -Milliseconds 100",
+        "}",
+        "Unregister-ScheduledTask -TaskName %s -Confirm:$false" % task,
+    ]))
+
+
+def remove_windows_task(name):
+    powershell("Unregister-ScheduledTask -TaskName %s -Confirm:$false -ErrorAction SilentlyContinue"
+               % ps_quote(windows_task_name(name)))
 
 
 def resolve_connection(args):
@@ -1062,11 +1193,16 @@ def cmd_launch(args):
         print("removed %d stale crash sentinel(s) so OBS will not block on the 'unclean shutdown' dialog "
               "(check %s for the crash)" % (len(stale), os.path.join(config_dir(), "logs")))
     env = None
+    windows_instance = INSTANCE and system() == "Windows"
     if INSTANCE:
         port = seed_instance(INSTANCE)
         env = instance_env(INSTANCE)
         print("instance %s: config %s, websocket port %s" % (INSTANCE, config_dir(), port))
+    if windows_instance:
+        binary = link_windows_instance(INSTANCE, binary)
     extra = build_launch_args(args)
+    if windows_instance and "--portable" not in extra:
+        extra.append("--portable")
     # Any other OBS process (the user's or another instance) makes OBS show a blocking "already running"
     # dialog; --multi skips it. Each instance has its own config dir, so they do not share state.
     if (getattr(args, "multi", False) or INSTANCE or all_obs_pids()) and "--multi" not in extra:
@@ -1076,6 +1212,18 @@ def cmd_launch(args):
         print("warning: websocket server is disabled in %s; requests will not work after launch "
               "(run `obsws.py enable-websocket` first)" % websocket_config_path())
     argv = (binary.split(" ") if binary.startswith("flatpak ") else [binary]) + extra
+    if windows_instance:
+        pid = start_windows_instance(INSTANCE, binary, extra)
+        with open(os.path.join(instance_dir(INSTANCE), "obs.pid"), "w", encoding="utf-8") as f:
+            f.write("%d\n" % pid)
+        print("launched on the desktop: %s (pid %s)" % (" ".join(argv), pid))
+        if getattr(args, "wait", 0):
+            time.sleep(1.0)
+            if not pid_is_obs(pid):
+                raise LocalStateError("OBS exited immediately; see %s" % latest_log())
+            ver = wait_for_websocket(args, args.wait)
+            print("websocket ready: OBS %s / obs-websocket %s on port %s" % (ver.get("obsVersion"), ver.get("obsWebSocketVersion"), resolve_connection(args)[1]))
+        return 0
     kwargs = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "cwd": cwd, "env": env}
     if system() == "Windows":
         kwargs["creationflags"] = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
@@ -1121,7 +1269,9 @@ def cmd_quit(args):
         print("note: could not stop outputs over websocket (%s); quitting anyway" % e)
     s = system()
     try:
-        if s == "Windows":
+        if s == "Windows" and INSTANCE:
+            close_windows_instance(INSTANCE, pids)
+        elif s == "Windows":
             for pid in pids:
                 subprocess.run(["taskkill", "/PID", str(pid)], capture_output=True, timeout=15)
         elif s == "Darwin" and not INSTANCE and not instance_pids():
@@ -1142,8 +1292,11 @@ def cmd_quit(args):
     if getattr(args, "force", False):
         for pid in pids:
             try:
-                os.kill(pid, 9)
-            except OSError:
+                if s == "Windows":
+                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, timeout=15)
+                else:
+                    os.kill(pid, 9)
+            except (OSError, subprocess.SubprocessError):
                 pass
         time.sleep(1.0)
         print("OBS killed (unclean; isolated instances clear crash sentinels on launch, "
@@ -1183,6 +1336,14 @@ def cmd_instance(args):
             print("instance %s: %s" % (name, e))
             rc = e.exit_code
             continue
+        if system() == "Windows":
+            remove_windows_task(name)
+            left = unlink_windows_instance(name)
+            if left:
+                # Deleting the instance dir now could follow a link into the OBS install.
+                print("instance %s: cannot remove the links %s; kept %s" % (name, ", ".join(left), instance_dir(name)))
+                rc = LocalStateError.exit_code
+                continue
         shutil.rmtree(instance_dir(name), ignore_errors=True)
         shutil.rmtree(run_dir(name), ignore_errors=True)
         print("instance %s removed" % name)

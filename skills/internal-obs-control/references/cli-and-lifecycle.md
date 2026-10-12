@@ -79,7 +79,8 @@ Typical readiness time on a laptop: 3-8 s. Poll the handshake plus `GetVersion` 
 ## Stopping OBS
 
 - Graceful: macOS `osascript -e 'tell application id "com.obsproject.obs-studio" to quit'`; Windows
-  `taskkill /PID <pid>` for each selected OBS pid (WM_CLOSE); Linux `kill -TERM <pid>` (OBS installs SIGINT/SIGTERM handlers
+  `taskkill /PID <pid>` for each selected OBS pid (WM_CLOSE, delivered only from the same desktop
+  session, so an instance's quit runs it as a scheduled task there); Linux `kill -TERM <pid>` (OBS installs SIGINT/SIGTERM handlers
   that run the normal shutdown). Graceful exit saves the collection, removes the sentinel and writes
   `==== Shutting down ====` to the log.
 - `user.ini [General] ConfirmOnExit=true` only prompts while streaming/recording, so stop outputs first
@@ -99,7 +100,10 @@ Typical readiness time on a laptop: 3-8 s. Poll the handshake plus `GetVersion` 
   `CFFIXED_USER_HOME=<dir>` (macOS) or `XDG_CONFIG_HOME=<dir>/.config` (Linux) per process gives each one a
   private config dir; `obsws.py launch --instance ID` does that plus `--multi` (on macOS
   `CheckIfAlreadyRunning` counts `NSRunningApplication`s by bundle id, so every extra process would
-  otherwise open the "already running" dialog). On Windows use one portable OBS copy per test.
+  otherwise open the "already running" dialog). On Windows an instance gets `bin`, `data` and
+  `obs-plugins` junctions to the install and runs with `--portable` from `<instance>\bin\64bit`, so its
+  config is `<instance>\config\obs-studio`; it starts as a scheduled task with an interactive principal,
+  because a process started from SSH has no desktop.
 - Pre-seed config files before the first launch (see `config-files.md`): websocket `config.json` with
   a fixed password, a profile with the SRS destination, and `--startstreaming` for wizard-free runs.
 - Screenshots for visual checks: `SaveSourceScreenshot` (works minimised) via `obsws.py screenshot`.

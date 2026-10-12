@@ -92,7 +92,10 @@ What an instance isolates, and why each part matters:
 - **Config dir**: private profiles, collections, `user.ini`, sentinels, logs and browser cache under
   `$HOME/.cache/internal-obs-control/instances/<id>/`; `OBS_CONTROL_HOME` moves the root.
 - **OS isolation**: `CFFIXED_USER_HOME` on macOS and `XDG_CONFIG_HOME` on Linux select the private
-  config. Windows instances are not supported yet.
+  config. On Windows the instance runs OBS with `--portable` from its own `bin`, `data` and `obs-plugins`
+  junctions to the install, so its config is `<id>\config\obs-studio`.
+- **Windows desktop**: `launch` and `quit` run OBS and `taskkill` through scheduled tasks on the
+  logged-in desktop, so they work over SSH; a user must be logged in.
 - **Websocket port and password**: allocated under a lock, skipping used ports, and saved in the
   instance's `config.json`. Main-OBS connection overrides are ignored.
 - **Port range**: set `OBS_CONTROL_WS_PORTS=15000-15099` before creating test instances;

@@ -1,5 +1,10 @@
 import argparse
+import contextlib
+import io
+import json
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from unittest.mock import Mock, patch
 
 import obs_srs_test as recipe
@@ -64,6 +69,85 @@ class TargetTest(unittest.TestCase):
                 recipe.main()
         self.assertEqual(setup.call_args.args[0].srt_streamid, "#!::r=app/custom,m=publish")
         self.assertEqual(setup.call_args.args[0].srt_passphrase, "example-passphrase")
+
+
+class VerifyTest(unittest.TestCase):
+    def setUp(self):
+        self.streams = []
+        owner = self
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                owner.assertEqual(self.path, "/api/v1/streams/")
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(json.dumps({"streams": owner.streams}).encode())
+
+            def log_message(self, *args):
+                pass
+        self.server = HTTPServer(("127.0.0.1", 0), Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.start()
+        self.api = "http://127.0.0.1:%d" % self.server.server_port
+        self.output = io.StringIO()
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.thread.join()
+        self.server.server_close()
+
+    def live(self):
+        self.streams = [{"app": "live", "name": "livestream", "publish": {"active": True},
+                         "video": {"codec": "H264"}}]
+
+    def verify(self, *extra):
+        with contextlib.redirect_stdout(self.output):
+            return recipe.main(["verify", "--srs-api", self.api, "--timeout", "0"] + list(extra))
+
+    def test_missing_and_inactive_publish_exit_six(self):
+        self.assertEqual(self.verify(), 6)
+        self.streams = [{"app": "live", "name": "livestream", "publish": {"active": False}}]
+        self.assertEqual(self.verify(), 6)
+
+    def test_expect_inactive_success_and_failure(self):
+        self.assertEqual(self.verify("--expect-inactive"), 0)
+        self.live()
+        self.assertEqual(self.verify("--expect-inactive"), 6)
+
+    def test_explicit_http_origin_and_api_whep(self):
+        self.live()
+        self.assertEqual(self.verify("--http-url", "https://media.example.test:15180/base/"), 0)
+        output = self.output.getvalue()
+        self.assertIn("https://media.example.test:15180/base/live/livestream.flv", output)
+        self.assertIn("https://media.example.test:15180/base/live/livestream.m3u8", output)
+        self.assertIn(self.api + "/rtc/v1/whep/?app=live&stream=livestream", output)
+        self.assertNotIn("rtmp://", output)
+        self.assertNotIn(":8080", output)
+
+    def test_default_http_port_is_reported(self):
+        self.live()
+        self.assertEqual(self.verify(), 0)
+        self.assertIn("http://127.0.0.1:8080/live/livestream.flv", self.output.getvalue())
+        self.assertIn("default", self.output.getvalue())
+
+    def test_setup_verify_uses_http_origin_and_exit_six(self):
+        with patch.object(recipe, "resolve_args"), patch.object(recipe, "cmd_setup") as setup:
+            recipe.main(["setup", "--rtmp", "rtmp://127.0.0.1/live/livestream", "--start", "--verify",
+                         "--srs-api", self.api, "--http-url", "http://media.example.test:15180"])
+        args = setup.call_args.args[0]
+        args.profile, args.collection, args.scene = "test", "test", "test"
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(contextlib.redirect_stdout(self.output))
+            stack.enter_context(patch.object(recipe.obsws, "connect", return_value=Mock()))
+            for name in ("ensure_no_active_stream", "ensure_stream_free", "set_profile_params", "reload_profile",
+                         "ensure_collection", "ensure_scene", "build_sources"):
+                stack.enter_context(patch.object(recipe, name, return_value=[]))
+            stack.enter_context(patch.object(recipe, "ensure_profile", return_value=["test"]))
+            stack.enter_context(patch.object(recipe, "wait_stream", return_value={}))
+            args.timeout = 0
+            self.assertEqual(recipe.cmd_setup(args), 6)
+            self.live()
+            self.assertEqual(recipe.cmd_setup(args), 0)
+        self.assertIn("http://media.example.test:15180/live/livestream.flv", self.output.getvalue())
 
 
 class StreamRestartTest(unittest.TestCase):

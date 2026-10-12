@@ -35,7 +35,8 @@ Parallel tests: give every test its own isolated OBS (ID=$(obsws.py instance new
   obs_srs_test.py setup --instance $ID --rtmp 'rtmp://localhost/live/{instance}' --start --verify
 Before starting, setup refuses a stream that SRS already shows as published by someone else.
 
-Exit codes follow obsws.py (0 ok, 1 OBS refused a request, 2 connect, 3 auth, 4 local state, 5 timeout).
+Exit codes follow obsws.py (0 ok, 1 OBS refused a request, 2 connect, 3 auth, 4 local state, 5 timeout),
+plus 6 when SRS verification fails.
 """
 
 import argparse
@@ -487,7 +488,7 @@ def srs_find_stream(api, app, stream):
     return None
 
 
-def verify_srs(api, app, stream, timeout, expect_active=True, wait_bitrate=False):
+def verify_srs(api, app, stream, timeout, expect_active=True, wait_bitrate=False, http_url=None):
     """Poll the SRS API until the stream is (in)active. SRS's kbps.recv_30s is a trailing 30 s window, so it
     reads 0 right after publish starts; wait_bitrate keeps polling (up to ~40 s more) until it is non-zero."""
     end = time.time() + timeout
@@ -545,9 +546,16 @@ def verify_srs(api, app, stream, timeout, expect_active=True, wait_bitrate=False
     if not a:
         log("note: SRS reports no audio track yet (or the publisher sends a codec SRS does not accept over this protocol)")
     u = urllib.parse.urlparse(api)
-    host = u.hostname or "localhost"
-    log("play:  rtmp://%s/%s/%s  |  http://%s:8080/%s/%s.flv  |  http://%s:8080/%s/%s.m3u8  |  WHEP http://%s:%s/rtc/v1/whep/?app=%s&stream=%s"
-        % (host, app, stream, host, app, stream, host, app, stream, host, u.port or 1985, app, stream))
+    if not http_url:
+        host = u.hostname or "localhost"
+        if ":" in host:
+            host = "[%s]" % host
+        http_url = "http://%s:8080" % host
+        log("note: HTTP playback default is %s; pass --http-url for another port or host" % http_url)
+    media = "%s/%s/%s" % (http_url.rstrip("/"), urllib.parse.quote(app, safe=""),
+                            urllib.parse.quote(stream, safe=""))
+    whep = api.rstrip("/") + "/rtc/v1/whep/?" + urllib.parse.urlencode({"app": app, "stream": stream})
+    log("play:  %s.flv  |  %s.m3u8  |  WHEP %s" % (media, media, whep))
     return True
 
 
@@ -637,8 +645,9 @@ def cmd_setup(args):
         c.close()
     log(json.dumps(summary, indent=2))
     if args.start and args.verify:
-        ok = verify_srs(srs_api_from_target(args, target), target.app, target.stream, args.timeout, wait_bitrate=args.bitrate)
-        return 0 if ok else 1
+        ok = verify_srs(srs_api_from_target(args, target), target.app, target.stream, args.timeout,
+                        wait_bitrate=args.bitrate, http_url=args.http_url)
+        return 0 if ok else 6
     return 0
 
 
@@ -702,8 +711,8 @@ def cmd_stream(args):
 
 def cmd_verify(args):
     ok = verify_srs(args.srs_api, args.app, args.stream, args.timeout, expect_active=not args.expect_inactive,
-                    wait_bitrate=args.bitrate)
-    return 0 if ok else 1
+                    wait_bitrate=args.bitrate, http_url=args.http_url)
+    return 0 if ok else 6
 
 
 def cmd_teardown(args):
@@ -854,6 +863,7 @@ def main(argv=None):
     p.add_argument("--verify", action="store_true", help="with --start: check the SRS API that the stream is published")
     p.add_argument("--bitrate", action="store_true", help="with --verify: also wait (<= 40 s) for SRS's 30 s bitrate window to fill")
     p.add_argument("--srs-api", help="SRS HTTP API base (default: http://<target host>:1985)")
+    p.add_argument("--http-url", help="HTTP playback base (default: API host on http port 8080)")
     p.set_defaults(func=cmd_setup, timeout=30.0)
 
     p = sub.add_parser("stream", help="start | stop | restart | status")
@@ -863,6 +873,7 @@ def main(argv=None):
 
     p = sub.add_parser("verify", help="check the SRS HTTP API for the published stream")
     p.add_argument("--srs-api", default="http://localhost:1985")
+    p.add_argument("--http-url", help="HTTP playback base (default: API host on http port 8080)")
     p.add_argument("--app", default="live")
     p.add_argument("--stream", default="livestream")
     p.add_argument("--timeout", type=float, default=30.0)

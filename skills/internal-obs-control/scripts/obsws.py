@@ -45,6 +45,7 @@ a user's own profile with a similar name is never touched. An isolated instance 
 
 Exit codes: 0 ok, 1 request refused by OBS, 2 cannot connect / protocol error,
 3 authentication failed, 4 OBS not found / bad local state, 5 timeout.
+The companion obs_srs_test.py additionally uses 6 for failed SRS verification.
 """
 
 import argparse

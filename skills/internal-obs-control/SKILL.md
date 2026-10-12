@@ -222,6 +222,11 @@ What it does, in order (each step is also available as a single `obsws.py call`)
    `kbps.recv_30s` is a trailing 30 s average and reads 0 right after start: add `--bitrate` (waits for it)
    or re-run `verify` later when the report needs a bitrate figure.
 
+- Pass `--srs-api` to `setup` and `verify` when the API uses a non-default port (default 1985).
+- HTTP-FLV and HLS URLs use `--http-url`; its default is the API host on HTTP port 8080,
+  explicitly reported in the output. WHEP uses the API base. RTMP play URLs are omitted because
+  the API does not identify the RTMP listen port.
+
 Then observe and steer:
 
 ```bash
@@ -255,6 +260,8 @@ How to read the result:
   loading).
 - **Other exit codes** come from the script, not from OBS: 2 cannot connect, 3 wrong websocket password,
   4 bad local state, 5 timed out. The error is printed on stderr.
+- **SRS verification failed**: `setup --start --verify` and `verify` exit 6 when the API does not
+  show the expected publish state; the diagnostic is printed on stdout. Exit 1 remains an OBS refusal.
 
 ## Step 3: Report
 

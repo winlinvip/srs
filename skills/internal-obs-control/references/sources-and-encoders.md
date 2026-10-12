@@ -109,6 +109,27 @@ gives cheap continuous motion; a WHEP/HTTP-FLV player page (SRS ships `players/w
 Capture sources are real hardware: prefer synthetic sources for CI and use capture only when the test is
 about camera/screen paths.
 
+### macOS display UUIDs
+
+OBS 32.2.2 can crash in obs-websocket when `GetInputPropertiesListPropertyItems` queries
+`display_uuid` without screen-recording permission. `obsws.py call` refuses that property before
+connecting, exits 1, and names the CoreGraphics alternative. The guard applies to any input name.
+
+Read active display UUIDs directly with CoreGraphics, without querying OBS:
+
+```bash
+swift -e 'import CoreGraphics; import Foundation; @_silgen_name("CGDisplayCreateUUIDFromDisplayID") func displayUUID(_ display: UInt32) -> Unmanaged<CFUUID>?; var displays = [CGDirectDisplayID](repeating: 0, count: 16); var count: UInt32 = 0; guard CGGetActiveDisplayList(16, &displays, &count) == .success else { fatalError("Cannot list displays") }; for display in displays.prefix(Int(count)) { if let uuid = displayUUID(display)?.takeRetainedValue() { print(display, CFUUIDCreateString(nil, uuid)!) } }'
+```
+
+Use the UUID as `screen_capture`'s `display_uuid` setting. This lists displays; capture still
+needs screen-recording permission. After permission is granted, an explicit bypass is available:
+
+```bash
+python3 skills/internal-obs-control/scripts/obsws.py call --force GetInputPropertiesListPropertyItems '{"inputName":"screen","propertyName":"display_uuid"}'
+```
+
+`--force` sends the request despite the crash risk. Other list properties and requests are unaffected.
+
 ## Audio
 
 - A new scene collection contains `Mic/Aux` (`coreaudio_input_capture` / `wasapi_input_capture` /

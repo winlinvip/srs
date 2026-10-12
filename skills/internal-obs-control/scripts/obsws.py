@@ -1227,6 +1227,13 @@ def parse_json_arg(text, what="request data"):
 
 def cmd_call(args):
     data = parse_json_arg(args.data)
+    if (args.request_type == "GetInputPropertiesListPropertyItems"
+            and isinstance(data, dict) and data.get("propertyName") == "display_uuid"
+            and not args.force):
+        print("error: refusing display_uuid enumeration: OBS may crash without screen permission. "
+              "Use CoreGraphics CGGetActiveDisplayList and CGDisplayCreateUUIDFromDisplayID instead "
+              "(references/sources-and-encoders.md); --force bypasses this guard.", file=sys.stderr)
+        return 1
     c = connect(args)
     try:
         resp = c.request(args.request_type, data)
@@ -1376,6 +1383,7 @@ def main(argv=None):
 
     p = sub.add_parser("call", help="send one request")
     add_conn_args(p)
+    p.add_argument("--force", action="store_true", help="allow display_uuid enumeration that may crash OBS")
     p.add_argument("request_type")
     p.add_argument("data", nargs="?", help="JSON object, '-' for stdin, or @file.json")
     p.set_defaults(func=cmd_call)

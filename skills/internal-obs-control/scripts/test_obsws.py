@@ -1,9 +1,44 @@
 import os
+import io
 import shutil
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 import obsws
+
+
+class DisplayPropertiesTest(unittest.TestCase):
+    def test_display_uuid_refused_before_connection(self):
+        error = io.StringIO()
+        with patch.object(obsws, "connect") as connect, redirect_stderr(error):
+            connect.return_value.request.return_value = {"requestStatus": {"result": False}}
+            result = obsws.main(["call", "GetInputPropertiesListPropertyItems",
+                                 '{"inputName":"screen","propertyName":"display_uuid"}'])
+        self.assertEqual(result, 1)
+        connect.assert_not_called()
+        self.assertIn("CoreGraphics", error.getvalue())
+        self.assertIn("--force", error.getvalue())
+
+    def test_force_sends_display_uuid_request(self):
+        with patch.object(obsws, "connect") as connect, redirect_stdout(io.StringIO()):
+            connect.return_value.request.return_value = {"requestStatus": {"result": True}}
+            result = obsws.main(["call", "--force", "GetInputPropertiesListPropertyItems",
+                                 '{"inputName":"screen","propertyName":"display_uuid"}'])
+        self.assertEqual(result, 0)
+        connect.return_value.request.assert_called_once_with(
+            "GetInputPropertiesListPropertyItems", {"inputName": "screen", "propertyName": "display_uuid"})
+        connect.return_value.close.assert_called_once_with()
+
+    def test_other_properties_and_requests_still_work(self):
+        # Accepted behavior: only the known dangerous request/property pair is guarded.
+        for request, data in (("GetInputPropertiesListPropertyItems", '{"propertyName":"device"}'),
+                              ("GetInputSettings", '{"propertyName":"display_uuid"}'),
+                              ("GetVersion", None)):
+            with self.subTest(request=request), patch.object(obsws, "connect") as connect, redirect_stdout(io.StringIO()):
+                connect.return_value.request.return_value = {"requestStatus": {"result": True}}
+                self.assertEqual(obsws.main(["call", request] + ([data] if data else [])), 0)
+                connect.return_value.request.assert_called_once()
 
 
 class InstancePortsTest(unittest.TestCase):

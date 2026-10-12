@@ -6,6 +6,7 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 ## Contents
 
 - [Destination table](#destination-table)
+- [Start the local SRS build](#start-the-local-srs-build)
 - [RTMP](#rtmp)
 - [SRT](#srt)
 - [WHIP (WebRTC)](#whip-webrtc)
@@ -23,6 +24,31 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 
 `obs_srs_test.py setup --rtmp|--srt|--whip ...` fills these in; `obsws.py call SetStreamServiceSettings
 '{...}'` does it by hand. Change the service only while the stream is stopped (OBS refuses otherwise).
+
+## Start the local SRS build
+
+Use the checkout's `trunk/objs/srs`, built with SRT enabled (`./configure --srt=on` and `make`
+from `trunk/`). Run it from `trunk/` with environment-only configuration (`-e`), without a config file:
+
+```bash
+env SRS_RTMP_LISTEN=15100 SRS_HTTP_API_ENABLED=on SRS_HTTP_API_LISTEN=15101 \
+    SRS_HTTP_SERVER_ENABLED=on SRS_HTTP_SERVER_LISTEN=15102 \
+    SRS_VHOST_HTTP_REMUX_ENABLED=on SRS_VHOST_HLS_ENABLED=on \
+    SRS_SRT_SERVER_ENABLED=on SRS_SRT_SERVER_LISTEN=15103 \
+    SRS_VHOST_SRT_ENABLED=on SRS_VHOST_SRT_SRT_TO_RTMP=on \
+    SRS_RTC_SERVER_ENABLED=on SRS_RTC_SERVER_LISTEN=15104 \
+    SRS_RTC_SERVER_CANDIDATE=127.0.0.1 SRS_VHOST_RTC_ENABLED=on \
+    SRS_VHOST_RTC_RTMP_TO_RTC=on SRS_VHOST_RTC_RTC_TO_RTMP=on \
+    ./objs/srs -e
+```
+
+- **Ports:** this example uses a test slot. The destination table above lists conventional defaults;
+  replace its ports with the listeners above when using this command.
+- **Verification:** pass `--srs-api http://127.0.0.1:15101 --http-url http://127.0.0.1:15102`.
+- **WHIP:** the loopback candidate suits OBS on the same host; use a reachable candidate or `--eip`
+  when OBS is on another host.
+- **Logs:** `-e` logs to the console; redirect stdout/stderr to your test log if needed.
+- **Source:** environment variable names and defaults are in `trunk/src/app/srs_app_config.cpp`.
 
 ## RTMP
 
@@ -50,8 +76,8 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 - SRS must be built with SRT (`--srt=on`, the default in release builds) and `srt_to_rtmp on;` for the
   stream to show up over RTMP/HTTP-FLV/HLS and in the API. Check the SRS log for
   `srt: accept ... streamid=#!::r=live/livestream,m=publish` and `SRT: srt to rtmp`.
-- If SRS runs in Docker, UDP 10080 must be published (`-p 10080:10080/udp`); the default `ossrs/srs`
-  docker command uses `conf/docker.conf` which has SRT disabled unless started with `conf/srt.conf`.
+- Enable `SRS_SRT_SERVER_ENABLED=on` and `SRS_VHOST_SRT_ENABLED=on`; use
+  `SRS_VHOST_SRT_SRT_TO_RTMP=on` for playback conversion. OBS must reach the SRT UDP listener.
 
 ## WHIP (WebRTC)
 
@@ -61,7 +87,7 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 - SRS must have `rtc_server { enabled on; listen 8000; candidate $CANDIDATE; }` and the vhost `rtc { enabled on; }`.
   SRS converts to RTMP (`rtc_to_rtmp on`) so the stream appears in the API with codec H264/AAC.
 - The ICE candidate SRS advertises comes from `candidate` (`*` = first non-loopback interface IP, or the
-  `CANDIDATE` env). The client can override per request with `?eip=<ip>`; `obs_srs_test.py` adds
+  `SRS_RTC_SERVER_CANDIDATE` in environment-only mode). The client can override per request with `?eip=<ip>`; `obs_srs_test.py` adds
   `eip=127.0.0.1` automatically for localhost targets (`--eip` for others, `--no-eip` to disable).
 - OBS log: `[obs-webrtc] [whip_output: 'simple_stream'] PeerConnection state is now: Connecting` then
   `Connected`. `Failed` after ~40 s plus `DTLS: Hang, done=0` in the SRS log = unreachable candidate/UDP
@@ -83,7 +109,7 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 HTTP API on port 1985 (`http_api { enabled on; listen 1985; }`):
 
 ```
-GET /api/v1/versions            -> {"code":0,"data":{"version":"6.0.191"}}
+GET /api/v1/versions            -> {"code":0,"data":{"version":"8.0.60",...},...}
 GET /api/v1/streams/            -> {"streams":[{"app":"live","name":"livestream","publish":{"active":true,"cid":"..."},
                                      "clients":1,"video":{"codec":"H264","profile":"High","width":1280,"height":720},
                                      "audio":{"codec":"AAC","sample_rate":44100,"channel":2},
@@ -99,14 +125,16 @@ sequence headers. A stream that flaps between present and absent means OBS is re
 `GetStreamStatus.outputReconnecting` and the OBS log.
 
 `obs_srs_test.py verify --srs-api http://host:1985 --app live --stream livestream` polls this and prints
-codec, resolution, kbps and play URLs. Exit code 1 when not publishing.
+codec, resolution, kbps and play URLs. Pass `--srs-api` for a non-default API port and `--http-url`
+for a non-default HTTP playback port (otherwise the API host on port 8080 is assumed).
+Exit code 6 when not publishing.
 
 ## Playback URLs for a second check
 
 Given `http_server { listen 8080; }` and the vhost defaults:
 
 - RTMP `rtmp://host/live/livestream` (`ffplay -i rtmp://host/live/livestream`)
-- HTTP-FLV `http://host:8080/live/livestream.flv` (needs `http_remux { enabled on; }`, on in `conf/docker.conf`)
+- HTTP-FLV `http://host:8080/live/livestream.flv` (enable `SRS_VHOST_HTTP_REMUX_ENABLED=on`)
 - HLS `http://host:8080/live/livestream.m3u8` (needs `hls { enabled on; }`)
 - WebRTC WHEP `http://host:1985/rtc/v1/whep/?app=live&stream=livestream`, player page `http://host:8080/players/whep.html`
 - SRT `srt://host:10080?streamid=#!::r=live/livestream,m=request`
@@ -120,9 +148,9 @@ codec, resolution and frame rate after publishing.
 | --- | --- |
 | OBS `StartStream` succeeds, status flips back to inactive, log `Connection to rtmp://... failed` | wrong host/port, SRS not listening, firewall |
 | RTMP connects then disconnects within seconds, SRS log `stream ... already publishing` | another publisher holds the same stream; stop it or change the key |
-| WHIP `PeerConnection state: Failed`, SRS `DTLS: Hang` | unreachable ICE candidate; pass `--eip`/set `CANDIDATE`, publish UDP 8000 |
+| WHIP `PeerConnection state: Failed`, SRS `DTLS: Hang` | unreachable ICE candidate; pass `--eip` or set `SRS_RTC_SERVER_CANDIDATE`; allow the RTC UDP listener |
 | WHIP HTTP 400/404 | `rtc` disabled in vhost, bad `app`/`stream`, or wrong API port |
-| SRT never appears in API | SRS built without SRT or `srt_to_rtmp off`; UDP 10080 not published; `streamid` typo (`#!::r=`) |
+| SRT never appears in API | SRS built without SRT or `srt_to_rtmp off`; SRT UDP listener unreachable; `streamid` typo (`#!::r=`) |
 | SRS shows `video` but no `audio` | OBS has no audio source producing samples (media source muted, mic missing); WHIP with AAC selected |
 | `SetStreamServiceSettings` -> 500 OutputRunning | stop the stream first (`obs_srs_test.py stream stop`) |
 | bitrate in SRS far below `VBitrate` | static scene (nothing moves); add the media test clip or a browser clock |

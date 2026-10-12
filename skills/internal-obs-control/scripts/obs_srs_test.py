@@ -174,9 +174,8 @@ def parse_target(args):
         q = urllib.parse.parse_qs(u.query)
         app = args.app or (q.get("app") or ["live"])[0]
         stream = args.stream or (q.get("stream") or ["livestream"])[0]
-        # SRS answers WHIP with the ICE candidate from its `candidate` config. Inside Docker that is the
-        # container IP, which OBS cannot reach, so DTLS never completes ("DTLS: Hang" in the SRS log).
-        # SRS lets the client override it per request with ?eip=<reachable ip>.
+        # SRS answers WHIP with its configured ICE candidate. An unreachable IP prevents DTLS
+        # from completing ("DTLS: Hang" in the SRS log); ?eip=<reachable ip> overrides it per request.
         eip = getattr(args, "eip", None)
         if eip is None and not getattr(args, "no_eip", False) and u.hostname in ("localhost", "127.0.0.1", "::1"):
             eip = "127.0.0.1"
@@ -523,10 +522,10 @@ def verify_srs(api, app, stream, timeout, expect_active=True, wait_bitrate=False
             others = [("%s/%s" % (s.get("app"), s.get("name"))) for s in http_json(api.rstrip("/") + "/api/v1/streams/").get("streams", [])]
             log("SRS: %s/%s is NOT being published (streams present: %s)" % (app, stream, others or "none"))
         log("hints: OBS side -> `obs_srs_test.py stream status%s` and the newest OBS log (obsws.py probe shows its path); " % obsws.instance_flag() +
-            "SRS side -> `docker logs srs --tail 50` or objs/srs.log. WHIP stuck at 'PeerConnection state: Connecting' "
+            "SRS side -> check the console output of `trunk/objs/srs -e` (or your redirected log). WHIP stuck at 'PeerConnection state: Connecting' "
             "then 'Failed' (OBS does not retry WHIP) plus 'DTLS: Hang' in SRS means the ICE candidate SRS advertised "
-            "('RTC: Use candidates <ip>' in its log, the container's 172.17.x.x when CANDIDATE is unset) is unreachable: "
-            "pass --eip <ip OBS can reach> or set CANDIDATE for SRS. RTMP 'Connection to ... failed' means wrong host/port or SRS down.")
+            "('RTC: Use candidates <ip>' in its log) is unreachable: "
+            "pass --eip <ip OBS can reach> or set SRS_RTC_SERVER_CANDIDATE for SRS. RTMP 'Connection to ... failed' means wrong host/port or SRS down.")
         return False
     if not expect_active:
         ok = not (last and last.get("publish", {}).get("active"))
@@ -838,7 +837,7 @@ def main(argv=None):
     dest.add_argument("--srt-passphrase", help="SRT encryption passphrase, stored as the service Password with authentication enabled")
     dest.add_argument("--whip", help="http://host:1985/rtc/v1/whip/?app=live&stream=livestream")
     dest.add_argument("--bearer-token", help="WHIP bearer token (SRS: leave empty unless secured)")
-    dest.add_argument("--eip", help="WHIP: SRS ICE candidate IP to advertise (?eip=); needed when SRS runs in Docker on another host")
+    dest.add_argument("--eip", help="WHIP: reachable SRS ICE candidate IP to advertise (?eip=); use when the advertised IP is unreachable from OBS")
     dest.add_argument("--no-eip", action="store_true", help="WHIP: do not auto-add eip=127.0.0.1 for localhost targets")
     p.add_argument("--app", help="SRS app for verification (default parsed from the URL)")
     p.add_argument("--stream", help="SRS stream name for verification (default parsed from the URL)")

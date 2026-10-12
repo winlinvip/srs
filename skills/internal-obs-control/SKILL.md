@@ -289,6 +289,9 @@ What you changed or worked around:
 
 ## Gotchas
 
+- **SRS under test**: use the local `trunk/objs/srs` with environment-only configuration (`-e`).
+  See `references/srs-targets.md` for the RTMP, SRT and WHIP startup variables and test ports.
+
 - **Stream restart**: use `obs_srs_test.py stream restart` to stop, wait for inactive plus
   one second, then start and wait for active. `stream start` also waits before starting an
   inactive output. If start times out with no new OBS log output, it switches away from the

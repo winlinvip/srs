@@ -12,6 +12,7 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 - [WHIP (WebRTC)](#whip-webrtc)
 - [Verifying on the SRS side](#verifying-on-the-srs-side)
 - [Playback URLs for a second check](#playback-urls-for-a-second-check)
+- [Automated tests](#automated-tests)
 - [Typical failures](#typical-failures)
 
 ## Destination table
@@ -78,6 +79,12 @@ env SRS_RTMP_LISTEN=15100 SRS_HTTP_API_ENABLED=on SRS_HTTP_API_LISTEN=15101 \
   `srt: accept ... streamid=#!::r=live/livestream,m=publish` and `SRT: srt to rtmp`.
 - Enable `SRS_SRT_SERVER_ENABLED=on` and `SRS_VHOST_SRT_ENABLED=on`; use
   `SRS_VHOST_SRT_SRT_TO_RTMP=on` for playback conversion. OBS must reach the SRT UDP listener.
+- **Keep AAC for SRT.** OBS picks the audio encoder when the profile is activated, from the service set
+  at that moment.
+  - With the SRT service set, OBS keeps AAC.
+  - With a WHIP service still set from an earlier run, OBS picks Opus for the SRT stream.
+  - SRS drops Opus in MPEG-TS (`ts: drop pid=0x101, stream=0x6` in its log), so the stream is video only.
+  - The recipe sets the service before the profile reload, so it keeps AAC.
 
 ## WHIP (WebRTC)
 
@@ -92,6 +99,23 @@ env SRS_RTMP_LISTEN=15100 SRS_HTTP_API_ENABLED=on SRS_HTTP_API_LISTEN=15101 \
 - OBS log: `[obs-webrtc] [whip_output: 'simple_stream'] PeerConnection state is now: Connecting` then
   `Connected`. `Failed` after ~40 s plus `DTLS: Hang, done=0` in the SRS log = unreachable candidate/UDP
   port. HTTP 4xx on the POST = wrong URL, app/stream missing, or SRS `rtc` disabled.
+- **`DTLS: Hang` at quit is harmless.** SRS also logs `DTLS: Hang, done=0` when a WHIP session that
+  logged `RTC: DTLS handshake done` ends because OBS quits. Only a hang without that earlier line means
+  an unreachable candidate.
+- **The bridged stream starts at the second keyframe.** With `rtc_to_rtmp on`:
+  - SRS discards RTP until the first RTCP sender report, about 1 s in (`RTC: Discard no-sync`), so the
+    first keyframe is lost.
+  - The bridge asks for a keyframe (`RTC: to rtmp bridge request key frame`, then a PLI); OBS does not
+    send one early.
+  - The bridge starts at the next scheduled keyframe: about 8.3 s with OBS x264 defaults (keyint 250
+    at 30 fps). Until then HTTP-FLV, HLS and the API resolution are empty.
+  - So wait up to 15 s for the WHIP stream's resolution, not the 8 s that RTMP and SRT need.
+- **The API shows the bridged stream.** The stream entry first reads Opus and 0×0 from the RTC source,
+  then AAC and the real resolution from the bridge.
+- **WHIP frame counts are not reliable.** SRS adds a WHIP publisher's frame count to the statistics
+  only past 288 frames, so `frames` reads 0 for about 10 s. At 14 s the API read `frames: 289`,
+  `audio_frames: 289` and `video_frames: 0`. Check only that `frames` is non-zero, and treat 0 as a
+  known SRS defect.
 - **Bearer token**: SRS supports Bearer authentication for WHIP and WHEP signaling. It is off by default.
   - **Turn it on in SRS** with `SRS_HTTP_API_AUTH_ENABLED=on`, `SRS_HTTP_API_AUTH_TYPE=bearer`,
     `SRS_HTTP_API_AUTH_TOKEN=<token>` and `SRS_HTTP_API_AUTH_RTC_BEARER_ENABLED=on`. Without the last
@@ -120,6 +144,7 @@ DELETE /api/v1/clients/<id>     -> kick a client (tests reconnect logic)
 ```
 
 Rules of thumb: `publish.active=true` within ~2 s of `StartStream` for RTMP, ~1 s for WHIP, ~3 s for SRT.
+WHIP's codecs and resolution come from the RTMP bridge, up to ~9 s later ([WHIP](#whip-webrtc)).
 `kbps.recv_30s` needs 30 s of traffic to be meaningful. `video`/`audio` appear after the first
 sequence headers. A stream that flaps between present and absent means OBS is reconnecting: look at
 `GetStreamStatus.outputReconnecting` and the OBS log.
@@ -142,6 +167,31 @@ Given `http_server { listen 8080; }` and the vhost defaults:
 `ffprobe -v error -show_streams -i http://host:8080/live/livestream.flv` is a cheap headless check of
 codec, resolution and frame rate after publishing.
 
+## Automated tests
+
+The `srs-develop` OBS test scripts (see [Testing SRS](../SKILL.md#testing-srs)) run one isolated
+instance per case. What keeps them fast and stable:
+
+- **Small encodes**: 640×360 at 30 fps and 800 kbps, so several instances encode at once without
+  saturating the CPU.
+- **One shared clip**: the harness makes a four-second looping 640×360 H.264/AAC clip once, before
+  launching OBS, so no case waits for ffmpeg.
+- **Staggered starts**: `obs-lane-test.sh` starts the cases 2 s apart. Fresh instances that reset
+  video at the same moment can hang OBS in `SetVideoSettings`, inside `obs_reset_video`.
+- **One relaunch**: the harness bounds the setup recipe at 20 s. When OBS stops answering, or exits
+  right after the first `CreateProfile` (seen on macOS), it force-quits the instance, relaunches it
+  and reruns the idempotent setup once.
+- **Case times**: about 5–7 s for RTMP, 4–6 s for SRT and 14 s for WHIP, which waits for the second
+  keyframe. The three in parallel take about 18 s.
+
+SRS outside this machine's process list:
+
+- **SRS in Docker**: publish the TCP ports and the UDP ports (RTC, SRT) on `127.0.0.1`; WHIP keeps
+  `eip=127.0.0.1`.
+- **SRS in WSL** for OBS on Windows: in NAT mode, TCP reaches SRS on `127.0.0.1`, but UDP reaches it
+  only on the WSL IP (`wsl hostname -I`, new each boot). Publish both RTMP and WHIP to that IP, with
+  `--eip <WSL IP>` for WHIP.
+
 ## Typical failures
 
 | symptom | cause / fix |
@@ -152,5 +202,8 @@ codec, resolution and frame rate after publishing.
 | WHIP HTTP 400/404 | `rtc` disabled in vhost, bad `app`/`stream`, or wrong API port |
 | SRT never appears in API | SRS built without SRT or `srt_to_rtmp off`; SRT UDP listener unreachable; `streamid` typo (`#!::r=`) |
 | SRS shows `video` but no `audio` | OBS has no audio source producing samples (media source muted, mic missing); WHIP with AAC selected |
+| SRT stream is video only, SRS log `ts: drop pid=0x101, stream=0x6` | OBS encodes Opus because a WHIP service was set when the profile was activated; set the SRT service, then reload the profile |
+| WHIP is active in the API but resolution, HTTP-FLV and HLS stay empty for ~8 s | the bridge waits for the second keyframe; wait up to 15 s, or set a shorter keyframe interval in OBS |
+| `setup` hangs at `SetVideoSettings` with several new instances | OBS hangs in `obs_reset_video` under GPU contention; stagger the launches, force-quit and relaunch the instance |
 | `SetStreamServiceSettings` -> 500 OutputRunning | stop the stream first (`obs_srs_test.py stream stop`) |
 | bitrate in SRS far below `VBitrate` | static scene (nothing moves); add the media test clip or a browser clock |

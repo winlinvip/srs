@@ -54,6 +54,37 @@ These variables select a run or an instance:
 - **`OBS_CONTROL_WS_PORTS`**: the inclusive websocket port range for new instances, such as `15000-15099`;
   default `4460-5459`. Use `<first>-<last>` with ports from 1 to 65535.
 
+## Testing SRS
+
+The `srs-develop` skill has bash test scripts in `skills/srs-develop/scripts/` that publish from
+isolated OBS instances to the source-built SRS through these scripts:
+
+- **`obs-rtmp-publish-test.sh`**: RTMP H.264/AAC; checks the API, HTTP-FLV and HLS.
+- **`obs-srt-publish-test.sh`**: SRT H.264/AAC with the streamid in the Stream Key; checks the API and
+  HTTP-FLV.
+- **`obs-whip-publish-test.sh`**: WHIP H.264/Opus with `eip=127.0.0.1`; checks the API and HTTP-FLV
+  after `rtc_to_rtmp`.
+- **`obs-test-lib.sh`**: the shared harness they source; it starts SRS, claims and removes the
+  instance, and runs the checks.
+
+How they run:
+
+- **Lane G**: `obs-lane-test.sh` runs the three cases in parallel as lane G of the Full tier
+  (`srs-full-tier.sh`), within 60 s.
+- **SRS on Linux**: lane G also runs `obs-linux-test.sh`, the same three cases against SRS built for
+  Linux and run in Docker. Without a running Docker it reports unverified.
+- **SRS for Windows OBS**: when `SRS_TEST_WINDOWS_HOST` is set, lane G also runs
+  `obs-windows-test.sh`: RTMP and WHIP from OBS on the Windows test host to SRS in WSL there.
+- **`SRS_TEST_OBS`**: default `1`. With `SRS_TEST_OBS=0`, lane G and every OBS script print
+  `SKIP SRS_TEST_OBS=0` and exit 0.
+- **No OBS**: a script prints `SKIP OBS not available` and exits 0; the Full tier reports it as
+  unverified, never as passed.
+- **Ports**: instances take websocket ports from `OBS_CONTROL_WS_PORTS=15000-15099`, and each script
+  takes a 100-port slot at `SRS_TEST_PORT_BASE`. The Port Plan in
+  `skills/srs-develop/references/integration-tests.md` lists them.
+- **Results**: one `PASS` or `FAIL` line per check. `KNOWN <id>` marks a known SRS defect: it is not
+  counted as passed. Each case fails with `FAIL budget` when it takes over 60 s.
+
 ## Parallel tests: one isolated instance per test
 
 One OBS has one stream output, one current profile and one scene collection, so two tests can never share

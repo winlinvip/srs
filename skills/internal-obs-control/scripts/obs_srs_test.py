@@ -16,7 +16,7 @@ Examples
       --video-bitrate 1500 --start --verify
 
   # SRT publish (OBS chooses the MPEG-TS output from the srt:// prefix)
-  obs_srs_test.py setup --srt 'srt://localhost:10080?streamid=#!::r=live/livestream,m=publish' --start
+  obs_srs_test.py setup --srt srt://localhost:10080 --srt-streamid '#!::r=live/livestream,m=publish' --start
 
   obs_srs_test.py stream status           # OBS side: active? bytes, frames, congestion
   obs_srs_test.py verify --srs-api http://localhost:1985 --app live --stream livestream
@@ -123,7 +123,7 @@ def run_flag():
 def resolve_args(args):
     if args.cmd in ("setup", "teardown") or (args.cmd == "verify" and getattr(args, "run", None)):
         resolve_run(args)
-    for field in ("rtmp", "rtmp_server", "rtmp_key", "srt", "whip", "app", "stream", "text", "profile", "collection", "scene"):
+    for field in ("rtmp", "rtmp_server", "rtmp_key", "srt", "srt_streamid", "whip", "app", "stream", "text", "profile", "collection", "scene"):
         if hasattr(args, field):
             setattr(args, field, expand(getattr(args, field)))
     if args.cmd == "setup":
@@ -185,17 +185,34 @@ def parse_target(args):
         return Target("whip", "whip_custom", {"server": url, "bearer_token": args.bearer_token or ""},
                       app, stream, u.hostname)
     if args.srt:
-        u = urllib.parse.urlparse(args.srt)
+        # In an SRT URL, #!:: belongs to streamid, not a URL fragment.
+        u = urllib.parse.urlsplit(args.srt, allow_fragments=False)
+        streamid = getattr(args, "srt_streamid", None) or ""
+        options = []
+        found_streamid = False
+        for option in u.query.split("&"):
+            name, _, value = option.partition("=")
+            if urllib.parse.unquote(name) == "streamid":
+                if not found_streamid:
+                    streamid = urllib.parse.unquote(value)
+                    found_streamid = True
+            elif option:
+                options.append(option)
+        server = urllib.parse.urlunsplit((u.scheme, u.netloc, u.path, "&".join(options), ""))
         app, stream = args.app, args.stream
         # SRS streamid: #!::r=app/stream,m=publish
         m = None
-        for part in urllib.parse.unquote(u.query).replace("streamid=#!::", "").split(","):
+        for part in streamid.removeprefix("#!::").split(","):
             if part.startswith("r="):
                 m = part[2:]
         if m and "/" in m:
             app = app or m.split("/")[0]
             stream = stream or m.split("/", 1)[1]
-        return Target("srt", "rtmp_custom", {"server": args.srt, "key": "", "use_auth": False},
+        passphrase = getattr(args, "srt_passphrase", None)
+        settings = {"server": server, "key": streamid, "use_auth": bool(passphrase)}
+        if passphrase:
+            settings["password"] = passphrase
+        return Target("srt", "rtmp_custom", settings,
                       app or "live", stream or "livestream", u.hostname)
     server, key = args.rtmp_server, args.rtmp_key
     if args.rtmp:
@@ -203,6 +220,8 @@ def parse_target(args):
         parts = [p for p in u.path.split("/") if p]
         if len(parts) >= 2 and not key:
             key = parts[-1]
+            if u.query:
+                key += "?" + u.query
             server = "%s://%s/%s" % (u.scheme, u.netloc, "/".join(parts[:-1]))
         else:
             server = args.rtmp
@@ -211,7 +230,7 @@ def parse_target(args):
     u = urllib.parse.urlparse(server)
     parts = [p for p in u.path.split("/") if p]
     app = args.app or (parts[0] if parts else "live")
-    stream = args.stream or (key or "livestream")
+    stream = args.stream or ((key or "livestream").split("?", 1)[0])
     return Target("rtmp", "rtmp_custom", {"server": server, "key": key or "", "use_auth": False}, app, stream, u.hostname)
 
 
@@ -805,7 +824,9 @@ def main(argv=None):
     dest.add_argument("--rtmp", help="rtmp://host[:port]/app/stream (key = last path segment)")
     dest.add_argument("--rtmp-server", help="rtmp://host/app  (with --rtmp-key)")
     dest.add_argument("--rtmp-key")
-    dest.add_argument("--srt", help="srt://host:10080?streamid=#!::r=app/stream,m=publish")
+    dest.add_argument("--srt", help="srt://host:10080 (URL streamid= is moved into the Stream Key)")
+    dest.add_argument("--srt-streamid", help="SRT Stream Key, e.g. #!::r=app/stream,m=publish; URL streamid= takes precedence")
+    dest.add_argument("--srt-passphrase", help="SRT encryption passphrase, stored as the service Password with authentication enabled")
     dest.add_argument("--whip", help="http://host:1985/rtc/v1/whip/?app=live&stream=livestream")
     dest.add_argument("--bearer-token", help="WHIP bearer token (SRS: leave empty unless secured)")
     dest.add_argument("--eip", help="WHIP: SRS ICE candidate IP to advertise (?eip=); needed when SRS runs in Docker on another host")

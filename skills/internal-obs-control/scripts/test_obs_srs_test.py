@@ -5,6 +5,67 @@ from unittest.mock import Mock, patch
 import obs_srs_test as recipe
 
 
+class TargetTest(unittest.TestCase):
+    def target(self, **kwargs):
+        values = dict(whip=None, srt=None, srt_streamid=None, srt_passphrase=None,
+                      rtmp=None, rtmp_server=None, rtmp_key=None, app=None, stream=None)
+        values.update(kwargs)
+        return recipe.parse_target(argparse.Namespace(**values))
+
+    def test_srt_explicit_streamid_and_passphrase(self):
+        target = self.target(srt="srt://host:10080?latency=200", srt_streamid="#!::r=app/custom,m=publish",
+                             srt_passphrase="example-passphrase")
+        self.assertEqual(target.settings, dict(server="srt://host:10080?latency=200",
+                                              key="#!::r=app/custom,m=publish", use_auth=True,
+                                              password="example-passphrase"))
+        self.assertEqual((target.app, target.stream, target.host), ("app", "custom", "host"))
+
+    def test_srt_url_streamid_forms(self):
+        for streamid in ("#!::r=app/custom,m=publish", "%23!%3A%3Ar%3Dapp%2Fcustom%2Cm%3Dpublish"):
+            with self.subTest(streamid=streamid):
+                target = self.target(srt="srt://host:10080?latency=200&streamid=" + streamid + "&mode=caller")
+                self.assertEqual(target.settings, dict(server="srt://host:10080?latency=200&mode=caller",
+                                                      key="#!::r=app/custom,m=publish", use_auth=False))
+                self.assertEqual((target.app, target.stream), ("app", "custom"))
+
+    def test_srt_url_streamid_overrides_explicit(self):
+        target = self.target(srt="srt://host:10080?streamid=#!::r=live/url,m=publish",
+                             srt_streamid="#!::r=live/key,m=publish")
+        self.assertEqual(target.settings["key"], "#!::r=live/url,m=publish")
+        self.assertEqual(target.stream, "url")
+
+    def test_srt_defaults_and_verify_overrides(self):
+        target = self.target(srt="srt://host:10080")
+        self.assertEqual((target.app, target.stream), ("live", "livestream"))
+        self.assertEqual(target.settings, dict(server="srt://host:10080", key="", use_auth=False))
+        target = self.target(srt="srt://host:10080", srt_streamid="#!::r=live/key,m=publish",
+                             app="override", stream="name")
+        self.assertEqual((target.app, target.stream), ("override", "name"))
+
+    def test_rtmp_url_keeps_query_in_key(self):
+        target = self.target(rtmp="rtmp://host:1935/app/custom?x=y&vhost=example.test")
+        self.assertEqual(target.settings, dict(server="rtmp://host:1935/app",
+                                              key="custom?x=y&vhost=example.test", use_auth=False))
+        self.assertEqual((target.app, target.stream), ("app", "custom"))
+
+    def test_rtmp_separate_key_query_and_plain_url(self):
+        target = self.target(rtmp_server="rtmp://host/app", rtmp_key="custom?x=y")
+        self.assertEqual(target.settings["key"], "custom?x=y")
+        self.assertEqual(target.stream, "custom")
+        target = self.target(rtmp="rtmp://host/app/custom")
+        self.assertEqual(target.settings["key"], "custom")
+        self.assertEqual(target.stream, "custom")
+
+    def test_srt_cli_accepts_options(self):
+        with patch.object(recipe, "resolve_args"), patch.object(recipe, "cmd_setup") as setup:
+            with patch("sys.argv", ["obs_srs_test.py", "setup", "--srt", "srt://host:10080",
+                                    "--srt-streamid", "#!::r=app/custom,m=publish",
+                                    "--srt-passphrase", "example-passphrase"]):
+                recipe.main()
+        self.assertEqual(setup.call_args.args[0].srt_streamid, "#!::r=app/custom,m=publish")
+        self.assertEqual(setup.call_args.args[0].srt_passphrase, "example-passphrase")
+
+
 class StreamRestartTest(unittest.TestCase):
     def run_action(self, action, active=True, stalled=False, changed=False, reconnecting=False):
         client = Mock()

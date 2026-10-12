@@ -18,7 +18,7 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 | protocol | OBS `streamServiceType` | `streamServiceSettings` | SRS listener (defaults) |
 | --- | --- | --- | --- |
 | RTMP | `rtmp_custom` | `{"server":"rtmp://HOST/live","key":"livestream","use_auth":false}` | TCP 1935 (`listen 1935;`) |
-| SRT | `rtmp_custom` | `{"server":"srt://HOST:10080?streamid=#!::r=live/livestream,m=publish","key":""}` | UDP 10080 (`srt_server { listen 10080; }`, `vhost { srt { enabled on; srt_to_rtmp on; } }`) |
+| SRT | `rtmp_custom` | `{"server":"srt://HOST:10080","key":"#!::r=live/livestream,m=publish","use_auth":false}` | UDP 10080 (`srt_server { listen 10080; }`, `vhost { srt { enabled on; srt_to_rtmp on; } }`) |
 | WHIP | `whip_custom` | `{"server":"http://HOST:1985/rtc/v1/whip/?app=live&stream=livestream","bearer_token":""}` | HTTP API 1985 + UDP 8000 (`rtc_server { listen 8000; candidate ...; }`, `vhost { rtc { enabled on; rtmp_to_rtc on; rtc_to_rtmp on; } }`) |
 
 `obs_srs_test.py setup --rtmp|--srt|--whip ...` fills these in; `obsws.py call SetStreamServiceSettings
@@ -29,17 +29,24 @@ SRS (Simple Realtime Server) accepts OBS over three protocols. All three end up 
 - `server` is `rtmp://host[:port]/app` and `key` is the stream name; OBS joins them as the tcUrl + stream.
   For SRS the whole URL may also be written as `rtmp://host/app/stream` in `--rtmp`; the script splits it.
 - Query parameters for SRS auth or vhost go in the key: `livestream?secret=xxx` or `livestream?vhost=my.vhost`.
+  Both `--rtmp 'rtmp://host/live/livestream?x=y'` and `--rtmp-server rtmp://host/live --rtmp-key 'livestream?x=y'`
+  preserve them; verification strips the query from the SRS stream name.
 - SRS logs `RTMP client ip=..., fd=...` then `client identified, type=fmle-publish, vhost=__defaultVhost__, app=live, stream=livestream`.
 - OBS log: `[rtmp stream: 'simple_stream'] Connecting to RTMP URL rtmp://host/live...` then
   `Connection to rtmp://host/live (ip) successful`.
 
 ## SRT
 
-- SRS uses the `streamid` query in the URL-like form `#!::r=app/stream,m=publish` (`m=request` for play).
-  URL-encoding is not needed in `service.json`; keep the `#!::` literal.
+- SRS uses the SRT streamid `#!::r=app/stream,m=publish` (`m=request` for play).
+  Set `--srt srt://host:10080 --srt-streamid '#!::r=app/stream,m=publish'`; the script writes the
+  streamid to the service `key`, and parses app/stream from it for verification.
 - OBS detects `srt://` and uses the FFmpeg MPEG-TS muxer output (`ffmpeg_mpegts_muxer`); x264/AAC are fine.
-  `key` becomes the SRT passphrase (leave empty unless SRS `srt_server { passphrase ...; }` is set).
-  Latency options can be appended: `srt://host:10080?streamid=...&latency=200&mode=caller`.
+  OBS maps `key` to the streamid and `password` to the encryption passphrase when `use_auth` is true
+  (`plugins/rtmp-services/rtmp-custom.c:149–163`). `--srt-passphrase <passphrase>` fills these password
+  fields; leave it unset unless SRS `srt_server { passphrase ...; }` is configured.
+- A `streamid=` in the URL overrides the key in OBS (`plugins/obs-ffmpeg/obs-ffmpeg-srt.h:769–775`).
+  The script accepts literal `#!::` and URL-encoded forms, moves that value into `key`, and removes
+  only the streamid option. Other options remain, e.g. `srt://host:10080?latency=200&mode=caller`.
 - SRS must be built with SRT (`--srt=on`, the default in release builds) and `srt_to_rtmp on;` for the
   stream to show up over RTMP/HTTP-FLV/HLS and in the API. Check the SRS log for
   `srt: accept ... streamid=#!::r=live/livestream,m=publish` and `SRT: srt to rtmp`.

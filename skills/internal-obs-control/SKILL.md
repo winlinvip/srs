@@ -189,8 +189,17 @@ python3 scripts/obs_srs_test.py setup --rtmp rtmp://localhost/live/livestream --
 # WHIP (WebRTC); adds eip=127.0.0.1 for localhost so SRS advertises a candidate OBS can reach
 python3 scripts/obs_srs_test.py setup --whip 'http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream' --start --verify
 # SRT
-python3 scripts/obs_srs_test.py setup --srt 'srt://127.0.0.1:10080?streamid=#!::r=live/livestream,m=publish' --srs-api http://localhost:1985 --start --verify
+python3 scripts/obs_srs_test.py setup --srt srt://127.0.0.1:10080 --srt-streamid '#!::r=live/livestream,m=publish' --srs-api http://localhost:1985 --start --verify
 ```
+
+Destination fields:
+
+- SRT `--srt-streamid` is the Stream Key; `--srt-passphrase` is the Password and enables `use_auth`.
+  OBS maps these in `plugins/rtmp-services/rtmp-custom.c:149–163`.
+- An SRT URL `streamid=` (literal `#!::` or URL-encoded) takes precedence and is moved into the key;
+  other URL options stay in the server (`plugins/obs-ffmpeg/obs-ffmpeg-srt.h:769–775`).
+- RTMP `--rtmp rtmp://host/app/stream?x=y` and `--rtmp-server rtmp://host/app --rtmp-key 'stream?x=y'`
+  retain the query in the key. Verification uses `app/stream` without the key's query parameters.
 
 What it does, in order (each step is also available as a single `obsws.py call`):
 

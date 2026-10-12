@@ -164,7 +164,7 @@ practice: bitrate/preset/resolution changes apply to the next stream start; `Mod
 
 ```json
 {"type":"rtmp_custom","settings":{"server":"rtmp://localhost/live","key":"livestream","use_auth":false}}
-{"type":"rtmp_custom","settings":{"server":"srt://127.0.0.1:10080?streamid=#!::r=live/livestream,m=publish","key":""}}
+{"type":"rtmp_custom","settings":{"server":"srt://127.0.0.1:10080","key":"#!::r=live/livestream,m=publish","use_auth":false}}
 {"type":"whip_custom","settings":{"server":"http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream","bearer_token":""}}
 {"type":"rtmp_common","settings":{"service":"Twitch","server":"auto","key":"live_..."}}
 ```
@@ -172,8 +172,8 @@ practice: bitrate/preset/resolution changes apply to the next stream start; `Mod
 `rtmp_custom` derives the protocol from the URL prefix (`rtmps://` RTMPS, `srt://` SRT, `rist://` RIST,
 else RTMP; `plugins/rtmp-services/rtmp-custom.c`). The frontend picks the output type from the protocol
 (`frontend/utility/BasicOutputHandler.cpp`): RTMP/RTMPS -> `rtmp_output`, HLS -> `ffmpeg_hls_muxer`,
-SRT/RIST -> `ffmpeg_mpegts_muxer`; `whip_custom` asks for `whip_output`. For SRT the `key` is used as
-the SRT passphrase, so keep it empty for SRS unless `passphrase` is configured there. Written on every
+SRT/RIST -> `ffmpeg_mpegts_muxer`; `whip_custom` asks for `whip_output`. For SRT, `key` is the streamid;
+`password` is the encryption passphrase when `use_auth` is true (`rtmp-custom.c:149–163`). Written on every
 `SetStreamServiceSettings` and when the Settings dialog is saved.
 
 ## Profile: streamEncoder.json and recordEncoder.json

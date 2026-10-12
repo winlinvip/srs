@@ -2,10 +2,63 @@ import os
 import io
 import shutil
 import unittest
+from argparse import Namespace
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 import obsws
+
+
+class ProcessSafetyTest(unittest.TestCase):
+    def launch(self, instance=None, keep=False):
+        output = io.StringIO()
+        with patch.object(obsws, "INSTANCE", instance), \
+                patch.object(obsws, "obs_pids", return_value=[]), \
+                patch.object(obsws, "all_obs_pids", return_value=[]), \
+                patch.object(obsws, "find_obs_binary", return_value=("obs", None)), \
+                patch.object(obsws, "stale_sentinels", return_value=["sentinel-one", "sentinel-two"]), \
+                patch.object(obsws, "config_dir", return_value="config"), \
+                patch.object(obsws, "seed_instance", return_value=15000), \
+                patch.object(obsws, "instance_env", return_value={}), \
+                patch.object(obsws, "build_launch_args", return_value=[]), \
+                patch.object(obsws, "read_websocket_config", return_value={"server_enabled": True}), \
+                patch.object(obsws, "system", return_value="Windows"), \
+                patch.object(obsws.subprocess, "Popen"), \
+                patch("builtins.open", unittest.mock.mock_open()), \
+                patch.object(obsws.os, "remove") as remove, redirect_stdout(output):
+            self.assertEqual(obsws.cmd_launch(Namespace(keep_sentinel=keep)), 0)
+        return remove, output.getvalue()
+
+    def test_main_launch_preserves_and_lists_crash_sentinels(self):
+        remove, output = self.launch()
+        remove.assert_not_called()
+        self.assertIn("sentinel-one", output)
+        self.assertIn("sentinel-two", output)
+        self.assertIn("crash", output)
+        self.assertIn("remove", output)
+
+    def test_instance_launch_clears_only_its_sentinels(self):
+        # Accepted behavior: isolated test instances clear their own recovery state.
+        remove, output = self.launch(instance="t12345")
+        self.assertEqual(remove.call_args_list,
+                         [unittest.mock.call("sentinel-one"), unittest.mock.call("sentinel-two")])
+        self.assertIn("removed 2", output)
+
+    def test_keep_sentinel_preserves_instance_recovery_state(self):
+        # Accepted behavior: the existing opt-out also applies to test instances.
+        remove, _ = self.launch(instance="t12345", keep=True)
+        remove.assert_not_called()
+
+    def test_windows_quit_addresses_each_selected_pid(self):
+        with patch.object(obsws, "system", return_value="Windows"), \
+                patch.object(obsws, "obs_pids", return_value=[123, 456]), \
+                patch.object(obsws, "connect", side_effect=obsws.OBSError("offline")), \
+                patch.object(obsws, "pid_is_obs", return_value=False), \
+                patch.object(obsws.subprocess, "run") as run, redirect_stdout(io.StringIO()):
+            self.assertEqual(obsws.cmd_quit(Namespace(timeout=1)), 0)
+        self.assertEqual(run.call_args_list, [
+            unittest.mock.call(["taskkill", "/PID", "123"], capture_output=True, timeout=15),
+            unittest.mock.call(["taskkill", "/PID", "456"], capture_output=True, timeout=15)])
 
 
 class DisplayPropertiesTest(unittest.TestCase):

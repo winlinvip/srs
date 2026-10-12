@@ -61,7 +61,9 @@ whatever you pass (`--profile`, `--collection`, `--scene`, `--startstreaming`, `
 1. Parse arguments, open the log, load `global.ini`/`user.ini`.
 2. Crash check: if `.sentinel/run_*` files exist from a previous run, a **modal dialog** ("unclean
    shutdown", Safe Mode vs Normal) appears before anything else. Nothing responds until it is clicked.
-   Remove stale sentinel files first (only when OBS is not running).
+   `launch` clears these only for isolated instances (unless `--keep-sentinel`). For the main OBS,
+   it lists the files and preserves the recovery dialog; review the crash logs before manually
+   removing the listed files while OBS is stopped.
 3. First run ever: the auto-configuration wizard may open (`user.ini [General] FirstRun`); skipping it
    is one click. Pre-seeding `user.ini` with `FirstRun=true` avoids it.
 4. Load modules (websocket server starts listening here but answers 207 NotReady), profile
@@ -77,7 +79,7 @@ Typical readiness time on a laptop: 3-8 s. Poll the handshake plus `GetVersion` 
 ## Stopping OBS
 
 - Graceful: macOS `osascript -e 'tell application id "com.obsproject.obs-studio" to quit'`; Windows
-  `taskkill /IM obs64.exe` (WM_CLOSE); Linux `kill -TERM <pid>` (OBS installs SIGINT/SIGTERM handlers
+  `taskkill /PID <pid>` for each selected OBS pid (WM_CLOSE); Linux `kill -TERM <pid>` (OBS installs SIGINT/SIGTERM handlers
   that run the normal shutdown). Graceful exit saves the collection, removes the sentinel and writes
   `==== Shutting down ====` to the log.
 - `user.ini [General] ConfirmOnExit=true` only prompts while streaming/recording, so stop outputs first

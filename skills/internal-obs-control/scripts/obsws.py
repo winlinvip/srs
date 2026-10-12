@@ -1047,7 +1047,13 @@ def cmd_launch(args):
     if INSTANCE and binary.startswith("flatpak "):
         raise LocalStateError("isolated instances need a native OBS; flatpak sets its own XDG_CONFIG_HOME")
     stale = stale_sentinels()
-    if stale and not getattr(args, "keep_sentinel", False):
+    if stale and not INSTANCE:
+        print("stale crash sentinel(s) preserved for the main OBS:")
+        for sentinel in stale:
+            print("  %s" % sentinel)
+        print("review the crash logs in %s; accept OBS's recovery dialog, or remove only the listed "
+              "files while OBS is stopped to skip it" % os.path.join(config_dir(), "logs"))
+    elif stale and not getattr(args, "keep_sentinel", False):
         for s in stale:
             try:
                 os.remove(s)
@@ -1116,7 +1122,8 @@ def cmd_quit(args):
     s = system()
     try:
         if s == "Windows":
-            subprocess.run(["taskkill", "/IM", "obs64.exe"], capture_output=True, timeout=15)
+            for pid in pids:
+                subprocess.run(["taskkill", "/PID", str(pid)], capture_output=True, timeout=15)
         elif s == "Darwin" and not INSTANCE and not instance_pids():
             subprocess.run(["osascript", "-e", 'tell application id "com.obsproject.obs-studio" to quit'], capture_output=True, timeout=15)
         else:
@@ -1139,7 +1146,8 @@ def cmd_quit(args):
             except OSError:
                 pass
         time.sleep(1.0)
-        print("OBS killed (unclean; the next `launch` clears the crash sentinel)")
+        print("OBS killed (unclean; isolated instances clear crash sentinels on launch, "
+              "the main OBS keeps its recovery dialog)")
         return 0
     raise TimeoutError_("OBS still running after %ss (a dialog may be open); rerun with --force" % args.timeout)
 

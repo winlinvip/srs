@@ -34,7 +34,7 @@ Apply these rules whenever a task produces a commit:
 
   <co-author line from the harness>
   ```
-- If Codex made changes, use this exact commit message format:
+- If Codex made changes, use this commit message format. Replace `<current model name>` with the model name provided by the Codex harness; do not hard-code a model or guess an unavailable name. If the harness does not provide the model name, use `Codex` alone as the display name. Keep the bot email unchanged:
   ```
   Commit title.
 
@@ -42,6 +42,6 @@ Apply these rules whenever a task produces a commit:
 
   ---------
 
-  Co-authored-by: chatgpt-codex-connector[bot] <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>
+  Co-authored-by: Codex (<current model name>) <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>
   ```
 - If Kiro made changes, use the same title and description, with no fixed trailer.

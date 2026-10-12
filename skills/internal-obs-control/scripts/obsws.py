@@ -548,6 +548,18 @@ FIRST_INSTANCE_PORT = 4460
 LAST_INSTANCE_PORT = 5459
 
 
+def instance_port_range():
+    value = os.environ.get("OBS_CONTROL_WS_PORTS")
+    if value is None:
+        return FIRST_INSTANCE_PORT, LAST_INSTANCE_PORT
+    match = re.fullmatch(r"([0-9]+)-([0-9]+)", value)
+    if match:
+        first, last = map(int, match.groups())
+        if 1 <= first <= last <= 65535:
+            return first, last
+    raise LocalStateError("OBS_CONTROL_WS_PORTS must be <first>-<last> with 1 <= first <= last <= 65535")
+
+
 def set_instance(name):
     global INSTANCE
     if name:
@@ -787,6 +799,7 @@ def seed_instance(name):
     """Create or refresh the instance's config so OBS starts without dialogs and with its own websocket
     server. Existing files are kept, so profiles and scene collections survive relaunches."""
     with instances_lock():
+        first_port, last_port = instance_port_range()
         cfg_dir = instance_config_dir(name)
         os.makedirs(cfg_dir, exist_ok=True)
 
@@ -799,12 +812,12 @@ def seed_instance(name):
             for other in instance_names():
                 if other != name and os.path.isfile(websocket_config_path(instance_config_dir(other))):
                     reserved.add(read_websocket_config(instance_config_dir(other)).get("server_port"))
-            for candidate in range(FIRST_INSTANCE_PORT, LAST_INSTANCE_PORT + 1):
+            for candidate in range(first_port, last_port + 1):
                 if candidate not in reserved and port_free(candidate):
                     port = candidate
                     break
             if not port:
-                raise LocalStateError("no free websocket port in %d-%d" % (FIRST_INSTANCE_PORT, LAST_INSTANCE_PORT))
+                raise LocalStateError("no free websocket port in %d-%d" % (first_port, last_port))
         ws.update({"first_load": False, "server_enabled": True, "server_port": port, "alerts_enabled": False,
                    "auth_required": True})
         if not ws.get("server_password"):

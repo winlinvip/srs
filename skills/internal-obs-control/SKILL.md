@@ -48,8 +48,8 @@ These variables select a run or an instance:
   `OBS_WS_PASSWORD` are then ignored. See [Parallel tests](#parallel-tests-one-isolated-instance-per-test).
 - **`OBS_CONTROL_HOME`**: the state root, default `$HOME/.cache/internal-obs-control`, holding `instances/`
   and `runs/`.
-- **`OBS_CONTROL_WS_PORTS`**: the websocket port range for new instances, such as `14000-14099`; default
-  4460 and up.
+- **`OBS_CONTROL_WS_PORTS`**: the inclusive websocket port range for new instances, such as `15000-15099`;
+  default `4460-5459`. Use `<first>-<last>` with ports from 1 to 65535.
 
 ## Runs: every resource carries a run id
 
@@ -119,9 +119,11 @@ What an instance isolates, and why each part matters:
   it from `CFFIXED_USER_HOME` on macOS and `XDG_CONFIG_HOME` on Linux, so profiles, scene collections,
   `user.ini` (current profile/collection), crash sentinels, logs and browser-source cache are private.
   The user's own OBS config is never read or written. Windows OBS has no such override: not supported.
-- **Websocket port and password**, allocated under a lock from 4460 upward, skipping ports that other
+- **Websocket port and password**, allocated under a lock from `OBS_CONTROL_WS_PORTS` (default `4460-5459`), skipping ports that other
   instances or the main OBS use, and stored in the instance's `config.json`. `OBS_WS_HOST`, `OBS_WS_PORT` and `OBS_WS_PASSWORD` are
   ignored in instance mode because they describe the main OBS.
+  Allocation fails with the exhausted range when no port is free. Existing instances keep their port
+  across relaunches; set the range before launching a new instance.
 - **Process**: a pid file per instance, so `quit` sends SIGTERM to exactly that OBS (the AppleScript
   quit addresses the bundle id, which every instance shares). `--multi` is added automatically so no
   "already running" dialog appears, and the main OBS's `probe`/`quit`/`launch` skip instance processes.

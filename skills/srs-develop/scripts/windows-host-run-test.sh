@@ -1,13 +1,15 @@
 #!/bin/bash
-# Test windows-host-run.sh without a Windows host: a fake ssh and scp on PATH stand in for the host,
-# and a local bare repository stands in for the branch's upstream remote.
+# Test windows-host-run.sh, and st-windows-test.sh on it, without a Windows host: a fake ssh and scp
+# on PATH stand in for the host, and a local bare repository stands in for the branch's upstream
+# remote.
 #
 #   windows-host-run-test.sh
 #
 # Covers the argument checks, the refusal of a dirty tree without --wip, the --wip snapshot (branch,
 # index and files unchanged, new files included, pushed to <upstream>-wip), the push of a clean
 # commit without --wip, the refusal to push to origin, the arguments given to the script on the
-# host, its exit code, and the host lock.
+# host, its exit code, and the host lock. For st-windows-test.sh: the runner and its arguments on the
+# host, the exit code for each result, the skips and setup failures, and the st lock.
 #
 # Prints PASS or FAIL per check, then a summary. Exit 0 when every check passed, 1 otherwise.
 
@@ -32,8 +34,9 @@ export SRS_FULL_TIER_LOCK_DIR=$ROOT/lock/srs.lock
 HOST_LOCK=$ROOT/lock/srs-windows-host.lock
 
 # The fake host: ssh logs each command, answers the reachability check, prints the setup line with
-# the commit it was asked for, and for the run step reports whether the host lock is held and exits
-# with STUB_RUN_EXIT. scp keeps a copy of each file it is given.
+# the commit it was asked for, or fails it with STUB_SETUP_FAIL, and for the run step reports whether
+# the host and st locks are held, prints STUB_RUN_OUTPUT and exits with STUB_RUN_EXIT. scp keeps a
+# copy of each file it is given.
 cat > "$ROOT/bin/ssh" <<'EOF'
 #!/bin/bash
 echo "$*" >> /tmp/srs-windows-host-run-test/ssh.log
@@ -41,10 +44,21 @@ cmd=${!#}
 [[ $cmd == exit ]] && exit ${STUB_SSH_EXIT:-0}
 sha=$(echo "$cmd" | sed -n 's/.* -Sha \([0-9a-f]*\).*/\1/p')
 case $cmd in
-  *"-Step setup"*) echo "SETUP: C:\\fake at $sha" ;;
+  *"-Step setup"*)
+    if [[ -n $STUB_SETUP_FAIL ]]; then
+      echo "SETUP_FAIL: stub setup failed"
+      exit 3
+    fi
+    echo "SETUP: C:\\fake at $sha" ;;
   *"-Step run"*)
     if [[ -d ${SRS_FULL_TIER_LOCK_DIR%.lock}-windows-host.lock ]]; then
       echo "STUB lock held"
+    fi
+    if [[ -d ${SRS_FULL_TIER_LOCK_DIR%.lock}-st.lock ]]; then
+      echo "STUB st lock held"
+    fi
+    if [[ -n $STUB_RUN_OUTPUT ]]; then
+      printf '%b\n' "$STUB_RUN_OUTPUT"
     fi
     echo "STUB run $sha"
     exit ${STUB_RUN_EXIT:-0} ;;
@@ -160,6 +174,45 @@ check "clean: commit pushed to the upstream" '[[ $(git -C "$ROOT/fork.git" rev-p
 check "clean: host runs the commit in the mirror" 'grep -- "-Step setup" /tmp/srs-windows-host-run-test/ssh.log | grep -q -- "-Rel repo .*-Wip 0 .*-Sha $HEAD2"'
 check "clean: script output returned" 'out | grep -q "^STUB run $HEAD2$"'
 
+# st-windows-test.sh runs st-test-runner.sh in the host checkout through windows-host-run.sh, with
+# its options, output and exit codes unchanged.
+ST_LOCK=$ROOT/lock/srs-st.lock
+st() {
+  : > /tmp/srs-windows-host-run-test/ssh.log
+  rm -f /tmp/srs-windows-host-run-test/scp/*
+  bash "$SCRIPTS/st-windows-test.sh" "$@" > /tmp/srs-windows-host-run-test/out 2>&1
+  CODE=$?
+}
+PASS_LINE='RESULT windows-x64 utest-default PASS passed 1, failed 0, skipped 0 (1s)'
+FAIL_LINE='RESULT windows-x64 tools-default FAIL 0 OK, 0 skipped (1s)'
+STUB_RUN_OUTPUT=$PASS_LINE st "$REPO"
+check "st: every run passed: exit 0" '[[ $CODE == 0 ]]'
+check "st: RESULT lines printed" 'out | grep -qF "$PASS_LINE"'
+check "st: host runs the commit in the mirror" 'grep -- "-Step setup" /tmp/srs-windows-host-run-test/ssh.log | grep -q -- "-Rel repo .*-Wip 0 .*-Sha $HEAD2"'
+check "st: st-test-runner.sh copied to the host" 'ls /tmp/srs-windows-host-run-test/scp/ | grep -q "st-test-runner.sh$"'
+WRAPPER=$(ls /tmp/srs-windows-host-run-test/scp/*wrapper* 2>/dev/null | head -n 1)
+bash "$WRAPPER" "$ROOT/args.sh" > /tmp/srs-windows-host-run-test/out 2>&1
+check "st: runner gets windows-x64 and the host checkout" '[[ $(out) == "ARG[windows-x64]
+ARG[.]" ]]'
+STUB_RUN_OUTPUT=$PASS_LINE st "$REPO"
+check "st: st and host locks held during the run" 'out | grep -q "^STUB st lock held$" && out | grep -q "^STUB lock held$"'
+check "st: locks released" '[[ ! -d $ST_LOCK && ! -d $HOST_LOCK ]]'
+SRS_ST_TEST_LOCKED=1 STUB_RUN_OUTPUT=$PASS_LINE st "$REPO"
+check "st: under st-test.sh's lock: no st lock of its own" '[[ $CODE == 0 ]] && ! out | grep -q "^STUB st lock held$"'
+STUB_RUN_OUTPUT="$PASS_LINE\n$FAIL_LINE" STUB_RUN_EXIT=1 st "$REPO"
+check "st: a failed run: exit 1" '[[ $CODE == 1 ]] && out | grep -qF "$FAIL_LINE"'
+st "$REPO"
+check "st: no RESULT line: exit 2" '[[ $CODE == 2 ]]'
+STUB_SETUP_FAIL=1 STUB_RUN_OUTPUT=$PASS_LINE st "$REPO"
+check "st: setup failed: exit 3" '[[ $CODE == 3 ]] && out | grep -q "^SETUP_FAIL: stub setup failed"'
+SRS_TEST_WINDOWS_HOST= st "$REPO"
+check "st: no host: skip, exit 2" '[[ $CODE == 2 ]] && out | grep -q "^SKIP windows: SRS_TEST_WINDOWS_HOST is not set"'
+echo dirty > "$REPO/dirty.txt"
+st "$REPO"
+check "st: dirty tree: skip, exit 2" '[[ $CODE == 2 ]] && out | grep -q "^SKIP windows: .* has uncommitted changes"'
+check "st: dirty tree: no run on the host" '! grep -q -- "-Step" /tmp/srs-windows-host-run-test/ssh.log'
+rm "$REPO/dirty.txt"
+
 # Never push to origin, with or without --wip.
 git -C "$REPO" push -q origin work
 git -C "$REPO" branch -q -u origin/work
@@ -177,6 +230,8 @@ check "origin: nothing pushed" '[[ $(git -C "$ROOT/origin.git" rev-parse refs/he
 git -C "$REPO" checkout -q -f -b lonely
 run --wip "$REPO" "$ROOT/hello.sh"
 check "no upstream: exit 3" '[[ $CODE == 3 ]] && out | grep -q "^SETUP_FAIL: .* must be on a branch that tracks a remote branch"'
+st "$REPO"
+check "st: no upstream: exit 3" '[[ $CODE == 3 ]] && out | grep -q "^SETUP_FAIL: .* must be on a branch that tracks a remote branch"'
 
 check "no leftover temp index" '! ls /tmp/srs-windows-host-run/ 2>/dev/null | grep -q index'
 

@@ -122,5 +122,32 @@ obs_test_cleanup
 check test "$(cat /tmp/srs-obs-lib-regression/remove.args)" = 'unused instance remove --instance t12345 --force --timeout 10'
 check test "$(kill -0 "$OBS_SRS_PID" 2>/dev/null; echo $?)" != 0
 check test ! -f /tmp/srs-obs-lib-regression/srs.pid
+# The slot's URLs point at 127.0.0.1, or at OBS_SRS_HOST for an SRS started elsewhere.
+local_ports() (
+  unset OBS_SRS_HOST
+  obs_test_ports 15100
+  [[ $OBS_RTMP_PORT == 15100 && $OBS_API_URL == http://127.0.0.1:15102 && $OBS_HTTP_URL == http://127.0.0.1:15101 ]]
+)
+check local_ports
+# With OBS_SRS_HOST, start claims and launches OBS but never spawns SRS, and a
+# Windows Python's CRLF does not stay in the instance id.
+remote_srs_start() (
+  OBS_WS=unused OBS_PYTHON=python OBS_SRS_HOST=172.24.0.5 OBS_SRS_PID=
+  obs_test_ports 15900
+  [[ $OBS_RTMP_PORT == 15900 && $OBS_API_URL == http://172.24.0.5:15902 && $OBS_HTTP_URL == http://172.24.0.5:15901 ]] || return 1
+  rm -f /tmp/srs-obs-lib-regression/spawned
+  python() { [[ $3 != new ]] || printf 't12345\r\n'; }
+  obs_test_start_srs() { echo spawned > /tmp/srs-obs-lib-regression/spawned; }
+  curl() { [[ $* == *http://172.24.0.5:15902/api/v1/versions ]]; }
+  obs_test_start || return 1
+  [[ $OBS_INSTANCE_ID == t12345 && -z $OBS_SRS_PID && ! -f /tmp/srs-obs-lib-regression/spawned ]]
+)
+check remote_srs_start
+# The Windows run: gates and arguments, checked without a host.
+WIN="$SCRIPT_DIR/obs-windows-test.sh"
+check test "$(SRS_TEST_OBS=0 bash "$WIN")" = 'SKIP SRS_TEST_OBS=0'
+check test "$(SRS_TEST_WINDOWS_HOST= bash "$WIN")" = 'SKIP windows: SRS_TEST_WINDOWS_HOST is not set'
+check test "$(bash "$WIN" --bogus >/dev/null 2>&1; echo $?)" = 3
+check test "$(bash "$WIN" --host-case srt 127.0.0.1 >/dev/null 2>&1; echo $?)" = 3
 rm -rf /tmp/srs-obs-lib-regression
 echo "PASS $checks harness regressions"

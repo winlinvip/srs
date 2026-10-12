@@ -2,6 +2,19 @@
 # Sourced OBS test harness, compatible with Bash 3.2. Call init, start, setup,
 # assertions and finish. init installs owned-resource EXIT/signal cleanup.
 # Slot offsets: RTMP +0, HTTP +1, API +2, RTC UDP +3, SRT UDP +4.
+# OBS_PYTHON names the Python command (default python3). OBS_SRS_HOST means
+# the caller already runs SRS on the slot at that address, so start never
+# spawns or kills SRS.
+
+obs_test_ports() {
+  OBS_RTMP_PORT=$1
+  OBS_HTTP_PORT=$(($1 + 1))
+  OBS_API_PORT=$(($1 + 2))
+  OBS_RTC_PORT=$(($1 + 3))
+  OBS_SRT_PORT=$(($1 + 4))
+  OBS_API_URL="http://${OBS_SRS_HOST:-127.0.0.1}:$OBS_API_PORT"
+  OBS_HTTP_URL="http://${OBS_SRS_HOST:-127.0.0.1}:$OBS_HTTP_PORT"
+}
 
 obs_test_fail() { echo "FAIL $*" >&2; return 1; }
 obs_test_pass() { OBS_PASS_COUNT=$((OBS_PASS_COUNT + 1)); echo "PASS $*"; }
@@ -54,7 +67,7 @@ obs_test_cleanup() {
     OBS_LAUNCH_PID=
   fi
   if [[ -n "${OBS_INSTANCE_ID:-}" ]]; then
-    python3 "$OBS_WS" instance remove --instance "$OBS_INSTANCE_ID" --force --timeout 10 \
+    "${OBS_PYTHON:-python3}" "$OBS_WS" instance remove --instance "$OBS_INSTANCE_ID" --force --timeout 10 \
       >"$OBS_TEST_DIR/cleanup.log" 2>&1 && OBS_INSTANCE_ID= || { obs_test_fail 'OBS cleanup'; status=1; }
   fi
   if [[ -n "${OBS_SRS_PID:-}" && -f "$OBS_TEST_DIR/srs.pid" ]]; then
@@ -99,25 +112,19 @@ obs_test_init() {
   OBS_WS="$OBS_WORKSPACE/skills/internal-obs-control/scripts/obsws.py"
   OBS_RECIPE="$OBS_WORKSPACE/skills/internal-obs-control/scripts/obs_srs_test.py"
   OBS_TEST_DIR="/tmp/srs-obs-$OBS_CASE"
-  OBS_RTMP_PORT=$base
-  OBS_HTTP_PORT=$((base + 1))
-  OBS_API_PORT=$((base + 2))
-  OBS_RTC_PORT=$((base + 3))
-  OBS_SRT_PORT=$((base + 4))
-  OBS_API_URL="http://127.0.0.1:$OBS_API_PORT"
-  OBS_HTTP_URL="http://127.0.0.1:$OBS_HTTP_PORT"
+  obs_test_ports "$base"
   OBS_PASS_COUNT=0 OBS_KNOWN_COUNT=0
   OBS_INSTANCE_ID= OBS_SRS_PID= OBS_LAUNCH_PID= OBS_COMMAND_PID= OBS_COMMAND_TIMED_OUT=
-  for dep in python3 ffmpeg ffprobe jq curl; do
+  for dep in "${OBS_PYTHON:-python3}" ffmpeg ffprobe jq curl; do
     command -v "$dep" >/dev/null || { obs_test_fail "missing dependency $dep"; return 1; }
   done
   # Probe is read-only; never enable/restart the user's main OBS.
-  probe=$(python3 "$OBS_WS" probe --json) || { obs_test_skip 'OBS not available (probe failed)'; }
+  probe=$("${OBS_PYTHON:-python3}" "$OBS_WS" probe --json) || { obs_test_skip 'OBS not available (probe failed)'; }
   obs_test_probe_available "$probe" || obs_test_skip 'OBS not available'
-  [[ -x "$OBS_WORKSPACE/trunk/objs/srs" ]] || { obs_test_fail 'build trunk/objs/srs first'; return 1; }
+  [[ -n "${OBS_SRS_HOST:-}" || -x "$OBS_WORKSPACE/trunk/objs/srs" ]] || { obs_test_fail 'build trunk/objs/srs first'; return 1; }
   mkdir -p "$OBS_TEST_DIR/html"
   # Reject another live owner; never terminate a listener to acquire a slot.
-  if [[ -f "$OBS_TEST_DIR/srs.pid" ]] && kill -0 "$(cat "$OBS_TEST_DIR/srs.pid")" 2>/dev/null; then
+  if [[ -z "${OBS_SRS_HOST:-}" && -f "$OBS_TEST_DIR/srs.pid" ]] && kill -0 "$(cat "$OBS_TEST_DIR/srs.pid")" 2>/dev/null; then
     obs_test_fail 'case already running'; return 1
   fi
   trap obs_test_exit EXIT
@@ -151,15 +158,17 @@ obs_test_start_srs() {
 }
 
 obs_test_start() {
-  OBS_INSTANCE_ID=$(python3 "$OBS_WS" instance new) || return 1
+  OBS_INSTANCE_ID=$("${OBS_PYTHON:-python3}" "$OBS_WS" instance new) || return 1
+  # Python on Windows ends its lines with CRLF.
+  OBS_INSTANCE_ID=${OBS_INSTANCE_ID%$'\r'}
   [[ "$OBS_INSTANCE_ID" == t* ]] || { obs_test_fail 'instance claim failed'; return 1; }
-  obs_test_start_srs "$@"
-  python3 "$OBS_WS" launch --instance "$OBS_INSTANCE_ID" --wait 15 --minimize-to-tray \
+  [[ -n "${OBS_SRS_HOST:-}" ]] || obs_test_start_srs "$@"
+  "${OBS_PYTHON:-python3}" "$OBS_WS" launch --instance "$OBS_INSTANCE_ID" --wait 15 --minimize-to-tray \
     >"$OBS_TEST_DIR/launch.log" 2>&1 &
   OBS_LAUNCH_PID=$!
   local deadline=$((SECONDS + 10))
   until curl -fsS --max-time 1 "$OBS_API_URL/api/v1/versions" >"$OBS_TEST_DIR/version.json" 2>/dev/null; do
-    kill -0 "$OBS_SRS_PID" 2>/dev/null || { obs_test_fail 'SRS exited during startup'; return 1; }
+    [[ -n "${OBS_SRS_HOST:-}" ]] || kill -0 "$OBS_SRS_PID" 2>/dev/null || { obs_test_fail 'SRS exited during startup'; return 1; }
     [[ $SECONDS -lt $deadline ]] || { obs_test_fail 'SRS API startup timeout'; return 1; }
     sleep 0.1
   done
@@ -178,11 +187,11 @@ obs_test_setup() {
     # obs_reset_video, joining a graphics thread that keeps rendering; the
     # websocket stops answering while the process lives. Replace it once.
     echo 'OBS stopped answering during setup; relaunching the isolated instance once'
-    obs_test_command 10 python3 "$OBS_WS" quit --instance "$OBS_INSTANCE_ID" --force --timeout 3 \
+    obs_test_command 10 "${OBS_PYTHON:-python3}" "$OBS_WS" quit --instance "$OBS_INSTANCE_ID" --force --timeout 3 \
       >>"$OBS_TEST_DIR/launch.log" 2>&1 || true
     relaunch=1
   elif [[ $status -eq 2 ]]; then
-    probe=$(python3 "$OBS_WS" probe --instance "$OBS_INSTANCE_ID" --json) || probe='{}'
+    probe=$("${OBS_PYTHON:-python3}" "$OBS_WS" probe --instance "$OBS_INSTANCE_ID" --json) || probe='{}'
     # Some macOS OBS versions exit on their first CreateProfile. Recover once,
     # only when the owned process exited; never retry a running/modal OBS.
     if echo "$probe" | jq -e '.obs_running == false and .live.connected == false' >/dev/null; then
@@ -191,7 +200,7 @@ obs_test_setup() {
     fi
   fi
   if [[ -n "$relaunch" ]]; then
-    obs_test_command 15 python3 "$OBS_WS" launch --instance "$OBS_INSTANCE_ID" --wait 10 --minimize-to-tray \
+    obs_test_command 15 "${OBS_PYTHON:-python3}" "$OBS_WS" launch --instance "$OBS_INSTANCE_ID" --wait 10 --minimize-to-tray \
       >>"$OBS_TEST_DIR/launch.log" 2>&1 || return 1
     status=0
     obs_test_setup_once "$@" || status=$?
@@ -201,7 +210,7 @@ obs_test_setup() {
 
 # 20 s bounds a hung OBS early enough for one relaunch inside the 60 s budget.
 obs_test_setup_once() {
-  obs_test_command 20 python3 "$OBS_RECIPE" setup --instance "$OBS_INSTANCE_ID" \
+  obs_test_command 20 "${OBS_PYTHON:-python3}" "$OBS_RECIPE" setup --instance "$OBS_INSTANCE_ID" \
     --width 640 --height 360 --fps 30 --video-bitrate 800 --preset ultrafast \
     --media-file "$OBS_CLIP" --srs-api "$OBS_API_URL" --http-url "$OBS_HTTP_URL" \
     "$@" --start --verify >>"$OBS_TEST_DIR/setup.log" 2>&1

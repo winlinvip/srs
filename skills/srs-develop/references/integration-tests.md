@@ -50,6 +50,7 @@ Run feature-specific bundled tests in addition to this matrix when the routed wo
 | `obs-srt-publish-test.sh` | Isolated OBS H.264/AAC SRT publish with the streamid in the Stream Key: SRT-to-RTMP bridge, API active and 640×360, HTTP-FLV video/audio playback; owned cleanup and a 60 s budget. Same dependencies and `SRS_TEST_OBS` gate as the RTMP test. |
 | `obs-whip-publish-test.sh` | Isolated OBS H.264/Opus WHIP publish with `eip=127.0.0.1`: RTC-to-RTMP bridge, API active and 640×360, API frames `KNOWN F2` while they read 0, HTTP-FLV H.264/AAC playback; owned cleanup and a 60 s budget. Same dependencies and `SRS_TEST_OBS` gate as the RTMP test. |
 | `obs-lane-test.sh` | The three OBS cases in parallel, each on its own slot from `SRS_TEST_PORT_BASE` (default 15100, then 15200 and 15300): their logs and results in order, then `LANE obs passed= skipped= known= failed= elapsed=`; fails over 60 s wall time. `SRS_TEST_OBS=0` skips. |
+| `obs-windows-test.sh` | OBS on the Windows test host publishes to SRS in WSL there, through `windows-host-run.sh` (`--wip` for the working tree): WSL builds the commit at the same path as a worktree of its main repository, SRS runs env-only on slot 15900, and the RTMP H.264/AAC and WHIP H.264/Opus cases (WHIP with `eip=<WSL IP>`) run in parallel with the RTMP and WHIP checks; prints the build time and `RESULT windows`, and fails when the cases take over 60 s. Opt in with `SRS_TEST_WINDOWS_HOST`; `SRS_TEST_OBS=0` skips. The host needs WSL with the SRS repository cloned at the same path, and Python, FFmpeg, jq and curl in Git Bash. |
 | `browser-page-url-test.js` | Browser player page URL parsing, for `trunk/research/players` changes. |
 | `gb28181-api-timeout-test.sh` | External-SIP GB28181 API session timeout cleanup. |
 | `gb28181-tcp-disconnect-test.sh` | External-SIP GB28181 TCP disconnect cleanup. |
@@ -217,7 +218,9 @@ Each test process binds ports only from its own range, so the parallel lanes nev
 | 15100–15199 | `obs-rtmp-publish-test.sh` at `SRS_TEST_PORT_BASE`: RTMP +0, HTTP +1, API +2, RTC UDP +3, SRT UDP +4 | 100 | 5 | 95, inside the existing slot |
 | 15200–15299 | `obs-srt-publish-test.sh` at `SRS_TEST_PORT_BASE`: RTMP +0, HTTP +1, API +2, RTC UDP +3, SRT UDP +4 | 100 | 5 | 95, inside the existing slot |
 | 15300–15399 | `obs-whip-publish-test.sh` at `SRS_TEST_PORT_BASE`: RTMP +0, HTTP +1, API +2, RTC UDP +3, SRT UDP +4 | 100 | 5 | 95, inside the existing slot |
-| 15400–20999 | Reserved for new test layers, except the proxy defaults 18000, 18080 and 20080 | 5,600 | 0 | 5,597 |
+| 15400–15899 | Reserved for new test layers | 500 | 0 | 500 |
+| 15900–15999 | `obs-windows-test.sh` on the Windows test host, not the local machine: SRS in WSL with RTMP +0, HTTP +1, API +2, RTC UDP +3; its OBS instances take websocket ports from 15000–15099 there | 100 | 4 | 96, inside the existing slot |
+| 16000–20999 | Reserved for new test layers, except the proxy defaults 18000, 18080 and 20080 | 5,000 | 0 | 4,997 |
 | 21000–25999 | Black-box SRS servers, from `SRSPortAllocator` in `trunk/3rdparty/srs-bench/blackbox`, moved by `SRS_BLACKBOX_PORTS` | 5,000 | Random, per test | 0, owned by the allocator |
 | 26000–29999 | C++ unit tests, from `srs_utest_random_port()`, `_srs_tmp_port` and `_srs_tmp_srt_port`, moved by `SRS_UTEST_PORTS` | 4,000 | Random, per test | 0, owned by the allocator |
 | 30000–32767 | Reserved for new test layers | 2,768 | 0 | 2,768 |

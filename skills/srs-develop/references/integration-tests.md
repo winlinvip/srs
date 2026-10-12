@@ -160,6 +160,7 @@ bash skills/srs-develop/scripts/full-tier-lock.sh release "$token"
 - Each product has its own lock, so the runs of different products go in parallel:
   - SRS: `/tmp/srs-full-tier.lock`, the default, held by the Full tier.
   - State Threads: `/tmp/srs-full-tier-st.lock`, with `--product st`, held by `st-test.sh`.
+  - Windows test host: `/tmp/srs-full-tier-windows-host.lock`, with `--product windows-host`, held by `windows-host-run.sh` for each run on the host, which `windows-host-run-test.sh` tests. The owner's exit frees it; it is stale only after 3600s.
 - One older than 300s, or whose script exited, is taken over.
 - `full-tier-lock-test.sh` tests it.
 

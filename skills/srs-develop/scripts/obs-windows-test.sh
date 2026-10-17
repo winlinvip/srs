@@ -7,7 +7,8 @@
 # the host, with --wip as a snapshot of the working tree, and runs the --host step in the host checkout:
 #   - WSL builds SRS in the checkout at the same path under the WSL home, a worktree of the main
 #     repository at the same path there, fetching the commit from the host's main repository. The first
-#     run adds the worktree, copies the main repository's third-party libraries and configures.
+#     run adds the worktree and copies the main repository's third-party libraries; it configures when
+#     objs has no matching flags or configure is newer than objs/Makefile.
 #   - SRS starts env-only in WSL on slot 15900: RTMP +0, HTTP +1, API +2, RTC UDP +3. WSL in NAT mode
 #     takes UDP only on its own IP, so OBS publishes to that IP, and WHIP adds eip=<WSL IP>.
 #   - The RTMP and WHIP cases run in parallel from isolated OBS instances on Windows through
@@ -22,6 +23,7 @@ set -eu
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 LOG_DIR=/tmp/srs-obs-windows
 SLOT=15900
+WSL_FLAGS="--srt=on --ffmpeg-opus=off"
 
 usage() {
   echo "Usage: $0 [--wip] [--build]" >&2
@@ -153,7 +155,10 @@ wsl_build() {
   fi
   git -C "$dir" checkout -q --detach "$sha"
   cd "$dir/trunk"
-  [[ -f objs/Makefile ]] || ./configure --srt=on --ffmpeg-opus=off
+  # Configure again when configure changed, since it lists the source files, or the flags differ.
+  if ! grep -q "\"$WSL_FLAGS\"" objs/srs_auto_headers.hpp 2>/dev/null || [[ configure -nt objs/Makefile ]]; then
+    ./configure $WSL_FLAGS
+  fi
   make -j"$(nproc)"
 }
 

@@ -208,5 +208,45 @@ linux_srs_exits() {
     /tmp/srs-obs-lib-regression/docker.args && tail -n 1 /tmp/srs-obs-lib-regression/docker.args | grep -q '^rm -f cid123$'
 }
 check linux_srs_exits
+# The WSL build configures on the first run, again when configure changed or the flags differ, and not
+# otherwise; checked with local repositories and a fake configure, make, nproc and wslpath on PATH.
+WSL_DIR=/tmp/srs-obs-lib-regression/wsl
+mkdir -p "$WSL_DIR/bin" "$WSL_DIR/src/trunk" "$WSL_DIR/home"
+printf '%s\n' '#!/bin/bash' 'echo "${@: -1}"' > "$WSL_DIR/bin/wslpath"
+printf '%s\n' '#!/bin/bash' 'echo 2' > "$WSL_DIR/bin/nproc"
+printf '%s\n' '#!/bin/bash' 'exit 0' > "$WSL_DIR/bin/make"
+chmod +x "$WSL_DIR/bin/wslpath" "$WSL_DIR/bin/nproc" "$WSL_DIR/bin/make"
+printf '%s\n' '#!/bin/bash' 'echo "$*" >> ../configure.args' 'mkdir -p objs' 'touch objs/Makefile' \
+  'echo "#define SRS_USER_CONFIGURE \"$*\"" > objs/srs_auto_headers.hpp' > "$WSL_DIR/src/trunk/configure"
+chmod +x "$WSL_DIR/src/trunk/configure"
+git -C "$WSL_DIR/src" init -q
+git -C "$WSL_DIR/src" add trunk/configure
+git -C "$WSL_DIR/src" -c user.name=t -c user.email=t@t commit -q -m one
+git clone -q "$WSL_DIR/src" "$WSL_DIR/home/main"
+wsl_build_run() {
+  (cd "$WSL_DIR" && HOME="$WSL_DIR/home" PATH="$WSL_DIR/bin:$PATH" \
+    bash "$WIN" --wsl-build "$(git -C "$WSL_DIR/src" rev-parse HEAD)" "$WSL_DIR/src" main rel >/dev/null 2>&1)
+}
+wsl_configures() {
+  local before after
+  before=$(cat "$WSL_DIR/home/rel/configure.args" 2>/dev/null | wc -l)
+  wsl_build_run || return 1
+  after=$(wc -l < "$WSL_DIR/home/rel/configure.args")
+  [[ $after -eq $((before + 1)) ]] && grep -q -- '"--srt=on --ffmpeg-opus=off"' "$WSL_DIR/home/rel/trunk/objs/srs_auto_headers.hpp"
+}
+wsl_reuses() {
+  local before
+  before=$(wc -l < "$WSL_DIR/home/rel/configure.args")
+  wsl_build_run && [[ $(wc -l < "$WSL_DIR/home/rel/configure.args") -eq $before ]]
+}
+check wsl_configures
+check wsl_reuses
+touch -t 202001010000 "$WSL_DIR/home/rel/trunk/objs/Makefile"
+echo '# changed' >> "$WSL_DIR/src/trunk/configure"
+git -C "$WSL_DIR/src" -c user.name=t -c user.email=t@t commit -q -am two
+check wsl_configures
+echo '#define SRS_USER_CONFIGURE "--srt=on"' > "$WSL_DIR/home/rel/trunk/objs/srs_auto_headers.hpp"
+check wsl_configures
+check wsl_reuses
 rm -rf /tmp/srs-obs-lib-regression
 echo "PASS $checks harness regressions"

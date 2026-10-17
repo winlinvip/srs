@@ -39,6 +39,7 @@ Every script is in `skills/srs-develop/scripts/`; run it as `bash skills/srs-dev
 - If an environmental dependency is unavailable, run the script, preserve its exact result, and report the blocked coverage instead of claiming full verification.
 - The transmux, SRT, WHIP, and config file tests play WHEP with `tools/pion-whep`, because FFmpeg has no WHEP demuxer; they build it with `go` when the binary is missing or stale.
 - `make integ` and `make integ-unit` first make the test media with FFmpeg (`make integ-prepare`), which needs libx264, libx265 and an Opus encoder.
+- The OBS tests of lane G need OBS with obs-websocket and Python 3.9+, and the Linux run needs Docker. Without them they print a `SKIP` line, which the Full tier lists as unverified.
 
 ## Feature-Specific Tests
 
@@ -50,7 +51,7 @@ Run feature-specific bundled tests in addition to this matrix when the routed wo
 | `obs-srt-publish-test.sh` | Isolated OBS H.264/AAC SRT publish with the streamid in the Stream Key: SRT-to-RTMP bridge, API active and 640×360, HTTP-FLV video/audio playback; owned cleanup and a 60 s budget. Same dependencies and `SRS_TEST_OBS` gate as the RTMP test. |
 | `obs-whip-publish-test.sh` | Isolated OBS H.264/Opus WHIP publish with `eip=127.0.0.1`: RTC-to-RTMP bridge, API active and 640×360, API frames `KNOWN F2` while they read 0, HTTP-FLV H.264/AAC playback; owned cleanup and a 60 s budget. Same dependencies and `SRS_TEST_OBS` gate as the RTMP test. |
 | `obs-lane-test.sh` | The three OBS cases in parallel, each on its own slot from `SRS_TEST_PORT_BASE` (default 15100, then 15200 and 15300): their logs and results in order, then `LANE obs passed= skipped= known= failed= elapsed=`; fails over 60 s wall time. `SRS_TEST_OBS=0` skips. |
-| `obs-windows-test.sh` | OBS on the Windows test host publishes to SRS in WSL there, through `windows-host-run.sh` (`--wip` for the working tree): WSL builds the commit at the same path as a worktree of its main repository, SRS runs env-only on slot 15900, and the RTMP H.264/AAC and WHIP H.264/Opus cases (WHIP with `eip=<WSL IP>`) run in parallel with the RTMP and WHIP checks; prints the build time and `RESULT windows`, and fails when the cases take over 60 s. Opt in with `SRS_TEST_WINDOWS_HOST`; `SRS_TEST_OBS=0` skips. The host needs WSL with the SRS repository cloned at the same path, and Python, FFmpeg, jq and curl in Git Bash. |
+| `obs-windows-test.sh` | OBS on the Windows test host publishes to SRS in WSL there, through `windows-host-run.sh` (`--wip` for the working tree): WSL builds the commit at the same path as a worktree of its main repository, SRS runs env-only on slot 15900, and the RTMP H.264/AAC and WHIP H.264/Opus cases (WHIP with `eip=<WSL IP>`) run in parallel with the RTMP and WHIP checks; prints the build time and `RESULT windows`, and fails when the cases take over 60 s. `--build` stops after the WSL build. Opt in with `SRS_TEST_WINDOWS_HOST`; `SRS_TEST_OBS=0` skips. The host needs WSL with the SRS repository cloned at the same path, and Python, FFmpeg, jq and curl in Git Bash. |
 | `obs-linux-test.sh` | OBS on this machine publishes to SRS built and run for Linux in Docker: the build step (`--build` alone) copies the tracked `trunk` files with their modification times into the volume `srs-obs-linux-build` and builds `objs/srs` there in `ossrs/srs:ubuntu20` with the Full-tier flags minus `--utest`, so the local `trunk/objs` keeps its own; SRS runs env-only in a container on slot 15400 with its ports published on `127.0.0.1`, and the RTMP H.264/AAC, SRT H.264/AAC and WHIP H.264/Opus cases (WHIP with `eip=127.0.0.1`) run in parallel with the same checks as the local cases; prints the build time and `RESULT linux`, fails when the cases take over 60 s, and removes the container on exit. Without a running Docker it prints `SKIP linux: unverified: Docker not available`; `SRS_TEST_OBS=0` skips. Same OBS dependencies as the RTMP test. |
 | `browser-page-url-test.js` | Browser player page URL parsing, for `trunk/research/players` changes. |
 | `gb28181-api-timeout-test.sh` | External-SIP GB28181 API session timeout cleanup. |
@@ -128,7 +129,20 @@ Pass `-srs-ffmpeg "$(command -v ffmpeg)" -srs-ffprobe "$(command -v ffprobe)"` t
 
 **Feature-specific.** Every feature-specific test listed above, with `SRS_GB_SKIP_BUILD=1` for the `gb28181-*-test.sh` scripts (their build reconfigures `trunk/`).
 
-Check each layer's exit code separately, and strip ANSI codes before counting `--- PASS`.
+**OBS**, lane G:
+
+1. `obs-lane-test.sh`: the RTMP, SRT and WHIP cases against the local `objs/srs`.
+2. `obs-linux-test.sh`: the same cases against SRS for Linux in Docker.
+3. `obs-windows-test.sh`, only with `SRS_TEST_WINDOWS_HOST`: RTMP and WHIP from OBS on the Windows test host to SRS in WSL there.
+
+Two variables control it:
+
+- `SRS_TEST_OBS`: `1` by default; `0` skips the OBS builds and lane G, and the summary says `lane G: skipped (SRS_TEST_OBS=0)`.
+- `SRS_TEST_WINDOWS_HOST`: the Windows test host, as a placeholder `<srs-test-windows-host>`; unset, the Windows build and run are left out.
+
+Check each layer's exit code separately, and strip ANSI codes before counting `--- PASS`. The OBS layers count their `PASS` and `FAIL` lines. Each OBS `SKIP` or `KNOWN` line is listed below the summary as unverified, never counted as passed.
+
+`srs-full-tier-test.sh` tests the runner itself: the step order, lane G, both gates and the summary, with fake layers.
 
 ### Sub-agent
 
@@ -138,6 +152,7 @@ The sub-agent runs the tier as in [Parallel Runs](#parallel-runs), keeps every l
 
 - The two lock lines.
 - One row per layer or script: exit code, pass and fail counts, and duration.
+- The unverified OBS lines, or that lane G was skipped.
 - For each failure: the failing check, the few log lines that show its cause, and the log path.
 
 To look into a failure, ask that sub-agent, or start a new one, rather than reading the logs. If the tool has no sub-agents, run the tier directly and report the same result.
@@ -170,7 +185,7 @@ bash skills/srs-develop/scripts/full-tier-lock.sh release "$token"
 
 Run the layers of every tier in this order.
 
-**Step 1: build**, alone and one after another, because `./configure` rewrites `trunk/objs`, which every lane runs from:
+**Step 1: build**, before every lane, one after another, because `./configure` rewrites `trunk/objs`, which every lane runs from:
 
 1. Configure `trunk/` once with the `Dockerfile.test` flags without `--build-cache`; they include `--simulator=on`, which the `rtc-*` scripts and the NACK log unit tests need:
    ```bash
@@ -178,6 +193,11 @@ Run the layers of every tier in this order.
    ```
 2. Build `objs/srs`. Every lane uses it, and none uses `srs_utest`.
 3. Build the proxy and `bin/srs-integ` (`make`), and `tools/pion-whep`.
+
+Beside these, unless `SRS_TEST_OBS=0`, the OBS builds run in parallel, since neither touches `trunk/objs`:
+
+- `obs-linux-test.sh --build`: SRS for Linux in Docker, from the tracked files.
+- `obs-windows-test.sh --build`, only with `SRS_TEST_WINDOWS_HOST`: SRS in WSL on the Windows test host.
 
 **Step 2: test**, these lanes in parallel, each lane in its own order:
 
@@ -189,6 +209,7 @@ Run the layers of every tier in this order.
 | D | Regression |
 | E | `srs-config-file-test.sh` and the feature-specific tests in parallel |
 | F | `make utest`, then `./objs/srs_utest`. With `objs/srs` built, `make utest` does not relink it |
+| G | The OBS scripts in parallel, the Linux run a second after the local cases; skipped with `SRS_TEST_OBS=0` |
 
 **Step 3: lane H**, alone after Step 2: `make integ-unit`, then `make integ`. Its cases have time limits, and its timer cases measure SRS timers, which the load of the other lanes delays.
 

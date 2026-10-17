@@ -149,6 +149,25 @@ check test "$(SRS_TEST_OBS=0 bash "$WIN")" = 'SKIP SRS_TEST_OBS=0'
 check test "$(SRS_TEST_WINDOWS_HOST= bash "$WIN")" = 'SKIP windows: SRS_TEST_WINDOWS_HOST is not set'
 check test "$(bash "$WIN" --bogus >/dev/null 2>&1; echo $?)" = 3
 check test "$(bash "$WIN" --host-case srt 127.0.0.1 >/dev/null 2>&1; echo $?)" = 3
+check test "$(SRS_TEST_WINDOWS_HOST= bash "$WIN" --wip --build)" = 'SKIP windows: SRS_TEST_WINDOWS_HOST is not set'
+check test "$(bash "$WIN" --build --bogus >/dev/null 2>&1; echo $?)" = 3
+# The host step with --build builds SRS in WSL and stops before SRS and the cases, checked with a fake
+# wsl.exe and cygpath on PATH.
+WIN_FAKE=/tmp/srs-obs-lib-regression/win-bin
+mkdir -p "$WIN_FAKE"
+printf '%s\n' '#!/bin/bash' 'echo "$*" >> /tmp/srs-obs-lib-regression/wsl.args' > "$WIN_FAKE/wsl.exe"
+printf '%s\n' '#!/bin/bash' 'echo "$2"' > "$WIN_FAKE/cygpath"
+chmod +x "$WIN_FAKE/wsl.exe" "$WIN_FAKE/cygpath"
+windows_host_build() {
+  local output sha
+  : > /tmp/srs-obs-lib-regression/wsl.args
+  sha=$(git -C "$SCRIPT_DIR" rev-parse HEAD)
+  output=$(cd "$SCRIPT_DIR/../../.." && PATH="$WIN_FAKE:$PATH" bash "$WIN" --host rel main --build) || return 1
+  [[ "$output" == "BUILD wsl $sha "* ]] || return 1
+  [[ $(wc -l < /tmp/srs-obs-lib-regression/wsl.args) -eq 1 ]] \
+    && grep -q -- " --wsl-build $sha .* main rel$" /tmp/srs-obs-lib-regression/wsl.args
+}
+check windows_host_build
 # The Linux run: gates, the Docker build and the SRS container, checked with a
 # fake docker and a fake OBS probe on PATH.
 LINUX="$SCRIPT_DIR/obs-linux-test.sh"

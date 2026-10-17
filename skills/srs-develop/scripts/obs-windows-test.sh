@@ -1,7 +1,7 @@
 #!/bin/bash
 # OBS on the Windows test host publishes RTMP and WHIP to SRS built and run in WSL on the same host.
 #
-#   obs-windows-test.sh [--wip]
+#   obs-windows-test.sh [--wip] [--build]
 #
 # Opt in with SRS_TEST_WINDOWS_HOST; SRS_TEST_OBS=0 skips. windows-host-run.sh syncs this checkout to
 # the host, with --wip as a snapshot of the working tree, and runs the --host step in the host checkout:
@@ -12,6 +12,7 @@
 #     takes UDP only on its own IP, so OBS publishes to that IP, and WHIP adds eip=<WSL IP>.
 #   - The RTMP and WHIP cases run in parallel from isolated OBS instances on Windows through
 #     obs-test-lib.sh, then SRS is stopped by its pid file.
+#   - --build stops after the WSL build, as the setup step of the Full tier.
 #
 # The host needs WSL with the SRS repository cloned at the same path, Python 3.9+, FFmpeg, jq and curl
 # in Git Bash, and OBS with obs-websocket. Prints the build time, each case's log and result, and
@@ -23,13 +24,13 @@ LOG_DIR=/tmp/srs-obs-windows
 SLOT=15900
 
 usage() {
-  echo "Usage: $0 [--wip]" >&2
+  echo "Usage: $0 [--wip] [--build]" >&2
   exit 3
 }
 
 # On the Mac: sync the checkout to the host and run the --host step there.
 mac_main() {
-  local wip=$1 checkout rel main main_rel status=0
+  local wip=$1 build=$2 checkout rel main main_rel status=0
   [[ "${SRS_TEST_OBS:-1}" != 0 ]] || { echo 'SKIP SRS_TEST_OBS=0'; exit 0; }
   [[ -n "${SRS_TEST_WINDOWS_HOST:-}" ]] || { echo 'SKIP windows: SRS_TEST_WINDOWS_HOST is not set'; exit 0; }
   checkout=$(cd "$SCRIPT_DIR/../../.." && pwd)
@@ -37,7 +38,7 @@ mac_main() {
   rel=${checkout#$HOME/}
   main_rel=${main#$HOME/}
   bash "$SCRIPT_DIR/windows-host-run.sh" $wip "$checkout" "$SCRIPT_DIR/obs-windows-test.sh" --host "$rel" "$main_rel" \
-    || status=$?
+    $build || status=$?
   # windows-host-run.sh exits 2 after its own SKIP line.
   [[ $status -ne 2 ]] || exit 0
   exit "$status"
@@ -54,15 +55,17 @@ host_stop() {
 
 # In Git Bash on the host, in the host checkout: build and start SRS in WSL, run the cases.
 host_main() {
-  local rel=$1 main_rel=$2 here=$PWD/skills/srs-develop/scripts sha ip started elapsed name status pids=
+  local rel=$1 main_rel=$2 build=$3 here=$PWD/skills/srs-develop/scripts sha ip started elapsed name status pids=
   local passed=0 known=0 failed=0 case_known
   [[ -f "$here/obs-test-lib.sh" ]] || { echo "SETUP_FAIL: $PWD is not an SRS checkout"; exit 3; }
-  # The Windows python3 can be the Microsoft Store stub, which never runs.
-  for OBS_PYTHON in python3 python ''; do
-    [[ -z "$OBS_PYTHON" ]] || ! "$OBS_PYTHON" --version >/dev/null 2>&1 || break
-  done
-  [[ -n "$OBS_PYTHON" ]] || { echo 'SKIP windows: no Python'; exit 0; }
-  export OBS_PYTHON
+  if [[ -z "$build" ]]; then
+    # The Windows python3 can be the Microsoft Store stub, which never runs.
+    for OBS_PYTHON in python3 python ''; do
+      [[ -z "$OBS_PYTHON" ]] || ! "$OBS_PYTHON" --version >/dev/null 2>&1 || break
+    done
+    [[ -n "$OBS_PYTHON" ]] || { echo 'SKIP windows: no Python'; exit 0; }
+    export OBS_PYTHON
+  fi
   command -v wsl.exe >/dev/null || { echo 'SKIP windows: no WSL'; exit 0; }
   mkdir -p "$LOG_DIR"
   sha=$(git rev-parse HEAD)
@@ -73,6 +76,7 @@ host_main() {
     exit 1
   fi
   echo "BUILD wsl $sha $((SECONDS - started))s"
+  [[ -z "$build" ]] || exit 0
   ip=$(MSYS_NO_PATHCONV=1 wsl.exe -e hostname -I | tr -d '\r')
   ip=${ip%% *}
   [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "FAIL no WSL IP: '$ip'"; exit 1; }
@@ -186,8 +190,17 @@ wsl_stop() {
 }
 
 case "${1:-}" in
-  ''|--wip) [[ $# -le 1 ]] || usage; mac_main "${1:-}";;
-  --host) [[ $# -eq 3 ]] || usage; host_main "$2" "$3";;
+  ''|--wip|--build)
+    wip= build=
+    for arg in "$@"; do
+      case "$arg" in
+        --wip) [[ -z "$wip" ]] || usage; wip=--wip;;
+        --build) [[ -z "$build" ]] || usage; build=--build;;
+        *) usage;;
+      esac
+    done
+    mac_main "$wip" "$build";;
+  --host) [[ $# -eq 3 || ( $# -eq 4 && $4 == --build ) ]] || usage; host_main "$2" "$3" "${4:-}";;
   --host-case)
     [[ $# -eq 3 && ( $2 == rtmp || $2 == whip ) ]] || usage
     host_case "$2" "$3";;

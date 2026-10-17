@@ -17,7 +17,6 @@
 #include <sstream>
 using namespace std;
 
-#include <srs_app_async_call.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_factory.hpp>
 #include <srs_app_http_hooks.hpp>
@@ -1535,9 +1534,4 @@ srs_error_t SrsHttpStreamDestroy::call()
 
     srs_trace("http: unmount flv stream for sid=%s, i=%d", sid_.c_str(), i);
     return err;
-}
-
-string SrsHttpStreamDestroy::to_string()
-{
-    return "destroy";
 }

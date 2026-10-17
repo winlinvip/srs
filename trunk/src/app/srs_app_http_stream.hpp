@@ -7,7 +7,6 @@
 #ifndef SRS_APP_HTTP_STREAM_HPP
 #define SRS_APP_HTTP_STREAM_HPP
 
-#include <srs_app_async_call.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_security.hpp>
 #include <srs_core.hpp>
@@ -400,7 +399,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t initialize_flv_entry(std::string vhost);
 };
 
-class SrsHttpStreamDestroy : public ISrsAsyncCallTask, public ISrsCoroutineHandler
+class SrsHttpStreamDestroy : public ISrsCoroutineHandler
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -419,11 +418,13 @@ public:
     // Make the call on a coroutine of its own.
     virtual srs_error_t start();
     virtual bool done();
-    virtual srs_error_t call();
-    virtual std::string to_string();
     // Interface ISrsCoroutineHandler
 public:
     virtual srs_error_t cycle();
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    srs_error_t call();
 };
 
 #endif

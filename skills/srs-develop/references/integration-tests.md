@@ -213,6 +213,28 @@ Beside these, unless `SRS_TEST_OBS=0`, the OBS builds run in parallel, since nei
 
 **Step 3: lane H**, alone after Step 2: `make integ-unit`, then `make integ`. Its cases have time limits, and its timer cases measure SRS timers, which the load of the other lanes delays.
 
+### Times
+
+Measured on a 10-core arm64 Mac with `objs/srs` already built, on 2026-10-17, in seconds:
+
+| Step or lane | `SRS_TEST_OBS=1`, two runs | `SRS_TEST_OBS=0` |
+|---|---|---|
+| Step 1 | 8, or 26 with the Windows build; the Linux build 4–5 | 5 |
+| A | 31–36 | 28 |
+| B | 26–27 | 24 |
+| C | 32 | 31 |
+| D | 19–21 | 17 |
+| E | 31–34 | 31 |
+| F | 16–20 | 13 |
+| G | 28–45 | skipped |
+| Step 2 wall | 36–45 | 31 |
+| H | 21–36 | 21 |
+| Total | 75–98 | 57 |
+
+- **Lane G** must finish within 60 s. Its slow runs come from the one relaunch of an OBS instance that hangs in setup under load, which adds about 20 s to that case.
+- **CPU:** in Step 2, lane G raises the Mac's mean CPU from 26% to 34–41%, and its peak from 72% to 100% for a few seconds.
+- **Windows:** with `SRS_TEST_WINDOWS_HOST`, Step 1 waits for the host sync and the WSL build, about 20 s, of which an incremental build is about 5 s, and lane G runs the Windows cases in 22–24 s on the host.
+
 ## Port Plan
 
 Each test process binds ports only from its own range, so the parallel lanes never collide.

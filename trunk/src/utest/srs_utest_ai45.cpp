@@ -1793,9 +1793,9 @@ VOID TEST(AppRtmpConnTest, PlayerOnVhostWithSendMinInterval_OneMessageEachInterv
 
 // A player on a vhost with `send_min_interval 50` closes while the play loop sleeps the interval after a send, and
 // the stream gets no more media, as its publisher stopped. The receive thread sees the close and wakes the consumer,
-// but the play loop is not waiting yet, so the wakeup is lost; the loop then waits for media with no timeout. The
-// connection should end at the close, but stays, with its consumer on the stream, until the next frame.
-VOID TEST(AppRtmpConnTest, DISABLED_PlayerClosesDuringSendInterval_ConnectionStays)
+// but the play loop is not waiting yet, so nothing gets the wakeup. The connection ends at the close anyway, and its
+// consumer leaves the stream, without waiting for the next frame.
+VOID TEST(AppRtmpConnTest, PlayerClosesDuringSendInterval_ConnectionEnds)
 {
     srs_error_t err;
 
@@ -1811,6 +1811,9 @@ VOID TEST(AppRtmpConnTest, DISABLED_PlayerClosesDuringSendInterval_ConnectionSta
 
     EXPECT_TRUE(c.done_);
     EXPECT_TRUE(c.source_->consumers_.empty());
+    rtmp_conn_utest_expect(c.err_, ERROR_SOCKET_READ, "client closed");
+    c.err_ = srs_success;
+    EXPECT_EQ(1, (int)c.rtmp_->sent_times_.size());
 }
 
 // The player's play line: what the player gets, and its kbps, each pithy print interval.

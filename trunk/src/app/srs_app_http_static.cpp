@@ -538,6 +538,10 @@ srs_error_t SrsVodStream::serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMe
         if (sh_size <= 0) {
             return srs_error_new(ERROR_HTTP_REMUX_SEQUENCE_HEADER, "no sequence, size=%d", sh_size);
         }
+        // A file cut inside its sequence header tags has fewer bytes than the tags claim.
+        if (start + sh_size > fs->filesize()) {
+            return srs_error_new(ERROR_HTTP_REMUX_SEQUENCE_HEADER, "sequence past file end, start=%" PRId64 ", size=%d, filesize=%" PRId64, start, sh_size, fs->filesize());
+        }
     }
 
     SrsUniquePtr<char[]> sh_data(new char[sh_size]);

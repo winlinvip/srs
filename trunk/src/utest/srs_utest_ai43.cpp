@@ -3948,10 +3948,10 @@ VOID TEST(AppHttpStaticTest, FlvSeekViewerLeaves_ServingStopsAtFailedWrite)
     }
 }
 
-// B41: an FLV file that ends inside its sequence header tags, such as a recording cut short, asked for with a start:
-// the server sends the sequence headers at the size their tags claim, so the reply holds more bytes than the file has,
-// and those come from memory the file never filled.
-VOID TEST(AppHttpStaticTest, DISABLED_FlvCutInsideSequenceHeaders_RepliesBytesPastFileEnd)
+// An FLV file that ends inside its sequence header tags, such as a recording cut short, asked for with a start: the
+// sequence headers the tags claim are not all in the file, so the request is refused before any byte is sent, as for
+// a file with no sequence header, and the player gets no bytes the file does not have.
+VOID TEST(AppHttpStaticTest, FlvCutInsideSequenceHeaders_Refused)
 {
     srs_error_t err;
 
@@ -3966,13 +3966,11 @@ VOID TEST(AppHttpStaticTest, DISABLED_FlvCutInsideSequenceHeaders_RepliesBytesPa
 
     MockBufferIO io;
     err = vod.get("/live/cut.flv?start=" + srs_strconv_format_int(start), &io);
+    EXPECT_EQ(ERROR_HTTP_REMUX_SEQUENCE_HEADER, srs_error_code(err));
+    string desc = srs_error_desc(err);
     srs_freep(err);
-
-    // The FLV header, then at most the bytes the file has from the sequence headers on, then the tags from the start.
-    int most = 13 + ((int)file.size() - 13) + ((int)file.size() - start);
-    EXPECT_LE((int)http_api_utest_body(io).size(), most);
-    string length = static_utest_header(io, "Content-Length");
-    EXPECT_TRUE(length.empty() || ::atoi(length.c_str()) <= most) << length;
+    EXPECT_NE(string::npos, desc.find("past file end")) << desc;
+    EXPECT_EQ(0, io.out_buffer.length());
 }
 
 // A player asks for a range of an MP4 recording, as it does to seek: it gets 206 with the bytes of the range. A player

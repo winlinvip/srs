@@ -4283,11 +4283,10 @@ VOID TEST(ProtocolRtspStackTest, HeaderWithoutColonOrUnknown_RequestParsed)
     srs_freep(next);
 }
 
-// A request longer than one TCP segment, cut between the CR and the LF of a header line. The parser
-// skips the CR at the end of the first read, then takes the LF that starts the next read as the
-// empty line that ends the headers: the request loses its later headers, and they are parsed as
-// the next request, which fails and ends the connection.
-VOID TEST(ProtocolRtspStackTest, DISABLED_RequestCutBetweenCrAndLf_HeadersAfterItLost)
+// A request longer than one TCP segment, cut between the CR and the LF of a header line. The LF that
+// starts the next read ends that header line, not the headers: the later headers belong to this
+// request, and nothing is left to parse as a next request.
+VOID TEST(ProtocolRtspStackTest, RequestCutBetweenCrAndLf_HeadersAfterItKept)
 {
     srs_error_t err = srs_success;
 
@@ -4302,6 +4301,38 @@ VOID TEST(ProtocolRtspStackTest, DISABLED_RequestCutBetweenCrAndLf_HeadersAfterI
     EXPECT_EQ(2, req->seq_);
     EXPECT_STREQ("LibVLC/3.0.20", req->user_agent_.c_str());
     EXPECT_STREQ("application/sdp", req->accept_.c_str());
+
+    // Nothing is left: the next read is the client closing.
+    SrsRtspRequest *next = NULL;
+    err = stack.recv_message(&next);
+    EXPECT_EQ(ERROR_SOCKET_READ, srs_error_code(err));
+    srs_freep(err);
+    srs_freep(next);
+}
+
+// A long request line, such as a URL with an auth token, whose TCP segment ends between the CR and
+// the LF of the request line. The LF that starts the next read ends the request line, so every
+// header that follows belongs to this request.
+VOID TEST(ProtocolRtspStackTest, RequestLineCutBetweenCrAndLf_HeadersKept)
+{
+    srs_error_t err = srs_success;
+
+    RtspSegmentIO io;
+    io.segment("SETUP rtsp://127.0.0.1:8554/live/livestream?token=6f1c0a2d/trackID=0 RTSP/1.0\r")
+        ->segment("\nCSeq: 3\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1\r\nUser-Agent: LibVLC/3.0.20\r\n\r\n");
+    SrsRtspStack stack(&io);
+
+    SrsRtspRequest *req = NULL;
+    HELPER_ASSERT_SUCCESS(stack.recv_message(&req));
+    SrsUniquePtr<SrsRtspRequest> req_uptr(req);
+    EXPECT_STREQ("SETUP", req->method_.c_str());
+    EXPECT_STREQ("RTSP/1.0", req->version_.c_str());
+    EXPECT_EQ(3, req->seq_);
+    ASSERT_TRUE(req->transport_ != NULL);
+    EXPECT_STREQ("TCP", req->transport_->lower_transport_.c_str());
+    EXPECT_EQ(0, req->transport_->interleaved_min_);
+    EXPECT_EQ(1, req->transport_->interleaved_max_);
+    EXPECT_STREQ("LibVLC/3.0.20", req->user_agent_.c_str());
 
     // Nothing is left: the next read is the client closing.
     SrsRtspRequest *next = NULL;

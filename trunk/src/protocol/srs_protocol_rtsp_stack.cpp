@@ -720,6 +720,13 @@ srs_error_t SrsRtspStack::recv_token(std::string &token, SrsRtspTokenState &stat
         for (; p < end && p[0] != normal_ch && p[0] != SRS_RTSP_CR && p[0] != SRS_RTSP_LF; p++) {
         }
 
+        // A CR at the end of the bytes read may have its LF in the next read, so wait for it, or the
+        // LF is left to end the headers as an empty line.
+        if (p < end && p[0] == SRS_RTSP_CR && p + 1 == end) {
+            append_bytes = true;
+            continue;
+        }
+
         // matched.
         if (p < end) {
             // finger out the state.

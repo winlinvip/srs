@@ -3564,9 +3564,9 @@ VOID TEST(AppDvrTest, DISABLED_HeaderWriteFailsThenRepublish_EmptyFileReported)
 }
 
 // A publisher sends only the metadata and sequence headers to a vhost recording MP4, then leaves, such as a stream
-// probe or an encoder that stops at once. An MP4 with no sample can not be written, so nothing is reported, which is
-// right, but the .tmp file is left on the disk for good, one for each such publish.
-VOID TEST(AppDvrTest, DISABLED_Mp4PublishWithNoFrame_TmpFileLeft)
+// probe or an encoder that stops at once. An MP4 with no sample can not be written, so nothing is reported, and its
+// .tmp file is removed rather than left on the disk for good.
+VOID TEST(AppDvrTest, Mp4PublishWithNoFrame_TmpFileRemoved)
 {
     srs_error_t err;
 

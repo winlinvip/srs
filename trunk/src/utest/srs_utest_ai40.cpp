@@ -5536,10 +5536,10 @@ VOID TEST(KernelTsTest, HttpTsEmptyAudioAfterFrame_NothingWritten)
     EXPECT_EQ(size, w.filesize());
 }
 
-// B16: a vhost with parse_sps off (#474) takes an H.264 stream whose SPS the parser refuses, here one with the
-// reserved_zero_2bits set, and plays it over HTTP-FLV and HLS, but its HTTP-TS players are refused at the sequence
-// header: SrsTsTransmuxer parses the stream again with its own SrsFormat, which always parses the SPS.
-VOID TEST(KernelTsTest, DISABLED_HttpTsWithParseSpsOff_SequenceHeaderRefused)
+// A vhost with parse_sps off (#474) takes an H.264 stream whose SPS the parser refuses, here one with the
+// reserved_zero_2bits set, and plays it over HTTP-FLV and HLS; its HTTP-TS players take it too, although
+// SrsTsTransmuxer parses the stream again with its own SrsFormat.
+VOID TEST(KernelTsTest, HttpTsWithParseSpsOff_SequenceHeaderTaken)
 {
     srs_error_t err = srs_success;
 

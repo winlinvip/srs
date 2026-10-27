@@ -129,7 +129,7 @@ char *addr2line_format(void *addr, char *symbol, char *buffer, int nn_buffer)
 }
 #endif
 
-int srs_parse_asan_backtrace_symbols(char *symbol, char *out_buf)
+int srs_parse_asan_backtrace_symbols(char *symbol, char *out_buf, int nn_buf)
 {
 #if defined(SRS_BACKTRACE) && defined(__linux)
     void *frame = parse_symbol_offset(symbol);
@@ -137,7 +137,7 @@ int srs_parse_asan_backtrace_symbols(char *symbol, char *out_buf)
         return ERROR_BACKTRACE_PARSE_OFFSET;
     }
 
-    char *fmt = addr2line_format(frame, symbol, out_buf, sizeof(out_buf));
+    char *fmt = addr2line_format(frame, symbol, out_buf, nn_buf);
     if (fmt != out_buf) {
         return ERROR_BACKTRACE_ADDR2LINE;
     }
@@ -166,7 +166,7 @@ void asan_report_callback(const char *str)
         }
 
         buf[0] = 0;
-        int r0 = srs_parse_asan_backtrace_symbols((char *)log.c_str(), buf);
+        int r0 = srs_parse_asan_backtrace_symbols((char *)log.c_str(), buf, sizeof(buf));
         if (r0 != ERROR_SUCCESS) {
             srs_error("%s, r0=%d", log.c_str(), r0);
         } else {

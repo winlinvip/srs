@@ -423,7 +423,7 @@ VOID TEST(KernelErrorTest, DISABLED_NewErrorWithHugeHookResponse_MessageIsEmpty)
 #if defined(SRS_BACKTRACE) && defined(__linux)
 extern void *parse_symbol_offset(char *frame);
 extern char *addr2line_format(void *addr, char *symbol, char *buffer, int nn_buffer);
-extern int srs_parse_asan_backtrace_symbols(char *symbol, char *out_buf);
+extern int srs_parse_asan_backtrace_symbols(char *symbol, char *out_buf, int nn_buf);
 extern void srs_backtrace_log();
 extern const char *_srs_binary;
 
@@ -546,7 +546,7 @@ VOID TEST(KernelErrorTest, AsanFrameNotResolvedWhenTheBinaryIsGone)
 
     const char *original = _srs_binary;
     _srs_binary = "/tmp/srs-utest-ai40-binary-is-gone";
-    int r0 = srs_parse_asan_backtrace_symbols(symbol, out_buf);
+    int r0 = srs_parse_asan_backtrace_symbols(symbol, out_buf, sizeof(out_buf));
     _srs_binary = original;
 
     EXPECT_EQ(ERROR_BACKTRACE_ADDR2LINE, r0);
@@ -577,9 +577,9 @@ VOID TEST(KernelErrorTest, AsanReportLogsEachLine)
     EXPECT_TRUE(srs_strings_ends_with(log.errors_[2], ":1011, r0=1093"));
 }
 
-// The unsymbolized ASan frame should be logged with the function and source line from addr2line, as a failed assert
-// logs its frames; only the first 7 characters of the address are kept.
-VOID TEST(KernelErrorTest, DISABLED_AsanUnsymbolizedFrame_ResolvedNameCutTo7Chars)
+// An ASan frame it cannot symbolize is logged with the function and source line from addr2line, as a failed assert
+// logs its frames.
+VOID TEST(KernelErrorTest, AsanUnsymbolizedFrame_ResolvedNameLogged)
 {
     char frame0[128];
     snprintf(frame0, sizeof(frame0), "    #0 0x55d0c1a2b3c4  (%s+%p)", _srs_binary, kernel_error_marker_file_offset());

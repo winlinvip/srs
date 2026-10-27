@@ -303,6 +303,13 @@ SrsCplxError *SrsCplxError::create(const char *func, const char *file, int line,
     int r0 = vsnprintf(buffer, maxLogBuf, fmt, ap);
     va_end(ap);
 
+    // Ensure buffer is null-terminated even if vsnprintf failed or truncated.
+    if (r0 < 0) {
+        buffer[0] = '\0';
+    } else if (r0 >= maxLogBuf) {
+        buffer[maxLogBuf - 1] = '\0';
+    }
+
     SrsCplxError *err = new SrsCplxError();
 
     err->func_ = func;
@@ -310,9 +317,7 @@ SrsCplxError *SrsCplxError::create(const char *func, const char *file, int line,
     err->line_ = line;
     err->code_ = code;
     err->rerrno_ = rerrno;
-    if (r0 > 0 && r0 < maxLogBuf) {
-        err->msg_ = string(buffer, r0);
-    }
+    err->msg_ = string(buffer);
     err->wrapped_ = NULL;
     if (_srs_context) {
         err->cid_ = _srs_context->get_id();

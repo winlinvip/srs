@@ -407,15 +407,18 @@ VOID TEST(KernelErrorTest, WrapKeepsTheStartOfAHugeHookResponse)
     srs_freep(err);
 }
 
-// The same huge callback body in a new error, such as the cluster discovery's "load json from %s", should keep the
-// start of the message as the wrap does; it loses the whole message instead.
-VOID TEST(KernelErrorTest, DISABLED_NewErrorWithHugeHookResponse_MessageIsEmpty)
+// The same huge callback body in a new error, such as the cluster discovery's "load json from %s", keeps the start
+// of the message, cut to the buffer, as the wrap does.
+VOID TEST(KernelErrorTest, NewErrorWithHugeHookResponse_MessageKeepsStart)
 {
     string res(5 * 1024 * 1024, 'x');
     srs_error_t err = srs_error_new(ERROR_OCLUSTER_DISCOVER, "load json from %s", res.c_str());
 
     EXPECT_EQ(ERROR_OCLUSTER_DISCOVER, srs_error_code(err));
+    EXPECT_EQ((size_t)(4 * 1024 * 1024 - 1), err->msg_.size());
     EXPECT_TRUE(srs_strings_starts_with(err->msg_, "load json from xxx"));
+    EXPECT_EQ(string::npos, err->msg_.find('\0'));
+    EXPECT_TRUE(srs_strings_contains(srs_error_summary(err), " : load json from xxx"));
 
     srs_freep(err);
 }

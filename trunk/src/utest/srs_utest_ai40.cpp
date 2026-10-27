@@ -3336,11 +3336,11 @@ VOID TEST(KernelRtcRtcpTest, FeedbackLongerThanDatagramRefused)
     }
 }
 
-// A WebRTC player can crash the server with one RTCP packet. The SDP answer gives the player the SSRCs SRS sends with.
-// An RTPFB packet of a format other than NACK and TWCC, such as a TMMBR, is decoded as SrsRtcpFbCommon. If its sender
-// SSRC is one of those SSRCs, SrsRtcConnection::dispatch_rtcp finds the player by it, and SrsRtcPlayStream::on_rtcp
-// casts it to SrsRtcpNack. The cast gives NULL, and on_rtcp_nack reads through it.
-VOID TEST(KernelRtcRtcpTest, DISABLED_PlayerSendsTmmbrWithServerSsrcAsSender_ServerCrashes)
+// The SDP answer gives a WebRTC player the SSRCs SRS sends with, and a client may use one as the sender SSRC of its
+// RTCP. An RTPFB packet of a format other than NACK and TWCC, such as a TMMBR (RFC 5104), a TMMBN or an RFC 8888
+// congestion control feedback, is decoded as SrsRtcpFbCommon, and SrsRtcConnection::dispatch_rtcp finds the player by
+// its sender SSRC. The player ignores it, and a NACK after it is still handled.
+VOID TEST(KernelRtcRtcpTest, PlayerSendsTmmbrWithServerSsrcAsSender_Ignored)
 {
     srs_error_t err = srs_success;
 
@@ -3353,13 +3353,20 @@ VOID TEST(KernelRtcRtcpTest, DISABLED_PlayerSendsTmmbrWithServerSsrcAsSender_Ser
     // The player plays a track that SRS sends with SSRC 0xa001.
     conn->players_ssrc_map_[0xa001] = player.get();
 
-    string tmmbr = rtcp_packet(3, SrsRtcpType_rtpfb, 0xa001, rtcp_be32(0) + rtcp_be32(0xa001) + rtcp_be32(0x0c0186a0));
-    err = conn->on_rtcp((char *)tmmbr.data(), (int)tmmbr.size());
-    conn->players_ssrc_map_.clear();
+    int64_t nacks = _srs_pps_rnack->sugar_;
+    uint8_t formats[] = {3, 4, 11}; // TMMBR, TMMBN, CCFB
+    for (int i = 0; i < (int)sizeof(formats); i++) {
+        string fb = rtcp_packet(formats[i], SrsRtcpType_rtpfb, 0xa001, rtcp_be32(0) + rtcp_be32(0xa001) + rtcp_be32(0x0c0186a0));
+        HELPER_EXPECT_SUCCESS(conn->on_rtcp((char *)fb.data(), (int)fb.size()));
+        EXPECT_EQ(nacks, _srs_pps_rnack->sugar_) << "fmt=" << (int)formats[i];
+    }
 
-    // An unsupported feedback is ignored or refused, never a crash.
-    srs_freep(err);
-    SUCCEED();
+    // A NACK for packet 100 of the same track, from the player's own SSRC, still reaches the player.
+    string nack = rtcp_packet(1, SrsRtcpType_rtpfb, 0x1001, rtcp_be32(0xa001) + rtcp_be32(0x00640000));
+    HELPER_EXPECT_SUCCESS(conn->on_rtcp((char *)nack.data(), (int)nack.size()));
+    EXPECT_EQ(nacks + 1, _srs_pps_rnack->sugar_);
+
+    conn->players_ssrc_map_.clear();
 }
 
 // One TWCC feedback as the publisher's congestion controller reads it (draft-holmer-rmcat-transport-wide-cc-extensions-01

@@ -259,17 +259,20 @@ VOID TEST(KernelUtilityTest, SecurityAllowRuleWithEmptyPrefixLengthMatchesNoClie
     sec.config_ = NULL;
 }
 
-// A security rule with an IPv4 prefix length over 32, such as "allow play 10.0.0.0/33;"
-// or an IPv6-style "/64", must match no client, as the other malformed rules do. The
-// mask is read from a table of 32 entries by the length, with no upper check, so the
-// first client of the vhost reads past the table (ASan on Linux: global-buffer-overflow;
-// the macOS build reads it unflagged, and the garbage mask happens to match no client).
-VOID TEST(KernelUtilityTest, DISABLED_SecurityAllowRuleWithPrefixLengthOver32_ReadsPastMaskTable)
+// A security rule with an IPv4 prefix length over 32, such as "allow play 10.0.0.0/33;",
+// an IPv6-style "/64", or a negative length, must match no client, as the other
+// malformed rules do, and must not read the mask outside the table of 32 entries.
+VOID TEST(KernelUtilityTest, SecurityAllowRuleWithPrefixLengthOver32_RuleMatchesNoClient)
 {
     srs_error_t err = srs_success;
 
+    EXPECT_STREQ("255.255.255.255", srs_net_get_cidr_mask("10.0.0.0/32").c_str());
+    EXPECT_STREQ("", srs_net_get_cidr_mask("10.0.0.0/33").c_str());
+    EXPECT_STREQ("", srs_net_get_cidr_mask("10.0.0.0/64").c_str());
+    EXPECT_STREQ("", srs_net_get_cidr_mask("10.0.0.0/-1").c_str());
+
     MockSrsConfig conf;
-    HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost __defaultVhost__{security{enabled on; allow play 10.0.0.0/33; allow play 192.168.1.0/24;}}"));
+    HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost __defaultVhost__{security{enabled on; allow play 10.0.0.0/33; allow play 10.0.0.0/64; allow play 10.0.0.0/-1; allow play 192.168.1.0/24;}}"));
 
     SrsSecurity sec;
     sec.config_ = &conf;

@@ -129,15 +129,17 @@ srs_error_t SrsHlsStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMess
 
     // Already exists context, response with rebuilt m3u8 content.
     if (!ctx.empty() && ctx_is_exist(ctx)) {
-        // If HLS stream is disabled, use SrsHttpFileServer to serve HLS, which is normal file server.
-        if (!config_->get_hls_ts_ctx_enabled(req->vhost_)) {
-            *served = false;
-            return srs_success;
-        }
-
         if (is_interrupt(ctx)) {
             srs_warn("Reject: HLS stream is EOF, ctx=%s", ctx.c_str());
             return srs_go_http_error(w, SRS_CONSTS_HTTP_NotFound, srs_fmt_sprintf("HLS stream %s is EOF", ctx.c_str()));
+        }
+
+        // Without ctx in the ts urls, use SrsHttpFileServer to serve the m3u8 as a normal file, but
+        // the refresh still keeps the session alive.
+        if (!config_->get_hls_ts_ctx_enabled(req->vhost_)) {
+            alive(ctx, req);
+            *served = false;
+            return srs_success;
         }
 
         err = serve_exists_session(w, r, factory, fullpath);

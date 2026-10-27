@@ -3708,10 +3708,10 @@ VOID TEST(AppHttpStaticTest, HlsTsCtxOff_SessionPlaylistServedAsFile)
     }
 }
 
-// B40: with hls_ts_ctx off, a refresh of the session's playlist is served as a file but does not keep the session
-// alive, so the HLS timer ends the session of a player that has refreshed all along: the viewer is dropped from the
-// API, and its next refresh, whose ctx is gone, gets a master playlist instead of the media playlist.
-VOID TEST(AppHttpStaticTest, DISABLED_HlsTsCtxOffPlayerKeepsRefreshing_SessionExpires)
+// With hls_ts_ctx off, a player that has played longer than two windows refreshes its playlist, served as a file. The
+// refresh keeps its session alive, so the HLS timer keeps the session and the viewer in the API, and the next refresh
+// gets the media playlist again, not a master playlist of a new session.
+VOID TEST(AppHttpStaticTest, HlsTsCtxOffPlayerKeepsRefreshing_SessionKept)
 {
     srs_error_t err;
 
@@ -3770,6 +3770,32 @@ VOID TEST(AppHttpStaticTest, HlsViewerKickedByApi_PlaylistRefreshNotFound)
         EXPECT_STREQ(("HLS stream " + ctx + " is EOF").c_str(), http_api_utest_body(media).c_str());
         EXPECT_TRUE(vod.api_.stat_.find_client(ctx) == NULL);
     }
+}
+
+// The same kick on a vhost with hls_ts_ctx off, where the playlist refresh of a session is served as a file: the
+// kicked viewer's refresh is still refused with 404, so the kick stops the player as it does with hls_ts_ctx on.
+VOID TEST(AppHttpStaticTest, HlsTsCtxOffViewerKickedByApi_PlaylistRefreshNotFound)
+{
+    srs_error_t err;
+
+    StaticUtestVod vod;
+    HELPER_ASSERT_SUCCESS(vod.initialize("hls { enabled on; hls_ts_ctx off; }"));
+    vod.write("/live/livestream.m3u8", static_utest_m3u8);
+
+    MockBufferIO master;
+    HELPER_ASSERT_SUCCESS(vod.get("/live/livestream.m3u8", &master));
+    string ctx = static_utest_ctx(http_api_utest_body(master));
+    ASSERT_TRUE(vod.session(ctx) != NULL);
+    vod.session(ctx)->stat_ = &vod.api_.stat_;
+
+    MockBufferIO kick;
+    HELPER_ASSERT_SUCCESS(vod.api_.serve(HTTP_DELETE, "/api/v1/clients/" + ctx, &kick));
+    EXPECT_EQ(0, http_api_utest_code(kick)) << http_api_utest_body(kick);
+
+    MockBufferIO media;
+    HELPER_ASSERT_SUCCESS(vod.get("/live/livestream.m3u8?hls_ctx=" + ctx, &media));
+    EXPECT_STREQ("HTTP/1.1 404 Not Found", http_api_utest_status(media).c_str());
+    EXPECT_STREQ(("HLS stream " + ctx + " is EOF").c_str(), http_api_utest_body(media).c_str());
 }
 
 // A player with an auth token in its URL: the master playlist names the media playlist with the session id and the

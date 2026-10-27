@@ -4098,34 +4098,58 @@ VOID TEST(KernelRtcRtpTest, HeaderTruncatedBeforeExtensionsRefused)
     srs_freep(err);
 }
 
-// B14: a WebRTC peer's RTP packet declares an extension length longer than the packet carries. SrsRtpExtensions::decode
-// reads the 4-byte profile and length words with a require, but then skips extension_length*4 bytes with no check, so
-// SrsBuffer::skip asserts and the server aborts. The packet is parsed in do_on_rtp_plaintext after SRTP unprotect, so
-// any peer that can publish over WebRTC can crash the server with one packet. Fix: require extension_length*4 bytes
-// before building the sub-buffer and skipping. High severity.
-VOID TEST(KernelRtcRtpTest, DISABLED_RtpExtensionLengthBeyondPacket_ServerAborts)
+// A WebRTC publisher's RTP packet declares a header extension longer than the packet carries, for the one-byte
+// (0xBEDE) and the two-byte (0x1000) profile. The packet is refused with an error, as other malformed packets are,
+// and the server goes on; an extension that ends exactly at the packet end is still accepted.
+VOID TEST(KernelRtcRtpTest, RtpExtensionLengthBeyondPacket_Refused)
 {
     srs_error_t err = srs_success;
 
     SrsRtpExtensionTypes types;
     EXPECT_TRUE(types.register_by_uri(5, kTWCCExt));
 
-    // Fixed header with X=1, profile 0xBEDE, extension_length 0x00ff words (1020 bytes), but no extension bytes follow.
-    string w;
-    w.push_back((char)0x90); // V=2, X=1, CC=0
-    w.push_back((char)0x60); // PT=96
-    w += rtcp_be16(0x2233);
-    w += rtcp_be32(0);
-    w += rtcp_be32(0x0a0b0c0d);
-    w += rtcp_be16(0xBEDE);
-    w += rtcp_be16(0x00ff); // 255 words of extension that are not present
+    // Fixed header with X=1, then the extension profile and its length in 4-byte words, then the extension bytes.
+    uint16_t profiles[] = {0xBEDE, 0x1000};
+    for (int i = 0; i < 2; i++) {
+        string fixed;
+        fixed.push_back((char)0x90); // V=2, X=1, CC=0
+        fixed.push_back((char)0x60); // PT=96
+        fixed += rtcp_be16(0x2233);
+        fixed += rtcp_be32(0);
+        fixed += rtcp_be32(0x0a0b0c0d);
 
-    SrsRtpHeader dst;
-    dst.set_extensions(&types);
-    SrsBuffer dbuf((char *)w.data(), (int)w.size());
-    err = dst.decode(&dbuf); // aborts today: SrsBuffer::skip assert
-    EXPECT_TRUE(err != srs_success);
-    srs_freep(err);
+        // 255 words of extension declared, none present.
+        if (true) {
+            string w = fixed + rtcp_be16(profiles[i]) + rtcp_be16(0x00ff);
+            SrsRtpHeader dst;
+            dst.set_extensions(&types);
+            SrsBuffer dbuf((char *)w.data(), (int)w.size());
+            err = dst.decode(&dbuf);
+            EXPECT_EQ(ERROR_RTC_RTP_MUXER, srs_error_code(err));
+            srs_freep(err);
+        }
+
+        // 2 words declared, 1 word (4 bytes of padding) present.
+        if (true) {
+            string w = fixed + rtcp_be16(profiles[i]) + rtcp_be16(2) + string(4, '\0');
+            SrsRtpHeader dst;
+            dst.set_extensions(&types);
+            SrsBuffer dbuf((char *)w.data(), (int)w.size());
+            err = dst.decode(&dbuf);
+            EXPECT_EQ(ERROR_RTC_RTP_MUXER, srs_error_code(err));
+            srs_freep(err);
+        }
+
+        // 1 word declared and present: the extension ends at the packet end.
+        if (true) {
+            string w = fixed + rtcp_be16(profiles[i]) + rtcp_be16(1) + string(4, '\0');
+            SrsRtpHeader dst;
+            dst.set_extensions(&types);
+            SrsBuffer dbuf((char *)w.data(), (int)w.size());
+            HELPER_EXPECT_SUCCESS(dst.decode(&dbuf));
+            EXPECT_TRUE(dbuf.empty());
+        }
+    }
 }
 
 // The RTMP-to-WebRTC packetizer builds a STAP-A of SPS and PPS before an IDR, and the publisher parser reads a STAP-A.

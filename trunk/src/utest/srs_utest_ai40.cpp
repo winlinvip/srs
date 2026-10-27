@@ -263,10 +263,6 @@ VOID TEST(KernelCodecTest, AacSequenceHeaderRateReportedByStreamApi)
 {
     // Index 3 (48000) to 11 (8000) of ISO/IEC 14496-3, the rates encoders such as OBS, FFmpeg and phones use.
     for (int index = 3; index <= 11; index++) {
-        if (srs_aac_srates[index] == 32000) {
-            continue; // The enum has no 32000, see DISABLED_AacSequenceHeaderRateReportedByStreamApi_32kHzReportsZero.
-        }
-
         SrsAudioSampleRate rate = srs_audio_sample_rate_from_number(srs_aac_srates[index]);
         EXPECT_NE(SrsAudioSampleRateForbidden, rate) << "index " << index;
         EXPECT_EQ((uint32_t)srs_aac_srates[index], srs_audio_sample_rate2number(rate)) << "index " << index;
@@ -274,13 +270,24 @@ VOID TEST(KernelCodecTest, AacSequenceHeaderRateReportedByStreamApi)
 }
 
 // The same for an AAC stream at 32000 Hz, an index the encoders of some IP cameras use, or at 96000, 88200, 64000
-// or 7350 Hz. The enum has no value for these rates, so the stream API reports a sample rate of 0.
-VOID TEST(KernelCodecTest, DISABLED_AacSequenceHeaderRateReportedByStreamApi_32kHzReportsZero)
+// or 7350 Hz: every index of ISO/IEC 14496-3 is reported as its rate, never as 0.
+VOID TEST(KernelCodecTest, AacSequenceHeaderRateReportedByStreamApi_EveryAacRateReported)
 {
     for (int index = 0; index <= 12; index++) {
         SrsAudioSampleRate rate = srs_audio_sample_rate_from_number(srs_aac_srates[index]);
         EXPECT_EQ((uint32_t)srs_aac_srates[index], srs_audio_sample_rate2number(rate)) << "index " << index;
     }
+}
+
+// An MP4 file for VoD or DVR has its AAC track at 32000 Hz, or another rate only AAC uses. The MP4 decoder keeps
+// the exact rate instead of guessing a near one, and logs the track with its rate, not as "Other".
+VOID TEST(KernelCodecTest, Mp4AudioAtAacOnlyRateLoggedWithItsRate)
+{
+    EXPECT_EQ("7350", srs_audio_sample_rate2str(srs_audio_sample_rate_from_number(7350)));
+    EXPECT_EQ("32000", srs_audio_sample_rate2str(srs_audio_sample_rate_from_number(32000)));
+    EXPECT_EQ("64000", srs_audio_sample_rate2str(srs_audio_sample_rate_from_number(64000)));
+    EXPECT_EQ("88200", srs_audio_sample_rate2str(srs_audio_sample_rate_from_number(88200)));
+    EXPECT_EQ("96000", srs_audio_sample_rate2str(srs_audio_sample_rate_from_number(96000)));
 }
 
 // An RTMP publisher sends MP3, whose sample rate is the FLV tag header's SoundRate: 5.5, 11, 22 or 44 kHz. The

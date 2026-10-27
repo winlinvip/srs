@@ -2683,32 +2683,66 @@ VOID TEST(KernelPSTest, SystemHeaderPaddingAfterStreamListIsSkipped)
     EXPECT_TRUE(handler.msgs_[0]->is_video());
 }
 
-// Bug: the GB28181 TCP connection keeps the bytes of a PS header cut at the end of an RTP packet, up to 32 bytes, to
-// parse with the next packet, but the PS decoder holds them only once 4 bytes or more came. When the RTP packet ends 1
-// to 3 bytes into the next PES start code, decoding fails, the connection goes to recover mode and drops the pack.
-VOID TEST(KernelPSTest, DISABLED_PesStartCodeCutAfterTwoBytes_PackDropped)
+// The GB28181 TCP connection keeps the bytes of a PS header cut at the end of an RTP packet, up to 32 bytes, to parse
+// with the next packet. When a camera's RTP packet ends 1 to 3 bytes into the next PES start code, the decoder holds
+// those bytes too, and the pack is kept whole.
+VOID TEST(KernelPSTest, PesStartCodeCutAfterTwoBytes_PackKept)
 {
     srs_error_t err;
-
-    MockPsHandler handler;
-    SrsPsContext context;
-    context.set_detect_ps_integrity(true);
 
     // A slice larger than the 32 bytes the decoder holds for the next packet.
     string video = ps_media_pes(0xe0, ps_h264_idr() + string(200, '\x5a'));
 
-    // The first RTP payload ends with 2 bytes of the video PES start code, which the connection keeps.
-    string first = ps_pack_header() + ps_media_pes(0xc0, string(160, '\xd5')) + video.substr(0, 2);
-    SrsBuffer b((char *)first.data(), (int)first.size());
-    HELPER_ASSERT_SUCCESS(context.decode(&b, &handler));
-    ASSERT_EQ(2, b.left());
+    for (int cut = 1; cut <= 3; cut++) {
+        SCOPED_TRACE(cut);
 
-    // The next RTP payload follows the kept bytes.
-    SrsBuffer b2((char *)video.data(), (int)video.size());
-    HELPER_ASSERT_SUCCESS(context.decode(&b2, &handler));
-    ASSERT_EQ(2, (int)handler.msgs_.size());
-    EXPECT_TRUE(handler.msgs_[0]->is_audio());
-    EXPECT_TRUE(handler.msgs_[1]->is_video());
+        MockPsHandler handler;
+        SrsPsContext context;
+        context.set_detect_ps_integrity(true);
+
+        // The first RTP payload ends with the first bytes of the video PES start code, which the connection keeps.
+        string first = ps_pack_header() + ps_media_pes(0xc0, string(160, '\xd5')) + video.substr(0, cut);
+        SrsBuffer b((char *)first.data(), (int)first.size());
+        HELPER_ASSERT_SUCCESS(context.decode(&b, &handler));
+        ASSERT_EQ(cut, b.left());
+        ASSERT_EQ(1, (int)handler.msgs_.size());
+
+        // The next RTP payload follows the kept bytes.
+        SrsBuffer b2((char *)video.data(), (int)video.size());
+        HELPER_ASSERT_SUCCESS(context.decode(&b2, &handler));
+        ASSERT_EQ(2, (int)handler.msgs_.size());
+        EXPECT_TRUE(handler.msgs_[0]->is_audio());
+        EXPECT_TRUE(handler.msgs_[1]->is_video());
+        EXPECT_EQ(ps_h264_idr() + string(200, '\x5a'),
+                  string(handler.msgs_[1]->payload_->bytes(), handler.msgs_[1]->payload_->length()));
+    }
+}
+
+// A PS stream from a corrupted device that ends with 1 to 3 bytes that cannot start a PES start code is still refused,
+// for the recover mode to skip to the next pack.
+VOID TEST(KernelPSTest, PacketEndingWithBytesNotAStartCode_Refused)
+{
+    struct {
+        const char *name;
+        string tail;
+    } cases[] = {
+        {"one byte", string("\x5a", 1)},
+        {"two bytes", string("\x00\x5a", 2)},
+        {"three bytes", string("\x00\x00\x5a", 3)},
+    };
+
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
+        SCOPED_TRACE(cases[i].name);
+
+        MockPsHandler handler;
+        SrsPsContext context;
+        context.set_detect_ps_integrity(true);
+
+        string bytes = ps_pack_header() + ps_media_pes(0xc0, string(160, '\xd5')) + cases[i].tail;
+        SrsBuffer b((char *)bytes.data(), (int)bytes.size());
+        packet_expect_error_code(ERROR_GB_PS_HEADER, context.decode(&b, &handler));
+        EXPECT_EQ(1, (int)handler.msgs_.size());
+    }
 }
 
 // At startup the server starts the RTC and GB connection managers, each with a coroutine that frees

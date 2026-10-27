@@ -857,10 +857,9 @@ VOID TEST(AppGb28181Test, SessionPrintsMediaStatsAtPithyInterval)
     EXPECT_EQ(1, gb_utest_count(log.traces_, "Session: Alive=0s, packs=1, recover=0, reserved=0, msgs=1, drop=0", media));
 }
 
-// The session logs each state change with the device it serves, as the publish API set it. The device is set through
-// the session's interface, whose device_id_ the session's own member of the same name hides, so the log names no
-// device.
-VOID TEST(AppGb28181Test, DISABLED_SessionStateChangeLog_DeviceIdEmpty)
+// The session logs each state change with the device it serves, as the publish API set it through the session's
+// interface, so an operator can tell which camera connected or dropped.
+VOID TEST(AppGb28181Test, SessionStateChangeLog_NamesDevice)
 {
     srs_error_t err = srs_success;
 

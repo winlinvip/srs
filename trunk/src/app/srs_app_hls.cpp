@@ -1561,8 +1561,11 @@ srs_error_t SrsHlsMuxer::do_recover_hls()
     if ((err = srs_io_readall(fr.get(), body)) != srs_success) {
         return srs_error_wrap(err, "read data");
     }
+    // An empty m3u8, such as one left by a power loss right after its rename, has nothing to recover, so start a new
+    // one as if there were none.
     if (body.empty()) {
-        return srs_error_wrap(err, "read empty m3u8");
+        srs_warn("hls: ignore empty m3u8=%s", m3u8_.c_str());
+        return err;
     }
 
     bool discon = false;

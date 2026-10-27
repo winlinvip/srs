@@ -1574,9 +1574,9 @@ VOID TEST(AppHlsTest, PublisherReconnects_SegmentsListedOnce)
 }
 
 // The server lost power right after it renamed a new playlist over the old one, before the file system wrote its data,
-// so an empty playlist is left. When the publisher publishes again, the server should start a new playlist, as with no
-// playlist at all; it refuses the publish, with an error of code 0, until an operator removes the file.
-VOID TEST(AppHlsTest, DISABLED_EmptyPlaylistLeftByPowerLoss_PublishRefused)
+// so an empty playlist is left. When the publisher publishes again, the server warns and starts a new playlist, as with
+// no playlist at all, which replaces the empty one.
+VOID TEST(AppHlsTest, EmptyPlaylistLeftByPowerLoss_NewPlaylistStarted)
 {
     srs_error_t err;
 
@@ -1585,7 +1585,22 @@ VOID TEST(AppHlsTest, DISABLED_EmptyPlaylistLeftByPowerLoss_PublishRefused)
     HELPER_ASSERT_SUCCESS(p.mkdir_all(s.path("")));
     hls_utest_write_file(s.path("livestream.m3u8"), "");
 
-    HELPER_EXPECT_SUCCESS(s.publish("hls_fragment 1;"));
+    MockLogForSignal log;
+    ISrsLog *original = _srs_log;
+    _srs_log = &log;
+    err = s.publish("hls_fragment 1;");
+    _srs_log = original;
+    HELPER_ASSERT_SUCCESS(err);
+    EXPECT_NE(string::npos, utest_log_find(log.warns_, "empty m3u8").find("livestream.m3u8"));
+
+    HELPER_ASSERT_SUCCESS(s.sequence_headers());
+    HELPER_ASSERT_SUCCESS(s.av(0, 2000));
+
+    string m3u8 = s.m3u8();
+    EXPECT_NE(string::npos, m3u8.find("#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-TARGETDURATION:1\n#EXT-X-DISCONTINUITY\n"
+                                      "#EXTINF:1.000, no desc\nlivestream-0.ts\n#EXTINF:1.000, no desc\nlivestream-1.ts\n"))
+        << m3u8;
+    EXPECT_EQ(2, hls_utest_count(m3u8, "#EXTINF:")) << m3u8;
 }
 
 // The operator sets hls_path under a regular file, such as a typo naming another service's file. HLS can not make the

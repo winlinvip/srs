@@ -2384,10 +2384,10 @@ VOID TEST(KernelPacketTest, RtcHevcExtraSliceHeaderBitsAreSkipped)
     EXPECT_EQ(0, (int)kept.size());
 }
 
-// Bug: an HEVC slice of only its 2-byte NALU header passes the RTMP demuxer, then the bridge reads a bit of its slice
-// header from no bytes and srs_assert aborts the server. A publisher can crash SRS with one such frame when the vhost
-// converts RTMP to WebRTC. The frame must be refused with an error, as a slice cut inside its header is.
-VOID TEST(KernelPacketTest, DISABLED_RtcHevcSliceWithOnlyNaluHeader_ServerAborts)
+// The RTMP demuxer passes an HEVC slice NALU of any size from 1 byte. A slice of only its 2-byte NALU header, or of
+// only the first byte of it, has no slice header to read: the bridge refuses the frame, as a slice cut inside its
+// header is, and the server keeps running.
+VOID TEST(KernelPacketTest, RtcHevcSliceWithOnlyNaluHeader_Refused)
 {
     srs_error_t err;
 
@@ -2399,7 +2399,41 @@ VOID TEST(KernelPacketTest, DISABLED_RtcHevcSliceWithOnlyNaluHeader_ServerAborts
     HELPER_ASSERT_SUCCESS(bridge.sequence_header(sh));
 
     vector<SrsNaluSample *> kept;
-    HELPER_EXPECT_FAILED(bridge.video(packet_hevc_trail_r_tag(""), kept));
+    packet_expect_error_code(ERROR_HEVC_DECODE_ERROR, bridge.video(packet_hevc_trail_r_tag(""), kept));
+
+    // One byte, the first of a TRAIL_R NALU header.
+    string tag = packet_avc_ibmf_tag(vector<string>(1, string("\x02", 1)));
+    tag[0] = (char)0x2c; // Inter frame, codec id 12.
+    packet_expect_error_code(ERROR_HEVC_DECODE_ERROR, bridge.video(tag, kept));
+
+    // The stream goes on: the next whole P slice passes.
+    HELPER_EXPECT_SUCCESS(bridge.video(packet_hevc_trail_r_tag("1" "1" "010" "1"), kept));
+    EXPECT_EQ(1, (int)kept.size());
+}
+
+// A slice header that ends right before the bits its PPS asks for, the dependent_slice_segment_flag or the extra slice
+// header bits, is refused like any slice cut inside its header.
+VOID TEST(KernelPacketTest, RtcHevcSliceEndsBeforeItsPpsBits_Refused)
+{
+    srs_error_t err;
+
+    // The PPS's first byte with num_extra_slice_header_bits "111": id "1", SPS id "1", "0", "0", "111", "1".
+    string sh;
+    HELPER_ASSERT_SUCCESS(mp4_hevc_sh(1, sh, 0xcf));
+
+    PacketRtcBridge bridge;
+    HELPER_ASSERT_SUCCESS(bridge.initialize());
+    HELPER_ASSERT_SUCCESS(bridge.sequence_header(sh));
+    EXPECT_EQ(7, bridge.builder_.format_->vcodec_->hevc_dec_conf_record_.pps_table_[0].num_extra_slice_header_bits_);
+
+    // first_slice_segment_in_pic_flag, PPS 0, then 6 bits of the byte left for 7 extra bits.
+    vector<SrsNaluSample *> kept;
+    packet_expect_error_code(ERROR_HEVC_DECODE_ERROR, bridge.video(packet_hevc_trail_r_tag("1" "1"), kept));
+
+    // An encoder's PPS 7 that enables dependent slice segments. A later slice segment names it: the flag "0" and PPS
+    // ue(v) "0001000" fill the byte, so no byte is left for the dependent_slice_segment_flag.
+    bridge.builder_.format_->vcodec_->hevc_dec_conf_record_.pps_table_[7].dependent_slice_segments_enabled_flag_ = 1;
+    packet_expect_error_code(ERROR_HEVC_DECODE_ERROR, bridge.video(packet_hevc_trail_r_tag("0" "0001000"), kept));
 }
 
 // Bug: a slice that is not the first of its picture has slice_segment_address before slice_type, Ceil(Log2(

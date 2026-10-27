@@ -1344,7 +1344,8 @@ srs_error_t SrsRtcRtpBuilder::on_video(SrsMediaPacket *msg)
         }
         pkt->set_avsync_time(msg->timestamp_);
 
-        if ((err = rtp_target_->on_rtp(pkt.get())) != srs_success) {
+        // No STAP when the sequence header has no parameter sets, which the key frame then carries in band.
+        if (pkt->payload() && (err = rtp_target_->on_rtp(pkt.get())) != srs_success) {
             return srs_error_wrap(err, "consume sps/pps");
         }
     }

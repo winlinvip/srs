@@ -1833,9 +1833,9 @@ VOID TEST(AppStreamBridgeTest, DISABLED_RtmpToRtcCorruptAacFrame_PublisherDiscon
 
 // An HEVC RTMP encoder that sends its VPS, SPS and PPS in band, in each key frame, with a sequence header that holds
 // none, as ISO/IEC 14496-15 allows for hev1, to a vhost with `rtmp_to_rtc on`. The live source takes both, and the
-// WebRTC player should get the key frame's NALUs. The WebRTC builder instead fails the key frame, "vps/sps/pps
-// empty", and the live source returns it, so the encoder is disconnected at its first key frame (B61, as B57 for RTSP).
-VOID TEST(AppStreamBridgeTest, DISABLED_RtmpHevcParameterSetsInBandToRtc_PublisherDisconnected)
+// WebRTC builder has no parameter set to send in a STAP, so the player gets the key frame's four NALUs as they are,
+// and the encoder stays.
+VOID TEST(AppStreamBridgeTest, RtmpHevcParameterSetsInBandToRtc_KeyFrameNalusSent)
 {
     srs_error_t err;
 

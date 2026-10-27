@@ -4314,9 +4314,9 @@ VOID TEST(AppRtspSourceTest, PlayerStaysAcrossRepublish_KeepsSsrcAndPayloadTypeO
 }
 
 // An HEVC encoder that sends its VPS, SPS and PPS in band, in each key frame, with a sequence header that holds none,
-// as ISO/IEC 14496-15 allows for hev1. The format parses both, and the player should get the key frame's NALUs. The
-// RTSP builder fails the key frame, "vps/sps/pps empty", so the encoder is disconnected at its first key frame (B57).
-VOID TEST(AppRtspSourceTest, DISABLED_HevcParameterSetsInBand_PublisherDisconnected)
+// as ISO/IEC 14496-15 allows for hev1. The format parses both, and the RTSP builder has no parameter set to send in a
+// STAP, so the player gets the key frame's NALUs as they are, the parameter sets first, and the encoder stays.
+VOID TEST(AppRtspSourceTest, HevcParameterSetsInBand_KeyFrameNalusSent)
 {
     srs_error_t err;
 

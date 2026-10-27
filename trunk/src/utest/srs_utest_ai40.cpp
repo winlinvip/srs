@@ -1151,10 +1151,9 @@ public:
 };
 
 // An RTMP publisher of MP3 audio sends an aggregate message holding an audio tag with no data. The live
-// source splits it and, as it knows the stream is MP3, queues the empty audio message for every player. An
-// HTTP .mp3 player must skip it and keep playing. SrsMp3Transmuxer::write_audio asserts that the payload is
-// not NULL, so the server aborts.
-VOID TEST(KernelMp3Test, DISABLED_HttpMp3PlayerGetsEmptyAudioMessage_ServerAborts)
+// source skips the empty tag, as SrsProtocol skips an empty RTMP message, so the HTTP .mp3 player, whose
+// SrsMp3Transmuxer::write_audio asserts that the payload is not NULL, never gets it and keeps playing.
+VOID TEST(KernelMp3Test, HttpMp3PlayerGetsEmptyAudioMessage_MessageSkipped)
 {
     srs_error_t err;
 
@@ -1172,17 +1171,18 @@ VOID TEST(KernelMp3Test, DISABLED_HttpMp3PlayerGetsEmptyAudioMessage_ServerAbort
     HELPER_EXPECT_SUCCESS(enc.initialize(&writer, NULL));
     int64_t id3_size = writer.filesize();
 
+    // Only the MP3 frame is queued.
     int nb_msgs = 0;
     HELPER_EXPECT_SUCCESS(s.play(&enc, nb_msgs));
-    EXPECT_EQ(2, nb_msgs);
+    EXPECT_EQ(1, nb_msgs);
 
     // Only the MP3 frame, without the tag byte, follows the ID3 header.
     EXPECT_EQ(id3_size + 4, writer.filesize());
 }
 
-// The same for an HTTP .aac player of an RTMP AAC stream: SrsAacTransmuxer::write_audio asserts the
-// payload too, so the empty audio tag aborts the server.
-VOID TEST(KernelMp3Test, DISABLED_HttpAacPlayerGetsEmptyAudioMessage_ServerAborts)
+// The same for an HTTP .aac player of an RTMP AAC stream, whose SrsAacTransmuxer::write_audio asserts the
+// payload too: the empty audio tag is skipped and the player keeps playing.
+VOID TEST(KernelMp3Test, HttpAacPlayerGetsEmptyAudioMessage_MessageSkipped)
 {
     srs_error_t err;
 
@@ -1201,9 +1201,10 @@ VOID TEST(KernelMp3Test, DISABLED_HttpAacPlayerGetsEmptyAudioMessage_ServerAbort
     SrsAacStreamEncoder enc;
     HELPER_EXPECT_SUCCESS(enc.initialize(&writer, NULL));
 
+    // Only the sequence header and the frame are queued.
     int nb_msgs = 0;
     HELPER_EXPECT_SUCCESS(s.play(&enc, nb_msgs));
-    EXPECT_EQ(3, nb_msgs);
+    EXPECT_EQ(2, nb_msgs);
 
     // One ADTS frame: the 7-byte header and the 2 raw bytes.
     EXPECT_EQ(9, writer.filesize());
@@ -5354,25 +5355,33 @@ VOID TEST(KernelTsTest, HlsEncryptedSegmentOnFullDisk)
     unlink(path.c_str());
 }
 
-// B15: an empty audio tag of an RTMP aggregate message (the B5 path) makes the HTTP-TS encoder write the previous
-// audio frame again. SrsFormat::on_audio returns early for an empty tag and keeps the previous frame, whose samples
-// point into the previous message's payload, and SrsTsTransmuxer caches and writes that frame.
-VOID TEST(KernelTsTest, DISABLED_HttpTsEmptyAudioAfterFrame_PreviousFrameWrittenAgain)
+// An RTMP publisher of AAC audio sends an aggregate message holding an audio tag with no data, after a frame. An
+// HTTP-TS player must not get it: SrsFormat::on_audio returns early for an empty tag and keeps the previous frame,
+// whose samples point into the previous message's payload, so SrsTsTransmuxer would write that frame again, from
+// memory that may be freed. The live source skips the empty tag, so the player gets nothing more.
+VOID TEST(KernelTsTest, HttpTsEmptyAudioAfterFrame_NothingWritten)
 {
     srs_error_t err = srs_success;
+
+    AudioPlayerStream s;
+    HELPER_EXPECT_SUCCESS(s.source_->create_consumer(s.consumer_));
 
     MockSrsFileWriter w;
     SrsTsStreamEncoder enc;
     HELPER_EXPECT_SUCCESS(enc.initialize(&w, NULL));
 
-    HELPER_EXPECT_SUCCESS(ts_http_write(&enc, false, 0, mp4_aac_sh, sizeof(mp4_aac_sh)));
-    // The frame stays alive here, as when the GOP cache still holds its message; with the payload freed, the
-    // second write reads freed memory.
-    string frame((const char *)mp4_aac_frame, sizeof(mp4_aac_frame));
-    HELPER_EXPECT_SUCCESS(enc.write_audio(23, (char *)frame.data(), (int)frame.size()));
-    int64_t size = w.filesize();
+    HELPER_EXPECT_SUCCESS(s.publish(0, (const char *)mp4_aac_sh, sizeof(mp4_aac_sh)));
+    HELPER_EXPECT_SUCCESS(s.publish(23, (const char *)mp4_aac_frame, sizeof(mp4_aac_frame)));
 
-    HELPER_EXPECT_SUCCESS(enc.write_audio(46, NULL, 0));
+    int nb_msgs = 0;
+    HELPER_EXPECT_SUCCESS(s.play(&enc, nb_msgs));
+    EXPECT_EQ(2, nb_msgs);
+    int64_t size = w.filesize();
+    EXPECT_LT(0, size);
+
+    HELPER_EXPECT_SUCCESS(s.publish_empty_audio_in_aggregate(46));
+    HELPER_EXPECT_SUCCESS(s.play(&enc, nb_msgs));
+    EXPECT_EQ(0, nb_msgs);
     EXPECT_EQ(size, w.filesize());
 }
 

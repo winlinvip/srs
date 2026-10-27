@@ -3352,6 +3352,12 @@ VOID TEST(AppDvrTest, SegmentDiskFillsAtAnyWrite_OnlyClosedSegmentsReported)
             bool reported = i < (int)s.async_.tasks_.size() && s.file(i) == s.paths_[i];
             EXPECT_EQ(reported, s.exists(s.paths_[i])) << k << " " << s.paths_[i];
         }
+
+        // A reported segment holds its FLV header, even when the disk filled at the next segment's header.
+        for (int i = 0; i < (int)s.async_.tasks_.size(); i++) {
+            string flv = config_read_file(s.file(i));
+            EXPECT_TRUE(srs_strings_starts_with(flv, "FLV")) << k << " " << s.file(i) << " has " << flv.size() << " bytes";
+        }
     }
 
     EXPECT_GT(fill_points, 40);
@@ -3535,10 +3541,10 @@ VOID TEST(AppDvrTest, DvrPlanTypo_StreamRefused)
 
 // The disk is full when a publisher publishes to a vhost recording each session to FLV: the file is created, but its
 // FLV header can not be written, so the publish is refused. The operator frees space and the publisher publishes
-// again. The file of the refused publish, which holds no FLV header, was left open, and the new publish closes it,
-// names it and reports it to on_dvr as a recording. The same happens at a segment cut when the disk fills at the new
-// segment's header: the stream's unpublish names and reports that segment.
-VOID TEST(AppDvrTest, DISABLED_HeaderWriteFailsThenRepublish_EmptyFileReported)
+// again. The file of the refused publish holds no FLV header, so it is removed, and the new publish neither names it
+// nor reports it to on_dvr as a recording. The same holds at a segment cut when the disk fills at the new segment's
+// header: the stream's unpublish does not report that segment.
+VOID TEST(AppDvrTest, HeaderWriteFailsThenRepublish_EmptyFileNotReported)
 {
     srs_error_t err;
 
@@ -3550,6 +3556,11 @@ VOID TEST(AppDvrTest, DISABLED_HeaderWriteFailsThenRepublish_EmptyFileReported)
         srs_freep(err);
         s.dvr_->on_unpublish();
     }
+
+    // The file of the refused publish is not left on the disk.
+    ASSERT_EQ(1, (int)s.paths_.size());
+    EXPECT_FALSE(s.exists(s.paths_[0] + ".tmp"));
+    EXPECT_FALSE(s.exists(s.paths_[0]));
 
     // The next file's name, in ms, differs from the first's.
     dvr_utest_wait_next_ms();

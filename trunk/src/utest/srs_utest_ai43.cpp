@@ -1831,9 +1831,9 @@ VOID TEST(AppHlsTest, Fmp4LongPublishSlidesWindowAndRemovesOldSegments)
 }
 
 // A publisher streams to a vhost with fMP4 HLS segments of 1s, with a key frame each second, as it does with TS.
-// Each key frame should cut a segment of 1s, as TS does; but the fMP4 muxer checks the segment's duration before it
-// adds the key frame, which is then 0.9s, so it cuts each second key frame, and lists 2s segments as 1.9s.
-VOID TEST(AppHlsTest, DISABLED_Fmp4SegmentOfOneGop_CutAtSecondKeyFrame)
+// The segment's duration counts the key frame before the cut is checked, so each key frame cuts a segment of 1s, as
+// TS does: the playlist lists the last four 1s segments, and the target duration is 1s.
+VOID TEST(AppHlsTest, Fmp4SegmentOfOneGop_CutAtEachKeyFrame)
 {
     srs_error_t err;
 
@@ -1844,7 +1844,32 @@ VOID TEST(AppHlsTest, DISABLED_Fmp4SegmentOfOneGop_CutAtSecondKeyFrame)
 
     string m3u8 = s.m3u8();
     EXPECT_NE(string::npos, m3u8.find("#EXT-X-MEDIA-SEQUENCE:6\n")) << m3u8;
+    EXPECT_NE(string::npos, m3u8.find("#EXT-X-TARGETDURATION:1\n")) << m3u8;
     EXPECT_EQ(4, hls_utest_count(m3u8, "#EXTINF:1.000, no desc\n")) << m3u8;
+    for (int i = 6; i < 10; i++) {
+        string m4s = "livestream-" + srs_strconv_format_int(i) + ".m4s";
+        EXPECT_NE(string::npos, m3u8.find("\n" + m4s + "\n")) << m3u8;
+    }
+}
+
+// A radio station publishes AAC only, a frame each 100ms, to a vhost with fMP4 HLS segments of 1s. The frame that
+// brings a segment to hls_aof_ratio (2.1) times the fragment cuts it, as TS does, so 8.5s of audio gives four
+// segments of 2.1s, cut at 2.1s, 4.2s, 6.3s and 8.4s, not a frame later each time.
+VOID TEST(AppHlsTest, Fmp4AudioOnlyStream_CutAtFrameReachingDuration)
+{
+    srs_error_t err;
+
+    HlsUtestStream s("ai43-hls-fmp4-audio-cut");
+    HELPER_ASSERT_SUCCESS(s.publish("hls_fragment 1; hls_use_fmp4 on;"));
+    HELPER_ASSERT_SUCCESS(s.audio(0, flv_utest_aac_sh, sizeof(flv_utest_aac_sh)));
+    for (int ts = 0; ts <= 8500; ts += 100) {
+        HELPER_ASSERT_SUCCESS(s.audio(ts, flv_utest_aac_frame, sizeof(flv_utest_aac_frame)));
+    }
+
+    string m3u8 = s.m3u8();
+    EXPECT_EQ(4, hls_utest_count(m3u8, "#EXTINF:2.100, no desc\n")) << m3u8;
+    EXPECT_EQ(4, hls_utest_count(m3u8, "#EXTINF:")) << m3u8;
+    EXPECT_NE(string::npos, m3u8.find("\nlivestream-3.m4s\n")) << m3u8;
 }
 
 // The EXTINF durations of a playlist, in ms.
@@ -1964,10 +1989,10 @@ VOID TEST(AppHlsTest, Fmp4DiskFullAtKeyFrame_SegmentNotListed)
     HlsUtestStream s("ai43-hls-fmp4-full");
     HELPER_ASSERT_SUCCESS(s.publish("hls_fragment 1; hls_use_fmp4 on;"));
     HELPER_ASSERT_SUCCESS(s.sequence_headers());
-    HELPER_ASSERT_SUCCESS(s.av(0, 1900));
+    HELPER_ASSERT_SUCCESS(s.av(0, 900));
 
     volume.fill();
-    err = s.video(2000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
+    err = s.video(1000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
     EXPECT_EQ(ERROR_SYSTEM_FILE_WRITE, srs_error_code(err));
     EXPECT_NE(string::npos, srs_error_desc(err).find("m4s flush encoder")) << srs_error_desc(err);
     srs_freep(err);
@@ -1993,12 +2018,12 @@ VOID TEST(AppHlsTest, Fmp4ReadOnlyVolumeAtKeyFrame_PlaylistKeepsEarlierSegments)
     HlsUtestStream s("ai43-hls-fmp4-ro-key");
     HELPER_ASSERT_SUCCESS(s.publish("hls_fragment 1; hls_use_fmp4 on;"));
     HELPER_ASSERT_SUCCESS(s.sequence_headers());
-    HELPER_ASSERT_SUCCESS(s.av(0, 3900));
+    HELPER_ASSERT_SUCCESS(s.av(0, 1900));
     string m3u8 = s.m3u8();
     ASSERT_EQ(1, hls_utest_count(m3u8, "#EXTINF:")) << m3u8;
 
     volume.read_only();
-    err = s.video(4000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
+    err = s.video(2000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
     EXPECT_EQ(ERROR_SYSTEM_FILE_OPENE, srs_error_code(err));
     EXPECT_NE(string::npos, srs_error_desc(err).find("refresh m3u8")) << srs_error_desc(err);
     srs_freep(err);

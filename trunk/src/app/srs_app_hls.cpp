@@ -692,6 +692,10 @@ srs_error_t SrsHlsFmp4Muxer::write_audio(SrsMediaPacket *shared_audio, SrsFormat
         }
     }
 
+    // First, update the duration of the segment, as we might reap the segment. The duration should
+    // cover from the first frame to the last frame.
+    current_->append(shared_audio->timestamp_);
+
     // For pure audio, we use a larger threshold to reap segment.
     bool pure_audio_stream = (latest_vcodec_ == SrsVideoCodecIdForbidden || latest_vcodec_ == SrsVideoCodecIdDisabled);
 
@@ -723,6 +727,10 @@ srs_error_t SrsHlsFmp4Muxer::write_video(SrsMediaPacket *shared_video, SrsFormat
             return srs_error_wrap(err, "open segment");
         }
     }
+
+    // First, update the duration of the segment, as we might reap the segment. The duration should
+    // cover from the first frame to the last frame.
+    current_->append(shared_video->timestamp_);
 
     bool reopen = false;
     if (is_segment_overflow()) {

@@ -2482,10 +2482,10 @@ VOID TEST(AppHlsTest, ReadOnlyVolumeAfterSegmentFinished_NextSegmentNotOpened)
         HlsUtestStream s("ai46-hls-fmp4-ro-next");
         HELPER_ASSERT_SUCCESS(s.publish("hls_fragment 1; hls_use_fmp4 on;"));
         HELPER_ASSERT_SUCCESS(s.sequence_headers());
-        HELPER_ASSERT_SUCCESS(s.av(0, 1900));
+        HELPER_ASSERT_SUCCESS(s.av(0, 900));
 
         volume.read_only_at("livestream-1.m4s.tmp");
-        err = s.video(2000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
+        err = s.video(1000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
         EXPECT_EQ(ERROR_SYSTEM_FILE_OPENE, srs_error_code(err));
         EXPECT_NE(string::npos, srs_error_desc(err).find("open segment")) << srs_error_desc(err);
         srs_freep(err);
@@ -2555,12 +2555,12 @@ VOID TEST(AppHlsTest, Fmp4DiskFillsAtPlaylist_PlayersKeepOldPlaylist)
     HlsUtestStream s("ai46-hls-fmp4-full-m3u8");
     HELPER_ASSERT_SUCCESS(s.publish("hls_fragment 1; hls_use_fmp4 on;"));
     HELPER_ASSERT_SUCCESS(s.sequence_headers());
-    HELPER_ASSERT_SUCCESS(s.av(0, 3900));
+    HELPER_ASSERT_SUCCESS(s.av(0, 1900));
     string m3u8 = s.m3u8();
     ASSERT_EQ(1, hls_utest_count(m3u8, "#EXTINF:")) << m3u8;
 
     volume.fill_at("livestream.m3u8.temp");
-    err = s.video(4000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
+    err = s.video(2000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
     srs_freep(err);
 
     EXPECT_STREQ(m3u8.c_str(), s.m3u8().c_str());

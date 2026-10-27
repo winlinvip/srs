@@ -1615,9 +1615,9 @@ VOID TEST(AppMpegtsUdpTest, TwoStartCodesInARow_EmptyNaluSkipped)
 }
 
 // A video-only encoder whose PES carry no PTS: the TS demuxer gives each frame dts 0. The queue holds video until it
-// has audio or 100 frames, and moves a message 1ms on, at most 10 times, while another holds its time. From the 12th
-// message on, each one replaces the message at 10ms, which is lost and never freed, while the video count goes on.
-VOID TEST(AppMpegtsUdpTest, DISABLED_VideoOnlyWithoutPts_QueuedFramesReplacedAndLeaked)
+// has audio or 100 frames, and moves a message 1ms on while another holds its time, so each message keeps its own
+// time and none is lost. Once the queue holds over 100 frames, it sends the oldest.
+VOID TEST(AppMpegtsUdpTest, VideoOnlyWithoutPts_QueuedFramesKept)
 {
     srs_error_t err;
 
@@ -1629,8 +1629,9 @@ VOID TEST(AppMpegtsUdpTest, DISABLED_VideoOnlyWithoutPts_QueuedFramesReplacedAnd
     channel.stream_ = SrsTsStreamVideoH264;
     SrsTsPacket packet(NULL);
 
-    // The sequence header and 12 frames.
-    for (int i = 0; i < 12; i++) {
+    // The key frame gives the sequence header and a frame, each P frame one more frame.
+    SrsMpegtsQueue *queue = dynamic_cast<SrsMpegtsQueue *>(c.caster_->queue_);
+    for (int i = 0; i < 111; i++) {
         SrsTsMessage msg(&channel, &packet);
         msg.sid_ = SrsTsPESStreamIdVideoCommon;
         vector<string> nalus = (i == 0) ? mpegts_utest_key_frame() : mpegts_utest_nalus(mpegts_utest_p);
@@ -1639,11 +1640,76 @@ VOID TEST(AppMpegtsUdpTest, DISABLED_VideoOnlyWithoutPts_QueuedFramesReplacedAnd
             msg.payload_->append(nalus[j].data(), (int)nalus[j].size());
         }
         HELPER_ASSERT_SUCCESS(c.caster_->on_ts_message(&msg));
+
+        // The first 13 messages, before any is sent, each at its own ms.
+        if (i == 11) {
+            EXPECT_EQ(13, queue->nb_videos_);
+            ASSERT_EQ(13, (int)queue->msgs_.size());
+            EXPECT_EQ(0, queue->msgs_.begin()->first);
+            EXPECT_EQ(12, queue->msgs_.rbegin()->first);
+        }
     }
 
-    SrsMpegtsQueue *queue = dynamic_cast<SrsMpegtsQueue *>(c.caster_->queue_);
-    EXPECT_EQ(13, queue->nb_videos_);
-    EXPECT_EQ(13, (int)queue->msgs_.size());
+    // 112 messages: the queue keeps 100, and sends each of the other 12, none lost.
+    EXPECT_EQ(100, queue->nb_videos_);
+    EXPECT_EQ(100, (int)queue->msgs_.size());
+
+    MockRtmpClientForForwarder *client = c.factory_.client_;
+    ASSERT_TRUE(client != NULL);
+    ASSERT_EQ(12, (int)client->sent_.size());
+    for (int i = 0; i < 12; i++) {
+        EXPECT_EQ(SrsFrameTypeVideo, client->sent_[i].type_);
+    }
+}
+
+// A GB28181 device turns its audio off while it publishes video whose PES carry no PTS: the queue waits for audio
+// that never comes, and moves each video message 1ms on while another holds its time, so each keeps its own time and
+// none is lost.
+VOID TEST(AppGb28181Test, AudioOffThenVideoWithoutPts_QueuedFramesKept)
+{
+    srs_error_t err;
+
+    SrsUniquePtr<SrsMpegpsQueue> queue(new SrsMpegpsQueue());
+
+    // The audio and video before the device turns its audio off.
+    for (int i = 0; i < 2; i++) {
+        SrsMediaPacket *audio = new SrsMediaPacket();
+        audio->message_type_ = SrsFrameTypeAudio;
+        audio->wrap(new char[4](), 4);
+        HELPER_ASSERT_SUCCESS(queue->push(audio));
+    }
+    SrsMediaPacket *first = new SrsMediaPacket();
+    first->message_type_ = SrsFrameTypeVideo;
+    first->wrap(new char[4](), 4);
+    HELPER_ASSERT_SUCCESS(queue->push(first));
+    EXPECT_TRUE(queue->dequeue() == NULL);
+
+    // 20 video messages, each at time 0.
+    for (int i = 0; i < 20; i++) {
+        SrsMediaPacket *video = new SrsMediaPacket();
+        video->message_type_ = SrsFrameTypeVideo;
+        video->wrap(new char[4](), 4);
+        HELPER_ASSERT_SUCCESS(queue->push(video));
+    }
+
+    // Each message is held at its own ms: the audio at 0 and 1, the video from 2 on.
+    EXPECT_EQ(2, queue->nb_audios_);
+    EXPECT_EQ(21, queue->nb_videos_);
+    ASSERT_EQ(23, (int)queue->msgs_.size());
+    EXPECT_EQ(0, queue->msgs_.begin()->first);
+    EXPECT_EQ(22, queue->msgs_.rbegin()->first);
+    EXPECT_EQ(first, queue->msgs_[2]);
+
+    // The oldest audio goes out; the video waits for audio until the queue overflows.
+    if (true) {
+        SrsUniquePtr<SrsMediaPacket> msg(queue->dequeue());
+        ASSERT_TRUE(msg.get() != NULL);
+        EXPECT_TRUE(msg->is_audio());
+        EXPECT_EQ(0, msg->timestamp_);
+    }
+    EXPECT_TRUE(queue->dequeue() == NULL);
+    EXPECT_EQ(21, queue->nb_videos_);
+    EXPECT_EQ(22, (int)queue->msgs_.size());
 }
 
 #ifndef _WIN32 // POSIX only: the exec runs /bin/echo and /bin/sleep

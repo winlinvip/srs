@@ -157,6 +157,10 @@ srs_error_t SrsFFMPEG::initialize_transcode(SrsConfDirective *engine)
         }
     }
 
+    if (acodec_.empty()) {
+        return srs_error_new(ERROR_ENCODER_ACODEC, "invalid empty acodec");
+    }
+
     // @see, https://github.com/ossrs/srs/issues/145
     if (acodec_ == SRS_RTMP_ENCODER_LIBAACPLUS && acodec_ != SRS_RTMP_ENCODER_LIBFDKAAC) {
         if (abitrate_ != 0 && (abitrate_ < 16 || abitrate_ > 72)) {

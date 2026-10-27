@@ -4815,33 +4815,18 @@ VOID TEST(AppFfmpegTest, AppEngineVcodecOfEachEncoder_OnlyH264AndH265Accepted)
     }
 }
 
-// An engine of the app's transcode re-encodes video and names no acodec. The encoder accepts it, and FFmpeg gets
-// "-acodec" with an empty name, which it refuses ("Encoder not found"), so the engine fails at each start. The
-// engine should either be refused at publish, as one with no vcodec is, or run with no empty argument.
-VOID TEST(AppFfmpegTest, DISABLED_AppEngineWithoutAcodec_FfmpegGetsEmptyAudioCodec)
+// An engine of the app's transcode re-encodes video and names no acodec. FFmpeg would get "-acodec" with an empty
+// name, which it refuses ("Encoder not found"), and fail at each start, so the publish refuses the engine, as it
+// refuses one with no vcodec, and starts no FFmpeg.
+VOID TEST(AppFfmpegTest, AppEngineWithoutAcodec_Refused)
 {
-    srs_error_t err;
-
     EncoderUtestStream s("live");
     s.factory_.coroutine_ = new MockCoroutineForForwarder(0);
-    err = s.publish("transcode live { enabled on; " ENCODER_UTEST_FFMPEG
-                    "engine hd { enabled on; vcodec libx264; vbitrate 800; vprofile main; vpreset medium;"
-                    "    output rtmp://127.0.0.1:[port]/[app]/[stream]_hd; } }");
-    if (err != srs_success) {
-        EXPECT_EQ(ERROR_ENCODER_ACODEC, srs_error_code(err)) << srs_error_desc(err);
-        srs_freep(err);
-        return;
-    }
-
-    ASSERT_EQ(1, (int)s.encoder_->ffmpegs_.size());
-    SrsFFMPEG *ffmpeg = dynamic_cast<SrsFFMPEG *>(s.encoder_->at(0));
-    ASSERT_TRUE(ffmpeg != NULL);
-    MockProcessForFFMPEG *process = new MockProcessForFFMPEG();
-    srs_freep(ffmpeg->process_);
-    ffmpeg->process_ = process;
-    HELPER_ASSERT_SUCCESS(ffmpeg->start());
-
-    for (int i = 0; i < (int)process->argv_.size(); i++) {
-        EXPECT_FALSE(process->argv_[i].empty()) << i << ": " << srs_strings_join(process->argv_, " ");
-    }
+    srs_error_t err = s.publish("transcode live { enabled on; " ENCODER_UTEST_FFMPEG
+                                "engine hd { enabled on; vcodec libx264; vbitrate 800; vprofile main; vpreset medium;"
+                                "    output rtmp://127.0.0.1:[port]/[app]/[stream]_hd; } }");
+    EXPECT_EQ(ERROR_ENCODER_ACODEC, srs_error_code(err)) << srs_error_desc(err);
+    srs_freep(err);
+    EXPECT_EQ(0, s.factory_.coroutines_);
+    EXPECT_TRUE(s.encoder_->ffmpegs_.empty());
 }

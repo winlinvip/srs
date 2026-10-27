@@ -1460,7 +1460,7 @@ VOID TEST(ProtocolHttpConnTest, ChunkedBodyWithNonHexSize_Refused)
 
 // A backend sends a chunk with a chunk extension, "5;name=value", which RFC 9112 7.1.1 allows
 // and tells a recipient to ignore when it does not know it. The body must read as the data.
-VOID TEST(ProtocolHttpConnTest, DISABLED_ChunkWithExtension_BodyRefused)
+VOID TEST(ProtocolHttpConnTest, ChunkWithExtension_ExtensionIgnored)
 {
     srs_error_t err = srs_success;
 
@@ -1474,6 +1474,48 @@ VOID TEST(ProtocolHttpConnTest, DISABLED_ChunkWithExtension_BodyRefused)
     string body;
     HELPER_EXPECT_SUCCESS(http_conn_read_body(msg.get(), body));
     EXPECT_STREQ("Hello", body.c_str());
+    EXPECT_TRUE(msg->body_reader()->eof());
+}
+
+// A backend puts extensions on every chunk, a quoted value and a name with no value, and on the
+// last chunk too. Each extension is ignored; the last chunk still ends the body.
+VOID TEST(ProtocolHttpConnTest, EveryChunkWithExtensions_BodyReadToLastChunk)
+{
+    srs_error_t err = srs_success;
+
+    MockBufferIO io;
+    io.append("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+              "5;a=\"x;y\";b\r\nHello\r\n6;sig\r\n World\r\n0;end=1\r\n\r\n");
+    SrsHttpParser hp;
+    SrsHttpMessage *msg_raw = NULL;
+    HELPER_ASSERT_SUCCESS(http_conn_parse(&hp, &io, HTTP_RESPONSE, false, &msg_raw));
+    SrsUniquePtr<SrsHttpMessage> msg(msg_raw);
+
+    string body;
+    HELPER_EXPECT_SUCCESS(http_conn_read_body(msg.get(), body));
+    EXPECT_STREQ("Hello World", body.c_str());
+    EXPECT_TRUE(msg->body_reader()->eof());
+}
+
+// A broken backend sends an extension with no chunk size before it. The size is missing, so the
+// chunk is refused rather than taken as the last chunk of size 0.
+VOID TEST(ProtocolHttpConnTest, ChunkExtensionWithoutSize_Refused)
+{
+    srs_error_t err = srs_success;
+
+    MockBufferIO io;
+    io.append("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n;name=value\r\nHello\r\n0\r\n\r\n");
+    SrsHttpParser hp;
+    SrsHttpMessage *msg_raw = NULL;
+    HELPER_ASSERT_SUCCESS(http_conn_parse(&hp, &io, HTTP_RESPONSE, false, &msg_raw));
+    SrsUniquePtr<SrsHttpMessage> msg(msg_raw);
+
+    string body;
+    err = http_conn_read_body(msg.get(), body);
+    EXPECT_EQ(ERROR_HTTP_INVALID_CHUNK_HEADER, srs_error_code(err));
+    srs_freep(err);
+    EXPECT_TRUE(body.empty());
+    EXPECT_FALSE(msg->body_reader()->eof());
 }
 
 // An HTTP-FLV origin or a hook backend closes the connection inside a chunk, such as when it

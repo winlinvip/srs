@@ -1221,10 +1221,12 @@ srs_error_t SrsHttpResponseReader::read_chunked(void *data, size_t nb_data, ssiz
         // size is the bytes size, excludes the chunk header and end CRLF.
         // @remark It must be hex format, please read https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding#Directives
         // @remark For strtol, note that: If no conversion could be performed, 0 is returned and the global variable errno is set to EINVAL.
+        // @remark The size may be followed by chunk extensions, such as "5;name=value", which we ignore, see RFC 9112 7.1.1.
         char *at_parsed = at;
         errno = 0;
         int ilength = (int)::strtol(at, &at_parsed, 16);
-        if (ilength < 0 || errno != 0 || at_parsed - at != length - 2) {
+        bool has_ext = at_parsed > at && *at_parsed == ';';
+        if (ilength < 0 || errno != 0 || (!has_ext && at_parsed - at != length - 2)) {
             return srs_error_new(ERROR_HTTP_INVALID_CHUNK_HEADER, "invalid length %s as %d, parsed=%.*s, errno=%d",
                                  at, ilength, (int)(at_parsed - at), at, errno);
         }

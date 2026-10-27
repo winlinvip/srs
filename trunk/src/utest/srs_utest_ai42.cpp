@@ -1739,9 +1739,9 @@ VOID TEST(AppConfigTest, TypoInSectionRefusedNamingIt)
     }
 }
 
-// A typo in the vhost rtsp section is refused, but the error names the srt section, so the operator looks for the
-// typo in the wrong place.
-VOID TEST(AppConfigTest, DISABLED_RtspTypoInVhost_ErrorNamesSrtSection)
+// A typo in the vhost rtsp section is refused, and the error names the rtsp section, so the operator finds the typo
+// where it is.
+VOID TEST(AppConfigTest, RtspTypoInVhost_ErrorNamesRtspSection)
 {
     config_expect_refused("vhost v { rtsp { enabled on; rtmp_to_rtspp on; } }", "illegal vhost.rtsp.rtmp_to_rtspp of v");
 }

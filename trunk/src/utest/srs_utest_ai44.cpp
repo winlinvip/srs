@@ -4559,10 +4559,9 @@ VOID TEST(AppRtcDtlsTest, Dtls10VhostRefusedByDtls12OnlyBrowser)
     EXPECT_FALSE(server.impl_->handshake_done_for_us_);
 }
 
-// A vhost with dtls_version dtls1.2 should allow only DTLS 1.2, as dtls1.0 allows only DTLS 1.0, so it refuses a
-// client that offers only DTLS 1.0 by a fatal protocol_version alert. B49: it agrees on DTLS 1.0, because the
-// dtls1.2 context uses the version-flexible method, the same as auto.
-VOID TEST(AppRtcDtlsTest, DISABLED_Dtls12VhostAcceptsDtls10Client)
+// A vhost with dtls_version dtls1.2 allows only DTLS 1.2, as dtls1.0 allows only DTLS 1.0, so it refuses a client
+// that offers only DTLS 1.0 by a fatal protocol_version alert, see RFC 6347 section 4.2.1.
+VOID TEST(AppRtcDtlsTest, Dtls12VhostRefusesDtls10Client)
 {
     srs_error_t err;
 
@@ -4583,6 +4582,37 @@ VOID TEST(AppRtcDtlsTest, DISABLED_Dtls12VhostAcceptsDtls10Client)
     EXPECT_EQ(0, scb.handshake_done_count_) << "agreed on version 0x" << std::hex << SSL_version(server.impl_->dtls_);
     ASSERT_FALSE(scb.alerts_.empty());
     EXPECT_STREQ("PV", scb.alerts_[0].second.c_str());
+}
+
+// A browser offers DTLS 1.0 and 1.2 in its ClientHello, and a vhost with dtls_version dtls1.2 agrees with it on
+// DTLS 1.2, then both derive the same SRTP keys.
+VOID TEST(AppRtcDtlsTest, Dtls12VhostAgreesWithBrowserOnDtls12)
+{
+    srs_error_t err;
+
+    MockSrsConfig conf;
+    string version = rtc_dtls_utest_vhost_version(&conf, "dtls1.2");
+
+    MockDtlsCallbackForHandshake ccb, scb;
+    SrsDtls client(&ccb);
+    SrsDtls server(&scb);
+    HELPER_ASSERT_SUCCESS(client.initialize("active", "auto"));
+    HELPER_ASSERT_SUCCESS(server.initialize("passive", version));
+    HELPER_ASSERT_SUCCESS(server.start_active_handshake());
+    HELPER_ASSERT_SUCCESS(client.start_active_handshake());
+    HELPER_ASSERT_SUCCESS(dtls_exchange(&client, &ccb, &server, &scb));
+
+    EXPECT_EQ(1, ccb.handshake_done_count_);
+    EXPECT_EQ(1, scb.handshake_done_count_);
+    EXPECT_TRUE(scb.alerts_.empty());
+    EXPECT_EQ(DTLS1_2_VERSION, SSL_version(server.impl_->dtls_));
+    EXPECT_EQ(DTLS1_2_VERSION, SSL_version(client.impl_->dtls_));
+
+    string client_recv, client_send, server_recv, server_send;
+    HELPER_ASSERT_SUCCESS(client.get_srtp_key(client_recv, client_send));
+    HELPER_ASSERT_SUCCESS(server.get_srtp_key(server_recv, server_send));
+    EXPECT_TRUE(client_send == server_recv);
+    EXPECT_TRUE(client_recv == server_send);
 }
 
 // The server's sessions by the username of their ICE checks, and the client addresses each session took, as the RTC

@@ -4678,9 +4678,8 @@ static void inotify_utest_write(string path)
     }
 }
 
-// Ends the worker's coroutine so the worker can be freed. After a change the worker sleeps, and a stop that comes
-// then only ends the sleep: the worker reads again, and a coroutine is interrupted only once, so its read is
-// interrupted again here.
+// Ends the worker's coroutine so the worker can be freed, as the server's stop does. If the worker does not end, its
+// read is interrupted again, so a failing test does not hang in the worker's destructor.
 static void inotify_utest_end(SrsInotifyWorker *worker)
 {
     SrsSTCoroutine *trd = dynamic_cast<SrsSTCoroutine *>(worker->trd_);
@@ -4724,7 +4723,7 @@ VOID TEST(ServerInotifyTest, AutoReload_ConfigEditSignalsReload)
 
 // The server quits (SIGTERM or SIGQUIT) within 3s after an operator edits the config file: the quit stops the
 // worker as it frees it, and the worker must end, or the server never exits.
-VOID TEST(ServerInotifyTest, DISABLED_QuitSoonAfterConfigEdit_WorkerNeverEnds)
+VOID TEST(ServerInotifyTest, QuitSoonAfterConfigEdit_WorkerEnds)
 {
     srs_error_t err;
 

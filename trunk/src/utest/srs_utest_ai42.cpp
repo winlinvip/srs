@@ -1663,8 +1663,8 @@ VOID TEST(AppConfigTest, QuotedNamesInConfig)
 }
 
 // The config file can follow -c with no space, as getopt and nginx (whose ngx_get_options this code follows) allow:
-// ./objs/srs -cconf/srs.conf. SRS takes the file name, then reads it as more options and fails at its first char.
-VOID TEST(AppConfigTest, DISABLED_ConfigFileRightAfterOption_ReadAsOptions)
+// ./objs/srs -cconf/srs.conf.
+VOID TEST(AppConfigTest, ConfigFileRightAfterOption_ConfigLoaded)
 {
     srs_error_t err = srs_success;
 
@@ -1687,6 +1687,24 @@ VOID TEST(AppConfigTest, DISABLED_ConfigFileRightAfterOption_ReadAsOptions)
     vector<string> listens = conf.get_listens();
     ASSERT_EQ(1, (int)listens.size());
     EXPECT_STREQ("1935", listens[0].c_str());
+}
+
+// Testing a config named like an option, ./objs/srs -tcv.conf, checks v.conf; its letters are not options, so the
+// v does not show the version instead, and the next argument stays for the next option.
+VOID TEST(AppConfigTest, TestOptionWithConfigFileAttached_FileNameNotReadAsOptions)
+{
+    srs_error_t err = srs_success;
+
+    SrsConfig conf;
+    char *argv[] = {(char *)"srs", (char *)"-tcv.conf", (char *)"-e", NULL};
+    int i = 1;
+    HELPER_ASSERT_SUCCESS(conf.parse_argv(i, argv));
+
+    EXPECT_EQ(1, i);
+    EXPECT_TRUE(conf.test_conf_);
+    EXPECT_FALSE(conf.show_version_);
+    EXPECT_FALSE(conf.show_help_);
+    EXPECT_STREQ("v.conf", conf.config().c_str());
 }
 
 // A typo in any section is refused at startup and reload, naming the directive, instead of being ignored.

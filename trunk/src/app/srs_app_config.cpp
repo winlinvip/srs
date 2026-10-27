@@ -1791,7 +1791,7 @@ srs_error_t SrsConfig::parse_argv(int &i, char **argv)
             show_help_ = false;
             if (*p) {
                 config_file_ = p;
-                continue;
+                return err;
             }
             if (argv[++i]) {
                 config_file_ = argv[i];

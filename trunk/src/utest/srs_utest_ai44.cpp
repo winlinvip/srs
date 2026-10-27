@@ -4210,9 +4210,9 @@ VOID TEST(AppRtcConnTest, PublisherLosesPackets_NackRequestAndSeqsCounted)
     EXPECT_EQ(4, _srs_pps_snack3->sugar_ - seqs);
 }
 
-// The server overloaded: at the circuit breaker's critical level, a publisher's lost packets are not asked for by
-// NACK, to spare the CPU. Once the load is back to normal, the packets lost during the overload, which may still be
-// resent in time, are asked for with the new losses.
+// The server overloaded: at the circuit breaker's critical level, as at its high level, the publisher's packets still
+// go through the receive queue, but no loss is asked for by NACK, to spare the CPU, and the packets lost then are
+// never asked for, as only the losses after the load is back to normal are.
 VOID TEST(AppRtcConnTest, OverloadedServerSendsNoNack)
 {
     srs_error_t err;
@@ -4222,21 +4222,17 @@ VOID TEST(AppRtcConnTest, OverloadedServerSendsNoNack)
     HELPER_ASSERT_SUCCESS(rtc_conn_utest_nack_through_overload(true, during, after));
 
     EXPECT_TRUE(during.empty());
-    for (uint16_t sn = 101; sn < 105; sn++) {
-        EXPECT_TRUE(rtc_conn_utest_has_sn(after, sn)) << sn;
-    }
-    for (uint16_t sn = 107; sn < 110; sn++) {
-        EXPECT_TRUE(rtc_conn_utest_has_sn(after, sn)) << sn;
-    }
-    EXPECT_FALSE(rtc_conn_utest_has_sn(after, 106));
+    ASSERT_EQ(3, (int)after.size());
+    EXPECT_EQ(107, after[0]);
+    EXPECT_EQ(108, after[1]);
+    EXPECT_EQ(109, after[2]);
 }
 
-// After the overload, the server should not ask for a packet it got during it. But at the critical level the
-// publisher skips the track's NACK step, which also records the packet in the receive queue, so the first packet
-// after it finds the whole gap since the last packet before it and asks for 105, which came (B48). The publisher
-// resends every such packet, a burst as large as the receive queue after a long overload, just as the server
+// After the overload, the server does not ask for a packet it got during it: at the critical level the packet is
+// still recorded in the receive queue, so the first packet after it finds no gap before it. Otherwise the publisher
+// would resend every such packet, a burst as large as the receive queue after a long overload, just as the server
 // recovers.
-VOID TEST(AppRtcConnTest, DISABLED_OverloadEnds_PacketReceivedDuringItAskedByNack)
+VOID TEST(AppRtcConnTest, OverloadEnds_PacketReceivedDuringItNotAskedByNack)
 {
     srs_error_t err;
 

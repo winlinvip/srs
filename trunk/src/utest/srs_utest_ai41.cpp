@@ -67,6 +67,7 @@ using namespace srs_internal;
 
 extern srs_utime_t _srs_system_time_us_cache;
 extern srs_mkdir_t _srs_mkdir_fn;
+extern bool srs_sdp_has_h264_profile(const SrsSdp &sdp, const string &profile);
 
 // The first read of the cached clock in a fresh process, such as a log line or a
 // statistic written at startup before the server's clock timer has ticked, gets the
@@ -4516,11 +4517,9 @@ VOID TEST(ProtocolSdpTest, OfferWithRtpmapNotMatchingMLine_Refused)
 }
 
 // A WHIP publisher whose H.264 fmtp leaves out level-asymmetry-allowed, an optional parameter
-// whose default is 0 (RFC 6184 8.1), as GStreamer's payloader writes it. srs_parse_h264_fmtp
-// refuses the fmtp, and the negotiator skips a payload it cannot parse instead of keeping it as a
-// backup, so the publish is refused with no H.264 match. The same offer with
-// level-asymmetry-allowed=0, which means the same, is accepted.
-VOID TEST(ProtocolSdpTest, DISABLED_WhipPublisherH264WithoutLevelAsymmetry_PublishRefused)
+// whose default is 0 (RFC 6184 8.1), as GStreamer's payloader writes it. The publish is accepted
+// with that payload, as the same offer with level-asymmetry-allowed=0, which means the same.
+VOID TEST(ProtocolSdpTest, WhipPublisherH264WithoutLevelAsymmetry_PublishAccepted)
 {
     srs_error_t err = srs_success;
 
@@ -4546,6 +4545,34 @@ VOID TEST(ProtocolSdpTest, DISABLED_WhipPublisherH264WithoutLevelAsymmetry_Publi
     HELPER_EXPECT_SUCCESS(negotiator.negotiate_publish_capability(&ruc, &stream_desc));
     ASSERT_EQ(1, (int)stream_desc.video_track_descs_.size());
     EXPECT_EQ(102, (int)stream_desc.video_track_descs_[0]->media_->pt_);
+}
+
+// A WHEP player whose H.264 fmtp leaves out level-asymmetry-allowed. The play negotiator looks
+// for the 42e01f profile in the offer to choose that payload, so the fmtp is read with the
+// parameter absent, not refused. The other two parameters are still required.
+VOID TEST(ProtocolSdpTest, WhepPlayerH264WithoutLevelAsymmetry_ProfileFound)
+{
+    srs_error_t err = srs_success;
+
+    H264SpecificParam param;
+    HELPER_ASSERT_SUCCESS(srs_parse_h264_fmtp("packetization-mode=1;profile-level-id=42e01f", param));
+    EXPECT_STREQ("42e01f", param.profile_level_id_.c_str());
+    EXPECT_STREQ("1", param.packetization_mode_.c_str());
+    EXPECT_TRUE(param.level_asymmetry_allow_.empty());
+
+    SrsSdp sdp;
+    HELPER_ASSERT_SUCCESS(sdp.parse(sdp_whip_offer("packetization-mode=1;profile-level-id=42e01f")));
+    EXPECT_TRUE(srs_sdp_has_h264_profile(sdp, "42e01f"));
+
+    H264SpecificParam no_mode;
+    err = srs_parse_h264_fmtp("level-asymmetry-allowed=1;profile-level-id=42e01f", no_mode);
+    EXPECT_EQ(ERROR_RTC_SDP_DECODE, srs_error_code(err));
+    srs_freep(err);
+
+    H264SpecificParam no_profile;
+    err = srs_parse_h264_fmtp("level-asymmetry-allowed=1;packetization-mode=1", no_profile);
+    EXPECT_EQ(ERROR_RTC_SDP_DECODE, srs_error_code(err));
+    srs_freep(err);
 }
 
 // An offer whose ssrc-group, rtcp-fb or ssrc line ends right after its first word. The parser

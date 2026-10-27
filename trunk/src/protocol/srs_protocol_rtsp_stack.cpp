@@ -690,6 +690,7 @@ srs_error_t SrsRtspStack::recv_token(std::string &token, SrsRtspTokenState &stat
         }
 
         // Try to detect and consume any RTCP frames from the buffer
+        bool need_more_data = false;
         while (buf_->length() > 0) {
             srs_error_t rtcp_err = try_consume_rtcp_frame();
 
@@ -699,13 +700,19 @@ srs_error_t SrsRtspStack::recv_token(std::string &token, SrsRtspTokenState &stat
             } else if (srs_error_code(rtcp_err) == ERROR_RTSP_NEED_MORE_DATA) {
                 // Need more data to complete RTCP frame, let the outer loop read more
                 srs_freep(rtcp_err);
-                append_bytes = true;
+                need_more_data = true;
                 break;
             } else {
                 // Not an RTCP frame or other error, break and try RTSP parsing
                 srs_freep(rtcp_err);
                 break;
             }
+        }
+
+        // Never scan a partial interleaved frame as a request, its binary bytes may hold SP/CR/LF.
+        if (need_more_data) {
+            append_bytes = true;
+            continue;
         }
 
         // parse one by one.
@@ -760,16 +767,17 @@ srs_error_t SrsRtspStack::recv_token(std::string &token, SrsRtspTokenState &stat
 
 srs_error_t SrsRtspStack::try_consume_rtcp_frame()
 {
-    // Need at least 4 bytes for RTCP over TCP header: $ + channel + length
-    if (buf_->length() < 4) {
-        // Not enough data, let caller read more
-        return srs_error_new(ERROR_RTSP_NEED_MORE_DATA, "need more data for rtcp header");
-    }
-
     char *data = buf_->bytes();
 
     // Check for RTCP over TCP format: $ + channel + length(2 bytes)
-    if (data[0] == '$') {
+    if (buf_->length() > 0 && data[0] == '$') {
+        // Need at least 4 bytes for RTCP over TCP header: $ + channel + length
+        if (buf_->length() < 4) {
+            // Not enough data, let caller read more
+            return srs_error_new(ERROR_RTSP_NEED_MORE_DATA, "need more data for rtcp header");
+        }
+
+
         uint8_t channel = (uint8_t)data[1];
         uint16_t payload_length = (uint16_t(data[2]) << 8) | uint16_t(data[3]);
         int total_frame_size = 4 + payload_length; // 4-byte header + payload

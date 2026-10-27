@@ -4107,9 +4107,9 @@ VOID TEST(ProtocolRtspStackTest, PlayerLeftBeforeAnswer_WriteFails)
 // A player's RTCP over TCP arrives cut between two reads, and the bytes of the first read hold a
 // space, CR or LF: a lone 32-byte RR (reduced-size RTCP, RFC 5506), whose length byte is 0x20, with
 // its header alone as live555 writes it; an RR and SDES cut after a report block whose jitter is
-// 32. The parser should wait for the rest of the frame and parse the GET_PARAMETER after it, but it
-// scans the partial frame as a request, so the request fails and the connection ends.
-VOID TEST(ProtocolRtspStackTest, DISABLED_PlayerRtcpCutAtDelimiterByte_ConnectionDropped)
+// 32. The parser waits for the rest of the frame, consumes it, and parses the GET_PARAMETER after
+// it, instead of scanning the partial frame as a request.
+VOID TEST(ProtocolRtspStackTest, PlayerRtcpCutAtDelimiterByte_RequestAfterItParsed)
 {
     srs_error_t err = srs_success;
 
@@ -4145,6 +4145,32 @@ VOID TEST(ProtocolRtspStackTest, DISABLED_PlayerRtcpCutAtDelimiterByte_Connectio
             EXPECT_STREQ("GET_PARAMETER", req->method_.c_str());
             EXPECT_EQ(6, req->seq_);
         }
+    }
+}
+
+// A player's RTCP over TCP arrives cut inside its 4-byte interleaved header, after the '$', the
+// channel or the high length byte. The parser waits for the rest of the header and the frame, and
+// parses the GET_PARAMETER after it.
+VOID TEST(ProtocolRtspStackTest, PlayerRtcpCutInsideInterleavedHeader_RequestAfterItParsed)
+{
+    srs_error_t err = srs_success;
+
+    string keepalive = "GET_PARAMETER rtsp://127.0.0.1:8554/live/livestream RTSP/1.0\r\nCSeq: 6\r\nSession: 7AB3C1D2\r\n\r\n";
+    string frame = rtsp_interleaved_header(1, 52) + rtsp_rtcp_rr(0x31) + rtsp_rtcp_sdes();
+
+    for (size_t cut = 1; cut < 4; cut++) {
+        RtspSegmentIO io;
+        io.segment(frame.substr(0, cut))->segment(frame.substr(cut))->segment(keepalive);
+        SrsRtspStack stack(&io);
+
+        SrsRtspRequest *req = NULL;
+        HELPER_EXPECT_SUCCESS(stack.recv_message(&req));
+        SrsUniquePtr<SrsRtspRequest> req_uptr(req);
+        if (req) {
+            EXPECT_STREQ("GET_PARAMETER", req->method_.c_str()) << cut;
+            EXPECT_EQ(6, req->seq_) << cut;
+        }
+        EXPECT_TRUE(io.segments_.empty()) << cut;
     }
 }
 

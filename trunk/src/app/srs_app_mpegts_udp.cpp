@@ -466,7 +466,8 @@ srs_error_t SrsMpegtsOverUdp::on_ts_video(SrsTsMessage *msg, SrsBuffer *avs)
                 return srs_error_wrap(err, "demux sps");
             }
 
-            if (h264_sps_ == sps) {
+            // A cut SPS has no profile or level to build a sequence header from, so keep the SPS we have.
+            if (sps.empty() || h264_sps_ == sps) {
                 continue;
             }
             h264_sps_changed_ = true;

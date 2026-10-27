@@ -1569,9 +1569,9 @@ VOID TEST(AppMpegtsUdpTest, CasterPortHeldByAnotherProgram_ListenFails)
 }
 
 // An encoder, or any host that reaches the caster's UDP port, sends a key frame, then a PES whose SPS is cut to 3 bytes
-// and whose PPS is new. The caster should keep the SPS it has and go on. It takes the cut SPS as an empty one, and the
-// new PPS then makes it build a sequence header from that empty SPS, whose assert aborts the server.
-VOID TEST(AppMpegtsUdpTest, DISABLED_CutSpsThenNewPps_ServerAborts)
+// and whose PPS is new. The cut SPS has no profile or level to build a sequence header from, so the caster skips it,
+// keeps the SPS it has and goes on.
+VOID TEST(AppMpegtsUdpTest, CutSpsThenNewPps_CutSpsSkipped)
 {
     srs_error_t err;
 

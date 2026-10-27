@@ -159,15 +159,16 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsMediaPacket *msg, const vector<
 
         int header_size = is_hevc ? SrsHevcNaluHeaderSize : SrsAvcNaluHeaderSize;
 
-        // Package NALUs in FU-A RTP packets.
-        int fu_payload_size = kRtpMaxPayloadSize;
-
         // The first byte is store in FU-A header.
         uint8_t header = raw->skip_bytes(header_size);
 
         int nb_left = nn_bytes - header_size;
 
-        int num_of_packet = 1 + (nn_bytes - 1) / fu_payload_size;
+        // Package NALUs in FU-A RTP packets. An FU-A must not have both the start and end bits, see
+        // RFC 6184 5.8, so a NALU that fits one fragment is still cut into two.
+        int fu_payload_size = srs_min(kRtpMaxPayloadSize, nb_left - 1);
+
+        int num_of_packet = 1 + (nb_left - 1) / fu_payload_size;
         for (int i = 0; i < num_of_packet; ++i) {
             int packet_size = srs_min(nb_left, fu_payload_size);
 

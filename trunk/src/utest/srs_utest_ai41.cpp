@@ -3703,7 +3703,8 @@ VOID TEST(ProtocolRtmpStackTest, LaterClientWithConnectArgs_SourceRequestTakesIt
 }
 
 // Packages the two slices of one frame, merged as with rtc_server.merge_nalus on, and returns the
-// payload bytes each FU-A packet carries after its FU indicator and header.
+// payload bytes each FU-A packet carries after its FU indicator and header. Only the first FU-A has
+// the start bit and only the last one the end bit (RFC 6184 5.8).
 static vector<int> rtp_merged_frame_fu_sizes(SrsVideoCodecId codec, vector<char> &slice0, vector<char> &slice1)
 {
     vector<int> sizes;
@@ -3734,11 +3735,20 @@ static vector<int> rtp_merged_frame_fu_sizes(SrsVideoCodecId codec, vector<char>
     for (int i = 0; i < (int)pkts.size(); i++) {
         SrsRtpPacket *pkt = pkts[i];
         vector<SrsNaluSample *> *nalus = NULL;
+        bool start = false, end = false;
         if (codec == SrsVideoCodecIdHEVC) {
-            nalus = &static_cast<SrsRtpFUAPayloadHevc *>(pkt->payload())->nalus_;
+            SrsRtpFUAPayloadHevc *fua = static_cast<SrsRtpFUAPayloadHevc *>(pkt->payload());
+            nalus = &fua->nalus_;
+            start = fua->start_;
+            end = fua->end_;
         } else {
-            nalus = &static_cast<SrsRtpFUAPayload *>(pkt->payload())->nalus_;
+            SrsRtpFUAPayload *fua = static_cast<SrsRtpFUAPayload *>(pkt->payload());
+            nalus = &fua->nalus_;
+            start = fua->start_;
+            end = fua->end_;
         }
+        EXPECT_EQ(i == 0, start) << "FU-A " << i << " of " << pkts.size();
+        EXPECT_EQ(i == (int)pkts.size() - 1, end) << "FU-A " << i << " of " << pkts.size();
 
         int size = 0;
         for (int j = 0; j < (int)nalus->size(); j++) {
@@ -3755,9 +3765,9 @@ static vector<int> rtp_merged_frame_fu_sizes(SrsVideoCodecId codec, vector<char>
 // With rtc_server.merge_nalus on, RTMP to WebRTC packs all slices of a frame into one NALU and
 // cuts it into FU-A packets of up to 1200 bytes. When the merged NALU minus its header is a whole
 // number of 1200-byte fragments, such as two slices of 1000 and 1398 bytes (2401 with the 3-byte
-// separator), the frame must take exactly two fragments. The packet count is computed from the
-// size with the header, so a third FU-A with the end bit and no data is sent.
-VOID TEST(ProtocolRtpTest, DISABLED_MergedFrameOfWholeFragments_EmptyLastFuA)
+// separator), the frame takes exactly two fragments, each with data, and no third FU-A with the end
+// bit and no data.
+VOID TEST(ProtocolRtpTest, MergedFrameOfWholeFragments_TwoFuAs)
 {
     // H.264: two IDR slices, 1000 + 3 + 1398 = 2401 bytes, a 1-byte NALU header.
     if (true) {
@@ -3784,6 +3794,41 @@ VOID TEST(ProtocolRtpTest, DISABLED_MergedFrameOfWholeFragments_EmptyLastFuA)
         for (int i = 0; i < (int)sizes.size(); i++) {
             EXPECT_GT(sizes[i], 0) << "FU-A " << i << " of " << sizes.size();
         }
+    }
+}
+
+// With rtc_server.merge_nalus on, a merged frame of 1200 bytes or a little more is too big for
+// one RTP packet, but its data after the NALU header fits one 1200-byte fragment. RFC 6184 5.8
+// forbids an FU-A with both the start and end bits, so the frame is still cut into two FU-As,
+// together carrying every byte after the header.
+VOID TEST(ProtocolRtpTest, MergedFrameJustOverOnePacket_SplitIntoTwoFuAs)
+{
+    struct {
+        SrsVideoCodecId codec;
+        int slice1;
+        int header;
+    } cases[] = {
+        {SrsVideoCodecIdAVC, 597, 1},  // 600 + 3 + 597 = 1200 bytes
+        {SrsVideoCodecIdAVC, 598, 1},  // 1201 bytes, 1200 after the header
+        {SrsVideoCodecIdHEVC, 597, 2}, // 1200 bytes
+        {SrsVideoCodecIdHEVC, 599, 2}, // 1202 bytes, 1200 after the header
+    };
+
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
+        vector<char> slice0(600, (char)0x88);
+        vector<char> slice1(cases[i].slice1, (char)0x88);
+        if (cases[i].codec == SrsVideoCodecIdHEVC) {
+            slice0[0] = slice1[0] = 0x02;
+            slice0[1] = slice1[1] = 0x01;
+        } else {
+            slice0[0] = slice1[0] = 0x65;
+        }
+
+        vector<int> sizes = rtp_merged_frame_fu_sizes(cases[i].codec, slice0, slice1);
+        ASSERT_EQ(2, (int)sizes.size()) << "case " << i;
+        EXPECT_GT(sizes[0], 0) << "case " << i;
+        EXPECT_GT(sizes[1], 0) << "case " << i;
+        EXPECT_EQ(600 + 3 + cases[i].slice1 - cases[i].header, sizes[0] + sizes[1]) << "case " << i;
     }
 }
 

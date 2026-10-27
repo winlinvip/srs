@@ -2279,8 +2279,9 @@ VOID TEST(AppUtilityTest, InterfaceWithPublicAddress_BytesCountedAsInternet)
     EXPECT_EQ(intranet_send, sys->get_property("net_sendi_bytes")->to_integer());
 }
 
-// The interfaces of a host as /proc/net/dev lists them: the name before the colon, without the padding.
-static vector<string> utility_utest_proc_interfaces()
+// The interfaces of a host as /proc/net/dev lists them: the name before the colon, without the padding, and the bytes
+// received, the first number after it.
+static vector<string> utility_utest_proc_interfaces(map<string, unsigned long long> &rbytes)
 {
     vector<string> names;
 
@@ -2296,7 +2297,9 @@ static vector<string> utility_utest_proc_interfaces()
             continue;
         }
         string name(buf, colon - buf);
-        names.push_back(name.substr(name.find_first_not_of(' ')));
+        name = name.substr(name.find_first_not_of(' '));
+        names.push_back(name);
+        rbytes[name] = strtoull(colon + 1, NULL, 10);
     }
     fclose(f);
 
@@ -2304,24 +2307,32 @@ static vector<string> utility_utest_proc_interfaces()
 }
 
 // A host with an interface named longer than 6 chars, such as enp0s31f6 on a bare-metal server, or gretap0 and ip6tnl0 in
-// a Docker container: the server lists it by a cut name with no bytes, so a public interface of such a name counts no
-// internet traffic. Bug: SrsNetworkDevices keeps 6 chars of the name, and the parse stops at the cut.
-VOID TEST(AppUtilityTest, DISABLED_InterfaceNamedLongerThan6Chars_NotListed)
+// a Docker container: the server lists it by its whole name, up to the 15 chars Linux allows, with its bytes, so a
+// public interface of such a name counts its internet traffic.
+VOID TEST(AppUtilityTest, InterfaceNamedLongerThan6Chars_Listed)
 {
-    vector<string> names = utility_utest_proc_interfaces();
+    map<string, unsigned long long> before;
+    vector<string> names = utility_utest_proc_interfaces(before);
     ASSERT_FALSE(names.empty());
 
     srs_update_network_devices();
-    set<string> listed;
+    map<string, unsigned long long> after;
+    utility_utest_proc_interfaces(after);
+
+    map<string, unsigned long long> listed;
     SrsNetworkDevices *devices = srs_get_network_devices();
     for (int i = 0; i < srs_get_network_devices_count(); i++) {
         SrsNetworkDevices &device = devices[i];
-        listed.insert(device.name_);
+        listed[device.name_] = device.rbytes_;
     }
 
     for (int i = 0; i < (int)names.size() && i < 16; i++) {
         string name = names[i];
-        EXPECT_TRUE(listed.find(name) != listed.end()) << "interface " << name << " not listed";
+        ASSERT_TRUE(listed.find(name) != listed.end()) << "interface " << name << " not listed";
+
+        // The bytes are read at the update, between the two reads of the test.
+        EXPECT_LE(before[name], listed[name]) << "interface " << name;
+        EXPECT_GE(after[name], listed[name]) << "interface " << name;
     }
 }
 #endif

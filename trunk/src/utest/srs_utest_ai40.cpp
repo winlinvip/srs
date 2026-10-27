@@ -938,8 +938,8 @@ vector<SrsPps *> kbps_rtc_line_pps()
 {
     SrsPps *all[] = {_srs_pps_rpkts, _srs_pps_rrtps, _srs_pps_rstuns, _srs_pps_rrtcps, _srs_pps_spkts,
                      _srs_pps_srtps, _srs_pps_sstuns, _srs_pps_srtcps, _srs_pps_pli, _srs_pps_twcc, _srs_pps_rr,
-                     _srs_pps_snack, _srs_pps_snack2, _srs_pps_sanack, _srs_pps_svnack, _srs_pps_rnack,
-                     _srs_pps_rnack2, _srs_pps_rhnack, _srs_pps_rmnack, _srs_pps_srtx, _srs_pps_rrtx,
+                     _srs_pps_snack, _srs_pps_snack2, _srs_pps_snack3, _srs_pps_snack4, _srs_pps_sanack,
+                     _srs_pps_svnack, _srs_pps_rnack, _srs_pps_rnack2, _srs_pps_rhnack, _srs_pps_rmnack, _srs_pps_srtx, _srs_pps_rrtx,
                      _srs_pps_rrtx_unwrap, _srs_pps_rrtx_padding, _srs_pps_ids, _srs_pps_fids,
                      _srs_pps_fids_level0, _srs_pps_addrs, _srs_pps_fast_addrs};
     return vector<SrsPps *>(all, all + sizeof(all) / sizeof(all[0]));

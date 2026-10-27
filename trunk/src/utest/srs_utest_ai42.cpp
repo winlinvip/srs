@@ -1376,18 +1376,14 @@ VOID TEST(AppCircuitBreakerTest, OverloadedRtcServerWithLossyPublisher_LogsNackR
     _srs_log = original_log;
 }
 
-// While the breaker is critical, the server skips the NACKs and TWCC feedback of every WebRTC publisher
-// and counts each skip in _srs_pps_snack4. The breaker line ends with that count per second, so the
-// operator sees what the breaker drops. Nothing updates the counter's rate, so the line always shows 0.
-// The number before it, which the code names the NACK seqs sent, is never counted at all.
-VOID TEST(AppCircuitBreakerTest, DISABLED_CriticalBreakerSkipsRtcFeedback_SkippedCountAlwaysZero)
+// While the breaker is high or critical, the server skips the NACKs and TWCC feedback of every WebRTC
+// publisher. The breaker line shows, per second over the last 10s, the NACK requests sent, the sequence
+// numbers they asked for, and the feedback rounds skipped, so the operator sees what the breaker drops.
+VOID TEST(AppCircuitBreakerTest, CriticalBreakerSkipsRtcFeedback_SkippedCountLogged)
 {
     srs_error_t err;
 
-    vector<SrsPps *> pps = kbps_rtc_line_pps();
-    pps.push_back(_srs_pps_snack3);
-    pps.push_back(_srs_pps_snack4);
-    KbpsGlobalPpsScope scope(pps);
+    KbpsGlobalPpsScope scope(kbps_rtc_line_pps());
 
     MockLogForSignal log;
     ISrsLog *original_log = _srs_log;
@@ -1402,9 +1398,10 @@ VOID TEST(AppCircuitBreakerTest, DISABLED_CriticalBreakerSkipsRtcFeedback_Skippe
         srs_global_rtc_update(&stats);
     }
 
-    // In 10s the server sent the publisher 50 NACK requests, then went critical and skipped 30 NACK and
-    // TWCC rounds, as SrsRtcPublishStream and SrsRtcConnection count them.
+    // In 10s the server sent the publisher 50 NACK requests for 120 lost packets, then went critical and
+    // skipped 30 NACK and TWCC rounds, as SrsRtcConnection and SrsRtcPublishStream count them.
     _srs_pps_snack2->sugar_ += 50;
+    _srs_pps_snack3->sugar_ += 120;
     _srs_pps_snack4->sugar_ += 30;
 
     scope.clock_.set_clock(10 * SRS_UTIME_SECONDS);
@@ -1419,9 +1416,45 @@ VOID TEST(AppCircuitBreakerTest, DISABLED_CriticalBreakerSkipsRtcFeedback_Skippe
     _srs_log = original_log;
 
     ASSERT_EQ(1, (int)log.traces_.size());
-    string line = log.traces_[0];
-    ASSERT_NE(string::npos, line.find(", snk=5,")) << line;
-    EXPECT_STREQ(",3", line.substr(line.rfind(',')).c_str()) << line;
+    EXPECT_STREQ("CircuitBreaker: cpu=96.00%,200MB, break=1,1,0, cond=96.00%, snk=5,12,3", log.traces_[0].c_str());
+}
+
+// The breaker has been critical for the whole 10s, so the server skipped every NACK round and sent no
+// request at all. The line still shows the skipped rounds, which is all the breaker did to RTC feedback.
+VOID TEST(AppCircuitBreakerTest, CriticalBreakerSkipsEveryNack_LineShowsOnlySkipped)
+{
+    srs_error_t err;
+
+    KbpsGlobalPpsScope scope(kbps_rtc_line_pps());
+
+    MockLogForSignal log;
+    ISrsLog *original_log = _srs_log;
+    _srs_log = &log;
+
+    CircuitBreakerServer server;
+    HELPER_EXPECT_SUCCESS(server.breaker_.initialize());
+
+    scope.clock_.set_clock(0);
+    if (true) {
+        SrsKbsRtcStats stats;
+        srs_global_rtc_update(&stats);
+    }
+
+    _srs_pps_snack4->sugar_ += 40;
+
+    scope.clock_.set_clock(10 * SRS_UTIME_SECONDS);
+    if (true) {
+        SrsKbsRtcStats stats;
+        srs_global_rtc_update(&stats);
+    }
+
+    server.host_->proc_stat_->percent_ = 0.96;
+    log.traces_.clear();
+    HELPER_EXPECT_SUCCESS(server.breaker_.on_timer(1 * SRS_UTIME_SECONDS));
+    _srs_log = original_log;
+
+    ASSERT_EQ(1, (int)log.traces_.size());
+    EXPECT_STREQ("CircuitBreaker: cpu=96.00%,200MB, break=1,1,0, cond=96.00%, snk=0,0,4", log.traces_[0].c_str());
 }
 
 extern bool _srs_in_docker;

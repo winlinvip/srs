@@ -1111,10 +1111,10 @@ VOID TEST(ProtocolUtilityTest, HttpRequestWithoutHostOnIpv6PublicHost_UsesIpv4Ad
     EXPECT_STREQ("/api/v1/versions", m.path().c_str());
 }
 
-// B26: a host with a public IPv4 address on its NIC, which also has the IPv6 link-local address every
-// IPv6-enabled interface gets, is marked intranet: the link-local address is discovered last and
-// overwrites the NIC's flag, so the system summary API counts all its traffic as intranet.
-VOID TEST(ProtocolUtilityTest, DISABLED_PublicIpv4NicWithLinkLocalIpv6_MarkedIntranet)
+// A host with a public IPv4 address on its NIC, such as bare metal or a provider that puts the public
+// address on eth0, also has the IPv6 link-local address every IPv6-enabled interface gets. The NIC is
+// internet, so the system summary API counts its traffic as internet, not intranet.
+VOID TEST(ProtocolUtilityTest, PublicIpv4NicWithLinkLocalIpv6_MarkedInternet)
 {
     UtilityIfaceList ifs;
     ifs.add("lo", UTILITY_IFF_READY | IFF_LOOPBACK, "127.0.0.1");
@@ -1130,6 +1130,33 @@ VOID TEST(ProtocolUtilityTest, DISABLED_PublicIpv4NicWithLinkLocalIpv6_MarkedInt
     EXPECT_FALSE(scope.ips()[1]->is_internet_);
 
     EXPECT_TRUE(utility.is_internet("ens6"));
+}
+
+// A host whose NIC has a private IPv4 address and a public IPv6 one, with the link-local address listed
+// after the public one, as Linux lists them: the NIC is internet. Its Wi-Fi, with only a private IPv4
+// and a link-local address, stays intranet.
+VOID TEST(ProtocolUtilityTest, PublicIpv6NicWithLinkLocalListedLast_MarkedInternet)
+{
+    UtilityIfaceList ifs;
+    ifs.add("lo", UTILITY_IFF_READY | IFF_LOOPBACK, "127.0.0.1");
+    ifs.add("enp3s0", UTILITY_IFF_READY, "192.168.1.10");
+    ifs.add("wlan0", UTILITY_IFF_READY, "192.168.1.20");
+    ifs.add("enp3s0", UTILITY_IFF_READY, "2001:db8::20");
+    ifs.add("enp3s0", UTILITY_IFF_READY, "fe80::1");
+    ifs.add("wlan0", UTILITY_IFF_READY, "fe80::2");
+
+    SrsProtocolUtility utility;
+    UtilityLocalIpsScope scope;
+    srs_discover_local_ips(&utility, ifs.head(), scope.ips());
+
+    ASSERT_EQ(5, (int)scope.ips().size());
+    EXPECT_STREQ("2001:db8::20", scope.ips()[2]->ip_.c_str());
+    EXPECT_TRUE(scope.ips()[2]->is_internet_);
+    EXPECT_STREQ("fe80::1", scope.ips()[3]->ip_.c_str());
+    EXPECT_FALSE(scope.ips()[3]->is_internet_);
+
+    EXPECT_TRUE(utility.is_internet("enp3s0"));
+    EXPECT_FALSE(utility.is_internet("wlan0"));
 }
 
 // State Threads returns NULL when it cannot map the stack of a new coroutine, such as when the

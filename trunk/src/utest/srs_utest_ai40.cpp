@@ -1068,10 +1068,9 @@ VOID TEST(KernelKbpsTest, RtcStatsLineShowsTheRatesOfUdpClients)
 }
 
 // With WebRTC over TCP only, no UDP packet arrives, so no address gets a fast id; each TCP client still
-// finds its session by the STUN username, so the RTC stats line should show the id lookups. The check
-// joins the five rates with the comma operator instead of ||, so only the last one, the fast id
-// count, decides, and the fid group is missing.
-VOID TEST(KernelKbpsTest, DISABLED_RtcStatsLineWithTcpClientsOnly_FidGroupMissing)
+// finds its session by the STUN username, so the RTC stats line shows the fid group with the id
+// lookups, although the fast id count is 0.
+VOID TEST(KernelKbpsTest, RtcStatsLineWithTcpClientsOnly_FidGroupShown)
 {
     KbpsGlobalPpsScope scope(kbps_rtc_line_pps());
 

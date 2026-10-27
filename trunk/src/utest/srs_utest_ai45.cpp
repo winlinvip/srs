@@ -3837,10 +3837,10 @@ VOID TEST(AppRtspConnTest, NoCoroutineForPlayer_ConnectionEndsAfterPlayAnswer)
     EXPECT_TRUE(c.source_->consumers_.empty());
 }
 
-// A player that plays a stream gets each packet the stream gets, at once: the play does not merge writes. The player
-// waits for two packets, so the last packet the stream got waits for the next one: the end of each frame waits for
-// the next frame, and the last packet before the publisher pauses or stops is never sent (B56).
-VOID TEST(AppRtspConnTest, DISABLED_PlayerOfLonePacket_HeldUntilNextPacket)
+// A player that plays a stream gets each packet the stream gets, at once: the play does not merge writes. A lone
+// packet, such as the end of a frame or the last packet before the publisher pauses or stops, is sent without
+// waiting for the next one.
+VOID TEST(AppRtspConnTest, PlayerOfLonePacket_SentAtOnce)
 {
     srs_error_t err;
 

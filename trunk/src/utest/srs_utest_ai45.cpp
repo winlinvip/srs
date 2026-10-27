@@ -2635,10 +2635,10 @@ public:
         memcpy(msg.payload(), data, size);
         return source_->on_video(&msg);
     }
-    srs_error_t metadata(int64_t timestamp)
+    srs_error_t metadata(int64_t timestamp, int width = 768)
     {
         SrsOnMetaDataPacket meta;
-        meta.metadata_->set("width", SrsAmf0Any::number(768));
+        meta.metadata_->set("width", SrsAmf0Any::number(width));
         meta.metadata_->set("height", SrsAmf0Any::number(320));
         SrsRtmpCommonMessage msg;
         msg.header_.initialize_amf0_script(0, 1);
@@ -2875,9 +2875,8 @@ VOID TEST(AppRtmpSourceTest, RepublishSameVideoSequenceHeader_ReduceDropsIt)
 }
 
 // A player that waits for a stream, on a vhost with reduce_sequence_header. The encoder publishes and sends its first
-// metadata, which the player should get, as it gets the first sequence headers. The source drops every metadata for the
-// players once it has cached it, and it caches it just before the check, so the player never gets one.
-VOID TEST(AppRtmpSourceTest, DISABLED_PlayerWaitingBeforePublish_ReduceDropsFirstMetadata)
+// metadata, which the player gets, as it gets the first sequence headers.
+VOID TEST(AppRtmpSourceTest, PlayerWaitingBeforePublish_ReduceSendsFirstMetadata)
 {
     srs_error_t err;
 
@@ -2889,6 +2888,56 @@ VOID TEST(AppRtmpSourceTest, DISABLED_PlayerWaitingBeforePublish_ReduceDropsFirs
     HELPER_ASSERT_SUCCESS(s.metadata(0));
     HELPER_ASSERT_SUCCESS(s.start_av(0));
     EXPECT_STREQ("m0,V0,A0,v0", rtmp_source_utest_got(player).c_str());
+    s.source_->on_unpublish();
+}
+
+// An encoder that sends its metadata again, the same or changed, in a publish and at a republish, on a vhost with
+// reduce_sequence_header. A player that stays does not get the same one again, but gets a changed one, as with the
+// sequence headers. A player that joins later gets the cached one.
+VOID TEST(AppRtmpSourceTest, SameOrChangedMetadataAgain_ReduceDropsOnlySame)
+{
+    srs_error_t err;
+
+    RtmpSourceUtestStream s;
+    HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { reduce_sequence_header on; time_jitter off; } }"));
+    SrsLiveConsumer *player = s.play();
+
+    HELPER_ASSERT_SUCCESS(s.source_->on_publish());
+    HELPER_ASSERT_SUCCESS(s.metadata(0));
+    HELPER_ASSERT_SUCCESS(s.metadata(10));
+    EXPECT_STREQ("m0", rtmp_source_utest_got(player).c_str());
+
+    // The encoder changes its resolution.
+    HELPER_ASSERT_SUCCESS(s.metadata(20, 1280));
+    EXPECT_STREQ("m20", rtmp_source_utest_got(player).c_str());
+    s.source_->on_unpublish();
+
+    // The encoder republishes with the same metadata, then changes it back.
+    HELPER_ASSERT_SUCCESS(s.source_->on_publish());
+    HELPER_ASSERT_SUCCESS(s.metadata(100, 1280));
+    EXPECT_STREQ("", rtmp_source_utest_got(player).c_str());
+    SrsLiveConsumer *late = s.play();
+    EXPECT_STREQ("m100", rtmp_source_utest_got(late).c_str());
+
+    HELPER_ASSERT_SUCCESS(s.metadata(110));
+    EXPECT_STREQ("m110", rtmp_source_utest_got(player).c_str());
+    EXPECT_STREQ("m110", rtmp_source_utest_got(late).c_str());
+    s.source_->on_unpublish();
+}
+
+// Without reduce_sequence_header, a player gets each metadata the encoder sends, the same one too.
+VOID TEST(AppRtmpSourceTest, SameMetadataAgainWithoutReduce_Sent)
+{
+    srs_error_t err;
+
+    RtmpSourceUtestStream s;
+    HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
+    SrsLiveConsumer *player = s.play();
+
+    HELPER_ASSERT_SUCCESS(s.source_->on_publish());
+    HELPER_ASSERT_SUCCESS(s.metadata(0));
+    HELPER_ASSERT_SUCCESS(s.metadata(10));
+    EXPECT_STREQ("m0,m10", rtmp_source_utest_got(player).c_str());
     s.source_->on_unpublish();
 }
 

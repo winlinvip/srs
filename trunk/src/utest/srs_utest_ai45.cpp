@@ -700,10 +700,9 @@ VOID TEST(AppRtcSourceTest, WhipCutSps_SizeUnknownUntilWholeSps)
 }
 
 // A WHIP offer whose H.264 fmtp has a parameter besides the three SRS knows, such as sprop-parameter-sets (RFC 6184
-// section 8.1), whose base64 may end in '=': the publish negotiation takes the payload, as srs_parse_h264_fmtp skips
-// what it does not know, but set_h264_param_desc refuses the fmtp, and the negotiator drops the error without freeing
-// it, so each such publish leaks an error (B51).
-VOID TEST(AppRtcSourceTest, DISABLED_WhipH264FmtpWithSprop_ParamDescRefused)
+// section 8.1), whose base64 may end in '=': the payload takes the three known parameters and skips the rest, as
+// srs_parse_h264_fmtp does, so the publish negotiation gets no error to drop.
+VOID TEST(AppRtcSourceTest, WhipH264FmtpWithSprop_ParamDescAccepted)
 {
     srs_error_t err;
 
@@ -717,6 +716,8 @@ VOID TEST(AppRtcSourceTest, DISABLED_WhipH264FmtpWithSprop_ParamDescRefused)
     SrsVideoPayload payload(106, "H264", 90000);
     HELPER_EXPECT_SUCCESS(payload.set_h264_param_desc(fmtp));
     EXPECT_EQ("42e01f", payload.h264_param_.profile_level_id_);
+    EXPECT_EQ("1", payload.h264_param_.packetization_mode_);
+    EXPECT_EQ("1", payload.h264_param_.level_asymmetry_allow_);
 }
 
 #ifdef SRS_FFMPEG_FIT

@@ -2867,6 +2867,8 @@ SrsMediaPayloadType SrsVideoPayload::generate_media_payload_type_h265()
 }
 
 // level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f
+// Other parameters, such as sprop-parameter-sets, are skipped as srs_parse_h264_fmtp does.
+// See https://www.rfc-editor.org/rfc/rfc6184#section-8.1
 srs_error_t SrsVideoPayload::set_h264_param_desc(std::string fmtp)
 {
     srs_error_t err = srs_success;
@@ -2878,7 +2880,7 @@ srs_error_t SrsVideoPayload::set_h264_param_desc(std::string fmtp)
 
         std::vector<std::string> kv = split_str(attribute, "=");
         if (kv.size() != 2) {
-            return srs_error_new(ERROR_RTC_SDP_DECODE, "invalid h264 param=%s", attribute.c_str());
+            continue;
         }
 
         if (kv[0] == "profile-level-id") {
@@ -2895,8 +2897,6 @@ srs_error_t SrsVideoPayload::set_h264_param_desc(std::string fmtp)
             h264_param_.packetization_mode_ = kv[1];
         } else if (kv[0] == "level-asymmetry-allowed") {
             h264_param_.level_asymmetry_allow_ = kv[1];
-        } else {
-            return srs_error_new(ERROR_RTC_SDP_DECODE, "invalid h264 param=%s", kv[0].c_str());
         }
     }
 

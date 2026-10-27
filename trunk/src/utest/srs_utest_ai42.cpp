@@ -4522,9 +4522,8 @@ VOID TEST(AppEncoderTest, EngineRuns_EncoderLineLogged)
 }
 
 // full.conf says a vhost can hold several transcode sections, and the encoder looks for one of the vhost, one of the
-// app and one of the stream. But the config gives only the vhost's first transcode section, so a vhost transcoding
-// two apps transcodes only the first; the second app's streams are published with no transcode and no error.
-VOID TEST(AppEncoderTest, DISABLED_VhostWithTranscodeOfTwoApps_SecondAppNotTranscoded)
+// app and one of the stream. A vhost transcoding two apps transcodes the streams of the second app by its own section.
+VOID TEST(AppEncoderTest, VhostWithTranscodeOfTwoApps_SecondAppTranscoded)
 {
     srs_error_t err;
 
@@ -4535,6 +4534,40 @@ VOID TEST(AppEncoderTest, DISABLED_VhostWithTranscodeOfTwoApps_SecondAppNotTrans
 
     ASSERT_EQ(1, (int)s.encoder_->ffmpegs_.size());
     EXPECT_EQ("rtmp://127.0.0.1:1935/game/livestream_copy", s.encoder_->at(0)->output());
+}
+
+// The operator transcodes every stream of a vhost to SD, the streams of one app also to HD, and one stream of it also
+// to a copy, each in its own section. A stream of that app gets the engines of all three scopes, the vhost's first; a
+// stream of another app gets only the vhost's.
+VOID TEST(AppEncoderTest, VhostAppAndStreamTranscodes_StreamGetsEachScope)
+{
+    srs_error_t err;
+
+    string transcodes = "transcode { enabled on; " ENCODER_UTEST_FFMPEG
+                        "engine sd { enabled on; vcodec copy; acodec copy; output rtmp://127.0.0.1:[port]/[app]/[stream]_sd; } } "
+                        "transcode game { enabled on; " ENCODER_UTEST_FFMPEG
+                        "engine hd { enabled on; vcodec copy; acodec copy; output rtmp://127.0.0.1:[port]/[app]/[stream]_hd; } } "
+                        "transcode game/livestream { enabled on; " ENCODER_UTEST_FFMPEG ENCODER_UTEST_COPY "}";
+
+    if (true) {
+        EncoderUtestStream s("game");
+        s.factory_.coroutine_ = new MockCoroutineForForwarder(0);
+        HELPER_ASSERT_SUCCESS(s.publish(transcodes));
+
+        ASSERT_EQ(3, (int)s.encoder_->ffmpegs_.size());
+        EXPECT_EQ("rtmp://127.0.0.1:1935/game/livestream_sd", s.encoder_->at(0)->output());
+        EXPECT_EQ("rtmp://127.0.0.1:1935/game/livestream_hd", s.encoder_->at(1)->output());
+        EXPECT_EQ("rtmp://127.0.0.1:1935/game/livestream_copy", s.encoder_->at(2)->output());
+    }
+
+    if (true) {
+        EncoderUtestStream s("live");
+        s.factory_.coroutine_ = new MockCoroutineForForwarder(0);
+        HELPER_ASSERT_SUCCESS(s.publish(transcodes));
+
+        ASSERT_EQ(1, (int)s.encoder_->ffmpegs_.size());
+        EXPECT_EQ("rtmp://127.0.0.1:1935/live/livestream_sd", s.encoder_->at(0)->output());
+    }
 }
 
 // The edge's pull for its first player, made as the server makes it: the ingester asks the server's app factory for the

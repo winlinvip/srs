@@ -4399,25 +4399,30 @@ VOID TEST(AppEncoderTest, OneEngineTurnedOff_OnlyOtherEngineRuns)
 }
 
 // An engine of the app's transcode re-encodes video with no profile, or names no vcodec, as an audio-only engine
-// would: FFmpeg can not run it, so the publish is refused. The copy engine made before it is freed and forgotten by
-// the unpublish that follows a refused publish.
+// would: FFmpeg can not run it, so the publish is refused, for the missing profile or the missing vcodec. The copy
+// engine made before it is freed and forgotten by the unpublish that follows a refused publish.
 VOID TEST(AppEncoderTest, AppEngineWithoutVideoProfile_PublishRefused)
 {
-    const char *engines[] = {
-        "engine hd { enabled on; vcodec libx264; vbitrate 800; acodec copy; output rtmp://127.0.0.1:[port]/[app]/[stream]_hd; }",
-        "engine aac { enabled on; acodec libfdk_aac; abitrate 45; output rtmp://127.0.0.1:[port]/[app]/[stream]_aac; }",
+    struct {
+        const char *engine;
+        int code;
+    } cases[] = {
+        {"engine hd { enabled on; vcodec libx264; vbitrate 800; acodec copy; output rtmp://127.0.0.1:[port]/[app]/[stream]_hd; }",
+         ERROR_ENCODER_VPROFILE},
+        {"engine aac { enabled on; acodec libfdk_aac; abitrate 45; output rtmp://127.0.0.1:[port]/[app]/[stream]_aac; }",
+         ERROR_ENCODER_VCODEC},
     };
 
-    for (int i = 0; i < (int)(sizeof(engines) / sizeof(engines[0])); i++) {
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
         EncoderUtestStream s("live");
-        srs_error_t err = s.publish(string("transcode live { enabled on; " ENCODER_UTEST_FFMPEG ENCODER_UTEST_COPY) + engines[i] + " }");
-        EXPECT_EQ(ERROR_ENCODER_VPROFILE, srs_error_code(err)) << engines[i];
+        srs_error_t err = s.publish(string("transcode live { enabled on; " ENCODER_UTEST_FFMPEG ENCODER_UTEST_COPY) + cases[i].engine + " }");
+        EXPECT_EQ(cases[i].code, srs_error_code(err)) << cases[i].engine;
         srs_freep(err);
-        EXPECT_EQ(0, s.factory_.coroutines_) << engines[i];
+        EXPECT_EQ(0, s.factory_.coroutines_) << cases[i].engine;
 
         s.encoder_->on_unpublish();
-        EXPECT_TRUE(s.encoder_->ffmpegs_.empty()) << engines[i];
-        EXPECT_TRUE(s.transcoded_urls_.empty()) << engines[i];
+        EXPECT_TRUE(s.encoder_->ffmpegs_.empty()) << cases[i].engine;
+        EXPECT_TRUE(s.transcoded_urls_.empty()) << cases[i].engine;
     }
 }
 
@@ -4767,10 +4772,9 @@ VOID TEST(AppFfmpegTest, AppEngineWithSurroundOrNegativeAudio_PublishRefused)
     }
 }
 
-// The engine check says the vcodec must be H.264 or H.265, but it refuses only a vcodec naming all of 264, 265 and
-// hevc at once, so an engine re-encoding to VP8 (libvpx) is accepted. FFmpeg can not put VP8 in the FLV of the RTMP
-// output and fails at each start, and the encoder retries it every 3s with no transcoded stream.
-VOID TEST(AppFfmpegTest, DISABLED_AppEngineWithVp8Vcodec_Accepted)
+// An engine of the app's transcode re-encodes video to VP8 (libvpx). FFmpeg can not put VP8 in the FLV of the RTMP
+// output and would fail at each start, so the publish refuses the engine: the vcodec must be H.264 or H.265.
+VOID TEST(AppFfmpegTest, AppEngineWithVp8Vcodec_Refused)
 {
     EncoderUtestStream s("live");
     s.factory_.coroutine_ = new MockCoroutineForForwarder(0);
@@ -4779,6 +4783,36 @@ VOID TEST(AppFfmpegTest, DISABLED_AppEngineWithVp8Vcodec_Accepted)
                                "    acodec copy; output rtmp://127.0.0.1:[port]/[app]/[stream]_vp8; } }");
     EXPECT_EQ(ERROR_ENCODER_VCODEC, srs_error_code(err)) << srs_error_desc(err);
     srs_freep(err);
+    EXPECT_EQ(0, s.factory_.coroutines_);
+}
+
+// Operators name the FFmpeg encoder of their host: a software, NVIDIA or Apple H.264 or H.265 encoder is accepted. A
+// VP9 or AV1 encoder is refused, as SRS takes only H.264 and H.265 (hvc1) video over RTMP.
+VOID TEST(AppFfmpegTest, AppEngineVcodecOfEachEncoder_OnlyH264AndH265Accepted)
+{
+    struct {
+        const char *vcodec;
+        int code;
+    } cases[] = {
+        {"libx264", ERROR_SUCCESS},
+        {"h264_nvenc", ERROR_SUCCESS},
+        {"libx265", ERROR_SUCCESS},
+        {"hevc_videotoolbox", ERROR_SUCCESS},
+        {"libvpx-vp9", ERROR_ENCODER_VCODEC},
+        {"libaom-av1", ERROR_ENCODER_VCODEC},
+        {"libsvtav1", ERROR_ENCODER_VCODEC},
+    };
+
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
+        EncoderUtestStream s("live");
+        s.factory_.coroutine_ = new MockCoroutineForForwarder(0);
+        srs_error_t err = s.publish(string("transcode live { enabled on; " ENCODER_UTEST_FFMPEG "engine hd { enabled on; vcodec ") +
+                                    cases[i].vcodec + "; vbitrate 800; vprofile main; vpreset medium;"
+                                                      "    acodec copy; output rtmp://127.0.0.1:[port]/[app]/[stream]_hd; } }");
+        EXPECT_EQ(cases[i].code, srs_error_code(err)) << cases[i].vcodec << ", " << srs_error_desc(err);
+        srs_freep(err);
+        EXPECT_EQ(cases[i].code == ERROR_SUCCESS ? 1 : 0, (int)s.encoder_->ffmpegs_.size()) << cases[i].vcodec;
+    }
 }
 
 // An engine of the app's transcode re-encodes video and names no acodec. The encoder accepts it, and FFmpeg gets

@@ -276,8 +276,9 @@ srs_error_t SrsSrtConsumer::enqueue(SrsSrtPacket *packet)
 
     queue_.push_back(packet);
 
+    // Wake the player when the queue holds the messages it waits for, as wait() checks.
     if (mw_waiting_) {
-        if ((int)queue_.size() > mw_min_msgs_) {
+        if ((int)queue_.size() >= mw_min_msgs_) {
             srs_cond_signal(mw_wait_);
             mw_waiting_ = false;
             return err;

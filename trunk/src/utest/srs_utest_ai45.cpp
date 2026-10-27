@@ -5518,11 +5518,9 @@ VOID TEST(AppSrtConnTest, PlayerTransportStatsLogged)
     c.encoder_unpublishes();
 }
 
-// An SRT player waiting for packets gets a lone message only when the next one comes, or when its wait of
-// `peer_idle_timeout` (10s by default) ends: SrsSrtConsumer::enqueue wakes the player only when it holds more than
-// one packet, while the player waits for one. The last message before the encoder pauses is held. The expected
-// behavior is that the player gets each message when it comes.
-VOID TEST(AppSrtConnTest, DISABLED_PlayerOfLoneMessage_HeldUntilNextOrTimeout)
+// An SRT player waiting for packets gets a lone message as soon as it comes, not when the next one comes or its
+// wait of `peer_idle_timeout` (10s by default) ends: the last message before the encoder pauses is not held.
+VOID TEST(AppSrtConnTest, PlayerOfLoneMessage_SentAtOnce)
 {
     srs_error_t err;
 

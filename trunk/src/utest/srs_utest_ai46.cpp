@@ -999,9 +999,9 @@ VOID TEST(AppSrtSourceTest, KeyFrameWithCutSps_VideoReportedFromNextKeyFrame)
     EXPECT_EQ(240, s.api_stream()->height_);
 }
 
-// As above, but with a P frame between the key frame of the cut SPS and the next key frame, as in any GOP. The stream API
-// should get 320x240 from the next key frame.
-VOID TEST(AppSrtSourceTest, DISABLED_KeyFrameWithCutSpsThenPFrame_VideoReportedAs0x0)
+// As above, but with a P frame between the key frame of the cut SPS and the next key frame, as in any GOP. The P frame
+// reports nothing, and the stream API gets 320x240 from the next key frame.
+VOID TEST(AppSrtSourceTest, KeyFrameWithCutSpsThenPFrame_VideoReportedFromNextKeyFrame)
 {
     srs_error_t err;
 
@@ -1012,8 +1012,12 @@ VOID TEST(AppSrtSourceTest, DISABLED_KeyFrameWithCutSpsThenPFrame_VideoReportedA
                  srt_source_utest_nalu(srt_source_utest_idr, sizeof(srt_source_utest_idr));
     HELPER_ASSERT_SUCCESS(s.video(90000, 90000, cut));
     HELPER_ASSERT_SUCCESS(s.video(93600, 93600, srt_source_utest_h264_p()));
+    HELPER_ASSERT_SUCCESS(s.send());
+    EXPECT_FALSE(s.format()->video_codec_reported_);
+
     HELPER_ASSERT_SUCCESS(s.video(97200, 97200, srt_source_utest_h264_key()));
     HELPER_ASSERT_SUCCESS(s.send());
+    EXPECT_TRUE(s.format()->video_codec_reported_);
 
     ASSERT_TRUE(s.api_stream() != NULL);
     EXPECT_EQ(320, s.api_stream()->width_);

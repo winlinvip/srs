@@ -1080,11 +1080,14 @@ srs_error_t SrsSrtFormat::on_ts_message(SrsTsMessage *msg)
             return err;
         }
 
-        if ((err = parse_video_codec(msg)) != srs_success) {
+        // A codec left by an earlier message whose SPS failed to parse has no size, so report only the codec this
+        // message parsed.
+        bool parsed = false;
+        if ((err = parse_video_codec(msg, parsed)) != srs_success) {
             return srs_error_wrap(err, "parse video codec");
         }
 
-        if (format_->vcodec_) {
+        if (parsed && format_->vcodec_) {
             video_codec_reported_ = true;
 
             SrsVideoCodecConfig *c = format_->vcodec_;
@@ -1128,7 +1131,7 @@ srs_error_t SrsSrtFormat::on_ts_message(SrsTsMessage *msg)
     return err;
 }
 
-srs_error_t SrsSrtFormat::parse_video_codec(SrsTsMessage *msg)
+srs_error_t SrsSrtFormat::parse_video_codec(SrsTsMessage *msg, bool &parsed)
 {
     srs_error_t err = srs_success;
 
@@ -1199,6 +1202,7 @@ srs_error_t SrsSrtFormat::parse_video_codec(SrsTsMessage *msg)
             if ((err = format_->on_video(&frame)) != srs_success) {
                 return srs_error_wrap(err, "format parse video");
             }
+            parsed = true;
 
             return err;
         }

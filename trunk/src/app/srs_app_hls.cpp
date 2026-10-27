@@ -1156,12 +1156,13 @@ srs_error_t SrsHlsFmp4Muxer::refresh_m3u8()
         }
     }
 
-    // remove the temp file.
+    // remove the temp file, and keep the error of the write or rename.
     SrsUniquePtr<SrsPath> path(app_factory_->create_path());
     if (path->exists(temp_m3u8)) {
-        if ((err = path->unlink(temp_m3u8)) != srs_success) {
-            srs_warn("refresh: ignore remove m3u8 failed, %s", srs_error_desc(err).c_str());
-            srs_freep(err);
+        srs_error_t r0 = path->unlink(temp_m3u8);
+        if (r0 != srs_success) {
+            srs_warn("refresh: ignore remove m3u8 failed, %s", srs_error_desc(r0).c_str());
+            srs_freep(r0);
         }
     }
 
@@ -2098,12 +2099,13 @@ srs_error_t SrsHlsMuxer::refresh_m3u8()
         }
     }
 
-    // remove the temp file.
+    // remove the temp file, and keep the error of the write or rename.
     SrsUniquePtr<SrsPath> path(app_factory_->create_path());
     if (path->exists(temp_m3u8)) {
-        if ((err = path->unlink(temp_m3u8)) != srs_success) {
-            srs_warn("refresh: ignore remove m3u8 failed, %s", srs_error_desc(err).c_str());
-            srs_freep(err);
+        srs_error_t r0 = path->unlink(temp_m3u8);
+        if (r0 != srs_success) {
+            srs_warn("refresh: ignore remove m3u8 failed, %s", srs_error_desc(r0).c_str());
+            srs_freep(r0);
         }
     }
 

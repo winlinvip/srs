@@ -1679,8 +1679,8 @@ VOID TEST(AppHlsTest, ReadOnlyVolumeMidStream_PlaylistKeepsEarlierSegments)
     EXPECT_TRUE(s.exists("livestream-1.ts"));
 }
 
-// The disk fills while a publisher streams, right before a key frame. The segment is finished, but neither the
-// playlist nor the next segment can be written, so the frame fails and the hub stops HLS for the stream; no playlist
+// The disk fills while a publisher streams, right before a key frame. The segment is finished, but the playlist can
+// not be written, so the frame fails with the playlist's write error and the hub stops HLS for the stream; no playlist
 // lists a segment, and the unpublish leaves no temporary file.
 VOID TEST(AppHlsTest, DiskFullAtKeyFrame_PlaylistNotWritten)
 {
@@ -1696,6 +1696,7 @@ VOID TEST(AppHlsTest, DiskFullAtKeyFrame_PlaylistNotWritten)
     err = s.video(1000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
     EXPECT_EQ(ERROR_SYSTEM_FILE_WRITE, srs_error_code(err));
     EXPECT_NE(string::npos, srs_error_desc(err).find("hls: reap segment")) << srs_error_desc(err);
+    EXPECT_NE(string::npos, srs_error_desc(err).find("hls: refresh m3u8")) << srs_error_desc(err);
     srs_freep(err);
 
     s.hls_->on_unpublish();
@@ -1774,9 +1775,10 @@ VOID TEST(AppHlsTest, CleanupJobDeletesStreamDir_SegmentNotListed)
 #endif
 
 // The operator names the playlist as the dir of the segments, such as hls_m3u8_file [app]/[stream] with hls_ts_file
-// [app]/[stream]/[seq].ts. The playlist can not be renamed over the dir, so the segment close should fail and the hub
-// stop HLS for the stream; the rename error is lost instead, and the stream goes on with no playlist and no warning.
-VOID TEST(AppHlsTest, DISABLED_PlaylistNamedAsSegmentDir_RenameErrorLost)
+// [app]/[stream]/[seq].ts. The playlist can not be renamed over the dir, so the key frame that ends the first segment
+// fails with the rename error and the hub stops HLS for the stream, rather than go on with no playlist; the temporary
+// playlist is removed. For TS and for fMP4.
+VOID TEST(AppHlsTest, PlaylistNamedAsSegmentDir_RenameErrorReturned)
 {
     srs_error_t err;
 
@@ -1786,12 +1788,12 @@ VOID TEST(AppHlsTest, DISABLED_PlaylistNamedAsSegmentDir_RenameErrorLost)
         HlsUtestStream s("ai43-hls-m3u8-dir");
         HELPER_ASSERT_SUCCESS(s.publish(options[i]));
         HELPER_ASSERT_SUCCESS(s.sequence_headers());
-        HELPER_ASSERT_SUCCESS(s.av(0, 900));
 
-        err = s.video(1000, flv_utest_avc_idr, sizeof(flv_utest_avc_idr));
+        err = s.av(0, 2000);
         EXPECT_EQ(ERROR_HLS_WRITE_FAILED, srs_error_code(err)) << options[i];
         EXPECT_NE(string::npos, srs_error_desc(err).find("rename m3u8 file failed")) << srs_error_desc(err);
         srs_freep(err);
+        EXPECT_FALSE(s.exists("livestream.temp")) << options[i];
     }
 }
 

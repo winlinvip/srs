@@ -397,7 +397,12 @@ srs_error_t SrsHttpMessage::set_url(string url, bool allow_jsonp)
     // parse uri from schema/server:port/path?query
     std::string uri = url_;
 
-    if (!srs_strings_contains(uri, "://")) {
+    // Only a schema before any path or query makes an absolute URL. A query may hold a URL too,
+    // such as the WHEP player page's ?url=http://host:1985/rtc/v1/whep/.
+    size_t schema_end = uri.find("://");
+    bool has_schema = schema_end != std::string::npos && schema_end < uri.find_first_of("/?");
+
+    if (!has_schema) {
         // use server public ip when host not specified.
         // to make telnet happy.
         std::string host = header_.get("Host");

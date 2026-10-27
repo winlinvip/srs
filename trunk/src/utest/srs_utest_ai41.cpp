@@ -1316,7 +1316,7 @@ VOID TEST(ProtocolHttpConnTest, ServerWideOptionsAsterisk_UrlBuiltFromHost)
 // "?url=xxx to set the whole WHIP/WHEP url directly" (research/players/js/srs.page.js) asks:
 // players/whep.html?url=http://host:1985/rtc/v1/whep/?app=live&stream=livestream. Browsers send
 // ':' and '/' of a query as they are, so the server must still serve the page's path.
-VOID TEST(ProtocolHttpConnTest, DISABLED_WhepPageWithEndpointUrlInQuery_ServesQueryPath)
+VOID TEST(ProtocolHttpConnTest, WhepPageWithEndpointUrlInQuery_ServesPagePath)
 {
     srs_error_t err = srs_success;
 
@@ -1332,7 +1332,45 @@ VOID TEST(ProtocolHttpConnTest, DISABLED_WhepPageWithEndpointUrlInQuery_ServesQu
     EXPECT_STREQ(".html", msg->ext().c_str());
     EXPECT_STREQ("192.168.1.10", msg->host().c_str());
     EXPECT_EQ(8080, msg->port());
-    EXPECT_STREQ("http://192.168.1.10:1985/rtc/v1/whep/?app=live", msg->query_get("url").c_str());
+    EXPECT_STREQ("url=http://192.168.1.10:1985/rtc/v1/whep/?app=live&stream=livestream", msg->query().c_str());
+}
+
+// A user types the WHEP page with only the start of an endpoint in its query, such as
+// ?url=http://, which once failed the request because the query was parsed as the target.
+VOID TEST(ProtocolHttpConnTest, WhepPageWithQueryEndingInSchema_ServesPagePath)
+{
+    srs_error_t err = srs_success;
+
+    MockBufferIO io;
+    io.append("GET /players/whep.html?url=http:// HTTP/1.1\r\nHost: 192.168.1.10:8080\r\n\r\n");
+    SrsHttpParser hp;
+    SrsHttpMessage *msg_raw = NULL;
+    HELPER_ASSERT_SUCCESS(http_conn_parse(&hp, &io, HTTP_REQUEST, false, &msg_raw));
+    SrsUniquePtr<SrsHttpMessage> msg(msg_raw);
+
+    EXPECT_STREQ("/players/whep.html", msg->path().c_str());
+    EXPECT_EQ(8080, msg->port());
+    EXPECT_STREQ("http://", msg->query_get("url").c_str());
+}
+
+// A client sends the absolute form of the request target, as HTTP/1.1 lets a client do toward
+// a proxy; with a URL in its query too, the target's own host, port and path still win.
+VOID TEST(ProtocolHttpConnTest, AbsoluteTargetWithUrlInQuery_RoutedByTarget)
+{
+    srs_error_t err = srs_success;
+
+    MockBufferIO io;
+    io.append("GET http://192.168.1.10:1985/api/v1/versions?next=http://example.com/x HTTP/1.1\r\n"
+              "Host: 192.168.1.10:8080\r\n\r\n");
+    SrsHttpParser hp;
+    SrsHttpMessage *msg_raw = NULL;
+    HELPER_ASSERT_SUCCESS(http_conn_parse(&hp, &io, HTTP_REQUEST, false, &msg_raw));
+    SrsUniquePtr<SrsHttpMessage> msg(msg_raw);
+
+    EXPECT_STREQ("/api/v1/versions", msg->path().c_str());
+    EXPECT_STREQ("192.168.1.10", msg->host().c_str());
+    EXPECT_EQ(1985, msg->port());
+    EXPECT_STREQ("http://example.com/x", msg->query_get("next").c_str());
 }
 
 // A hook backend answers a callback with an empty body and "Content-Length: 0", as many web

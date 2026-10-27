@@ -1932,10 +1932,11 @@ srs_error_t SrsRtcFrameBuilder::initialize(ISrsRequest *r, SrsAudioCodecId audio
     video_codec_ = video_codec;
     last_video_sequence_header_.clear();
 
-    // There is no G.711 decoder to transcode it to AAC, so the stream is converted without its audio,
-    // while WebRTC players still get the stream as it was published.
+    // The audio transcoder decodes only Opus, AAC and MP3. For other codecs, such as G.711, G.722 or Speex, there is
+    // no decoder to transcode it to AAC, so the stream is converted without its audio, while WebRTC players still get
+    // the stream as it was published.
     // TODO: FIXME: Add a G.711 transcoder to convert PCMU and PCMA to AAC for RTMP.
-    if (audio_codec == SrsAudioCodecIdPCMU || audio_codec == SrsAudioCodecIdPCMA) {
+    if (audio_codec != SrsAudioCodecIdOpus && audio_codec != SrsAudioCodecIdAAC && audio_codec != SrsAudioCodecIdMP3) {
         srs_trace("RTC: %s audio is not converted to RTMP, only the video", srs_audio_codec_id2str(audio_codec).c_str());
         return err;
     }

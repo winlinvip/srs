@@ -3020,21 +3020,34 @@ VOID TEST(AppRtcCodecTest, RtmpCorruptAacFrame_DecoderErrorLoggedThenRecovers)
     EXPECT_GT(opus_after, 15);
 }
 
-// A WHIP client that asks for G.722 audio with `?acodec=G722`, as Chrome offers it, publishing to a vhost with
-// `rtc_to_rtmp on`: there is no transcoder from G.722, as from G.711, so the stream should be converted to RTMP
-// without its audio while WebRTC players still get it. The frame builder instead fails, as the transcoder finds no
-// decoder for the codec, so the source refuses the publish after DTLS (B47).
-VOID TEST(AppRtcCodecTest, DISABLED_WhipG722WithRtcToRtmp_PublishRefused)
+extern SrsRtpPacket *create_mock_rtp_packet(bool is_audio, int64_t avsync_time, uint32_t ssrc, uint16_t seq, uint32_t ts);
+
+// A WHIP client that asks for G.722 or Speex audio with `?acodec=`, as Chrome offers G.722, publishing to a vhost
+// with `rtc_to_rtmp on`: there is no decoder to transcode the audio to AAC, as for G.711, so the stream is converted
+// to RTMP without its audio while WebRTC players still get it, and the publish is not refused.
+VOID TEST(AppRtcCodecTest, WhipG722WithRtcToRtmp_ConvertedWithoutAudio)
 {
     srs_error_t err = srs_success;
 
-    MockRtcFrameTarget target;
-    SrsRtcFrameBuilder builder(_srs_app_factory, &target);
-    MockRequest req("__defaultVhost__", "live", "livestream");
+    // The SDP's track codec names G722 and SPEEX, which map to codecs with no decoder.
+    std::string names[] = {"G722", "SPEEX"};
+    for (int i = 0; i < 2; i++) {
+        MockRtcFrameTarget target;
+        SrsRtcFrameBuilder builder(_srs_app_factory, &target);
+        MockRequest req("__defaultVhost__", "live", "livestream");
 
-    // The SDP's track codec name G722 maps to no SRS audio codec.
-    SrsAudioCodecId g722 = srs_audio_codec_str2id("G722");
-    HELPER_EXPECT_SUCCESS(builder.initialize(&req, g722, SrsVideoCodecIdAVC));
+        SrsAudioCodecId codec = srs_audio_codec_str2id(names[i]);
+        HELPER_EXPECT_SUCCESS(builder.initialize(&req, codec, SrsVideoCodecIdAVC));
+        EXPECT_TRUE(builder.audio_transcoder_ == NULL);
+        HELPER_EXPECT_SUCCESS(builder.on_publish());
+
+        // The audio packets are dropped, with no AAC sequence header and no frame.
+        for (int j = 0; j < 5; j++) {
+            SrsUniquePtr<SrsRtpPacket> pkt(create_mock_rtp_packet(true, 1000 + j * 20, 11111, 100 + j, 8000 + j * 160));
+            HELPER_EXPECT_SUCCESS(builder.on_rtp(pkt.get()));
+        }
+        EXPECT_EQ(0, target.on_frame_count_);
+    }
 }
 #endif
 

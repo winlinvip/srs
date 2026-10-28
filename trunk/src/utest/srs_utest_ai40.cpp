@@ -4161,6 +4161,49 @@ VOID TEST(KernelRtcRtpTest, RtpExtensionLengthBeyondPacket_Refused)
     }
 }
 
+// A WebRTC publisher's RTP packet has a 0xBEDE block of 1 word whose element, an ID not in the SDP's extmap, declares
+// 16 bytes. The element is longer than its block, so the packet is refused with an error, as other malformed packets
+// are, and the server goes on; an element that ends exactly at the block end is still skipped and the packet accepted.
+VOID TEST(KernelRtcRtpTest, RtpExtensionElementBeyondBlock_Refused)
+{
+    srs_error_t err = srs_success;
+
+    SrsRtpExtensionTypes types;
+    EXPECT_TRUE(types.register_by_uri(5, kTWCCExt));
+
+    // Fixed header with X=1, then profile 0xBEDE, 1 word of extension and the payload after it.
+    string fixed;
+    fixed.push_back((char)0x90); // V=2, X=1, CC=0
+    fixed.push_back((char)0x60); // PT=96
+    fixed += rtcp_be16(0x2233);
+    fixed += rtcp_be32(0);
+    fixed += rtcp_be32(0x0a0b0c0d);
+    fixed += rtcp_be16(0xBEDE) + rtcp_be16(1);
+    string payload("\x01\x02\x03\x04", 4);
+
+    // ID 1, len 15+1: 17 bytes for the element in a 4-byte block.
+    if (true) {
+        string w = fixed + string("\x1F\x00\x00\x00", 4) + payload;
+        SrsRtpHeader dst;
+        dst.set_extensions(&types);
+        SrsBuffer dbuf((char *)w.data(), (int)w.size());
+        err = dst.decode(&dbuf);
+        EXPECT_EQ(ERROR_RTC_RTP_MUXER, srs_error_code(err));
+        srs_freep(err);
+    }
+
+    // ID 1, len 2+1: the element ends at the block end, the payload follows.
+    if (true) {
+        string w = fixed + string("\x12\xaa\xbb\xcc", 4) + payload;
+        SrsRtpHeader dst;
+        dst.set_extensions(&types);
+        SrsBuffer dbuf((char *)w.data(), (int)w.size());
+        HELPER_EXPECT_SUCCESS(dst.decode(&dbuf));
+        EXPECT_EQ(4, dbuf.left());
+        EXPECT_EQ(0x01, (uint8_t)*dbuf.head());
+    }
+}
+
 // The RTMP-to-WebRTC packetizer builds a STAP-A of SPS and PPS before an IDR, and the publisher parser reads a STAP-A.
 // The payload round-trips, and get_sps, get_pps and get_idr find each NALU; a zero-length NALU entry is skipped.
 VOID TEST(KernelRtcRtpTest, StapAPayloadRoundTripAndGetters)

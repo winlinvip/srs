@@ -893,7 +893,7 @@ public:
     virtual srs_error_t on_publish();
     virtual srs_error_t on_publish_by(SrsStreamProtocol publisher);
     virtual srs_error_t on_edge_start_publish();
-    virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg);
+    virtual srs_error_t consumer_dumps(ISrsMediaConsumer *consumer, bool ds, bool dm, bool dg);
 
 public:
     virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio);
@@ -1304,7 +1304,7 @@ class MockBufferCache : public ISrsBufferCache
 {
 public:
     int dump_cache_count_;
-    ISrsRtmpConsumer *last_consumer_;
+    ISrsMediaConsumer *last_consumer_;
     SrsRtmpJitterAlgorithm last_jitter_;
 
 public:
@@ -1313,7 +1313,7 @@ public:
     virtual srs_error_t start();
     virtual void stop();
     virtual bool alive();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
     virtual srs_error_t update_auth(ISrsRequest *r);
 };
 

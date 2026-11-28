@@ -24,6 +24,7 @@
 #include <srs_utest_workflow_http_conn.hpp>
 
 #include <srs_app_http_conn.hpp>
+#include <srs_app_http_source.hpp>
 #include <srs_app_http_stream.hpp>
 #include <srs_protocol_conn.hpp>
 #include <srs_protocol_http_conn.hpp>
@@ -33,6 +34,7 @@
 #include <srs_utest_ai15.hpp>
 #include <srs_utest_ai16.hpp>
 #include <srs_utest_ai19.hpp>
+#include <srs_utest_ai54.hpp>
 #include <srs_utest_manual_http.hpp>
 #include <srs_utest_manual_mock.hpp>
 #include <srs_utest_manual_service.hpp>
@@ -179,6 +181,8 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
     // Create mock dependencies
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockRtmpSourceManager> mock_rtmp_sources(new MockRtmpSourceManager());
+    SrsHttpSourceManager http_sources;
+    MockHttpSourceHandler http_handler;
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockResponseWriter> mock_writer(new MockResponseWriter());
@@ -196,10 +200,11 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
     // Inject mock dependencies into SrsLiveStream private fields
     live_stream->config_ = mock_config.get();
     live_stream->rtmp_sources_ = mock_rtmp_sources.get();
+    live_stream->http_sources_ = &http_sources;
     live_stream->stat_ = mock_stat.get();
     live_stream->hooks_ = mock_hooks.get();
 
-    // Do not wait for utest, consume messages immediately. Remove this when HTTP stream use cond signal.
+    // Do not wait for utest), consume messages immediately. Remove this when HTTP stream use cond signal.
     mock_config->mw_sleep_ = 100; // 0.1ms
 
     mock_entry->enabled = true;
@@ -237,10 +242,18 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
     // Wait for coroutine to start
     srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
-    // Verify that RTMP source has a consumer
+    // The player made the HTTP source of its stream. The RTMP source publishes and feeds it, as with http_remux on.
+    ASSERT_EQ(1, (int)http_sources.pool_.size());
+    SrsSharedPtr<SrsHttpSource> http_source = http_sources.pool_.begin()->second;
+    http_source->config_ = mock_config.get();
+    http_source->handler_ = &http_handler;
+    HELPER_EXPECT_SUCCESS(http_source->on_publish());
     MockRtmpSource *mock_source = dynamic_cast<MockRtmpSource *>(mock_rtmp_sources->mock_source_.get());
-    EXPECT_EQ(1, (int)mock_source->consumers_.size());
-    EXPECT_EQ(1, mock_source->on_dump_packets_count_);
+    mock_source->http_target_ = http_source;
+
+    // Verify that the HTTP source has a consumer, and the RTMP source counts the player.
+    EXPECT_EQ(1, (int)http_source->consumers_.size());
+    EXPECT_EQ(1, mock_source->nb_http_players_);
 
     // Feed SSL a message to cover the http recv thread.
     if (true) {
@@ -350,6 +363,7 @@ VOID TEST(ReproduceIssue4621, PreserveForwardedIpForHttpFlvClient)
 
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockRtmpSourceManager> mock_rtmp_sources(new MockRtmpSourceManager());
+    SrsHttpSourceManager http_sources;
     SrsUniquePtr<MockIssue4621Statistic> mock_stat(new MockIssue4621Statistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockResponseWriter> mock_writer(new MockResponseWriter());
@@ -364,6 +378,7 @@ VOID TEST(ReproduceIssue4621, PreserveForwardedIpForHttpFlvClient)
 
     live_stream->config_ = mock_config.get();
     live_stream->rtmp_sources_ = mock_rtmp_sources.get();
+    live_stream->http_sources_ = &http_sources;
     live_stream->stat_ = mock_stat.get();
     live_stream->hooks_ = mock_hooks.get();
     mock_entry->enabled = true;

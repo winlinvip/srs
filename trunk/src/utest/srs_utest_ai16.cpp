@@ -10,6 +10,7 @@ using namespace std;
 #include <srs_app_config.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_hooks.hpp>
+#include <srs_app_http_source.hpp>
 #include <srs_app_http_static.hpp>
 #include <srs_app_http_stream.hpp>
 #include <srs_app_rtmp_source.hpp>
@@ -2045,7 +2046,7 @@ bool MockBufferCacheForDestroy::alive()
     return alive_;
 }
 
-srs_error_t MockBufferCacheForDestroy::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t MockBufferCacheForDestroy::dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     return srs_success;
 }
@@ -2099,7 +2100,7 @@ bool MockBufferEncoderForStreamingSend::has_cache()
     return false;
 }
 
-srs_error_t MockBufferEncoderForStreamingSend::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t MockBufferEncoderForStreamingSend::dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     return srs_success;
 }
@@ -2228,12 +2229,14 @@ VOID TEST(SrsLiveStreamTest, DoServeHttpFlvWithEntryOff)
     SrsUniquePtr<MockHttpMessageForLiveStream> mock_message(new MockHttpMessageForLiveStream());
     MockResponseWriter mock_writer;
 
-    // Create mock RTMP source and consumer
+    // Create the HTTP source and a mock consumer
     SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
     SrsUniquePtr<MockRtmpConsumerForQueue> mock_consumer(new MockRtmpConsumerForQueue(mock_source.get()));
+    SrsUniquePtr<SrsHttpSource> http_source(new SrsHttpSource());
+    HELPER_EXPECT_SUCCESS(http_source->initialize(mock_request.get()));
 
     // Call do_serve_http - should initialize FLV encoder, write header, and exit immediately
-    err = live_stream->do_serve_http(mock_source.get(), mock_consumer.get(), &mock_writer, mock_message.get());
+    err = live_stream->do_serve_http(http_source.get(), mock_consumer.get(), &mock_writer, mock_message.get());
 
     // Verify that the method returns ERROR_HTTP_STREAM_EOF
     // The while loop should exit immediately because entry_->enabled is false,
@@ -2275,9 +2278,11 @@ VOID TEST(SrsLiveStreamTest, DoServeHttpEndsAtOnceWhenConnInterrupted)
 
     SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
     SrsUniquePtr<MockRtmpConsumerForQueue> mock_consumer(new MockRtmpConsumerForQueue(mock_source.get()));
+    SrsUniquePtr<SrsHttpSource> http_source(new SrsHttpSource());
+    HELPER_EXPECT_SUCCESS(http_source->initialize(mock_request.get()));
 
     srs_utime_t starttime = srs_time_now_realtime();
-    err = live_stream->do_serve_http(mock_source.get(), mock_consumer.get(), &mock_writer, mock_message.get());
+    err = live_stream->do_serve_http(http_source.get(), mock_consumer.get(), &mock_writer, mock_message.get());
     srs_utime_t elapsed = srs_time_now_realtime() - starttime;
 
     EXPECT_TRUE(err != srs_success);

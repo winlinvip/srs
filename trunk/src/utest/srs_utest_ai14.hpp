@@ -54,7 +54,7 @@ public:
     virtual void on_consumer_destroy(SrsRtmpConsumer *consumer);
     virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> wrapper, ISrsRequest *r);
     virtual void update_auth(ISrsRequest *r);
-    virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg);
+    virtual srs_error_t consumer_dumps(ISrsMediaConsumer *consumer, bool ds, bool dm, bool dg);
 };
 
 // Mock live consumer for testing message queue dump_packets

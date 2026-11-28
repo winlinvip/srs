@@ -20,11 +20,13 @@ class ISrsFlvTransmuxer;
 class SrsTsTransmuxer;
 class ISrsAppConfig;
 class ISrsRtmpSourceManager;
+class ISrsHttpSourceManager;
+class SrsHttpSource;
 class ISrsAppFactory;
 class ISrsStatistic;
 class ISrsHttpHooks;
 class ISrsMessageQueue;
-class ISrsRtmpConsumer;
+class ISrsMediaConsumer;
 class ISrsTsTransmuxer;
 class ISrsAacTransmuxer;
 class ISrsBufferCache;
@@ -44,7 +46,7 @@ public:
 
 public:
     virtual bool alive() = 0;
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter) = 0;
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter) = 0;
     virtual srs_error_t update_auth(ISrsRequest *r) = 0;
 };
 
@@ -55,6 +57,7 @@ class SrsBufferCache : public ISrsCoroutineHandler, public ISrsBufferCache
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsRtmpSourceManager *rtmp_sources_;
+    ISrsHttpSourceManager *http_sources_;
     ISrsAppFactory *app_factory_;
 
 // clang-format off
@@ -77,10 +80,14 @@ public:
     virtual srs_error_t start();
     virtual void stop();
     virtual bool alive();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
 
 public:
     virtual srs_error_t cycle();
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    srs_error_t do_cycle();
 };
 
 class ISrsBufferEncoder
@@ -96,10 +103,10 @@ public:
     virtual srs_error_t write_metadata(int64_t timestamp, char *data, int size) = 0;
 
 public:
-    // The gop cache of SrsRtmpSource holds nothing for a pure audio stream, so the AAC and MP3
+    // The gop cache of SrsHttpSource holds nothing for a pure audio stream, so the AAC and MP3
     // encoders use their own cache.
     virtual bool has_cache() = 0;
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter) = 0;
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter) = 0;
 };
 
 class SrsFlvStreamEncoder : public ISrsBufferEncoder
@@ -130,7 +137,7 @@ public:
 
 public:
     virtual bool has_cache();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
 
 public:
     virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
@@ -158,7 +165,7 @@ public:
 
 public:
     virtual bool has_cache();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
 
 public:
     void set_has_audio(bool v);
@@ -185,7 +192,7 @@ public:
 
 public:
     virtual bool has_cache();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
 };
 
 class SrsMp3StreamEncoder : public ISrsBufferEncoder
@@ -207,7 +214,7 @@ public:
 
 public:
     virtual bool has_cache();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
 };
 
 class SrsBufferWriter : public SrsFileWriter
@@ -251,6 +258,7 @@ class SrsLiveStream : public ISrsLiveStream
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsRtmpSourceManager *rtmp_sources_;
+    ISrsHttpSourceManager *http_sources_;
     ISrsStatistic *stat_;
     ISrsHttpHooks *hooks_;
 
@@ -281,7 +289,8 @@ public:
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    virtual srs_error_t do_serve_http(SrsRtmpSource *source, ISrsRtmpConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
+    virtual srs_error_t play_http_source(ISrsRequest *req, ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsRtmpConnType type);
+    virtual srs_error_t do_serve_http(SrsHttpSource *source, ISrsMediaConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
     virtual srs_error_t http_hooks_on_play(ISrsHttpMessage *r, SrsRtmpConnType type);
     virtual void http_hooks_on_stop(ISrsHttpMessage *r, SrsRtmpConnType type);
     virtual srs_error_t streaming_send_messages(ISrsBufferEncoder *enc, SrsMediaPacket **msgs, int nb_msgs);

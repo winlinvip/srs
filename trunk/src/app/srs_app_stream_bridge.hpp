@@ -45,7 +45,8 @@ enum SrsStreamProtocol {
 
 // The row of the bridge table for a publisher of one protocol, by the switches of its vhost: the sources it claims,
 // which refuse a publisher of another protocol while it publishes, and the bridges between the sources its stream
-// goes through. No bridge feeds the publisher's own protocol, and an edge vhost has none.
+// goes through. No bridge feeds the publisher's own protocol, and an edge vhost has none but the one to HTTP, which only
+// remuxes the RTMP stream.
 class SrsBridgeRow
 {
 public:
@@ -57,6 +58,7 @@ public:
     bool srt_to_rtmp_;
     bool srt_to_rtc_;
     bool rtc_to_rtmp_;
+    bool rtmp_to_http_;
     SrsSharedPtr<SrsRtmpSource> rtmp_source_;
     SrsSharedPtr<SrsRtcSource> rtc_source_;
     SrsSharedPtr<SrsSrtSource> srt_source_;

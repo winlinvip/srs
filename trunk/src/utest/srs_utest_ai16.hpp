@@ -254,7 +254,7 @@ public:
     virtual srs_error_t start();
     virtual void stop();
     virtual bool alive();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
     virtual srs_error_t update_auth(ISrsRequest *r);
 };
 
@@ -280,7 +280,7 @@ public:
     virtual srs_error_t write_video(int64_t timestamp, char *data, int size);
     virtual srs_error_t write_metadata(int64_t timestamp, char *data, int size);
     virtual bool has_cache();
-    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
     void reset();
 };
 

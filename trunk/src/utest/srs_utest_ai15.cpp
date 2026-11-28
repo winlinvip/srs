@@ -2078,7 +2078,8 @@ VOID TEST(ServerTest, InitializeReusesInjectedHttpServerForApi)
     server->config_ = NULL;
 }
 
-VOID TEST(ServerTest, PublishMountsAndUnpublishUnmountsThroughInjectedHttpServer)
+// The HTTP source asks the server to mount its HTTP stream when it publishes, and to unmount it when it stops.
+VOID TEST(ServerTest, HttpSourceMountsAndUnmountsThroughInjectedHttpServer)
 {
     srs_error_t err;
 
@@ -2096,16 +2097,16 @@ VOID TEST(ServerTest, PublishMountsAndUnpublishUnmountsThroughInjectedHttpServer
 
     // A failed mount fails the publish.
     http_server.mount_error_ = srs_error_new(ERROR_HTTP_PATTERN_EMPTY, "mock mount");
-    err = server->on_publish(req.get());
+    err = server->http_mount(req.get());
     EXPECT_EQ(ERROR_HTTP_PATTERN_EMPTY, srs_error_code(err));
     srs_freep(err);
     EXPECT_EQ(1, http_server.mount_count_);
     EXPECT_TRUE(http_server.mount_request_ == req.get());
 
-    HELPER_EXPECT_SUCCESS(server->on_publish(req.get()));
+    HELPER_EXPECT_SUCCESS(server->http_mount(req.get()));
     EXPECT_EQ(2, http_server.mount_count_);
 
-    server->on_unpublish(req.get());
+    server->http_unmount(req.get());
     EXPECT_EQ(1, http_server.unmount_count_);
     EXPECT_TRUE(http_server.unmount_request_ == req.get());
 
@@ -2175,22 +2176,15 @@ VOID TEST(ServerTest, PublishAndUnpublishReachInjectedCoWorkers)
     req->app_ = "live";
     req->stream_ = "livestream";
 
-    // A failed mount fails the publish before the coworkers record the stream.
-    http_server.mount_error_ = srs_error_new(ERROR_HTTP_PATTERN_EMPTY, "mock mount");
-    err = server->on_publish(req.get());
-    EXPECT_EQ(ERROR_HTTP_PATTERN_EMPTY, srs_error_code(err));
-    srs_freep(err);
-    EXPECT_EQ(0, coworkers.publish_count_);
-
-    // After a good mount, the coworkers record the published stream.
+    // The coworkers record the published stream; the HTTP source mounts its HTTP stream itself.
     HELPER_EXPECT_SUCCESS(server->on_publish(req.get()));
-    EXPECT_EQ(2, http_server.mount_count_);
+    EXPECT_EQ(0, http_server.mount_count_);
     EXPECT_EQ(1, coworkers.publish_count_);
     EXPECT_TRUE(coworkers.publish_request_ == req.get());
 
-    // The unpublish unmounts the stream and removes it from the coworkers.
+    // The unpublish removes it from the coworkers.
     server->on_unpublish(req.get());
-    EXPECT_EQ(1, http_server.unmount_count_);
+    EXPECT_EQ(0, http_server.unmount_count_);
     EXPECT_EQ(1, coworkers.unpublish_count_);
     EXPECT_TRUE(coworkers.unpublish_request_ == req.get());
 
@@ -2217,12 +2211,11 @@ VOID TEST(ServerTest, PublishFailsWhenInjectedCoWorkersFail)
     req->app_ = "live";
     req->stream_ = "livestream";
 
-    // The error of the coworkers fails the publish, after the stream is mounted.
+    // The error of the coworkers fails the publish.
     coworkers.publish_error_ = srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "mock coworkers");
     err = server->on_publish(req.get());
     EXPECT_EQ(ERROR_SYSTEM_STREAM_BUSY, srs_error_code(err));
     srs_freep(err);
-    EXPECT_EQ(1, http_server.mount_count_);
     EXPECT_EQ(1, coworkers.publish_count_);
 
     server->http_server_ = NULL;

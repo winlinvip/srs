@@ -19,6 +19,7 @@ using namespace std;
 #include <srs_app_forward.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_http_hooks.hpp>
+#include <srs_app_http_source.hpp>
 #include <srs_app_ng_exec.hpp>
 #include <srs_app_rtc_source.hpp>
 #ifdef SRS_RTSP
@@ -299,7 +300,7 @@ srs_error_t SrsMessageQueue::dump_packets(int max_count, SrsMediaPacket **pmsgs,
     return err;
 }
 
-srs_error_t SrsMessageQueue::dump_packets(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag)
+srs_error_t SrsMessageQueue::dump_packets(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag)
 {
     srs_error_t err = srs_success;
 
@@ -384,57 +385,37 @@ ISrsWakable::~ISrsWakable()
 {
 }
 
-ISrsRtmpConsumer::ISrsRtmpConsumer()
+ISrsMediaConsumer::ISrsMediaConsumer()
 {
 }
 
-ISrsRtmpConsumer::~ISrsRtmpConsumer()
+ISrsMediaConsumer::~ISrsMediaConsumer()
 {
 }
 
-SrsRtmpConsumer::SrsRtmpConsumer(ISrsRtmpSource *s)
+SrsMediaConsumer::SrsMediaConsumer()
 {
-    source_ = s;
-    paused_ = false;
     jitter_ = new SrsRtmpJitter();
     queue_ = new SrsMessageQueue();
-    should_update_source_id_ = false;
-
-#ifdef SRS_PERF_QUEUE_COND_WAIT
-    mw_wait_ = srs_cond_new();
-    mw_min_msgs_ = 0;
-    mw_duration_ = 0;
-    mw_waiting_ = false;
-#endif
 }
 
-SrsRtmpConsumer::~SrsRtmpConsumer()
+SrsMediaConsumer::~SrsMediaConsumer()
 {
-    source_->on_consumer_destroy(this);
     srs_freep(jitter_);
     srs_freep(queue_);
-
-#ifdef SRS_PERF_QUEUE_COND_WAIT
-    srs_cond_destroy(mw_wait_);
-#endif
 }
 
-void SrsRtmpConsumer::set_queue_size(srs_utime_t queue_size)
+void SrsMediaConsumer::set_queue_size(srs_utime_t queue_size)
 {
     queue_->set_queue_size(queue_size);
 }
 
-void SrsRtmpConsumer::update_source_id()
-{
-    should_update_source_id_ = true;
-}
-
-int64_t SrsRtmpConsumer::get_time()
+int64_t SrsMediaConsumer::get_time()
 {
     return jitter_->get_time();
 }
 
-srs_error_t SrsRtmpConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
+srs_error_t SrsMediaConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
 {
     srs_error_t err = srs_success;
 
@@ -448,6 +429,63 @@ srs_error_t SrsRtmpConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRt
 
     if ((err = queue_->enqueue(msg, NULL)) != srs_success) {
         return srs_error_wrap(err, "enqueue message");
+    }
+
+    return err;
+}
+
+srs_error_t SrsMediaConsumer::dump_packets(SrsMessageArray *msgs, int &count)
+{
+    srs_error_t err = srs_success;
+
+    srs_assert(count >= 0);
+    srs_assert(msgs->max_ > 0);
+
+    int max = count ? srs_min(count, msgs->max_) : msgs->max_;
+
+    count = 0;
+
+    if ((err = queue_->dump_packets(max, msgs->msgs_, count)) != srs_success) {
+        return srs_error_wrap(err, "dump packets");
+    }
+
+    return err;
+}
+
+SrsRtmpConsumer::SrsRtmpConsumer(ISrsRtmpSource *s)
+{
+    source_ = s;
+    paused_ = false;
+    should_update_source_id_ = false;
+
+#ifdef SRS_PERF_QUEUE_COND_WAIT
+    mw_wait_ = srs_cond_new();
+    mw_min_msgs_ = 0;
+    mw_duration_ = 0;
+    mw_waiting_ = false;
+#endif
+}
+
+SrsRtmpConsumer::~SrsRtmpConsumer()
+{
+    source_->on_consumer_destroy(this);
+
+#ifdef SRS_PERF_QUEUE_COND_WAIT
+    srs_cond_destroy(mw_wait_);
+#endif
+}
+
+void SrsRtmpConsumer::update_source_id()
+{
+    should_update_source_id_ = true;
+}
+
+srs_error_t SrsRtmpConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
+{
+    srs_error_t err = srs_success;
+
+    if ((err = SrsMediaConsumer::enqueue(shared_msg, atc, ag)) != srs_success) {
+        return err;
     }
 
 #ifdef SRS_PERF_QUEUE_COND_WAIT
@@ -478,29 +516,17 @@ srs_error_t SrsRtmpConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRt
 
 srs_error_t SrsRtmpConsumer::dump_packets(SrsMessageArray *msgs, int &count)
 {
-    srs_error_t err = srs_success;
-
-    srs_assert(count >= 0);
-    srs_assert(msgs->max_ > 0);
-
-    int max = count ? srs_min(count, msgs->max_) : msgs->max_;
-
-    count = 0;
-
     if (should_update_source_id_) {
         srs_trace("update source_id=%s/%s", source_->source_id().c_str(), source_->pre_source_id().c_str());
         should_update_source_id_ = false;
     }
 
     if (paused_) {
-        return err;
+        count = 0;
+        return srs_success;
     }
 
-    if ((err = queue_->dump_packets(max, msgs->msgs_, count)) != srs_success) {
-        return srs_error_wrap(err, "dump packets");
-    }
-
-    return err;
+    return SrsMediaConsumer::dump_packets(msgs, count);
 }
 
 #ifdef SRS_PERF_QUEUE_COND_WAIT
@@ -582,6 +608,11 @@ void SrsGopCache::set_gop_cache_max_frames(int v)
     gop_cache_max_frames_ = v;
 }
 
+int SrsGopCache::gop_cache_max_frames()
+{
+    return gop_cache_max_frames_;
+}
+
 bool SrsGopCache::enabled()
 {
     return enable_gop_cache_;
@@ -658,7 +689,7 @@ void SrsGopCache::clear()
     wait_keyframe_ = false;
 }
 
-srs_error_t SrsGopCache::dump(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm)
+srs_error_t SrsGopCache::dump(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm)
 {
     srs_error_t err = srs_success;
 
@@ -1392,7 +1423,7 @@ SrsFormat *SrsMetaCache::ash_format()
     return aformat_;
 }
 
-srs_error_t SrsMetaCache::dumps(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
+srs_error_t SrsMetaCache::dumps(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
 {
     srs_error_t err = srs_success;
 
@@ -1503,6 +1534,12 @@ srs_error_t SrsMetaCache::update_data(SrsMessageHeader *header, SrsOnMetaDataPac
     common_msg.to_msg(meta_);
 
     return err;
+}
+
+void SrsMetaCache::update_data(SrsMediaPacket *msg)
+{
+    srs_freep(meta_);
+    meta_ = msg->copy();
 }
 
 srs_error_t SrsMetaCache::update_ash(SrsMediaPacket *msg)
@@ -1706,6 +1743,7 @@ SrsRtmpSource::SrsRtmpSource()
     can_publish_ = true;
     stream_die_at_ = 0;
     publisher_idle_at_ = 0;
+    nb_http_players_ = 0;
 
     rtmp_bridge_ = NULL;
 
@@ -1730,6 +1768,7 @@ SrsRtmpSource::SrsRtmpSource()
 #ifdef SRS_RTSP
     rtsp_sources_ = _srs_rtsp_sources;
 #endif
+    http_sources_ = _srs_http_sources;
 }
 
 void SrsRtmpSource::assemble()
@@ -1774,6 +1813,7 @@ SrsRtmpSource::~SrsRtmpSource()
 #ifdef SRS_RTSP
     rtsp_sources_ = NULL;
 #endif
+    http_sources_ = NULL;
 }
 
 void SrsRtmpSource::dispose()
@@ -1802,7 +1842,7 @@ bool SrsRtmpSource::stream_is_dead()
         return false;
     }
 
-    if (!consumers_.empty()) {
+    if (has_players()) {
         return false;
     }
 
@@ -1934,6 +1974,19 @@ srs_error_t SrsRtmpSource::create_bridge(SrsStreamProtocol publisher)
 
     set_bridge(bridge);
 
+    // The HTTP stream is the RTMP stream in another container, so the HTTP source takes the messages as the RTMP
+    // players do, with no builder between.
+    http_target_ = NULL;
+    if (row.rtmp_to_http_) {
+        SrsSharedPtr<SrsHttpSource> http;
+        if ((err = http_sources_->fetch_or_create(req_, http)) != srs_success) {
+            return srs_error_wrap(err, "create http source");
+        }
+        http->set_cache(gop_cache_->enabled());
+        http->set_gop_cache_max_frames(gop_cache_->gop_cache_max_frames());
+        http_target_ = http;
+    }
+
     return err;
 }
 
@@ -2027,6 +2080,10 @@ srs_error_t SrsRtmpSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
                 return srs_error_wrap(err, "consume metadata");
             }
         }
+    }
+
+    if (http_target_.get() && (err = http_target_->on_meta_data(meta_->data(), drop_for_reduce)) != srs_success) {
+        return srs_error_wrap(err, "http consume metadata");
     }
 
     if (hub_ && (err = hub_->on_meta_data(meta_->data(), metadata)) != srs_success) {
@@ -2128,6 +2185,10 @@ srs_error_t SrsRtmpSource::on_audio_imp(SrsMediaPacket *msg)
                 return srs_error_wrap(err, "consume message");
             }
         }
+    }
+
+    if (http_target_.get() && (err = http_target_->on_audio(msg, is_sequence_header, drop_for_reduce)) != srs_success) {
+        return srs_error_wrap(err, "http consume audio");
     }
 
     if (is_sequence_header || !meta_->ash()) {
@@ -2235,6 +2296,10 @@ srs_error_t SrsRtmpSource::on_video_imp(SrsMediaPacket *msg)
                 return srs_error_wrap(err, "consume video");
             }
         }
+    }
+
+    if (http_target_.get() && (err = http_target_->on_video(msg, is_sequence_header, drop_for_reduce)) != srs_success) {
+        return srs_error_wrap(err, "http consume video");
     }
 
     if (is_sequence_header) {
@@ -2384,6 +2449,10 @@ srs_error_t SrsRtmpSource::do_publish(SrsStreamProtocol publisher)
         return srs_error_wrap(err, "hub publish");
     }
 
+    if (http_target_.get() && (err = http_target_->on_publish()) != srs_success) {
+        return srs_error_wrap(err, "http publish");
+    }
+
     srs_assert(handler_);
     if ((err = handler_->on_publish(req_)) != srs_success) {
         return srs_error_wrap(err, "handle publish");
@@ -2395,7 +2464,7 @@ srs_error_t SrsRtmpSource::do_publish(SrsStreamProtocol publisher)
 
     stat_->on_stream_publish(req_, source_id_.c_str());
 
-    if (consumers_.empty()) {
+    if (!has_players()) {
         publisher_idle_at_ = clk_->now();
     }
 
@@ -2430,6 +2499,11 @@ void SrsRtmpSource::on_unpublish()
 
     stat_->on_stream_close(req_);
 
+    if (http_target_.get()) {
+        http_target_->on_unpublish();
+        http_target_ = NULL;
+    }
+
     srs_assert(handler_);
     handler_->on_unpublish(req_);
 
@@ -2438,7 +2512,7 @@ void SrsRtmpSource::on_unpublish()
         srs_freep(rtmp_bridge_);
     }
 
-    if (consumers_.empty()) {
+    if (!has_players()) {
         stream_die_at_ = clk_->now();
     }
 
@@ -2451,22 +2525,17 @@ srs_error_t SrsRtmpSource::create_consumer(SrsRtmpConsumer *&consumer)
 {
     srs_error_t err = srs_success;
 
-    if (config_->get_vhost_is_edge(req_->vhost_)) {
-        if ((err = play_edge_->on_client_play()) != srs_success) {
-            return srs_error_wrap(err, "play edge");
-        }
+    if ((err = on_player_start()) != srs_success) {
+        return err;
     }
 
     consumer = new SrsRtmpConsumer(this);
     consumers_.push_back(consumer);
 
-    stream_die_at_ = 0;
-    publisher_idle_at_ = 0;
-
     return err;
 }
 
-srs_error_t SrsRtmpSource::consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t SrsRtmpSource::consumer_dumps(ISrsMediaConsumer *consumer, bool ds, bool dm, bool dg)
 {
     srs_error_t err = srs_success;
 
@@ -2515,35 +2584,91 @@ void SrsRtmpSource::on_consumer_destroy(SrsRtmpConsumer *consumer)
         it = consumers_.erase(it);
     }
 
-    if (consumers_.empty()) {
-        play_edge_->on_all_client_stop();
-
-        if (can_publish_) {
-            stream_die_at_ = clk_->now();
-        }
-
-        // Players create an edge stream, so it dies when the last player quits.
-        if (config_->get_vhost_is_edge(req_->vhost_)) {
-            stream_die_at_ = clk_->now();
-        }
-
-        publisher_idle_at_ = clk_->now();
-    }
+    on_player_stop();
 }
 
 void SrsRtmpSource::set_cache(bool enabled)
 {
     gop_cache_->set(enabled);
+
+    if (http_target_.get()) {
+        http_target_->set_cache(enabled);
+    }
 }
 
 void SrsRtmpSource::set_gop_cache_max_frames(int v)
 {
     gop_cache_->set_gop_cache_max_frames(v);
+
+    if (http_target_.get()) {
+        http_target_->set_gop_cache_max_frames(v);
+    }
 }
 
 SrsRtmpJitterAlgorithm SrsRtmpSource::jitter()
 {
     return jitter_algorithm_;
+}
+
+srs_error_t SrsRtmpSource::on_http_play()
+{
+    srs_error_t err = srs_success;
+
+    if ((err = on_player_start()) != srs_success) {
+        return err;
+    }
+
+    nb_http_players_++;
+
+    return err;
+}
+
+void SrsRtmpSource::on_http_stop()
+{
+    nb_http_players_--;
+
+    on_player_stop();
+}
+
+srs_error_t SrsRtmpSource::on_player_start()
+{
+    srs_error_t err = srs_success;
+
+    if (config_->get_vhost_is_edge(req_->vhost_)) {
+        if ((err = play_edge_->on_client_play()) != srs_success) {
+            return srs_error_wrap(err, "play edge");
+        }
+    }
+
+    stream_die_at_ = 0;
+    publisher_idle_at_ = 0;
+
+    return err;
+}
+
+void SrsRtmpSource::on_player_stop()
+{
+    if (has_players()) {
+        return;
+    }
+
+    play_edge_->on_all_client_stop();
+
+    if (can_publish_) {
+        stream_die_at_ = clk_->now();
+    }
+
+    // Players create an edge stream, so it dies when the last player quits.
+    if (config_->get_vhost_is_edge(req_->vhost_)) {
+        stream_die_at_ = clk_->now();
+    }
+
+    publisher_idle_at_ = clk_->now();
+}
+
+bool SrsRtmpSource::has_players()
+{
+    return !consumers_.empty() || nb_http_players_ > 0;
 }
 
 srs_error_t SrsRtmpSource::on_edge_start_publish()

@@ -56,12 +56,14 @@ class ISrsNgExec;
 class ISrsForwarder;
 class ISrsAppFactory;
 class ISrsStreamPublishTokenManager;
-class ISrsRtmpConsumer;
+class ISrsMediaConsumer;
 class ISrsClock;
 class ISrsRtcSourceManager;
 #ifdef SRS_RTSP
 class ISrsRtspSourceManager;
 #endif
+class ISrsHttpSourceManager;
+class SrsHttpSource;
 
 // The time_jitter config:
 // full: the stream starts at zero and its timestamps always increase.
@@ -128,7 +130,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size) = 0;
     virtual srs_error_t enqueue(SrsMediaPacket *msg, bool *is_overflow = NULL) = 0;
     // virtual srs_error_t dump_packets(int max_count, SrsMediaPacket **pmsgs, int &count) = 0;
-    virtual srs_error_t dump_packets(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
+    virtual srs_error_t dump_packets(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
     // virtual void clear() = 0;
 };
 
@@ -163,7 +165,7 @@ public:
     virtual srs_error_t enqueue(SrsMediaPacket *msg, bool *is_overflow = NULL);
     // The caller allocates pmsgs with room for max_count messages.
     virtual srs_error_t dump_packets(int max_count, SrsMediaPacket **pmsgs, int &count);
-    virtual srs_error_t dump_packets(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag);
+    virtual srs_error_t dump_packets(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag);
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -185,11 +187,11 @@ public:
     virtual void wakeup() = 0;
 };
 
-class ISrsRtmpConsumer
+class ISrsMediaConsumer
 {
 public:
-    ISrsRtmpConsumer();
-    virtual ~ISrsRtmpConsumer();
+    ISrsMediaConsumer();
+    virtual ~ISrsMediaConsumer();
 
 public:
     virtual srs_error_t enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
@@ -198,7 +200,29 @@ public:
     virtual int64_t get_time() = 0;
 };
 
-class SrsRtmpConsumer : public ISrsWakable, public ISrsRtmpConsumer
+// The queue of a player of a source, with the jitter of its timestamps, which the consumers of every protocol share.
+class SrsMediaConsumer : public ISrsMediaConsumer
+{
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
+    SrsRtmpJitter *jitter_;
+    SrsMessageQueue *queue_;
+
+public:
+    SrsMediaConsumer();
+    virtual ~SrsMediaConsumer();
+
+public:
+    virtual void set_queue_size(srs_utime_t queue_size);
+    virtual int64_t get_time();
+    // The consumer copies shared_msg; the caller keeps it.
+    virtual srs_error_t enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag);
+    // On input, a positive count caps the messages to dump, and 0 means no cap. On output, it
+    // is the number dumped.
+    virtual srs_error_t dump_packets(SrsMessageArray *msgs, int &count);
+};
+
+class SrsRtmpConsumer : public ISrsWakable, public SrsMediaConsumer
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -207,8 +231,6 @@ SRS_DECLARE_PRIVATE: // clang-format on
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    SrsRtmpJitter *jitter_;
-    SrsMessageQueue *queue_;
     bool paused_;
     bool should_update_source_id_;
 #ifdef SRS_PERF_QUEUE_COND_WAIT
@@ -223,15 +245,10 @@ public:
     virtual ~SrsRtmpConsumer();
 
 public:
-    virtual void set_queue_size(srs_utime_t queue_size);
     virtual void update_source_id();
 
 public:
-    virtual int64_t get_time();
-    // The consumer copies shared_msg; the caller keeps it.
     virtual srs_error_t enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag);
-    // On input, a positive count caps the messages to dump, and 0 means no cap. On output, it
-    // is the number dumped.
     virtual srs_error_t dump_packets(SrsMessageArray *msgs, int &count);
 #ifdef SRS_PERF_QUEUE_COND_WAIT
     virtual void wait(int nb_msgs, srs_utime_t msgs_duration);
@@ -270,18 +287,19 @@ public:
     virtual void dispose();
     virtual void set(bool v);
     virtual void set_gop_cache_max_frames(int v);
+    virtual int gop_cache_max_frames();
     virtual bool enabled();
     // The cache copies shared_msg; the caller keeps it.
     virtual srs_error_t cache(SrsMediaPacket *shared_msg);
     virtual void clear();
-    virtual srs_error_t dump(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm);
+    virtual srs_error_t dump(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm);
     // For atc, the sequence headers take the timestamp of the cached GOP.
     virtual bool empty();
     virtual srs_utime_t start_time();
     virtual bool pure_audio();
 };
 
-// The server implements it, to mount the HTTP stream when RTMP publishing starts.
+// The server implements it, to tell the origin cluster which streams it publishes.
 class ISrsRtmpSourceHandler
 {
 public:
@@ -437,7 +455,7 @@ public:
     virtual SrsMediaPacket *ash();
     virtual SrsFormat *ash_format();
     // dm dumps the metadata, and ds the sequence headers.
-    virtual srs_error_t dumps(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds);
+    virtual srs_error_t dumps(ISrsMediaConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds);
 
 public:
     virtual SrsMediaPacket *previous_data();
@@ -449,6 +467,8 @@ public:
 
 public:
     virtual srs_error_t update_data(SrsMessageHeader *header, SrsOnMetaDataPacket *metadata, bool &updated);
+    // A copy of the metadata that another source has already updated.
+    virtual void update_data(SrsMediaPacket *msg);
     virtual srs_error_t update_ash(SrsMediaPacket *msg);
     virtual srs_error_t update_vsh(SrsMediaPacket *msg);
 };
@@ -543,6 +563,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 #ifdef SRS_RTSP
     ISrsRtspSourceManager *rtsp_sources_;
 #endif
+    ISrsHttpSourceManager *http_sources_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -561,6 +582,8 @@ SRS_DECLARE_PRIVATE: // clang-format on
     bool is_monotonically_increase_;
     int64_t last_packet_time_;
     ISrsRtmpBridge *rtmp_bridge_;
+    // The HTTP source the stream feeds as it feeds the RTMP players, while it publishes.
+    SrsSharedPtr<SrsHttpSource> http_target_;
     SrsPlayEdge *play_edge_;
     SrsPublishEdge *publish_edge_;
     SrsGopCache *gop_cache_;
@@ -575,6 +598,8 @@ SRS_DECLARE_PRIVATE: // clang-format on
     srs_utime_t stream_die_at_;
     // Idle means no player.
     srs_utime_t publisher_idle_at_;
+    // The players of the HTTP source this source feeds, which are players of this stream too.
+    int nb_http_players_;
 
 public:
     SrsRtmpSource();
@@ -642,11 +667,21 @@ public:
 public:
     virtual srs_error_t create_consumer(SrsRtmpConsumer *&consumer);
     // ds dumps the sequence headers, dm the metadata, and dg the GOP cache.
-    virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
+    virtual srs_error_t consumer_dumps(ISrsMediaConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
     virtual void on_consumer_destroy(SrsRtmpConsumer *consumer);
     virtual void set_cache(bool enabled);
     virtual void set_gop_cache_max_frames(int v);
     virtual SrsRtmpJitterAlgorithm jitter();
+    // An HTTP player plays the stream from the HTTP source; on an edge, the first player starts to pull the stream, and
+    // the last one stops it.
+    virtual srs_error_t on_http_play();
+    virtual void on_http_stop();
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    srs_error_t on_player_start();
+    void on_player_stop();
+    bool has_players();
 
 public:
     virtual srs_error_t on_edge_start_publish();

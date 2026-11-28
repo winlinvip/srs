@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <srs_app_hls.hpp>
+#include <srs_app_http_source.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtmp_source.hpp>
@@ -112,6 +113,7 @@ public:
 };
 
 class SrsServer : public ISrsRtmpSourceHandler,
+                  public ISrsHttpSourceHandler,
                   public ISrsTcpHandler,
                   public ISrsHourGlassHandler,
                   public ISrsSrtClientHandler,
@@ -124,6 +126,7 @@ class SrsServer : public ISrsRtmpSourceHandler,
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsRtmpSourceManager *rtmp_sources_;
+    ISrsHttpSourceManager *http_sources_;
     ISrsResourceManager *conn_manager_;
     ISrsDtlsCertificate *rtc_dtls_certificate_;
     ISrsAsyncCallWorker *dvr_async_;
@@ -297,6 +300,10 @@ public:
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
+
+public:
+    virtual srs_error_t http_mount(ISrsRequest *r);
+    virtual void http_unmount(ISrsRequest *r);
 };
 
 extern SrsServer *_srs_server;

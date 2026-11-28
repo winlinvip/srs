@@ -24,6 +24,7 @@ using namespace std;
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_http_hooks.hpp>
+#include <srs_app_http_source.hpp>
 #include <srs_app_ingest.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_mpegts_udp.hpp>
@@ -100,6 +101,8 @@ srs_error_t srs_global_initialize()
 
     _srs_rtmp_sources = new SrsRtmpSourceManager();
     _srs_rtmp_sources->assemble();
+    _srs_http_sources = new SrsHttpSourceManager();
+    _srs_http_sources->assemble();
     _srs_circuit_breaker = new SrsCircuitBreaker();
 
     // Initialize global statistic instance before _srs_hooks, as SrsHttpHooks depends on it.
@@ -227,6 +230,7 @@ SrsServer::SrsServer()
 
     config_ = _srs_config;
     rtmp_sources_ = _srs_rtmp_sources;
+    http_sources_ = _srs_http_sources;
     conn_manager_ = _srs_conn_manager;
     rtc_dtls_certificate_ = _srs_rtc_dtls_certificate;
     dvr_async_ = _srs_dvr_async;
@@ -304,6 +308,7 @@ SrsServer::~SrsServer()
 
     config_ = NULL;
     rtmp_sources_ = NULL;
+    http_sources_ = NULL;
     conn_manager_ = NULL;
     rtc_dtls_certificate_ = NULL;
     dvr_async_ = NULL;
@@ -512,6 +517,10 @@ srs_error_t SrsServer::run()
 
     if ((err = rtmp_sources_->initialize()) != srs_success) {
         return srs_error_wrap(err, "rtmp sources");
+    }
+
+    if ((err = http_sources_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "http sources");
     }
 
     if ((err = srt_sources_->initialize()) != srs_success) {
@@ -1600,10 +1609,6 @@ srs_error_t SrsServer::on_publish(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    if ((err = http_server_->http_mount(r)) != srs_success) {
-        return srs_error_wrap(err, "http mount");
-    }
-
     if ((err = coworkers_->on_publish(r)) != srs_success) {
         return srs_error_wrap(err, "coworkers");
     }
@@ -1613,9 +1618,17 @@ srs_error_t SrsServer::on_publish(ISrsRequest *r)
 
 void SrsServer::on_unpublish(ISrsRequest *r)
 {
-    http_server_->http_unmount(r);
-
     coworkers_->on_unpublish(r);
+}
+
+srs_error_t SrsServer::http_mount(ISrsRequest *r)
+{
+    return http_server_->http_mount(r);
+}
+
+void SrsServer::http_unmount(ISrsRequest *r)
+{
+    http_server_->http_unmount(r);
 }
 
 SrsAsyncClientPeeker::SrsAsyncClientPeeker(SrsServer *server, ISrsListener *listener, srs_netfd_t stfd, std::string ip, int port)

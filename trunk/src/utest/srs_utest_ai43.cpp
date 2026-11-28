@@ -16,6 +16,7 @@
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_http_hooks.hpp>
+#include <srs_app_http_source.hpp>
 #include <srs_app_http_static.hpp>
 #include <srs_app_http_stream.hpp>
 #include <srs_app_edge.hpp>
@@ -4097,18 +4098,20 @@ public:
 // from the test's text, and its own RTMP sources and stream API registry for the scope of a test. An encoder publishes
 // and unpublishes through its RTMP source, which asks the server to mount and unmount its HTTP stream, as SrsServer
 // does, and its messages go into the RTMP source.
-class HttpStreamUtestServer : public ISrsRtmpSourceHandler
+class HttpStreamUtestServer : public ISrsRtmpSourceHandler, public ISrsHttpSourceHandler
 {
 public:
     MockSrsConfig conf_;
     SrsStatistic stat_;
     SrsRtmpSourceManager sources_;
+    SrsHttpSourceManager http_sources_;
     SrsHttpServer *server_;
     HttpStreamUtestRequest req_;
 
 private:
     SrsConfig *saved_config_;
     SrsRtmpSourceManager *saved_sources_;
+    SrsHttpSourceManager *saved_http_sources_;
     SrsStatistic *saved_stat_;
 
 public:
@@ -4120,9 +4123,11 @@ public:
 
         saved_config_ = _srs_config;
         saved_sources_ = _srs_rtmp_sources;
+        saved_http_sources_ = _srs_http_sources;
         saved_stat_ = _srs_stat;
         _srs_config = &conf_;
         _srs_rtmp_sources = &sources_;
+        _srs_http_sources = &http_sources_;
         _srs_stat = &stat_;
     }
     virtual ~HttpStreamUtestServer()
@@ -4130,6 +4135,7 @@ public:
         srs_freep(server_);
         _srs_config = saved_config_;
         _srs_rtmp_sources = saved_sources_;
+        _srs_http_sources = saved_http_sources_;
         _srs_stat = saved_stat_;
     }
 
@@ -4180,14 +4186,28 @@ public:
         EXPECT_TRUE(err == srs_success) << srs_error_desc(err);
         srs_freep(err);
         source->handler_ = this;
+
+        SrsSharedPtr<SrsHttpSource> http_source;
+        err = http_sources_.fetch_or_create(r ? r : &req_, http_source);
+        EXPECT_TRUE(err == srs_success) << srs_error_desc(err);
+        srs_freep(err);
+        http_source->handler_ = this;
         return source;
     }
-    // Interface ISrsRtmpSourceHandler, as SrsServer.
+    // Interface ISrsRtmpSourceHandler, as SrsServer, which has no coworkers here.
     virtual srs_error_t on_publish(ISrsRequest *r)
+    {
+        return srs_success;
+    }
+    virtual void on_unpublish(ISrsRequest *r)
+    {
+    }
+    // Interface ISrsHttpSourceHandler, as SrsServer.
+    virtual srs_error_t http_mount(ISrsRequest *r)
     {
         return server_->http_mount(r);
     }
-    virtual void on_unpublish(ISrsRequest *r)
+    virtual void http_unmount(ISrsRequest *r)
     {
         // A source still publishing when the test ends unpublishes as it is freed, after the server.
         if (server_) {

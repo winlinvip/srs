@@ -34,6 +34,7 @@ SrsBridgeRow::SrsBridgeRow()
     srt_to_rtmp_ = false;
     srt_to_rtc_ = false;
     rtc_to_rtmp_ = false;
+    rtmp_to_http_ = false;
     rtmp_source_ = NULL;
     rtc_source_ = NULL;
     srt_source_ = NULL;
@@ -72,6 +73,8 @@ void SrsBridgeRow::initialize(ISrsAppConfig *config, SrsStreamProtocol publisher
         rtmp_to_rtc_ = rtmp_to_rtsp_ = srt_to_rtmp_ = srt_to_rtc_ = rtc_to_rtmp_ = false;
         srs_warn("disable bridges for edge vhost=%s", vhost.c_str());
     }
+
+    rtmp_to_http_ = config->get_vhost_http_remux_enabled(vhost);
 }
 
 srs_error_t SrsBridgeRow::claim(ISrsRequest *r, ISrsRtmpSourceManager *rtmp_sources, ISrsRtcSourceManager *rtc_sources, ISrsSrtSourceManager *srt_sources)

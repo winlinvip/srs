@@ -1204,7 +1204,7 @@ srs_error_t MockRtmpSource::on_edge_start_publish()
     return srs_success;
 }
 
-srs_error_t MockRtmpSource::consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t MockRtmpSource::consumer_dumps(ISrsMediaConsumer *consumer, bool ds, bool dm, bool dg)
 {
     on_dump_packets_count_++;
     return SrsRtmpSource::consumer_dumps(consumer, ds, dm, dg);
@@ -2333,7 +2333,7 @@ bool MockBufferCache::alive()
     return true;
 }
 
-srs_error_t MockBufferCache::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t MockBufferCache::dump_cache(ISrsMediaConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     dump_cache_count_++;
     last_consumer_ = consumer;

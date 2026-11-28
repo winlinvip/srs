@@ -79,7 +79,7 @@ void MockRtmpSourceForQueue::update_auth(ISrsRequest *r)
     // Mock update_auth - do nothing to avoid accessing null req_
 }
 
-srs_error_t MockRtmpSourceForQueue::consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t MockRtmpSourceForQueue::consumer_dumps(ISrsMediaConsumer *consumer, bool ds, bool dm, bool dg)
 {
     // Mock consumer_dumps - just return success without doing anything
     return srs_success;

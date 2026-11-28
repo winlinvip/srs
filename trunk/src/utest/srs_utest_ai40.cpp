@@ -568,7 +568,7 @@ VOID TEST(KernelErrorTest, AsanReportLogsEachLine)
     char frame0[128];
     snprintf(frame0, sizeof(frame0), "    #0 0x55d0c1a2b3c4  (%s+%p)", _srs_binary, kernel_error_marker_file_offset());
     string report = string("==1==ERROR: AddressSanitizer: heap-use-after-free\n") + frame0 + "\n" +
-                    "    #1 0x55d0c1a2b3d4 in SrsLiveSource::on_audio(SrsRtmpCommonMessage*) /srs/src/app/srs_app_rtmp_source.cpp:1011";
+                    "    #1 0x55d0c1a2b3d4 in SrsRtmpSource::on_audio(SrsRtmpCommonMessage*) /srs/src/app/srs_app_rtmp_source.cpp:1011";
 
     MockLogForSignal log;
     ISrsLog *original = _srs_log;
@@ -1092,19 +1092,19 @@ VOID TEST(KernelKbpsTest, RtcStatsLineWithTcpClientsOnly_FidGroupShown)
     EXPECT_STREQ(", fid=(id:5,fid:0,ffid:0,addr:0,faddr:0)", stats.fid_desc_.c_str());
 }
 
-// An origin stream with one HTTP player: the publisher's messages go into the live source as
+// An origin stream with one HTTP player: the publisher's messages go into the RTMP source as
 // SrsRtmpConn::process_publish_message passes them, and the player's consumer is drained into its encoder
 // as SrsLiveStream does.
 class AudioPlayerStream
 {
 public:
     MockAppConfig config_;
-    SrsUniquePtr<SrsLiveSource> source_;
-    SrsLiveConsumer *consumer_;
+    SrsUniquePtr<SrsRtmpSource> source_;
+    SrsRtmpConsumer *consumer_;
     MockSrsRequest req_;
 
 public:
-    AudioPlayerStream() : source_(new SrsLiveSource()), consumer_(NULL), req_("test.vhost", "live", "livestream")
+    AudioPlayerStream() : source_(new SrsRtmpSource()), consumer_(NULL), req_("test.vhost", "live", "livestream")
     {
         source_->config_ = &config_;
         source_->req_ = new MockSrsRequest("test.vhost", "live", "livestream");
@@ -5794,7 +5794,7 @@ VOID TEST(KernelTsTest, HlsEncryptedSegmentOnFullDisk)
 // An RTMP publisher of AAC audio sends an aggregate message holding an audio tag with no data, after a frame. An
 // HTTP-TS player must not get it: SrsFormat::on_audio returns early for an empty tag and keeps the previous frame,
 // whose samples point into the previous message's payload, so SrsTsTransmuxer would write that frame again, from
-// memory that may be freed. The live source skips the empty tag, so the player gets nothing more.
+// memory that may be freed. The RTMP source skips the empty tag, so the player gets nothing more.
 VOID TEST(KernelTsTest, HttpTsEmptyAudioAfterFrame_NothingWritten)
 {
     srs_error_t err = srs_success;
@@ -5868,14 +5868,14 @@ static SrsMediaPacket *parse_sps_off_sh()
 }
 
 // A vhost with parse_sps off (#474) takes the publish of an H.264 stream whose SPS the parser refuses: the
-// live source parses the sequence header with its own format and again in its meta cache, which the HLS,
+// RTMP source parses the sequence header with its own format and again in its meta cache, which the HLS,
 // DVR and DASH of the stream read, and both follow the vhost.
-VOID TEST(KernelTsTest, LiveSourceWithParseSpsOff_SequenceHeaderTaken)
+VOID TEST(KernelTsTest, RtmpSourceWithParseSpsOff_SequenceHeaderTaken)
 {
     srs_error_t err = srs_success;
 
     MockAppConfigForParseSpsOff config;
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
     source->config_ = &config;
     source->req_ = new MockSrsRequest("test.vhost", "live", "livestream");
     source->assemble();
@@ -5896,7 +5896,7 @@ VOID TEST(KernelTsTest, LiveSourceWithParseSpsOff_SequenceHeaderTaken)
 
 #ifdef SRS_FFMPEG_FIT
 // With rtmp_to_rtc on, the RTMP to WebRTC bridge of a vhost with parse_sps off takes the sequence header
-// the live source took, in its own format and its meta cache.
+// the RTMP source took, in its own format and its meta cache.
 VOID TEST(KernelTsTest, RtcBridgeWithParseSpsOff_SequenceHeaderTaken)
 {
     srs_error_t err = srs_success;
@@ -5921,7 +5921,7 @@ VOID TEST(KernelTsTest, RtcBridgeWithParseSpsOff_SequenceHeaderTaken)
 
 #ifdef SRS_RTSP
 // With rtmp_to_rtsp on, the RTMP to RTSP bridge of a vhost with parse_sps off takes the sequence header
-// the live source took, in its own format and its meta cache.
+// the RTMP source took, in its own format and its meta cache.
 VOID TEST(KernelTsTest, RtspBridgeWithParseSpsOff_SequenceHeaderTaken)
 {
     srs_error_t err = srs_success;

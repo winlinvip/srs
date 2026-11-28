@@ -56,7 +56,7 @@ SrsBufferCache::SrsBufferCache(ISrsRequest *r)
     fast_cache_ = 0;
 
     config_ = _srs_config;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     app_factory_ = _srs_app_factory;
 }
 
@@ -74,7 +74,7 @@ SrsBufferCache::~SrsBufferCache()
     srs_freep(req_);
 
     config_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     app_factory_ = NULL;
 }
 
@@ -127,7 +127,7 @@ bool SrsBufferCache::alive()
     return false;
 }
 
-srs_error_t SrsBufferCache::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t SrsBufferCache::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     srs_error_t err = srs_success;
 
@@ -135,7 +135,7 @@ srs_error_t SrsBufferCache::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitter
         return err;
     }
 
-    // The jitter is the vhost's time_jitter, which SrsLiveSource reads.
+    // The jitter is the vhost's time_jitter, which SrsRtmpSource reads.
     if ((err = queue_->dump_packets(consumer, false, jitter)) != srs_success) {
         return srs_error_wrap(err, "dump packets");
     }
@@ -150,20 +150,20 @@ srs_error_t SrsBufferCache::cycle()
 {
     srs_error_t err = srs_success;
 
-    SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = live_sources_->fetch_or_create(req_, live_source)) != srs_success) {
+    SrsSharedPtr<SrsRtmpSource> rtmp_source;
+    if ((err = rtmp_sources_->fetch_or_create(req_, rtmp_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
-    srs_assert(live_source.get() != NULL);
+    srs_assert(rtmp_source.get() != NULL);
 
     // On an edge, creating the consumer starts pulling the stream from the origin.
-    SrsLiveConsumer *consumer_raw = NULL;
-    if ((err = live_source->create_consumer(consumer_raw)) != srs_success) {
+    SrsRtmpConsumer *consumer_raw = NULL;
+    if ((err = rtmp_source->create_consumer(consumer_raw)) != srs_success) {
         return srs_error_wrap(err, "create consumer");
     }
-    SrsUniquePtr<SrsLiveConsumer> consumer(consumer_raw);
+    SrsUniquePtr<SrsRtmpConsumer> consumer(consumer_raw);
 
-    if ((err = live_source->consumer_dumps(consumer.get(), false, false, true)) != srs_success) {
+    if ((err = rtmp_source->consumer_dumps(consumer.get(), false, false, true)) != srs_success) {
         return srs_error_wrap(err, "dumps consumer");
     }
 
@@ -268,7 +268,7 @@ bool SrsTsStreamEncoder::has_cache()
     return false;
 }
 
-srs_error_t SrsTsStreamEncoder::dump_cache(ISrsLiveConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
+srs_error_t SrsTsStreamEncoder::dump_cache(ISrsRtmpConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
 {
     return srs_success;
 }
@@ -371,7 +371,7 @@ bool SrsFlvStreamEncoder::has_cache()
     return false;
 }
 
-srs_error_t SrsFlvStreamEncoder::dump_cache(ISrsLiveConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
+srs_error_t SrsFlvStreamEncoder::dump_cache(ISrsRtmpConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
 {
     return srs_success;
 }
@@ -494,7 +494,7 @@ bool SrsAacStreamEncoder::has_cache()
     return true;
 }
 
-srs_error_t SrsAacStreamEncoder::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t SrsAacStreamEncoder::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     srs_assert(cache_);
     return cache_->dump_cache(consumer, jitter);
@@ -548,7 +548,7 @@ bool SrsMp3StreamEncoder::has_cache()
     return true;
 }
 
-srs_error_t SrsMp3StreamEncoder::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t SrsMp3StreamEncoder::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     srs_assert(cache_);
     return cache_->dump_cache(consumer, jitter);
@@ -610,7 +610,7 @@ SrsLiveStream::SrsLiveStream(ISrsRequest *r, ISrsBufferCache *c)
     security_ = new SrsEnhancedSecurity();
 
     config_ = _srs_config;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     stat_ = _srs_stat;
     hooks_ = _srs_hooks;
 }
@@ -623,7 +623,7 @@ SrsLiveStream::~SrsLiveStream()
     srs_assert(viewers_.empty());
 
     config_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     stat_ = NULL;
     hooks_ = NULL;
 }
@@ -728,30 +728,30 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
     }
 
     // The HTTP handler does not create the source.
-    SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = live_sources_->fetch_or_create(req.get(), live_source)) != srs_success) {
+    SrsSharedPtr<SrsRtmpSource> rtmp_source;
+    if ((err = rtmp_sources_->fetch_or_create(req.get(), rtmp_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
-    srs_assert(live_source.get() != NULL);
+    srs_assert(rtmp_source.get() != NULL);
 
     bool enabled_cache = config_->get_gop_cache(req->vhost_);
     int gcmf = config_->get_gop_cache_max_frames(req->vhost_);
-    live_source->set_cache(enabled_cache);
-    live_source->set_gop_cache_max_frames(gcmf);
+    rtmp_source->set_cache(enabled_cache);
+    rtmp_source->set_gop_cache_max_frames(gcmf);
 
-    SrsLiveConsumer *consumer_raw = NULL;
-    if ((err = live_source->create_consumer(consumer_raw)) != srs_success) {
+    SrsRtmpConsumer *consumer_raw = NULL;
+    if ((err = rtmp_source->create_consumer(consumer_raw)) != srs_success) {
         return srs_error_wrap(err, "create consumer");
     }
     // On an edge, freeing the last consumer stops the ingest, which unpublishes the source and
     // unmounts this stream.
-    SrsUniquePtr<SrsLiveConsumer> consumer(consumer_raw);
+    SrsUniquePtr<SrsRtmpConsumer> consumer(consumer_raw);
 
     if (!entry_->enabled) {
         return srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "stream not found");
     }
 
-    err = do_serve_http(live_source.get(), consumer.get(), w, r);
+    err = do_serve_http(rtmp_source.get(), consumer.get(), w, r);
 
     http_hooks_on_stop(r, type);
 
@@ -772,7 +772,7 @@ void SrsLiveStream::expire()
     }
 }
 
-srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, ISrsLiveConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+srs_error_t SrsLiveStream::do_serve_http(SrsRtmpSource *source, ISrsRtmpConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
     srs_error_t err = srs_success;
 

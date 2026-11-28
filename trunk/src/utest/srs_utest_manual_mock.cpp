@@ -1098,23 +1098,23 @@ srs_error_t MockSecurity::check(SrsRtmpConnType type, std::string ip, ISrsReques
     return srs_error_copy(check_error_);
 }
 
-// Mock live source manager implementation
-MockLiveSourceManager::MockLiveSourceManager()
+// Mock RTMP source manager implementation
+MockRtmpSourceManager::MockRtmpSourceManager()
 {
     fetch_or_create_error_ = srs_success;
     fetch_or_create_count_ = 0;
     can_publish_ = true;
 
-    // Create a mock live source
-    mock_source_ = SrsSharedPtr<SrsLiveSource>(new MockLiveSource());
+    // Create a mock RTMP source
+    mock_source_ = SrsSharedPtr<SrsRtmpSource>(new MockRtmpSource());
 }
 
-MockLiveSourceManager::~MockLiveSourceManager()
+MockRtmpSourceManager::~MockRtmpSourceManager()
 {
     srs_freep(fetch_or_create_error_);
 }
 
-srs_error_t MockLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps)
+srs_error_t MockRtmpSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps)
 {
     srs_error_t err = srs_success;
 
@@ -1130,41 +1130,41 @@ srs_error_t MockLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<
     return err;
 }
 
-SrsSharedPtr<SrsLiveSource> MockLiveSourceManager::fetch(ISrsRequest *r)
+SrsSharedPtr<SrsRtmpSource> MockRtmpSourceManager::fetch(ISrsRequest *r)
 {
     return mock_source_;
 }
 
-void MockLiveSourceManager::dispose()
+void MockRtmpSourceManager::dispose()
 {
     // Mock implementation - no-op for testing
 }
 
-srs_error_t MockLiveSourceManager::initialize()
+srs_error_t MockRtmpSourceManager::initialize()
 {
     // Mock implementation - always succeeds
     return srs_success;
 }
 
-void MockLiveSourceManager::set_fetch_or_create_error(srs_error_t err)
+void MockRtmpSourceManager::set_fetch_or_create_error(srs_error_t err)
 {
     srs_freep(fetch_or_create_error_);
     fetch_or_create_error_ = srs_error_copy(err);
 }
 
-void MockLiveSourceManager::set_can_publish(bool can_publish)
+void MockRtmpSourceManager::set_can_publish(bool can_publish)
 {
     can_publish_ = can_publish;
     if (mock_source_.get()) {
-        MockLiveSource *mock_live_source = dynamic_cast<MockLiveSource *>(mock_source_.get());
-        if (mock_live_source) {
-            mock_live_source->set_can_publish(can_publish);
+        MockRtmpSource *mock_rtmp_source = dynamic_cast<MockRtmpSource *>(mock_source_.get());
+        if (mock_rtmp_source) {
+            mock_rtmp_source->set_can_publish(can_publish);
         }
     }
 }
 
-// Mock live source implementation
-MockLiveSource::MockLiveSource()
+// Mock RTMP source implementation
+MockRtmpSource::MockRtmpSource()
 {
     can_publish_result_ = true;
     on_audio_count_ = 0;
@@ -1173,49 +1173,49 @@ MockLiveSource::MockLiveSource()
     on_frame_count_ = 0;
 }
 
-MockLiveSource::~MockLiveSource()
+MockRtmpSource::~MockRtmpSource()
 {
 }
 
-bool MockLiveSource::can_publish(bool is_edge)
+bool MockRtmpSource::can_publish(bool is_edge)
 {
     return can_publish_result_;
 }
 
-void MockLiveSource::set_can_publish(bool can_publish)
+void MockRtmpSource::set_can_publish(bool can_publish)
 {
     can_publish_result_ = can_publish;
 }
 
-srs_error_t MockLiveSource::on_publish()
+srs_error_t MockRtmpSource::on_publish()
 {
     // Mock implementation - just return success
     return srs_success;
 }
 
-srs_error_t MockLiveSource::on_edge_start_publish()
+srs_error_t MockRtmpSource::on_edge_start_publish()
 {
     // Mock implementation - just return success
     return srs_success;
 }
 
-srs_error_t MockLiveSource::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t MockRtmpSource::consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg)
 {
     on_dump_packets_count_++;
-    return SrsLiveSource::consumer_dumps(consumer, ds, dm, dg);
+    return SrsRtmpSource::consumer_dumps(consumer, ds, dm, dg);
 }
 
-srs_error_t MockLiveSource::on_audio(SrsRtmpCommonMessage *audio)
+srs_error_t MockRtmpSource::on_audio(SrsRtmpCommonMessage *audio)
 {
-    return SrsLiveSource::on_audio(audio);
+    return SrsRtmpSource::on_audio(audio);
 }
 
-srs_error_t MockLiveSource::on_video(SrsRtmpCommonMessage *video)
+srs_error_t MockRtmpSource::on_video(SrsRtmpCommonMessage *video)
 {
-    return SrsLiveSource::on_video(video);
+    return SrsRtmpSource::on_video(video);
 }
 
-srs_error_t MockLiveSource::on_frame(SrsMediaPacket *msg)
+srs_error_t MockRtmpSource::on_frame(SrsMediaPacket *msg)
 {
     on_frame_count_++;
     if (msg->is_audio()) {
@@ -1223,7 +1223,7 @@ srs_error_t MockLiveSource::on_frame(SrsMediaPacket *msg)
     } else if (msg->is_video()) {
         on_video_count_++;
     }
-    return SrsLiveSource::on_frame(msg);
+    return SrsRtmpSource::on_frame(msg);
 }
 
 // Mock SRT source implementation
@@ -2328,7 +2328,7 @@ bool MockBufferCache::alive()
     return true;
 }
 
-srs_error_t MockBufferCache::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t MockBufferCache::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     dump_cache_count_++;
     last_consumer_ = consumer;
@@ -2442,7 +2442,7 @@ MockOriginHub::~MockOriginHub()
     srs_freep(on_dvr_request_sh_error_);
 }
 
-srs_error_t MockOriginHub::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
+srs_error_t MockOriginHub::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsRequest *r)
 {
     initialize_count_++;
     return srs_error_copy(initialize_error_);

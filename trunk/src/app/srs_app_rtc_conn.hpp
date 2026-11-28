@@ -30,7 +30,7 @@
 #include <vector>
 
 class SrsUdpMuxSocket;
-class SrsLiveConsumer;
+class SrsRtmpConsumer;
 class SrsStunPacket;
 class SrsServer;
 class SrsRtcConnection;
@@ -64,7 +64,7 @@ class ISrsAppConfig;
 class ISrsStatistic;
 class ISrsExecRtcAsyncTask;
 class ISrsSrtSourceManager;
-class ISrsLiveSourceManager;
+class ISrsRtmpSourceManager;
 class SrsRtcPublisherNegotiator;
 class ISrsRtcPublisherNegotiator;
 class SrsRtcPlayerNegotiator;
@@ -514,7 +514,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
     ISrsRtcSourceManager *rtc_sources_;
-    ISrsLiveSourceManager *live_sources_;
+    ISrsRtmpSourceManager *rtmp_sources_;
     ISrsSrtSourceManager *srt_sources_;
     ISrsAppFactory *app_factory_;
 

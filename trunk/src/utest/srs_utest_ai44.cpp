@@ -1813,10 +1813,10 @@ class RecvThreadUtestPlayer
 {
 public:
     StUtestTcpPair pair_;
-    MockLiveSourceForQueue source_;
+    MockRtmpSourceForQueue source_;
     SrsTcpConnection *skt_;
     SrsRtmpServer *rtmp_;
-    SrsLiveConsumer *consumer_;
+    SrsRtmpConsumer *consumer_;
     SrsQueueRecvThread *rtrd_;
     SrsStSocket client_;
 
@@ -1847,7 +1847,7 @@ public:
 
         skt_ = new SrsTcpConnection(pair_.take_server());
         rtmp_ = new SrsRtmpServer(skt_);
-        consumer_ = new SrsLiveConsumer(&source_);
+        consumer_ = new SrsRtmpConsumer(&source_);
         rtrd_ = new SrsQueueRecvThread(consumer_, rtmp_, SRS_PERF_MW_SLEEP, _srs_context->get_id());
         client_.init(pair_.client_);
 
@@ -1863,11 +1863,11 @@ public:
 class RecvThreadUtestWaker : public ISrsCoroutineHandler
 {
 public:
-    SrsLiveConsumer *consumer_;
+    SrsRtmpConsumer *consumer_;
     SrsSTCoroutine trd_;
 
 public:
-    RecvThreadUtestWaker(SrsLiveConsumer *consumer) : trd_("utest-waker", this)
+    RecvThreadUtestWaker(SrsRtmpConsumer *consumer) : trd_("utest-waker", this)
     {
         consumer_ = consumer;
     }
@@ -1976,7 +1976,7 @@ VOID TEST(AppRecvThreadTest, ClientsWhenNoCoroutineCanBeCreated_PlayAndPublishRe
 {
     MockRtmpServer rtmp;
     MockSrsRequest req("__defaultVhost__", "live", "livestream");
-    SrsSharedPtr<SrsLiveSource> source;
+    SrsSharedPtr<SrsRtmpSource> source;
     SrsQueueRecvThread player(NULL, &rtmp, SRS_PERF_MW_SLEEP, _srs_context->get_id());
     SrsPublishRecvThread publisher(&rtmp, &req, -1, 0, NULL, source, _srs_context->get_id());
 
@@ -2004,15 +2004,15 @@ public:
     StUtestTcpPair pair_;
     SrsStatistic stat_;
     MockSrsRequest req_;
-    MockLiveSource *source_raw_;
-    SrsSharedPtr<SrsLiveSource> source_;
+    MockRtmpSource *source_raw_;
+    SrsSharedPtr<SrsRtmpSource> source_;
     SrsRtmpConn *conn_;
     SrsPublishRecvThread *rtrd_;
     SrsStSocket client_;
     int fd_;
 
 public:
-    RecvThreadUtestPublisher() : req_("__defaultVhost__", "live", "livestream"), source_raw_(new MockLiveSource()), source_(source_raw_)
+    RecvThreadUtestPublisher() : req_("__defaultVhost__", "live", "livestream"), source_raw_(new MockRtmpSource()), source_(source_raw_)
     {
         conn_ = NULL;
         rtrd_ = NULL;
@@ -2372,7 +2372,7 @@ public:
     MockSrsConfig conf_;
     SrsStatistic stat_;
     MockRtcSourceManager rtc_sources_;
-    MockLiveSourceManager live_sources_;
+    MockRtmpSourceManager rtmp_sources_;
     RtcApiUtestHooks hooks_;
     RtcApiUtestServer server_;
     SrsGoApiRtcWhip *api_;
@@ -2394,7 +2394,7 @@ public:
             api_->play_->config_ = NULL;
             api_->play_->stat_ = NULL;
             api_->play_->rtc_sources_ = NULL;
-            api_->play_->live_sources_ = NULL;
+            api_->play_->rtmp_sources_ = NULL;
             api_->play_->hooks_ = NULL;
         }
         srs_freep(api_);
@@ -2418,7 +2418,7 @@ public:
         api_->play_->config_ = &conf_;
         api_->play_->stat_ = &stat_;
         api_->play_->rtc_sources_ = &rtc_sources_;
-        api_->play_->live_sources_ = &live_sources_;
+        api_->play_->rtmp_sources_ = &rtmp_sources_;
         api_->play_->hooks_ = &hooks_;
         dynamic_cast<SrsSecurity *>(dynamic_cast<SrsEnhancedSecurity *>(api_->play_->security_)->security_)->config_ = &conf_;
 
@@ -2576,7 +2576,7 @@ VOID TEST(AppRtcApiTest, WhepPlayerOfRtmpStreamWithRtmpToRtcOff_Refused)
     HELPER_ASSERT_SUCCESS(w.initialize("vhost __defaultVhost__ { rtc { enabled on; rtmp_to_rtc off; } } "));
 
     // An RTMP encoder publishes the stream.
-    w.live_sources_.mock_source_->can_publish_ = false;
+    w.rtmp_sources_.mock_source_->can_publish_ = false;
 
     string response = w.post(RTC_API_UTEST_WHEP, rtc_api_utest_offer("recvonly"));
     EXPECT_TRUE(rtc_api_utest_status(response, 500)) << response;

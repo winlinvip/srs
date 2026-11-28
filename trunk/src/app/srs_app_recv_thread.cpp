@@ -152,7 +152,7 @@ ISrsQueueRecvThread::~ISrsQueueRecvThread()
 {
 }
 
-SrsQueueRecvThread::SrsQueueRecvThread(SrsLiveConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid)
+SrsQueueRecvThread::SrsQueueRecvThread(SrsRtmpConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid)
 {
     consumer_ = consumer;
     rtmp_ = rtmp_sdk;
@@ -272,7 +272,7 @@ ISrsPublishRecvThread::~ISrsPublishRecvThread()
 }
 
 SrsPublishRecvThread::SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest *req,
-                                           int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid)
+                                           int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsRtmpSource> source, SrsContextId parent_cid)
 {
     rtmp_ = rtmp_sdk;
 

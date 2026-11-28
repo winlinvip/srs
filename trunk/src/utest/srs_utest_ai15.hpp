@@ -826,16 +826,16 @@ public:
     virtual int64_t get_send_bytes();
 };
 
-// Mock SrsLiveConsumer for testing SrsRtmpConn::process_play_control_msg()
-class MockLiveConsumerForPlayControl : public SrsLiveConsumer
+// Mock SrsRtmpConsumer for testing SrsRtmpConn::process_play_control_msg()
+class MockRtmpConsumerForPlayControl : public SrsRtmpConsumer
 {
 public:
     int on_play_client_pause_count_;
     bool last_pause_state_;
 
 public:
-    MockLiveConsumerForPlayControl(ISrsLiveSource *source);
-    virtual ~MockLiveConsumerForPlayControl();
+    MockRtmpConsumerForPlayControl(ISrsRtmpSource *source);
+    virtual ~MockRtmpConsumerForPlayControl();
 
 public:
     virtual srs_error_t on_play_client_pause(bool is_pause);

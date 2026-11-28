@@ -240,7 +240,7 @@ SrsMpegtsSrtConn::SrsMpegtsSrtConn(ISrsResourceManager *resource_manager, srs_sr
     config_ = _srs_config;
     stream_publish_tokens_ = _srs_stream_publish_tokens;
     srt_sources_ = _srs_srt_sources;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     rtc_sources_ = _srs_rtc_sources;
     hooks_ = _srs_hooks;
 }
@@ -273,7 +273,7 @@ SrsMpegtsSrtConn::~SrsMpegtsSrtConn()
     config_ = NULL;
     stream_publish_tokens_ = NULL;
     srt_sources_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     rtc_sources_ = NULL;
     hooks_ = NULL;
 }
@@ -488,21 +488,21 @@ srs_error_t SrsMpegtsSrtConn::acquire_publish()
         return srs_error_new(ERROR_SRT_SOURCE_BUSY, "srt stream %s busy", req_->get_stream_url().c_str());
     }
 
-    SrsSharedPtr<SrsLiveSource> live_source = live_sources_->fetch(req_);
-    if (live_source.get() && !live_source->can_publish(false)) {
-        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "live_source stream %s busy", req_->get_stream_url().c_str());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source = rtmp_sources_->fetch(req_);
+    if (rtmp_source.get() && !rtmp_source->can_publish(false)) {
+        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp stream %s busy", req_->get_stream_url().c_str());
     }
 
-    if ((err = live_sources_->fetch_or_create(req_, live_source)) != srs_success) {
+    if ((err = rtmp_sources_->fetch_or_create(req_, rtmp_source)) != srs_success) {
         return srs_error_wrap(err, "create source");
     }
 
-    srs_assert(live_source.get() != NULL);
+    srs_assert(rtmp_source.get() != NULL);
 
     bool enabled_cache = config_->get_gop_cache(req_->vhost_);
     int gcmf = config_->get_gop_cache_max_frames(req_->vhost_);
-    live_source->set_cache(enabled_cache);
-    live_source->set_gop_cache_max_frames(gcmf);
+    rtmp_source->set_cache(enabled_cache);
+    rtmp_source->set_gop_cache_max_frames(gcmf);
 
     // TODO: FIXME: the code below is repeat in srs_app_rtmp_conn.cpp, refactor it later, use function instead.
     SrsSharedPtr<SrsRtcSource> rtc;
@@ -535,7 +535,7 @@ srs_error_t SrsMpegtsSrtConn::acquire_publish()
     }
 
     if (srt_to_rtmp) {
-        bridge->enable_srt2rtmp(live_source);
+        bridge->enable_srt2rtmp(rtmp_source);
     }
 
     bool rtmp_to_rtc = config_->get_rtc_from_rtmp(req_->vhost_);

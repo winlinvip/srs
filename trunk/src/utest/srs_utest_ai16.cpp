@@ -107,9 +107,9 @@ VOID TEST(SrsBufferCacheTest, ConstructorAndUpdateAuth)
     // Verify that fast_cache was initialized to 0
     EXPECT_EQ(0, (int)cache->fast_cache_);
 
-    // Verify that config and live_sources were set to global singletons
+    // Verify that config and rtmp_sources were set to global singletons
     EXPECT_TRUE(cache->config_ != NULL);
-    EXPECT_TRUE(cache->live_sources_ != NULL);
+    EXPECT_TRUE(cache->rtmp_sources_ != NULL);
 
     // Test update_auth - should update the request with new auth info
     SrsUniquePtr<MockRequest> new_request(new MockRequest("test.vhost", "live", "stream1"));
@@ -169,8 +169,8 @@ VOID TEST(SrsBufferCacheTest, DumpCacheWithMessages)
     EXPECT_EQ(2, cache->queue_->size());
 
     // Create mock source and consumer
-    SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-    SrsUniquePtr<MockLiveConsumerForQueue> consumer(new MockLiveConsumerForQueue(source.get()));
+    SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+    SrsUniquePtr<MockRtmpConsumerForQueue> consumer(new MockRtmpConsumerForQueue(source.get()));
 
     // Test dump_cache - should dump all packets to consumer
     HELPER_EXPECT_SUCCESS(cache->dump_cache(consumer.get(), SrsRtmpJitterAlgorithmFULL));
@@ -260,7 +260,7 @@ VOID TEST(HttpStreamTest, TsStreamEncoderCacheAndAVSettings)
     // Initialize encoder with mock writer
     HELPER_EXPECT_SUCCESS(encoder->initialize(writer.get(), NULL));
 
-    // Test has_cache - TS stream encoder should not have cache (uses SrsLiveSource GOP cache)
+    // Test has_cache - TS stream encoder should not have cache (uses SrsRtmpSource GOP cache)
     EXPECT_FALSE(encoder->has_cache());
 
     // Test dump_cache - should always succeed and do nothing for TS stream
@@ -417,11 +417,11 @@ VOID TEST(SrsFlvStreamEncoderTest, ConfigurationAndCacheMethods)
     encoder->set_guess_has_av(true); // Reset to true
 
     // Test has_cache - should always return false for FLV stream encoder
-    // because FLV stream uses GOP cache from SrsLiveSource
+    // because FLV stream uses GOP cache from SrsRtmpSource
     EXPECT_FALSE(encoder->has_cache());
 
     // Test dump_cache - should always succeed and do nothing
-    // because FLV stream ignores cache (uses SrsLiveSource cache instead)
+    // because FLV stream ignores cache (uses SrsRtmpSource cache instead)
     HELPER_EXPECT_SUCCESS(encoder->dump_cache(NULL, SrsRtmpJitterAlgorithmOFF));
 
     // Verify encoder still works after configuration changes
@@ -600,8 +600,8 @@ VOID TEST(AppHttpStreamTest, AacStreamEncoderMajorScenario)
     EXPECT_EQ(15, writer->filesize());
 
     // Test dump_cache - should delegate to buffer cache
-    MockLiveSourceForQueue mock_source;
-    SrsUniquePtr<MockLiveConsumerForQueue> consumer(new MockLiveConsumerForQueue(&mock_source));
+    MockRtmpSourceForQueue mock_source;
+    SrsUniquePtr<MockRtmpConsumerForQueue> consumer(new MockRtmpConsumerForQueue(&mock_source));
 
     HELPER_EXPECT_SUCCESS(encoder->dump_cache(consumer.get(), SrsRtmpJitterAlgorithmFULL));
 
@@ -2045,7 +2045,7 @@ bool MockBufferCacheForDestroy::alive()
     return alive_;
 }
 
-srs_error_t MockBufferCacheForDestroy::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t MockBufferCacheForDestroy::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     return srs_success;
 }
@@ -2099,7 +2099,7 @@ bool MockBufferEncoderForStreamingSend::has_cache()
     return false;
 }
 
-srs_error_t MockBufferEncoderForStreamingSend::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t MockBufferEncoderForStreamingSend::dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     return srs_success;
 }
@@ -2228,9 +2228,9 @@ VOID TEST(SrsLiveStreamTest, DoServeHttpFlvWithEntryOff)
     SrsUniquePtr<MockHttpMessageForLiveStream> mock_message(new MockHttpMessageForLiveStream());
     MockResponseWriter mock_writer;
 
-    // Create mock live source and consumer
-    SrsUniquePtr<MockLiveSourceForQueue> mock_source(new MockLiveSourceForQueue());
-    SrsUniquePtr<MockLiveConsumerForQueue> mock_consumer(new MockLiveConsumerForQueue(mock_source.get()));
+    // Create mock RTMP source and consumer
+    SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
+    SrsUniquePtr<MockRtmpConsumerForQueue> mock_consumer(new MockRtmpConsumerForQueue(mock_source.get()));
 
     // Call do_serve_http - should initialize FLV encoder, write header, and exit immediately
     err = live_stream->do_serve_http(mock_source.get(), mock_consumer.get(), &mock_writer, mock_message.get());
@@ -2273,8 +2273,8 @@ VOID TEST(SrsLiveStreamTest, DoServeHttpEndsAtOnceWhenConnInterrupted)
     conn->mock_handler_ = new MockWaitingHttpxConnForLiveStream();
     MockResponseWriter mock_writer;
 
-    SrsUniquePtr<MockLiveSourceForQueue> mock_source(new MockLiveSourceForQueue());
-    SrsUniquePtr<MockLiveConsumerForQueue> mock_consumer(new MockLiveConsumerForQueue(mock_source.get()));
+    SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
+    SrsUniquePtr<MockRtmpConsumerForQueue> mock_consumer(new MockRtmpConsumerForQueue(mock_source.get()));
 
     srs_utime_t starttime = srs_time_now_realtime();
     err = live_stream->do_serve_http(mock_source.get(), mock_consumer.get(), &mock_writer, mock_message.get());
@@ -2507,7 +2507,7 @@ VOID TEST(SrsBufferCacheTest, CycleWithThreadPullError)
     // This will cause cycle() to exit the while loop and return the error
     mock_trd->pull_error_ = srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "mock thread interrupted");
 
-    // Call cycle() - should create live source, create consumer, dump consumer,
+    // Call cycle() - should create RTMP source, create consumer, dump consumer,
     // then enter the while loop and exit immediately when trd_->pull() returns error
     err = cache->cycle();
 

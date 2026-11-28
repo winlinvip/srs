@@ -981,8 +981,8 @@ VOID TEST(EdgeIngesterTest, Initialize)
     SrsUniquePtr<MockPlayEdge> mock_edge(new MockPlayEdge());
 
     // Create mock source - use raw pointer for shared_ptr
-    MockLiveSource *raw_source = new MockLiveSource();
-    SrsSharedPtr<SrsLiveSource> source_ptr(raw_source);
+    MockRtmpSource *raw_source = new MockRtmpSource();
+    SrsSharedPtr<SrsRtmpSource> source_ptr(raw_source);
 
     // Create SrsEdgeIngester instance
     SrsUniquePtr<SrsEdgeIngester> ingester(new SrsEdgeIngester());
@@ -1066,9 +1066,9 @@ VOID TEST(EdgeIngesterTest, ProcessPublishMessageAudioVideo)
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
     SrsUniquePtr<MockPlayEdge> mock_edge(new MockPlayEdge());
 
-    // Create mock source using existing MockLiveSource
-    MockLiveSource *raw_source = new MockLiveSource();
-    SrsSharedPtr<SrsLiveSource> source_ptr(raw_source);
+    // Create mock source using existing MockRtmpSource
+    MockRtmpSource *raw_source = new MockRtmpSource();
+    SrsSharedPtr<SrsRtmpSource> source_ptr(raw_source);
 
     // Create mock upstream (use raw pointer since ingester will manage it)
     MockEdgeUpstreamForIngester *mock_upstream = new MockEdgeUpstreamForIngester();
@@ -1144,7 +1144,7 @@ VOID TEST(EdgeForwarderTest, InitializeAndSetQueueSize)
     srs_error_t err;
 
     // Create mock objects
-    SrsSharedPtr<SrsLiveSource> source_ptr(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source_ptr(new MockRtmpSource());
     MockPublishEdge mock_edge;
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
 
@@ -1177,7 +1177,7 @@ VOID TEST(EdgeForwarderTest, ProxyVideoMessage)
     srs_error_t err;
 
     // Create mock objects
-    SrsSharedPtr<SrsLiveSource> source_ptr(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source_ptr(new MockRtmpSource());
     MockPublishEdge mock_edge;
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
 
@@ -1232,7 +1232,7 @@ MockEdgeIngester::~MockEdgeIngester()
     srs_freep(start_error_);
 }
 
-srs_error_t MockEdgeIngester::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r)
+srs_error_t MockEdgeIngester::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPlayEdge *e, ISrsRequest *r)
 {
     initialize_called_ = true;
     return srs_error_copy(initialize_error_);
@@ -1284,7 +1284,7 @@ void MockEdgeForwarder::set_queue_size(srs_utime_t queue_size)
     queue_size_ = queue_size;
 }
 
-srs_error_t MockEdgeForwarder::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r)
+srs_error_t MockEdgeForwarder::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r)
 {
     initialize_called_ = true;
     return srs_error_copy(initialize_error_);
@@ -1432,7 +1432,7 @@ VOID TEST(PlayEdgeTest, ClientPlayLifecycle)
     srs_error_t err;
 
     // Create mock dependencies
-    SrsSharedPtr<SrsLiveSource> source_ptr(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source_ptr(new MockRtmpSource());
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
 
     // Create SrsPlayEdge
@@ -1465,7 +1465,7 @@ VOID TEST(PlayEdgeTest, IngestPlayStateTransition)
     srs_error_t err;
 
     // Create mock dependencies
-    SrsSharedPtr<SrsLiveSource> source_ptr(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source_ptr(new MockRtmpSource());
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
 
     // Create SrsPlayEdge
@@ -1503,7 +1503,7 @@ VOID TEST(PublishEdgeTest, InitializeSetQueueSizeAndCanPublish)
     srs_error_t err;
 
     // Create mock dependencies
-    SrsSharedPtr<SrsLiveSource> source_ptr(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source_ptr(new MockRtmpSource());
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
 
     // Create SrsPublishEdge
@@ -1540,7 +1540,7 @@ VOID TEST(PublishEdgeTest, ClientPublishProxyAndUnpublish)
     srs_error_t err;
 
     // Create mock dependencies
-    SrsSharedPtr<SrsLiveSource> source_ptr(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source_ptr(new MockRtmpSource());
     SrsUniquePtr<MockEdgeRequest> mock_req(new MockEdgeRequest("test.vhost", "live", "stream1"));
 
     // Create SrsPublishEdge

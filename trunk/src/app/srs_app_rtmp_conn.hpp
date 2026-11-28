@@ -22,8 +22,8 @@ class SrsServer;
 class SrsRtmpServer;
 class ISrsRequest;
 class SrsResponse;
-class SrsLiveSource;
-class SrsLiveConsumer;
+class SrsRtmpSource;
+class SrsRtmpConsumer;
 class SrsRtmpCommonMessage;
 class SrsStSocket;
 class SrsHttpHooks;
@@ -42,7 +42,7 @@ class ISrsAppConfig;
 class SrsSslConnection;
 class ISrsResourceManager;
 class ISrsStreamPublishTokenManager;
-class ISrsLiveSourceManager;
+class ISrsRtmpSourceManager;
 class ISrsStatistic;
 class ISrsHttpHooks;
 class ISrsAppFactory;
@@ -158,7 +158,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *manager_;
     ISrsAppConfig *config_;
     ISrsStreamPublishTokenManager *stream_publish_tokens_;
-    ISrsLiveSourceManager *live_sources_;
+    ISrsRtmpSourceManager *rtmp_sources_;
     ISrsStatistic *stat_;
     ISrsHttpHooks *hooks_;
     ISrsRtcSourceManager *rtc_sources_;
@@ -223,26 +223,26 @@ SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t service_cycle();
     virtual srs_error_t stream_service_cycle();
     virtual srs_error_t check_vhost(bool try_default_vhost);
-    virtual srs_error_t playing(SrsSharedPtr<SrsLiveSource> source);
+    virtual srs_error_t playing(SrsSharedPtr<SrsRtmpSource> source);
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    virtual srs_error_t redirect_to_origin_cluster(SrsSharedPtr<SrsLiveSource> source);
+    virtual srs_error_t redirect_to_origin_cluster(SrsSharedPtr<SrsRtmpSource> source);
     // Drain what the client sent, until it is idle, so closing the connection is a FIN, not a reset that
     // drops what SRS has not sent yet.
     virtual void drain_client_input();
 
 public:
-    virtual srs_error_t do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveConsumer *consumer, SrsQueueRecvThread *trd);
+    virtual srs_error_t do_playing(SrsSharedPtr<SrsRtmpSource> source, SrsRtmpConsumer *consumer, SrsQueueRecvThread *trd);
     virtual srs_error_t authorize_publish();
     virtual srs_error_t start_publish();
-    virtual srs_error_t publishing(SrsSharedPtr<SrsLiveSource> source);
-    virtual srs_error_t do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPublishRecvThread *trd);
-    virtual srs_error_t acquire_publish(SrsSharedPtr<SrsLiveSource> source);
-    virtual void release_publish(SrsSharedPtr<SrsLiveSource> source);
-    virtual srs_error_t handle_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsRtmpCommonMessage *msg);
-    virtual srs_error_t process_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsRtmpCommonMessage *msg);
-    virtual srs_error_t process_play_control_msg(SrsLiveConsumer *consumer, SrsRtmpCommonMessage *msg);
+    virtual srs_error_t publishing(SrsSharedPtr<SrsRtmpSource> source);
+    virtual srs_error_t do_publishing(SrsSharedPtr<SrsRtmpSource> source, SrsPublishRecvThread *trd);
+    virtual srs_error_t acquire_publish(SrsSharedPtr<SrsRtmpSource> source);
+    virtual void release_publish(SrsSharedPtr<SrsRtmpSource> source);
+    virtual srs_error_t handle_publish_message(SrsSharedPtr<SrsRtmpSource> &source, SrsRtmpCommonMessage *msg);
+    virtual srs_error_t process_publish_message(SrsSharedPtr<SrsRtmpSource> &source, SrsRtmpCommonMessage *msg);
+    virtual srs_error_t process_play_control_msg(SrsRtmpConsumer *consumer, SrsRtmpCommonMessage *msg);
     virtual void set_sock_options();
 
 // clang-format off

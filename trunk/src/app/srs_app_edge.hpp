@@ -17,7 +17,7 @@
 
 class SrsStSocket;
 class SrsRtmpServer;
-class SrsLiveSource;
+class SrsRtmpSource;
 class ISrsRequest;
 class SrsPlayEdge;
 class SrsPublishEdge;
@@ -38,7 +38,7 @@ class ISrsBasicRtmpClient;
 class ISrsHttpClient;
 class ISrsFileReader;
 class ISrsFlvDecoder;
-class ISrsLiveSource;
+class ISrsRtmpSource;
 class ISrsPlayEdge;
 class ISrsPublishEdge;
 class ISrsAppFactory;
@@ -164,7 +164,7 @@ public:
     virtual ~ISrsEdgeIngester();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r) = 0;
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPlayEdge *e, ISrsRequest *r) = 0;
     virtual srs_error_t start() = 0;
     virtual void stop() = 0;
 };
@@ -179,7 +179,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // A raw pointer, not a shared one, since the source owns this object.
-    ISrsLiveSource *source_;
+    ISrsRtmpSource *source_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -194,7 +194,7 @@ public:
     virtual ~SrsEdgeIngester();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPlayEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
 
@@ -219,7 +219,7 @@ public:
 
 public:
     virtual void set_queue_size(srs_utime_t queue_size) = 0;
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r) = 0;
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r) = 0;
     virtual srs_error_t start() = 0;
     virtual void stop() = 0;
     virtual srs_error_t proxy(SrsRtmpCommonMessage *msg) = 0;
@@ -235,7 +235,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // A raw pointer, not a shared one, since the source owns this object.
-    ISrsLiveSource *source_;
+    ISrsRtmpSource *source_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -257,7 +257,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size);
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
 
@@ -296,7 +296,7 @@ public:
 public:
     // The req is always the source's: the edge does not trust its clients, so with auth on, the
     // origin validates them.
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> source, ISrsRequest *req);
     virtual srs_error_t on_client_play();
     virtual void on_all_client_stop();
 
@@ -328,7 +328,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size);
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> source, ISrsRequest *req);
     virtual bool can_publish();
     virtual srs_error_t on_client_publish();
     virtual srs_error_t on_proxy_publish(SrsRtmpCommonMessage *msg);

@@ -296,7 +296,7 @@ srs_error_t SrsMessageQueue::dump_packets(int max_count, SrsMediaPacket **pmsgs,
     return err;
 }
 
-srs_error_t SrsMessageQueue::dump_packets(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag)
+srs_error_t SrsMessageQueue::dump_packets(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag)
 {
     srs_error_t err = srs_success;
 
@@ -381,15 +381,15 @@ ISrsWakable::~ISrsWakable()
 {
 }
 
-ISrsLiveConsumer::ISrsLiveConsumer()
+ISrsRtmpConsumer::ISrsRtmpConsumer()
 {
 }
 
-ISrsLiveConsumer::~ISrsLiveConsumer()
+ISrsRtmpConsumer::~ISrsRtmpConsumer()
 {
 }
 
-SrsLiveConsumer::SrsLiveConsumer(ISrsLiveSource *s)
+SrsRtmpConsumer::SrsRtmpConsumer(ISrsRtmpSource *s)
 {
     source_ = s;
     paused_ = false;
@@ -405,7 +405,7 @@ SrsLiveConsumer::SrsLiveConsumer(ISrsLiveSource *s)
 #endif
 }
 
-SrsLiveConsumer::~SrsLiveConsumer()
+SrsRtmpConsumer::~SrsRtmpConsumer()
 {
     source_->on_consumer_destroy(this);
     srs_freep(jitter_);
@@ -416,22 +416,22 @@ SrsLiveConsumer::~SrsLiveConsumer()
 #endif
 }
 
-void SrsLiveConsumer::set_queue_size(srs_utime_t queue_size)
+void SrsRtmpConsumer::set_queue_size(srs_utime_t queue_size)
 {
     queue_->set_queue_size(queue_size);
 }
 
-void SrsLiveConsumer::update_source_id()
+void SrsRtmpConsumer::update_source_id()
 {
     should_update_source_id_ = true;
 }
 
-int64_t SrsLiveConsumer::get_time()
+int64_t SrsRtmpConsumer::get_time()
 {
     return jitter_->get_time();
 }
 
-srs_error_t SrsLiveConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
+srs_error_t SrsRtmpConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
 {
     srs_error_t err = srs_success;
 
@@ -473,7 +473,7 @@ srs_error_t SrsLiveConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRt
     return err;
 }
 
-srs_error_t SrsLiveConsumer::dump_packets(SrsMessageArray *msgs, int &count)
+srs_error_t SrsRtmpConsumer::dump_packets(SrsMessageArray *msgs, int &count)
 {
     srs_error_t err = srs_success;
 
@@ -501,7 +501,7 @@ srs_error_t SrsLiveConsumer::dump_packets(SrsMessageArray *msgs, int &count)
 }
 
 #ifdef SRS_PERF_QUEUE_COND_WAIT
-void SrsLiveConsumer::wait(int nb_msgs, srs_utime_t msgs_duration)
+void SrsRtmpConsumer::wait(int nb_msgs, srs_utime_t msgs_duration)
 {
     if (paused_) {
         srs_usleep(SRS_CONSTS_RTMP_PULSE);
@@ -525,7 +525,7 @@ void SrsLiveConsumer::wait(int nb_msgs, srs_utime_t msgs_duration)
 }
 #endif
 
-srs_error_t SrsLiveConsumer::on_play_client_pause(bool is_pause)
+srs_error_t SrsRtmpConsumer::on_play_client_pause(bool is_pause)
 {
     srs_error_t err = srs_success;
 
@@ -535,7 +535,7 @@ srs_error_t SrsLiveConsumer::on_play_client_pause(bool is_pause)
     return err;
 }
 
-void SrsLiveConsumer::wakeup()
+void SrsRtmpConsumer::wakeup()
 {
 #ifdef SRS_PERF_QUEUE_COND_WAIT
     if (mw_waiting_) {
@@ -655,7 +655,7 @@ void SrsGopCache::clear()
     wait_keyframe_ = false;
 }
 
-srs_error_t SrsGopCache::dump(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm)
+srs_error_t SrsGopCache::dump(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm)
 {
     srs_error_t err = srs_success;
 
@@ -693,11 +693,11 @@ bool SrsGopCache::pure_audio()
     return cached_video_count_ == 0;
 }
 
-ISrsLiveSourceHandler::ISrsLiveSourceHandler()
+ISrsRtmpSourceHandler::ISrsRtmpSourceHandler()
 {
 }
 
-ISrsLiveSourceHandler::~ISrsLiveSourceHandler()
+ISrsRtmpSourceHandler::~ISrsRtmpSourceHandler()
 {
 }
 
@@ -848,7 +848,7 @@ SrsOriginHub::~SrsOriginHub()
 
 // Called after fetch_or_create puts the source in the pool (see PR 4449), so it must not switch
 // coroutines, or other coroutines could create a duplicate source for the stream.
-srs_error_t SrsOriginHub::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
+srs_error_t SrsOriginHub::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1389,7 +1389,7 @@ SrsFormat *SrsMetaCache::ash_format()
     return aformat_;
 }
 
-srs_error_t SrsMetaCache::dumps(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
+srs_error_t SrsMetaCache::dumps(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
 {
     srs_error_t err = srs_success;
 
@@ -1518,17 +1518,17 @@ srs_error_t SrsMetaCache::update_vsh(SrsMediaPacket *msg)
     return vformat_->on_video(msg);
 }
 
-ISrsLiveSourceManager::ISrsLiveSourceManager()
+ISrsRtmpSourceManager::ISrsRtmpSourceManager()
 {
 }
 
-ISrsLiveSourceManager::~ISrsLiveSourceManager()
+ISrsRtmpSourceManager::~ISrsRtmpSourceManager()
 {
 }
 
-SrsLiveSourceManager *_srs_sources = NULL;
+SrsRtmpSourceManager *_srs_rtmp_sources = NULL;
 
-SrsLiveSourceManager::SrsLiveSourceManager()
+SrsRtmpSourceManager::SrsRtmpSourceManager()
 {
     lock_ = srs_mutex_new();
     timer_ = NULL;
@@ -1537,12 +1537,12 @@ SrsLiveSourceManager::SrsLiveSourceManager()
     stream_publish_tokens_ = _srs_stream_publish_tokens;
 }
 
-void SrsLiveSourceManager::assemble()
+void SrsRtmpSourceManager::assemble()
 {
     timer_ = app_factory_->create_hourglass("sources", this, 1 * SRS_UTIME_SECONDS);
 }
 
-SrsLiveSourceManager::~SrsLiveSourceManager()
+SrsRtmpSourceManager::~SrsRtmpSourceManager()
 {
     srs_mutex_destroy(lock_);
     srs_freep(timer_);
@@ -1551,12 +1551,12 @@ SrsLiveSourceManager::~SrsLiveSourceManager()
     stream_publish_tokens_ = NULL;
 }
 
-srs_error_t SrsLiveSourceManager::initialize()
+srs_error_t SrsRtmpSourceManager::initialize()
 {
     return setup_ticks();
 }
 
-srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps)
+srs_error_t SrsRtmpSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps)
 {
     srs_error_t err = srs_success;
 
@@ -1568,14 +1568,14 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
         SrsLocker(&lock_);
 
         string stream_url = r->get_stream_url();
-        std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool_.find(stream_url);
+        std::map<std::string, SrsSharedPtr<SrsRtmpSource> >::iterator it = pool_.find(stream_url);
 
         if (it != pool_.end()) {
-            SrsSharedPtr<SrsLiveSource> &source = it->second;
+            SrsSharedPtr<SrsRtmpSource> &source = it->second;
             pps = source;
         } else {
-            SrsSharedPtr<SrsLiveSource> source = app_factory_->create_live_source();
-            srs_trace("new live source, stream_url=%s, dead=%d", stream_url.c_str(), source->stream_is_dead());
+            SrsSharedPtr<SrsRtmpSource> source = app_factory_->create_rtmp_source();
+            srs_trace("new rtmp source, stream_url=%s, dead=%d", stream_url.c_str(), source->stream_is_dead());
             pps = source;
 
             r->on_source_created();
@@ -1587,7 +1587,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
 
     if (created && (err = pps->initialize(pps, r)) != srs_success) {
         // Drop the half built source, or the next client gets it without initialize.
-        std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool_.find(r->get_stream_url());
+        std::map<std::string, SrsSharedPtr<SrsRtmpSource> >::iterator it = pool_.find(r->get_stream_url());
         if (it != pool_.end() && it->second.get() == pps.get()) {
             pool_.erase(it);
         }
@@ -1602,7 +1602,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
     return err;
 }
 
-SrsSharedPtr<SrsLiveSource> SrsLiveSourceManager::fetch(ISrsRequest *r)
+SrsSharedPtr<SrsRtmpSource> SrsRtmpSourceManager::fetch(ISrsRequest *r)
 {
     // The lock guards against coroutine switches.
     // @bug https://github.com/ossrs/srs/issues/1230
@@ -1610,27 +1610,27 @@ SrsSharedPtr<SrsLiveSource> SrsLiveSourceManager::fetch(ISrsRequest *r)
     SrsLocker(&lock_);
 
     string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool_.find(stream_url);
+    std::map<std::string, SrsSharedPtr<SrsRtmpSource> >::iterator it = pool_.find(stream_url);
 
     if (it == pool_.end()) {
-        return SrsSharedPtr<SrsLiveSource>(NULL);
+        return SrsSharedPtr<SrsRtmpSource>(NULL);
     }
 
-    SrsSharedPtr<SrsLiveSource> &source = it->second;
+    SrsSharedPtr<SrsRtmpSource> &source = it->second;
     return source;
 }
 
-void SrsLiveSourceManager::dispose()
+void SrsRtmpSourceManager::dispose()
 {
-    std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it;
+    std::map<std::string, SrsSharedPtr<SrsRtmpSource> >::iterator it;
     for (it = pool_.begin(); it != pool_.end(); ++it) {
-        SrsSharedPtr<SrsLiveSource> &source = it->second;
+        SrsSharedPtr<SrsRtmpSource> &source = it->second;
         source->dispose();
     }
     return;
 }
 
-srs_error_t SrsLiveSourceManager::setup_ticks()
+srs_error_t SrsRtmpSourceManager::setup_ticks()
 {
     srs_error_t err = srs_success;
 
@@ -1645,13 +1645,13 @@ srs_error_t SrsLiveSourceManager::setup_ticks()
     return err;
 }
 
-srs_error_t SrsLiveSourceManager::notify(int event, srs_utime_t interval, srs_utime_t tick)
+srs_error_t SrsRtmpSourceManager::notify(int event, srs_utime_t interval, srs_utime_t tick)
 {
     srs_error_t err = srs_success;
 
-    std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it;
+    std::map<std::string, SrsSharedPtr<SrsRtmpSource> >::iterator it;
     for (it = pool_.begin(); it != pool_.end();) {
-        SrsSharedPtr<SrsLiveSource> &source = it->second;
+        SrsSharedPtr<SrsRtmpSource> &source = it->second;
 
         if ((err = source->cycle()) != srs_success) {
             SrsContextId cid = source->source_id();
@@ -1680,20 +1680,20 @@ srs_error_t SrsLiveSourceManager::notify(int event, srs_utime_t interval, srs_ut
     return err;
 }
 
-void SrsLiveSourceManager::destroy()
+void SrsRtmpSourceManager::destroy()
 {
     pool_.clear();
 }
 
-ISrsLiveSource::ISrsLiveSource()
+ISrsRtmpSource::ISrsRtmpSource()
 {
 }
 
-ISrsLiveSource::~ISrsLiveSource()
+ISrsRtmpSource::~ISrsRtmpSource()
 {
 }
 
-SrsLiveSource::SrsLiveSource()
+SrsRtmpSource::SrsRtmpSource()
 {
     req_ = NULL;
     jitter_algorithm_ = SrsRtmpJitterAlgorithmOFF;
@@ -1725,7 +1725,7 @@ SrsLiveSource::SrsLiveSource()
     clk_ = _srs_clock;
 }
 
-void SrsLiveSource::assemble()
+void SrsRtmpSource::assemble()
 {
     config_->subscribe(this);
 
@@ -1734,7 +1734,7 @@ void SrsLiveSource::assemble()
     stream_die_at_ = clk_->now();
 }
 
-SrsLiveSource::~SrsLiveSource()
+SrsRtmpSource::~SrsRtmpSource()
 {
     config_->unsubscribe(this);
 
@@ -1756,7 +1756,7 @@ SrsLiveSource::~SrsLiveSource()
     SrsContextId cid = source_id_;
     if (cid.empty())
         cid = pre_source_id_;
-    srs_trace("free live source id=[%s]", cid.c_str());
+    srs_trace("free rtmp source id=[%s]", cid.c_str());
 
     config_ = NULL;
     stat_ = NULL;
@@ -1765,7 +1765,7 @@ SrsLiveSource::~SrsLiveSource()
     clk_ = NULL;
 }
 
-void SrsLiveSource::dispose()
+void SrsRtmpSource::dispose()
 {
     if (hub_) {
         hub_->dispose();
@@ -1774,7 +1774,7 @@ void SrsLiveSource::dispose()
     gop_cache_->dispose();
 }
 
-srs_error_t SrsLiveSource::cycle()
+srs_error_t SrsRtmpSource::cycle()
 {
     srs_error_t err = srs_success;
 
@@ -1785,7 +1785,7 @@ srs_error_t SrsLiveSource::cycle()
     return srs_success;
 }
 
-bool SrsLiveSource::stream_is_dead()
+bool SrsRtmpSource::stream_is_dead()
 {
     if (!can_publish_ || !publish_edge_->can_publish()) {
         return false;
@@ -1807,7 +1807,7 @@ bool SrsLiveSource::stream_is_dead()
     return true;
 }
 
-bool SrsLiveSource::publisher_is_idle_for(srs_utime_t timeout)
+bool SrsRtmpSource::publisher_is_idle_for(srs_utime_t timeout)
 {
     if (!publisher_idle_at_ || !timeout) {
         return false;
@@ -1820,12 +1820,12 @@ bool SrsLiveSource::publisher_is_idle_for(srs_utime_t timeout)
     return false;
 }
 
-SrsMetaCache *SrsLiveSource::meta()
+SrsMetaCache *SrsRtmpSource::meta()
 {
     return meta_;
 }
 
-SrsRtmpFormat *SrsLiveSource::format()
+SrsRtmpFormat *SrsRtmpSource::format()
 {
     return format_;
 }
@@ -1833,7 +1833,7 @@ SrsRtmpFormat *SrsLiveSource::format()
 // Called after fetch_or_create puts the source in the pool (see PR 4449), so it must not switch
 // coroutines before the fields are set: other coroutines may use the source from the pool, or
 // create a duplicate source for the stream.
-srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r)
+srs_error_t SrsRtmpSource::initialize(SrsSharedPtr<SrsRtmpSource> wrapper, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1876,13 +1876,13 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsR
     return err;
 }
 
-void SrsLiveSource::set_bridge(ISrsRtmpBridge *v)
+void SrsRtmpSource::set_bridge(ISrsRtmpBridge *v)
 {
     srs_freep(rtmp_bridge_);
     rtmp_bridge_ = v;
 }
 
-srs_error_t SrsLiveSource::on_source_id_changed(SrsContextId id)
+srs_error_t SrsRtmpSource::on_source_id_changed(SrsContextId id)
 {
     srs_error_t err = srs_success;
 
@@ -1895,36 +1895,36 @@ srs_error_t SrsLiveSource::on_source_id_changed(SrsContextId id)
     }
     source_id_ = id;
 
-    std::vector<SrsLiveConsumer *>::iterator it;
+    std::vector<SrsRtmpConsumer *>::iterator it;
     for (it = consumers_.begin(); it != consumers_.end(); ++it) {
-        SrsLiveConsumer *consumer = *it;
+        SrsRtmpConsumer *consumer = *it;
         consumer->update_source_id();
     }
 
     return err;
 }
 
-SrsContextId SrsLiveSource::source_id()
+SrsContextId SrsRtmpSource::source_id()
 {
     return source_id_;
 }
 
-SrsContextId SrsLiveSource::pre_source_id()
+SrsContextId SrsRtmpSource::pre_source_id()
 {
     return pre_source_id_;
 }
 
-bool SrsLiveSource::inactive()
+bool SrsRtmpSource::inactive()
 {
     return can_publish_;
 }
 
-void SrsLiveSource::update_auth(ISrsRequest *r)
+void SrsRtmpSource::update_auth(ISrsRequest *r)
 {
     req_->update_auth(r);
 }
 
-bool SrsLiveSource::can_publish(bool is_edge)
+bool SrsRtmpSource::can_publish(bool is_edge)
 {
     // TODO: FIXME: Should check the status of bridge.
 
@@ -1935,7 +1935,7 @@ bool SrsLiveSource::can_publish(bool is_edge)
     return can_publish_;
 }
 
-srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
+srs_error_t SrsRtmpSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
 {
     srs_error_t err = srs_success;
 
@@ -1967,9 +1967,9 @@ srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
     meta_->update_previous_data();
 
     if (!drop_for_reduce) {
-        std::vector<SrsLiveConsumer *>::iterator it;
+        std::vector<SrsRtmpConsumer *>::iterator it;
         for (it = consumers_.begin(); it != consumers_.end(); ++it) {
-            SrsLiveConsumer *consumer = *it;
+            SrsRtmpConsumer *consumer = *it;
             if ((err = consumer->enqueue(meta_->data(), atc_, jitter_algorithm_)) != srs_success) {
                 return srs_error_wrap(err, "consume metadata");
             }
@@ -1983,7 +1983,7 @@ srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
     return err;
 }
 
-srs_error_t SrsLiveSource::on_audio(SrsRtmpCommonMessage *shared_audio)
+srs_error_t SrsRtmpSource::on_audio(SrsRtmpCommonMessage *shared_audio)
 {
     if (!mix_correct_ && is_monotonically_increase_) {
         if (last_packet_time_ > 0 && shared_audio->header_.timestamp_ < last_packet_time_) {
@@ -2006,7 +2006,7 @@ srs_error_t SrsLiveSource::on_audio(SrsRtmpCommonMessage *shared_audio)
     return on_frame(&msg);
 }
 
-srs_error_t SrsLiveSource::on_frame(SrsMediaPacket *msg)
+srs_error_t SrsRtmpSource::on_frame(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
@@ -2035,7 +2035,7 @@ srs_error_t SrsLiveSource::on_frame(SrsMediaPacket *msg)
     return err;
 }
 
-srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
+srs_error_t SrsRtmpSource::on_audio_imp(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
@@ -2070,7 +2070,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
 
     if (!drop_for_reduce) {
         for (int i = 0; i < (int)consumers_.size(); i++) {
-            SrsLiveConsumer *consumer = consumers_.at(i);
+            SrsRtmpConsumer *consumer = consumers_.at(i);
             if ((err = consumer->enqueue(msg, atc_, jitter_algorithm_)) != srs_success) {
                 return srs_error_wrap(err, "consume message");
             }
@@ -2103,7 +2103,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
     return err;
 }
 
-srs_error_t SrsLiveSource::on_video(SrsRtmpCommonMessage *shared_video)
+srs_error_t SrsRtmpSource::on_video(SrsRtmpCommonMessage *shared_video)
 {
     srs_error_t err = srs_success;
 
@@ -2133,7 +2133,7 @@ srs_error_t SrsLiveSource::on_video(SrsRtmpCommonMessage *shared_video)
     return on_frame(&msg);
 }
 
-srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
+srs_error_t SrsRtmpSource::on_video_imp(SrsMediaPacket *msg)
 {
     srs_error_t err = srs_success;
 
@@ -2177,7 +2177,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
 
     if (!drop_for_reduce) {
         for (int i = 0; i < (int)consumers_.size(); i++) {
-            SrsLiveConsumer *consumer = consumers_.at(i);
+            SrsRtmpConsumer *consumer = consumers_.at(i);
             if ((err = consumer->enqueue(msg, atc_, jitter_algorithm_)) != srs_success) {
                 return srs_error_wrap(err, "consume video");
             }
@@ -2204,7 +2204,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
     return err;
 }
 
-srs_error_t SrsLiveSource::on_aggregate(SrsRtmpCommonMessage *msg)
+srs_error_t SrsRtmpSource::on_aggregate(SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -2292,7 +2292,7 @@ srs_error_t SrsLiveSource::on_aggregate(SrsRtmpCommonMessage *msg)
     return err;
 }
 
-srs_error_t SrsLiveSource::on_publish()
+srs_error_t SrsRtmpSource::on_publish()
 {
     srs_error_t err = srs_success;
 
@@ -2335,7 +2335,7 @@ srs_error_t SrsLiveSource::on_publish()
     return err;
 }
 
-void SrsLiveSource::on_unpublish()
+void SrsRtmpSource::on_unpublish()
 {
     if (can_publish_) {
         return;
@@ -2380,7 +2380,7 @@ void SrsLiveSource::on_unpublish()
     can_publish_ = true;
 }
 
-srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer *&consumer)
+srs_error_t SrsRtmpSource::create_consumer(SrsRtmpConsumer *&consumer)
 {
     srs_error_t err = srs_success;
 
@@ -2390,7 +2390,7 @@ srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer *&consumer)
         }
     }
 
-    consumer = new SrsLiveConsumer(this);
+    consumer = new SrsRtmpConsumer(this);
     consumers_.push_back(consumer);
 
     stream_die_at_ = 0;
@@ -2399,7 +2399,7 @@ srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer *&consumer)
     return err;
 }
 
-srs_error_t SrsLiveSource::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t SrsRtmpSource::consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg)
 {
     srs_error_t err = srs_success;
 
@@ -2440,9 +2440,9 @@ srs_error_t SrsLiveSource::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, b
     return err;
 }
 
-void SrsLiveSource::on_consumer_destroy(SrsLiveConsumer *consumer)
+void SrsRtmpSource::on_consumer_destroy(SrsRtmpConsumer *consumer)
 {
-    std::vector<SrsLiveConsumer *>::iterator it;
+    std::vector<SrsRtmpConsumer *>::iterator it;
     it = std::find(consumers_.begin(), consumers_.end(), consumer);
     if (it != consumers_.end()) {
         it = consumers_.erase(it);
@@ -2464,33 +2464,33 @@ void SrsLiveSource::on_consumer_destroy(SrsLiveConsumer *consumer)
     }
 }
 
-void SrsLiveSource::set_cache(bool enabled)
+void SrsRtmpSource::set_cache(bool enabled)
 {
     gop_cache_->set(enabled);
 }
 
-void SrsLiveSource::set_gop_cache_max_frames(int v)
+void SrsRtmpSource::set_gop_cache_max_frames(int v)
 {
     gop_cache_->set_gop_cache_max_frames(v);
 }
 
-SrsRtmpJitterAlgorithm SrsLiveSource::jitter()
+SrsRtmpJitterAlgorithm SrsRtmpSource::jitter()
 {
     return jitter_algorithm_;
 }
 
-srs_error_t SrsLiveSource::on_edge_start_publish()
+srs_error_t SrsRtmpSource::on_edge_start_publish()
 {
     return publish_edge_->on_client_publish();
 }
 
 // TODO: FIXME: Use edge strategy pattern.
-srs_error_t SrsLiveSource::on_edge_proxy_publish(SrsRtmpCommonMessage *msg)
+srs_error_t SrsRtmpSource::on_edge_proxy_publish(SrsRtmpCommonMessage *msg)
 {
     return publish_edge_->on_proxy_publish(msg);
 }
 
-void SrsLiveSource::on_edge_proxy_unpublish()
+void SrsRtmpSource::on_edge_proxy_unpublish()
 {
     publish_edge_->on_proxy_unpublish();
 }

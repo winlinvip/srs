@@ -1104,19 +1104,19 @@ public:
     }
 };
 
-// The stream an RTMP client plays or publishes. It publishes as SrsLiveSource does, so an idle publisher is found,
+// The stream an RTMP client plays or publishes. It publishes as SrsRtmpSource does, so an idle publisher is found,
 // and it can refuse a publisher's messages, as when the origin hub, a bridge or the edge's upstream fails.
-class RtmpConnUtestSource : public MockLiveSourceForPublishMessage
+class RtmpConnUtestSource : public MockRtmpSourceForPublishMessage
 {
 public:
-    MockLiveSourceHandler handler_mock_;
+    MockRtmpSourceHandler handler_mock_;
     srs_error_t audio_error_;
     srs_error_t video_error_;
     srs_error_t aggregate_error_;
     srs_error_t metadata_error_;
     srs_error_t proxy_error_;
     int on_edge_proxy_unpublish_count_;
-    // Whether a publish sets the source up as SrsLiveSource does, with its origin hub, or only takes the stream.
+    // Whether a publish sets the source up as SrsRtmpSource does, with its origin hub, or only takes the stream.
     bool publish_as_source_;
 
 public:
@@ -1145,49 +1145,49 @@ public:
     virtual srs_error_t on_publish()
     {
         if (!publish_as_source_) {
-            return MockLiveSource::on_publish();
+            return MockRtmpSource::on_publish();
         }
-        return SrsLiveSource::on_publish();
+        return SrsRtmpSource::on_publish();
     }
     virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio)
     {
         if (audio_error_ != srs_success) {
             return srs_error_copy(audio_error_);
         }
-        return MockLiveSource::on_audio(audio);
+        return MockRtmpSource::on_audio(audio);
     }
     virtual srs_error_t on_video(SrsRtmpCommonMessage *video)
     {
         if (video_error_ != srs_success) {
             return srs_error_copy(video_error_);
         }
-        return MockLiveSource::on_video(video);
+        return MockRtmpSource::on_video(video);
     }
     virtual srs_error_t on_aggregate(SrsRtmpCommonMessage *msg)
     {
         if (aggregate_error_ != srs_success) {
             return srs_error_copy(aggregate_error_);
         }
-        return MockLiveSourceForPublishMessage::on_aggregate(msg);
+        return MockRtmpSourceForPublishMessage::on_aggregate(msg);
     }
     virtual srs_error_t on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
     {
         if (metadata_error_ != srs_success) {
             return srs_error_copy(metadata_error_);
         }
-        return MockLiveSourceForPublishMessage::on_meta_data(msg, metadata);
+        return MockRtmpSourceForPublishMessage::on_meta_data(msg, metadata);
     }
     virtual srs_error_t on_edge_proxy_publish(SrsRtmpCommonMessage *msg)
     {
         if (proxy_error_ != srs_success) {
             return srs_error_copy(proxy_error_);
         }
-        return MockLiveSourceForPublishMessage::on_edge_proxy_publish(msg);
+        return MockRtmpSourceForPublishMessage::on_edge_proxy_publish(msg);
     }
     virtual void on_edge_proxy_unpublish()
     {
         on_edge_proxy_unpublish_count_++;
-        SrsLiveSource::on_edge_proxy_unpublish();
+        SrsRtmpSource::on_edge_proxy_unpublish();
     }
 };
 
@@ -1200,7 +1200,7 @@ public:
     MockSrsConfig conf_;
     SrsStatistic stat_;
     RtmpConnUtestHooks hooks_;
-    MockLiveSourceManager sources_;
+    MockRtmpSourceManager sources_;
     RtmpConnUtestSource *source_;
     SrsStreamPublishTokenManager tokens_;
     MockRtcSourceManager rtc_sources_;
@@ -1324,13 +1324,13 @@ private:
 
         source_ = new RtmpConnUtestSource();
         source_->config_ = &conf_;
-        sources_.mock_source_ = SrsSharedPtr<SrsLiveSource>(source_);
+        sources_.mock_source_ = SrsSharedPtr<SrsRtmpSource>(source_);
 
         conn_ = new SrsRtmpConn(new MockRtmpTransport(), "192.168.1.100", 50000);
         conn_->config_ = &conf_;
         conn_->stat_ = &stat_;
         conn_->hooks_ = &hooks_;
-        conn_->live_sources_ = &sources_;
+        conn_->rtmp_sources_ = &sources_;
         conn_->stream_publish_tokens_ = &tokens_;
         conn_->rtc_sources_ = &rtc_sources_;
         conn_->srt_sources_ = &srt_sources_;
@@ -2168,7 +2168,7 @@ VOID TEST(AppRtmpConnTest, SourceRefusesPublisherMessage_PublishEnds)
     RtmpConnUtestClient c;
     HELPER_ASSERT_SUCCESS(c.open("vhost __defaultVhost__ { }", SrsRtmpConnFMLEPublish));
     c.conn_->info_->type_ = SrsRtmpConnFMLEPublish;
-    SrsSharedPtr<SrsLiveSource> source = c.sources_.mock_source_;
+    SrsSharedPtr<SrsRtmpSource> source = c.sources_.mock_source_;
 
     if (true) {
         c.source_->audio_error_ = srs_error_new(ERROR_HLS_WRITE_FAILED, "hls");
@@ -2215,7 +2215,7 @@ VOID TEST(AppRtmpConnTest, PublisherSendsAckOrUserControl_Ignored)
     RtmpConnUtestClient c;
     HELPER_ASSERT_SUCCESS(c.open("vhost __defaultVhost__ { }", SrsRtmpConnFMLEPublish));
     c.conn_->info_->type_ = SrsRtmpConnFMLEPublish;
-    SrsSharedPtr<SrsLiveSource> source = c.sources_.mock_source_;
+    SrsSharedPtr<SrsRtmpSource> source = c.sources_.mock_source_;
 
     SrsUniquePtr<SrsRtmpCommonMessage> ack(rtmp_conn_utest_message(RTMP_MSG_Acknowledgement, string("\x00\x26\x25\xa0", 4)));
     HELPER_EXPECT_SUCCESS(c.conn_->handle_publish_message(source, ack.get()));
@@ -2279,7 +2279,7 @@ VOID TEST(AppRtmpConnTest, EdgePlayerJoinsWhileEdgeStops_Refused)
     RtmpConnUtestClient c;
     HELPER_ASSERT_SUCCESS(c.open(string("vhost __defaultVhost__ { cluster { mode remote; origin 127.0.0.1:19350; } ") + rtmp_conn_utest_all_hooks + " }", SrsRtmpConnPlay));
     MockSrsRequest req("__defaultVhost__", "live", "livestream");
-    SrsSharedPtr<SrsLiveSource> source;
+    SrsSharedPtr<SrsRtmpSource> source;
     HELPER_ASSERT_SUCCESS(c.sources_.fetch_or_create(&req, source));
     c.source_->play_edge_->state_ = SrsEdgeStateIngestStopping;
 
@@ -2584,19 +2584,19 @@ public:
     }
 };
 
-// A live stream of the server: the real SrsLiveSource with the vhost from config text, its origin hub, a real
+// A live stream of the server: the real SrsRtmpSource with the vhost from config text, its origin hub, a real
 // statistic and the clock of the test. Encoders publish to it, and players take its messages, as SrsRtmpConn does.
 class RtmpSourceUtestStream
 {
 public:
     MockSrsConfig conf_;
     SrsStatistic stat_;
-    MockLiveSourceHandler handler_;
+    MockRtmpSourceHandler handler_;
     MockClockForPithyPrint clock_;
     RtmpSourceUtestFactory factory_;
     MockSrsRequest req_;
-    SrsSharedPtr<SrsLiveSource> source_;
-    std::vector<SrsLiveConsumer *> players_;
+    SrsSharedPtr<SrsRtmpSource> source_;
+    std::vector<SrsRtmpConsumer *> players_;
 
 public:
     RtmpSourceUtestStream() : req_("__defaultVhost__", "live", "livestream")
@@ -2606,13 +2606,13 @@ public:
     virtual ~RtmpSourceUtestStream()
     {
         for (int i = 0; i < (int)players_.size(); i++) {
-            SrsLiveConsumer *player = players_.at(i);
+            SrsRtmpConsumer *player = players_.at(i);
             srs_freep(player);
         }
     }
 
 public:
-    // Creates the source of the stream, as SrsLiveSourceManager::fetch_or_create does.
+    // Creates the source of the stream, as SrsRtmpSourceManager::fetch_or_create does.
     srs_error_t open(std::string text)
     {
         srs_error_t err = srs_success;
@@ -2623,21 +2623,21 @@ public:
         factory_.config_ = &conf_;
         factory_.stat_ = &stat_;
 
-        SrsLiveSource *source = new SrsLiveSource();
+        SrsRtmpSource *source = new SrsRtmpSource();
         source->config_ = &conf_;
         source->stat_ = &stat_;
         source->handler_ = &handler_;
         source->app_factory_ = &factory_;
         source->clk_ = &clock_;
-        source_ = SrsSharedPtr<SrsLiveSource>(source);
+        source_ = SrsSharedPtr<SrsRtmpSource>(source);
         source->assemble();
 
         return source->initialize(source_, &req_);
     }
     // A player joins, getting the cached metadata, sequence headers and GOP, as SrsRtmpConn::playing does.
-    SrsLiveConsumer *play()
+    SrsRtmpConsumer *play()
     {
-        SrsLiveConsumer *player = NULL;
+        SrsRtmpConsumer *player = NULL;
         srs_error_t err = source_->create_consumer(player);
         EXPECT_TRUE(err == srs_success) << srs_error_desc(err);
         srs_freep(err);
@@ -2652,7 +2652,7 @@ public:
         return player;
     }
     // The player leaves.
-    void leave(SrsLiveConsumer *player)
+    void leave(SrsRtmpConsumer *player)
     {
         players_.erase(std::find(players_.begin(), players_.end(), player));
         srs_freep(player);
@@ -2714,7 +2714,7 @@ public:
 
 // What the player got since it last read: A and V for the sequence headers, a and v for frames, m for the metadata, each
 // with its time.
-static string rtmp_source_utest_got(SrsLiveConsumer *player)
+static string rtmp_source_utest_got(SrsRtmpConsumer *player)
 {
     SrsMessageArray msgs(256);
     int count = 0;
@@ -2770,7 +2770,7 @@ VOID TEST(AppRtmpSourceTest, MixCorrectVideoAheadOfAudio_PlayerGetsTimeOrder)
     for (int i = 0; i < 2; i++) {
         RtmpSourceUtestStream s;
         HELPER_ASSERT_SUCCESS(s.open(configs[i]));
-        SrsLiveConsumer *player = s.play();
+        SrsRtmpConsumer *player = s.play();
         HELPER_ASSERT_SUCCESS(s.source_->on_publish());
 
         HELPER_ASSERT_SUCCESS(s.start_av(0));
@@ -2795,7 +2795,7 @@ VOID TEST(AppRtmpSourceTest, MixCorrectAudioOnlyOrVideoOnly_HeldForTenMessages)
     for (int kind = 0; kind < 2; kind++) {
         RtmpSourceUtestStream s;
         HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { mix_correct on; time_jitter off; } }"));
-        SrsLiveConsumer *player = s.play();
+        SrsRtmpConsumer *player = s.play();
         HELPER_ASSERT_SUCCESS(s.source_->on_publish());
 
         for (int i = 0; i < 11; i++) {
@@ -2831,7 +2831,7 @@ VOID TEST(AppRtmpSourceTest, TimestampsJumpBack_WarnedOncePerPublish)
     ListenerUtestLog log;
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
 
     HELPER_ASSERT_SUCCESS(s.start_av(0));
@@ -2877,7 +2877,7 @@ VOID TEST(AppRtmpSourceTest, AtcStream_SequenceHeadersTakeAbsoluteTime)
     EXPECT_EQ(t + 40, s.source_->meta_->vsh()->timestamp_);
     EXPECT_EQ(t + 40, s.source_->meta_->data()->timestamp_);
 
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
     EXPECT_STREQ("m3600000,A3600000,V3600000,v3600000,a3600010,v3600040", rtmp_source_utest_got(player).c_str());
     s.source_->on_unpublish();
 }
@@ -2890,7 +2890,7 @@ VOID TEST(AppRtmpSourceTest, RepublishSameVideoSequenceHeader_ReduceDropsIt)
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { reduce_sequence_header on; time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
 
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(s.video(0, flv_utest_avc_sh, sizeof(flv_utest_avc_sh)));
@@ -2920,7 +2920,7 @@ VOID TEST(AppRtmpSourceTest, PlayerWaitingBeforePublish_ReduceSendsFirstMetadata
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { reduce_sequence_header on; time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
 
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(s.metadata(0));
@@ -2938,7 +2938,7 @@ VOID TEST(AppRtmpSourceTest, SameOrChangedMetadataAgain_ReduceDropsOnlySame)
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { reduce_sequence_header on; time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
 
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(s.metadata(0));
@@ -2954,7 +2954,7 @@ VOID TEST(AppRtmpSourceTest, SameOrChangedMetadataAgain_ReduceDropsOnlySame)
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(s.metadata(100, 1280));
     EXPECT_STREQ("", rtmp_source_utest_got(player).c_str());
-    SrsLiveConsumer *late = s.play();
+    SrsRtmpConsumer *late = s.play();
     EXPECT_STREQ("m100", rtmp_source_utest_got(late).c_str());
 
     HELPER_ASSERT_SUCCESS(s.metadata(110));
@@ -2970,7 +2970,7 @@ VOID TEST(AppRtmpSourceTest, SameMetadataAgainWithoutReduce_Sent)
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
 
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(s.metadata(0));
@@ -2991,7 +2991,7 @@ VOID TEST(AppRtmpSourceTest, AggregateCutInsideTag_Refused)
     for (int cut = 1; cut < (int)second.size(); cut++) {
         RtmpSourceUtestStream s;
         HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
-        SrsLiveConsumer *player = s.play();
+        SrsRtmpConsumer *player = s.play();
         HELPER_ASSERT_SUCCESS(s.source_->on_publish());
 
         err = s.aggregate(1000, first + second.substr(0, cut));
@@ -3004,7 +3004,7 @@ VOID TEST(AppRtmpSourceTest, AggregateCutInsideTag_Refused)
     // The whole message is taken, its times made absolute from the message's.
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(s.aggregate(1000, first + second));
     EXPECT_STREQ("A1000,a1023", rtmp_source_utest_got(player).c_str());
@@ -3025,7 +3025,7 @@ VOID TEST(AppRtmpSourceTest, CorruptSequenceHeader_PublisherRefused)
 
         RtmpSourceUtestStream s;
         HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { }"));
-        SrsLiveConsumer *player = s.play();
+        SrsRtmpConsumer *player = s.play();
         HELPER_ASSERT_SUCCESS(s.source_->on_publish());
 
         const uint8_t *data = is_video ? flv_utest_avc_sh : aac_sh_cut;
@@ -3082,7 +3082,7 @@ VOID TEST(AppRtmpSourceTest, HlsFailsOnFrame_HlsOnErrorStrategy)
             bool is_video = kind == 1;
             RtmpSourceUtestStream s;
             HELPER_ASSERT_SUCCESS(s.open(string("vhost __defaultVhost__ { play { time_jitter off; } hls { enabled on; hls_on_error ") + cases[i].strategy_ + "; } }"));
-            SrsLiveConsumer *player = s.play();
+            SrsRtmpConsumer *player = s.play();
             HELPER_ASSERT_SUCCESS(s.source_->on_publish());
             HELPER_ASSERT_SUCCESS(s.start_av(0));
             EXPECT_STREQ("V0,A0,v0", rtmp_source_utest_got(player).c_str());
@@ -3123,7 +3123,7 @@ VOID TEST(AppRtmpSourceTest, DashOrDvrFailsOnFrame_StoppedStreamGoesOn)
 
         RtmpSourceUtestStream s;
         HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
-        SrsLiveConsumer *player = s.play();
+        SrsRtmpConsumer *player = s.play();
         HELPER_ASSERT_SUCCESS(s.source_->on_publish());
         HELPER_ASSERT_SUCCESS(s.start_av(0));
         EXPECT_STREQ("V0,A0,v0", rtmp_source_utest_got(player).c_str());
@@ -3158,7 +3158,7 @@ VOID TEST(AppRtmpSourceTest, DvrFailsOnMetadata_PublisherDisconnected)
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { play { time_jitter off; } }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
 
     s.factory_.dvr_->meta_error_ = srs_error_new(ERROR_SYSTEM_FILE_WRITE, "full disk");
@@ -3256,13 +3256,13 @@ VOID TEST(AppRtmpSourceTest, SourceCleanup_KeptWhilePublishingPlayingOrHlsDispos
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { }"));
     MockStreamPublishTokensForSourceManager tokens;
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.stream_publish_tokens_ = &tokens;
     string url = s.req_.get_stream_url();
     manager.pool_[url] = s.source_;
 
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
     s.clock_.now_ += 10 * SRS_UTIME_SECONDS;
     HELPER_EXPECT_SUCCESS(manager.notify(0, 0, 0));
     EXPECT_EQ(1, (int)manager.pool_.size());
@@ -3308,7 +3308,7 @@ VOID TEST(AppRtmpSourceTest, PlayerOfRepublishedStream_LogsSourceIdOnce)
     ListenerUtestLog log;
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
 
     SrsContextId first = _srs_context->generate_id();
     SrsContextId second = _srs_context->generate_id();
@@ -3334,7 +3334,7 @@ VOID TEST(AppRtmpSourceTest, PausedPlayer_WaitsOnePulse)
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
     HELPER_ASSERT_SUCCESS(s.source_->on_publish());
     HELPER_ASSERT_SUCCESS(player->on_play_client_pause(true));
 
@@ -3359,7 +3359,7 @@ VOID TEST(AppRtmpSourceTest, HttpPlayerJoinsBeforeFastCacheFilled_GetsNothing)
 
     RtmpSourceUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { }"));
-    SrsLiveConsumer *player = s.play();
+    SrsRtmpConsumer *player = s.play();
 
     SrsMessageQueue cache;
     HELPER_EXPECT_SUCCESS(cache.dump_packets(player, false, SrsRtmpJitterAlgorithmFULL));
@@ -3989,7 +3989,7 @@ public:
         }
         return builder_->on_publish();
     }
-    // The encoder stops, as SrsRtmpBridge::on_unpublish does, and the live source frees the bridge.
+    // The encoder stops, as SrsRtmpBridge::on_unpublish does, and the RTMP source frees the bridge.
     void unpublish()
     {
         builder_->on_unpublish();
@@ -5057,7 +5057,7 @@ public:
     RtmpConnUtestHooks hooks_;
     SrsStreamPublishTokenManager tokens_;
     SrsSrtSourceManager srt_sources_;
-    MockLiveSourceManager live_sources_;
+    MockRtmpSourceManager rtmp_sources_;
     MockRtcSourceManager rtc_sources_;
     SrtConnUtestManager manager_;
     MockSrsRequest req_;
@@ -5196,7 +5196,7 @@ private:
         conn_->hooks_ = &hooks_;
         conn_->stream_publish_tokens_ = &tokens_;
         conn_->srt_sources_ = &srt_sources_;
-        conn_->live_sources_ = &live_sources_;
+        conn_->rtmp_sources_ = &rtmp_sources_;
         conn_->rtc_sources_ = &rtc_sources_;
         if (io) {
             srs_freep(conn_->srt_conn_);
@@ -5321,7 +5321,7 @@ VOID TEST(AppSrtConnTest, StreamIdWithUnknownModeOrNoResource_Refused)
 
         rtmp_conn_utest_expect(c.run(), ERROR_SRT_CONN, "invalid srt streamid");
         EXPECT_STREQ("", c.hooks_.called().c_str());
-        EXPECT_EQ(0, c.live_sources_.fetch_or_create_count_);
+        EXPECT_EQ(0, c.rtmp_sources_.fetch_or_create_count_);
         EXPECT_TRUE(c.token_free());
     }
 }
@@ -5590,7 +5590,7 @@ VOID TEST(AppSrtConnTest, NoCoroutineForClientOrReceiveThread_Refused)
     }
 }
 
-// An SRT encoder to a vhost whose DVR plan is mistyped. The stream's live source cannot be made, so the encoder is
+// An SRT encoder to a vhost whose DVR plan is mistyped. The stream's RTMP source cannot be made, so the encoder is
 // refused after its on_publish, which gets its on_unpublish, and its publish token is released.
 VOID TEST(AppSrtConnTest, EncoderOfVhostWithMistypedDvrPlan_Refused)
 {
@@ -5598,20 +5598,20 @@ VOID TEST(AppSrtConnTest, EncoderOfVhostWithMistypedDvrPlan_Refused)
 
     RtmpSourceUtestFactory factory;
     factory.real_dvr_ = true;
-    MockLiveSourceHandler handler;
+    MockRtmpSourceHandler handler;
 
     SrtConnUtestClient c;
     HELPER_ASSERT_SUCCESS(c.open(srt_conn_utest_vhost("dvr { enabled on; dvr_plan sesion; }"), "#!::r=live/livestream,m=publish"));
     factory.config_ = &c.conf_;
     factory.stat_ = &c.stat_;
 
-    // The live source the server makes for the stream, from the same config.
-    SrsLiveSource *live = new SrsLiveSource();
+    // The RTMP source the server makes for the stream, from the same config.
+    SrsRtmpSource *live = new SrsRtmpSource();
     live->config_ = &c.conf_;
     live->stat_ = &c.stat_;
     live->handler_ = &handler;
     live->app_factory_ = &factory;
-    c.live_sources_.mock_source_ = SrsSharedPtr<SrsLiveSource>(live);
+    c.rtmp_sources_.mock_source_ = SrsSharedPtr<SrsRtmpSource>(live);
     live->assemble();
 
     rtmp_conn_utest_expect(c.run(), ERROR_DVR_ILLEGAL_PLAN, "create source");

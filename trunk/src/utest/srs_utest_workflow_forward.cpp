@@ -77,7 +77,7 @@ void MockHttpHooksForForwardBackendFailure::set_on_forward_backend_error(srs_err
 }
 
 // A dynamic-forward backend is an external dependency. If it fails, SRS should reject the
-// current publish attempt and roll back the partially acquired live source so the publisher
+// current publish attempt and roll back the partially acquired RTMP source so the publisher
 // can retry. This regression test defines the required rollback behavior.
 VOID TEST(BasicWorkflowForwardTest, ForwardBackendFailureRollsBackPublishState)
 {
@@ -91,12 +91,12 @@ VOID TEST(BasicWorkflowForwardTest, ForwardBackendFailureRollsBackPublishState)
     mock_config->set_forward_backend("http://127.0.0.1:8085/api/v1/forward");
     mock_hooks->set_on_forward_backend_error(srs_error_new(ERROR_HTTP_STATUS_INVALID, "mock HTTP 500"));
 
-    SrsLiveSource *raw_source = new SrsLiveSource();
+    SrsRtmpSource *raw_source = new SrsRtmpSource();
     raw_source->config_ = mock_config.get();
     raw_source->stat_ = mock_stat.get();
     raw_source->req_ = req->copy();
     raw_source->assemble();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     SrsOriginHub *hub = new SrsOriginHub();
     hub->config_ = mock_config.get();
@@ -117,7 +117,7 @@ VOID TEST(BasicWorkflowForwardTest, ForwardBackendFailureRollsBackPublishState)
     conn->info_->edge_ = false;
 
     // Each attempt should reach the backend and fail with its original error. Most importantly,
-    // the failed attempt must leave the live source available for the next publisher.
+    // the failed attempt must leave the RTMP source available for the next publisher.
     for (int i = 0; i < 2; i++) {
         err = conn->publishing(source);
         EXPECT_TRUE(err != srs_success);
@@ -440,7 +440,7 @@ VOID TEST(BasicWorkflowForwardTest, DestinationReconnectStartsAtKeyframe)
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     // The source has the stream's metadata and sequence headers.
@@ -474,7 +474,7 @@ VOID TEST(BasicWorkflowForwardTest, BackendReconnectStartsAtKeyframe)
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     source->meta()->meta_ = utest_forward_metadata(0, 'M');
@@ -526,7 +526,7 @@ static void utest_workflow_forward_single_reconnect(bool video, std::vector<Mock
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     // The source has the metadata and the sequence header of its only track.
@@ -734,7 +734,7 @@ VOID TEST(BasicWorkflowForwardTest, DestinationStatusListsEveryForward)
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
     req->param_ = "?token=abc";
 
@@ -770,7 +770,7 @@ VOID TEST(BasicWorkflowForwardTest, BackendStatusListsBackendUrls)
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     config->set_forward_backend("http://127.0.0.1:8085/api/v1/forward");
@@ -813,7 +813,7 @@ VOID TEST(BasicWorkflowForwardTest, BackendAndDestinationListsOnlyBackend)
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     std::vector<std::string> destinations;

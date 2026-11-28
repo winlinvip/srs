@@ -26,7 +26,7 @@ class SrsRtmpJitter;
 class SrsTsContextWriter;
 class ISrsRequest;
 class SrsPithyPrint;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsOriginHub;
 class ISrsOriginHub;
 class ISrsFileWriter;

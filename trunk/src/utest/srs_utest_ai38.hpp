@@ -225,8 +225,8 @@ public:
     virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
 };
 
-// Mock ISrsEdgeForwarder for the publish edge of SrsLiveSource.
-class MockEdgeForwarderForLiveSource : public ISrsEdgeForwarder
+// Mock ISrsEdgeForwarder for the publish edge of SrsRtmpSource.
+class MockEdgeForwarderForRtmpSource : public ISrsEdgeForwarder
 {
 public:
     int start_count_;
@@ -235,12 +235,12 @@ public:
     srs_error_t start_error_;
 
 public:
-    MockEdgeForwarderForLiveSource();
-    virtual ~MockEdgeForwarderForLiveSource();
+    MockEdgeForwarderForRtmpSource();
+    virtual ~MockEdgeForwarderForRtmpSource();
 
 public:
     virtual void set_queue_size(srs_utime_t queue_size);
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
     virtual srs_error_t proxy(SrsRtmpCommonMessage *msg);
@@ -253,7 +253,7 @@ extern SrsRtmpCommonMessage *mock_edge_message(int type, int size, char value);
 class MockEdgeIngesterFixture
 {
 public:
-    MockLiveSourceForOriginHub source_;
+    MockRtmpSourceForOriginHub source_;
     MockPlayEdgeForIngesterCycle edge_;
     MockAppConfigForEdgeIngester config_;
     MockAppFactoryForEdgeIngester factory_;

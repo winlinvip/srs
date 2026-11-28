@@ -57,7 +57,7 @@ class ISrsRtcSessionManager;
 class ISrsPidFileLocker;
 class ISrsCoWorkers;
 class ISrsAppConfig;
-class ISrsLiveSourceManager;
+class ISrsRtmpSourceManager;
 class ISrsResourceManager;
 class ISrsDtlsCertificate;
 class ISrsAsyncCallWorker;
@@ -111,7 +111,7 @@ public:
     virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag) = 0;
 };
 
-class SrsServer : public ISrsLiveSourceHandler,
+class SrsServer : public ISrsRtmpSourceHandler,
                   public ISrsTcpHandler,
                   public ISrsHourGlassHandler,
                   public ISrsSrtClientHandler,
@@ -123,7 +123,7 @@ class SrsServer : public ISrsLiveSourceHandler,
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
-    ISrsLiveSourceManager *live_sources_;
+    ISrsRtmpSourceManager *rtmp_sources_;
     ISrsResourceManager *conn_manager_;
     ISrsDtlsCertificate *rtc_dtls_certificate_;
     ISrsAsyncCallWorker *dvr_async_;

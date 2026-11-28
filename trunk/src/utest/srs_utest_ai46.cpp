@@ -327,8 +327,8 @@ static string srt_source_utest_adts_frame()
     return string((const char *)srt_source_utest_adts, sizeof(srt_source_utest_adts));
 }
 
-// The RTMP side of an SRT stream on a vhost with `srt_to_rtmp on`, the live source, keeping each FLV tag the frame builder
-// gives it. While refuse_ is set it refuses every tag, as the live source does for a tag its format cannot parse.
+// The RTMP side of an SRT stream on a vhost with `srt_to_rtmp on`, the RTMP source, keeping each FLV tag the frame builder
+// gives it. While refuse_ is set it refuses every tag, as the RTMP source does for a tag its format cannot parse.
 class SrtSourceUtestRtmpSide : public ISrsFrameTarget
 {
 public:
@@ -858,10 +858,10 @@ VOID TEST(AppSrtSourceTest, ParameterSetsInOwnPes_HeaderThenFrame)
     }
 }
 
-// The live source refuses the tags of an SRT stream for a while, as it does for a tag its format cannot parse. Each
-// refused sequence header and frame is dropped with a warning naming it, and the frames that come after the live source
+// The RTMP source refuses the tags of an SRT stream for a while, as it does for a tag its format cannot parse. Each
+// refused sequence header and frame is dropped with a warning naming it, and the frames that come after the RTMP source
 // takes tags again are converted, for H.264 with AAC and for HEVC.
-VOID TEST(AppSrtSourceTest, LiveSourceRefusesTags_DroppedThenConversionGoesOn)
+VOID TEST(AppSrtSourceTest, RtmpSourceRefusesTags_DroppedThenConversionGoesOn)
 {
     srs_error_t err;
 
@@ -1429,7 +1429,7 @@ public:
     }
 };
 
-// A stream of the server converted between RTMP and WebRTC: the real SrsLiveSource of its RTMP side and the real
+// A stream of the server converted between RTMP and WebRTC: the real SrsRtmpSource of its RTMP side and the real
 // SrsRtcSource of its WebRTC side, with the vhost from config text and a real statistic, joined by the bridge the
 // encoder's connection makes: SrsRtcBridge for a WHIP publisher (rtc_to_rtmp), SrsRtmpBridge for an RTMP encoder
 // (rtmp_to_rtc), SrsSrtBridge for an SRT encoder (srt_to_rtmp and rtmp_to_rtc) with its real SrsSrtSource. Players of
@@ -1439,16 +1439,16 @@ class StreamBridgeUtestStream
 public:
     MockSrsConfig conf_;
     SrsStatistic stat_;
-    MockLiveSourceHandler handler_;
+    MockRtmpSourceHandler handler_;
     MockClockForPithyPrint clock_;
     StreamBridgeUtestHubFactory factory_;
     SrsRequest req_;
-    SrsSharedPtr<SrsLiveSource> live_;
+    SrsSharedPtr<SrsRtmpSource> live_;
     SrsSharedPtr<SrsRtcSource> rtc_;
     SrsSharedPtr<SrsSrtSource> srt_;
     SrsTsContext ts_;
     MockLogForSignal log_;
-    vector<SrsLiveConsumer *> rtmp_players_;
+    vector<SrsRtmpConsumer *> rtmp_players_;
     vector<SrsRtcConsumer *> rtc_players_;
 
 public:
@@ -1462,7 +1462,7 @@ public:
     virtual ~StreamBridgeUtestStream()
     {
         for (int i = 0; i < (int)rtmp_players_.size(); i++) {
-            SrsLiveConsumer *player = rtmp_players_.at(i);
+            SrsRtmpConsumer *player = rtmp_players_.at(i);
             srs_freep(player);
         }
         for (int i = 0; i < (int)rtc_players_.size(); i++) {
@@ -1483,16 +1483,16 @@ public:
         factory_.config_ = &conf_;
         factory_.stat_ = &stat_;
 
-        SrsLiveSource *live = new SrsLiveSource();
+        SrsRtmpSource *live = new SrsRtmpSource();
         live->config_ = &conf_;
         live->stat_ = &stat_;
         live->handler_ = &handler_;
         live->app_factory_ = &factory_;
         live->clk_ = &clock_;
-        live_ = SrsSharedPtr<SrsLiveSource>(live);
+        live_ = SrsSharedPtr<SrsRtmpSource>(live);
         live->assemble();
         if ((err = live->initialize(live_, &req_)) != srs_success) {
-            return srs_error_wrap(err, "live source");
+            return srs_error_wrap(err, "rtmp source");
         }
 
         SrsRtcSource *rtc = new SrsRtcSource();
@@ -1672,9 +1672,9 @@ public:
         return n;
     }
     // An RTMP player joins, as SrsRtmpConn::playing does.
-    SrsLiveConsumer *rtmp_play()
+    SrsRtmpConsumer *rtmp_play()
     {
-        SrsLiveConsumer *player = NULL;
+        SrsRtmpConsumer *player = NULL;
         srs_error_t err = live_->create_consumer(player);
         EXPECT_TRUE(err == srs_success) << srs_error_desc(err);
         srs_freep(err);
@@ -1709,7 +1709,7 @@ public:
 };
 
 // What the RTMP player got since it last read: A and V for the sequence headers, a and v for frames.
-static string stream_bridge_utest_rtmp_got(SrsLiveConsumer *player)
+static string stream_bridge_utest_rtmp_got(SrsRtmpConsumer *player)
 {
     SrsMessageArray msgs(1024);
     int count = 0;
@@ -1819,7 +1819,7 @@ VOID TEST(AppStreamBridgeTest, WhipToRtmpCorruptOpusPacket_OnlyThatPacketLost)
     StreamBridgeUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { rtc { enabled on; rtc_to_rtmp on; } }"));
     HELPER_ASSERT_SUCCESS(s.whip_publish());
-    SrsLiveConsumer *rtmp_player = s.rtmp_play();
+    SrsRtmpConsumer *rtmp_player = s.rtmp_play();
     SrsRtcConsumer *rtc_player = s.rtc_play();
     ASSERT_TRUE(rtmp_player != NULL);
     ASSERT_TRUE(rtc_player != NULL);
@@ -1883,7 +1883,7 @@ VOID TEST(AppStreamBridgeTest, SrtToRtmpAndRtcCorruptAacFrame_OnlyWebrtcLosesTha
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { srt { enabled on; srt_to_rtmp on; } "
                                  "rtc { enabled on; rtmp_to_rtc on; } }"));
     HELPER_ASSERT_SUCCESS(s.srt_publish());
-    SrsLiveConsumer *rtmp_player = s.rtmp_play();
+    SrsRtmpConsumer *rtmp_player = s.rtmp_play();
     SrsRtcConsumer *rtc_player = s.rtc_play();
     ASSERT_TRUE(rtmp_player != NULL);
     ASSERT_TRUE(rtc_player != NULL);
@@ -1926,7 +1926,7 @@ static srs_error_t stream_bridge_utest_hls_radio(StreamBridgeUtestStream &s, con
     return s.srt_publish();
 }
 
-// An SRT radio station converted to RTMP and WebRTC, with HLS on, when the HLS disk fills. The live source refuses
+// An SRT radio station converted to RTMP and WebRTC, with HLS on, when the HLS disk fills. The RTMP source refuses
 // each frame that HLS can not write, as for an RTMP encoder, before any player gets it: from the first frame HLS fails
 // on, the RTMP and the WebRTC players get none of the frames, not only the HLS players. AAC is written to HLS in runs,
 // so the frames until the next run still reach the players.
@@ -1944,7 +1944,7 @@ VOID TEST(AppStreamBridgeTest, SrtToRtmpAndRtcHlsDiskFull_PlayersGetNoFrameHlsFa
         HlsUtestVolumeScope volume;
         StreamBridgeUtestStream s;
         HELPER_ASSERT_SUCCESS(stream_bridge_utest_hls_radio(s, home));
-        SrsLiveConsumer *rtmp_player = s.rtmp_play();
+        SrsRtmpConsumer *rtmp_player = s.rtmp_play();
         SrsRtcConsumer *rtc_player = s.rtc_play();
         ASSERT_TRUE(rtmp_player != NULL);
         ASSERT_TRUE(rtc_player != NULL);
@@ -1983,7 +1983,7 @@ VOID TEST(AppStreamBridgeTest, SrtToRtmpAndRtcHlsDiskFull_PlayersGetNoFrameHlsFa
 }
 
 // The same SRT radio station, with `hls_on_error disconnect`, when the HLS disk fills. The SRT frame builder logs the
-// live source's error as a bad TS packet and goes on, so the encoder is not disconnected.
+// RTMP source's error as a bad TS packet and goes on, so the encoder is not disconnected.
 VOID TEST(AppStreamBridgeTest, SrtHlsDiskFullWithOnErrorDisconnect_EncoderNotDisconnected)
 {
     srs_error_t err;
@@ -2031,7 +2031,7 @@ VOID TEST(AppStreamBridgeTest, SrtTsPacketWithoutSyncByte_SkippedEncoderStays)
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { srt { enabled on; srt_to_rtmp on; } "
                                  "rtc { enabled on; rtmp_to_rtc on; } }"));
     HELPER_ASSERT_SUCCESS(s.srt_publish());
-    SrsLiveConsumer *rtmp_player = s.rtmp_play();
+    SrsRtmpConsumer *rtmp_player = s.rtmp_play();
     ASSERT_TRUE(rtmp_player != NULL);
 
     for (int i = 0; i < 10; i++) {
@@ -2071,7 +2071,7 @@ VOID TEST(AppStreamBridgeTest, RtmpToRtcCorruptAacFrame_PublisherDisconnected)
     StreamBridgeUtestStream s;
     HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { rtc { enabled on; rtmp_to_rtc on; } }"));
     HELPER_ASSERT_SUCCESS(s.rtmp_publish());
-    SrsLiveConsumer *rtmp_player = s.rtmp_play();
+    SrsRtmpConsumer *rtmp_player = s.rtmp_play();
     SrsRtcConsumer *rtc_player = s.rtc_play();
     ASSERT_TRUE(rtmp_player != NULL);
     ASSERT_TRUE(rtc_player != NULL);
@@ -2093,7 +2093,7 @@ VOID TEST(AppStreamBridgeTest, RtmpToRtcCorruptAacFrame_PublisherDisconnected)
 }
 
 // An HEVC RTMP encoder that sends its VPS, SPS and PPS in band, in each key frame, with a sequence header that holds
-// none, as ISO/IEC 14496-15 allows for hev1, to a vhost with `rtmp_to_rtc on`. The live source takes both, and the
+// none, as ISO/IEC 14496-15 allows for hev1, to a vhost with `rtmp_to_rtc on`. The RTMP source takes both, and the
 // WebRTC builder has no parameter set to send in a STAP, so the player gets the key frame's four NALUs as they are,
 // and the encoder stays.
 VOID TEST(AppStreamBridgeTest, RtmpHevcParameterSetsInBandToRtc_KeyFrameNalusSent)

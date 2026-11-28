@@ -114,7 +114,7 @@ A change can be real without raising the capacity, so compare the profiles at th
 ### Ranking
 
 1. Take the 90% profile hold of the latest run; use the 50% profile hold to confirm the cost grows with the load.
-2. Charge each libc and kernel symbol to its SRS caller from the caller tree, and group symbols into the SRS code path that owns them, such as packet copying in `SrsLiveConsumer::enqueue` or message sending in `SrsRtmpConn::do_playing`.
+2. Charge each libc and kernel symbol to its SRS caller from the caller tree, and group symbols into the SRS code path that owns them, such as packet copying in `SrsRtmpConsumer::enqueue` or message sending in `SrsRtmpConn::do_playing`.
 3. Rank the code paths by absolute cost: their total self share times the window mean of SRS CPU in the 90% measuring hold.
 4. Name the SRS files and functions of each code path, and the syscalls it makes.
 5. The top bottleneck is the #1 code path that SRS can reasonably change. The kernel, syscalls already batched, and crypto in RTC are not; libsrt's own cost in `srt-srt` belongs to libsrt, not SRS.

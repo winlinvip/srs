@@ -21,9 +21,9 @@
 class SrsRtmpServer;
 class SrsRtmpCommonMessage;
 class SrsRtmpConn;
-class SrsLiveSource;
+class SrsRtmpSource;
 class ISrsRequest;
-class SrsLiveConsumer;
+class SrsRtmpConsumer;
 class SrsHttpConn;
 class SrsHttpxConn;
 class ISrsRtmpServer;
@@ -118,11 +118,11 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
     srs_error_t recv_error_;
-    SrsLiveConsumer *consumer_;
+    SrsRtmpConsumer *consumer_;
 
 public:
     // TODO: FIXME: Refine timeout in time unit.
-    SrsQueueRecvThread(SrsLiveConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid);
+    SrsQueueRecvThread(SrsRtmpConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid);
     virtual ~SrsQueueRecvThread();
 
 public:
@@ -178,7 +178,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     bool realtime_;
     srs_error_t recv_error_;
     SrsRtmpConn *conn_;
-    SrsSharedPtr<SrsLiveSource> source_;
+    SrsSharedPtr<SrsRtmpSource> source_;
     srs_cond_t error_;
     uint64_t reported_video_frames_;
     uint64_t reported_audio_frames_;
@@ -188,7 +188,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 
 public:
     SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest *req,
-                         int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid);
+                         int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsRtmpSource> source, SrsContextId parent_cid);
     void assemble();
     virtual ~SrsPublishRecvThread();
 

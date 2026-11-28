@@ -1205,7 +1205,7 @@ static void memory_audit_encode_raw_aac(int channels, int n, vector<string> &fra
 }
 
 // Feed an RTMP audio tag, the FLV audio header 0xaf (AAC, 44.1kHz, 16 bits, stereo) and the AAC packet type, to the
-// RTMP to WebRTC bridge, as the live source does for each message of a publisher.
+// RTMP to WebRTC bridge, as the RTMP source does for each message of a publisher.
 static srs_error_t memory_audit_rtmp_aac(SrsRtcRtpBuilder *builder, char aac_packet_type, const string &data, int64_t timestamp)
 {
     int size = 2 + (int)data.size();
@@ -1305,7 +1305,7 @@ VOID TEST(MemoryAuditTest, SrsMp4M2tsSegmentEncoder_ReapAfterFailedRenameUsesFre
 #endif
 
 // An edge that pulls HTTP-FLV from its origin turns each FLV tag into a message, an audio tag of size 0 too, and
-// SrsLiveSource::on_audio, unlike on_video and SrsProtocol, does not drop the empty one. SrsFormat::on_audio returns
+// SrsRtmpSource::on_audio, unlike on_video and SrsProtocol, does not drop the empty one. SrsFormat::on_audio returns
 // success on it before initialize, so the parsed audio packet keeps the previous frame's samples, which point into
 // that frame's payload, freed once its last copy is sent. The source, its hub (HLS, DASH, DVR) and the RTMP to RTC
 // bridge then read those samples as the current frame: aac_raw_append_adts_header copies them, a heap-use-after-free.
@@ -1359,7 +1359,7 @@ VOID TEST(MemoryAuditTest, SrsParsedPacket_EmptyAudioKeepsFreedSamples)
 }
 
 // Feeds one RTMP audio tag to the format, in a payload freed when the message is, at the end of this call, as the
-// live source frees a frame once its last copy is sent.
+// RTMP source frees a frame once its last copy is sent.
 static srs_error_t memory_audit_format_audio(SrsRtmpFormat *format, const string &tag)
 {
     char *payload = new char[tag.size()];
@@ -1382,7 +1382,7 @@ static string memory_audit_mp3_tag()
     return string(1, (char)0x2f) + frame;
 }
 
-// An RTMP publisher sends MP3 audio, then an audio tag of only its 1-byte FLV header (0x2f). The live source does not
+// An RTMP publisher sends MP3 audio, then an audio tag of only its 1-byte FLV header (0x2f). The RTMP source does not
 // drop it, since its size is 1, and the MP3 demuxer adds no sample for 0 data bytes. At each frame of the stream the
 // parsed audio packet holds only the current frame's samples, never a pointer into a frame already freed.
 VOID TEST(MemoryAuditTest, SrsParsedPacket_Mp3HeaderOnlyTagKeepsFreedSamples)
@@ -3571,7 +3571,7 @@ VOID TEST(MemoryAuditTest, SrsCplxError_CoworkerDiscoverErrorLeaks)
     req->stream_ = "livestream";
 
     // The first coworker fails, the second one has the stream.
-    SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
     err = conn->redirect_to_origin_cluster(source);
     EXPECT_EQ(ERROR_CONTROL_REDIRECT, srs_error_code(err));
     srs_freep(err);
@@ -3869,8 +3869,8 @@ VOID TEST(MemoryAuditTest, SrsRtmpConn_SocketBufferErrorLeaks)
     req->app_ = "live";
     req->stream_ = "livestream";
 
-    SrsSharedPtr<SrsLiveSource> source(new MockLiveSourceForQueue());
-    SrsUniquePtr<MockLiveConsumerForPlayControl> consumer(new MockLiveConsumerForPlayControl(source.get()));
+    SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSourceForQueue());
+    SrsUniquePtr<MockRtmpConsumerForPlayControl> consumer(new MockRtmpConsumerForPlayControl(source.get()));
 
     // The receive thread is not reached before the thread check.
     err = conn->do_playing(source, consumer.get(), NULL);

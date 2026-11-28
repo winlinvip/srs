@@ -77,13 +77,13 @@ SrsLiveStream::SrsLiveStream(ISrsRequest *r, ISrsBufferCache *c)
     security_ = new SrsSecurity();
 
     config_ = _srs_config;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     stat_ = _srs_stat;
     hooks_ = _srs_hooks;
 }
 ```
 
-Method bodies then use `config_`, `stat_`, `hooks_` only. The established member names are `config_`, `stat_`, `hooks_`, `live_sources_`, `security_`, and `shared_timer_`; reuse them instead of coining new ones.
+Method bodies then use `config_`, `stat_`, `hooks_` only. The established member names are `config_`, `stat_`, `hooks_`, `rtmp_sources_`, `security_`, and `shared_timer_`; reuse them instead of coining new ones.
 
 ### `assemble()` — no function calls in constructors
 

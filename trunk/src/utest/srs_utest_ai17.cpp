@@ -3967,8 +3967,8 @@ VOID TEST(GoApiRtcPlayTest, ServeHttpSuccess)
     // Create mock RTC source manager
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
 
-    // Create mock live source manager
-    SrsUniquePtr<MockLiveSourceManager> mock_live_sources(new MockLiveSourceManager());
+    // Create mock RTMP source manager
+    SrsUniquePtr<MockRtmpSourceManager> mock_rtmp_sources(new MockRtmpSourceManager());
 
     // Create mock HTTP hooks
     SrsUniquePtr<MockHttpHooksForRtcPlay> mock_hooks(new MockHttpHooksForRtcPlay());
@@ -3979,7 +3979,7 @@ VOID TEST(GoApiRtcPlayTest, ServeHttpSuccess)
     // Inject mocks into api
     api->config_ = mock_config.get();
     api->rtc_sources_ = mock_rtc_sources.get();
-    api->live_sources_ = mock_live_sources.get();
+    api->rtmp_sources_ = mock_rtmp_sources.get();
     api->hooks_ = mock_hooks.get();
     api->security_ = mock_security.get();
 
@@ -4048,7 +4048,7 @@ VOID TEST(GoApiRtcPlayTest, ServeHttpSuccess)
     // Clean up injected dependencies to avoid double-free
     api->config_ = NULL;
     api->rtc_sources_ = NULL;
-    api->live_sources_ = NULL;
+    api->rtmp_sources_ = NULL;
     api->hooks_ = NULL;
     api->security_ = NULL;
 }

@@ -225,7 +225,7 @@ SrsRtmpConn::SrsRtmpConn(ISrsRtmpTransport *transport, string cip, int cport)
     config_ = _srs_config;
     manager_ = _srs_conn_manager;
     stream_publish_tokens_ = _srs_stream_publish_tokens;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     stat_ = _srs_stat;
     hooks_ = _srs_hooks;
     rtc_sources_ = _srs_rtc_sources;
@@ -278,7 +278,7 @@ SrsRtmpConn::~SrsRtmpConn()
     config_ = NULL;
     manager_ = NULL;
     stream_publish_tokens_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     stat_ = NULL;
     hooks_ = NULL;
     rtc_sources_ = NULL;
@@ -532,19 +532,19 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
                   srs_client_type_string(info_->type_).c_str(), req->get_stream_url().c_str());
     }
 
-    SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = live_sources_->fetch_or_create(req, live_source)) != srs_success) {
+    SrsSharedPtr<SrsRtmpSource> rtmp_source;
+    if ((err = rtmp_sources_->fetch_or_create(req, rtmp_source)) != srs_success) {
         return srs_error_wrap(err, "rtmp: fetch source");
     }
-    srs_assert(live_source.get() != NULL);
+    srs_assert(rtmp_source.get() != NULL);
 
     bool enabled_cache = config_->get_gop_cache(req->vhost_);
     int gcmf = config_->get_gop_cache_max_frames(req->vhost_);
     srs_trace("source url=%s, ip=%s, cache=%d/%d, is_edge=%d, source_id=%s/%s",
-              req->get_stream_url().c_str(), ip_.c_str(), enabled_cache, gcmf, info_->edge_, live_source->source_id().c_str(),
-              live_source->pre_source_id().c_str());
-    live_source->set_cache(enabled_cache);
-    live_source->set_gop_cache_max_frames(gcmf);
+              req->get_stream_url().c_str(), ip_.c_str(), enabled_cache, gcmf, info_->edge_, rtmp_source->source_id().c_str(),
+              rtmp_source->pre_source_id().c_str());
+    rtmp_source->set_cache(enabled_cache);
+    rtmp_source->set_gop_cache_max_frames(gcmf);
 
     switch (info_->type_) {
     case SrsRtmpConnPlay: {
@@ -562,7 +562,7 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
         if ((err = rtmp_->start_play(info_->res_->stream_id_)) != srs_success) {
             err = srs_error_wrap(err, "rtmp: start play");
         } else {
-            err = playing(live_source);
+            err = playing(rtmp_source);
         }
 
         // The on_stop hook pairs with the on_play hook above, whatever happened after it.
@@ -586,7 +586,7 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
             return srs_error_wrap(err, "rtmp: start publish");
         }
 
-        return publishing(live_source);
+        return publishing(rtmp_source);
     }
     default: {
         return srs_error_new(ERROR_SYSTEM_CLIENT_INVALID, "rtmp: unknown client type=%d", info_->type_);
@@ -625,7 +625,7 @@ srs_error_t SrsRtmpConn::check_vhost(bool try_default_vhost)
     return err;
 }
 
-srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
+srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsRtmpSource> source)
 {
     srs_error_t err = srs_success;
 
@@ -650,11 +650,11 @@ srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
 
     set_sock_options();
 
-    SrsLiveConsumer *consumer_raw = NULL;
+    SrsRtmpConsumer *consumer_raw = NULL;
     if ((err = source->create_consumer(consumer_raw)) != srs_success) {
         return srs_error_wrap(err, "rtmp: create consumer");
     }
-    SrsUniquePtr<SrsLiveConsumer> consumer(consumer_raw);
+    SrsUniquePtr<SrsRtmpConsumer> consumer(consumer_raw);
 
     if ((err = source->consumer_dumps(consumer.get())) != srs_success) {
         return srs_error_wrap(err, "rtmp: dumps consumer");
@@ -679,7 +679,7 @@ srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
     return err;
 }
 
-srs_error_t SrsRtmpConn::redirect_to_origin_cluster(SrsSharedPtr<SrsLiveSource> source)
+srs_error_t SrsRtmpConn::redirect_to_origin_cluster(SrsSharedPtr<SrsRtmpSource> source)
 {
     srs_error_t err = srs_success;
 
@@ -736,7 +736,7 @@ void SrsRtmpConn::drain_client_input()
     }
 }
 
-srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveConsumer *consumer, SrsQueueRecvThread *rtrd)
+srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsRtmpSource> source, SrsRtmpConsumer *consumer, SrsQueueRecvThread *rtrd)
 {
     srs_error_t err = srs_success;
 
@@ -893,7 +893,7 @@ srs_error_t SrsRtmpConn::start_publish()
     return err;
 }
 
-srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsLiveSource> source)
+srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsRtmpSource> source)
 {
     srs_error_t err = srs_success;
 
@@ -931,7 +931,7 @@ srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsLiveSource> source)
     return err;
 }
 
-srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPublishRecvThread *rtrd)
+srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsRtmpSource> source, SrsPublishRecvThread *rtrd)
 {
     srs_error_t err = srs_success;
 
@@ -1007,7 +1007,7 @@ srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPu
     return err;
 }
 
-srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
+srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsRtmpSource> source)
 {
     srs_error_t err = srs_success;
 
@@ -1101,7 +1101,7 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
     return err;
 }
 
-void SrsRtmpConn::release_publish(SrsSharedPtr<SrsLiveSource> source)
+void SrsRtmpConn::release_publish(SrsSharedPtr<SrsRtmpSource> source)
 {
     if (info_->edge_) {
         source->on_edge_proxy_unpublish();
@@ -1110,7 +1110,7 @@ void SrsRtmpConn::release_publish(SrsSharedPtr<SrsLiveSource> source)
     }
 }
 
-srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsRtmpCommonMessage *msg)
+srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsRtmpSource> &source, SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -1152,7 +1152,7 @@ srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &sou
     return err;
 }
 
-srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsRtmpCommonMessage *msg)
+srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsRtmpSource> &source, SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -1203,7 +1203,7 @@ srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &so
     return err;
 }
 
-srs_error_t SrsRtmpConn::process_play_control_msg(SrsLiveConsumer *consumer, SrsRtmpCommonMessage *msg_raw)
+srs_error_t SrsRtmpConn::process_play_control_msg(SrsRtmpConsumer *consumer, SrsRtmpCommonMessage *msg_raw)
 {
     srs_error_t err = srs_success;
 

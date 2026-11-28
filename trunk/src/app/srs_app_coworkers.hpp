@@ -14,7 +14,7 @@
 
 class SrsJsonAny;
 class ISrsRequest;
-class SrsLiveSource;
+class SrsRtmpSource;
 class ISrsAppConfig;
 
 // The coworkers of an origin cluster.

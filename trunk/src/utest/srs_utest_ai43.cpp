@@ -81,7 +81,7 @@ VOID TEST(AppForwardTest, PublishFailsWhenNoCoroutineCanBeCreatedForForwarder)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     std::vector<std::string> destinations;
@@ -3532,7 +3532,7 @@ public:
 public:
     srs_error_t redirect()
     {
-        SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
+        SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
         return conn_->redirect_to_origin_cluster(source);
     }
 };
@@ -4094,21 +4094,21 @@ public:
 };
 
 // The HTTP server of an SRS that remuxes its RTMP streams to HTTP, made as SrsServer makes it, with the config loaded
-// from the test's text, and its own live sources and stream API registry for the scope of a test. An encoder publishes
-// and unpublishes through its live source, which asks the server to mount and unmount its HTTP stream, as SrsServer
-// does, and its messages go into the live source.
-class HttpStreamUtestServer : public ISrsLiveSourceHandler
+// from the test's text, and its own RTMP sources and stream API registry for the scope of a test. An encoder publishes
+// and unpublishes through its RTMP source, which asks the server to mount and unmount its HTTP stream, as SrsServer
+// does, and its messages go into the RTMP source.
+class HttpStreamUtestServer : public ISrsRtmpSourceHandler
 {
 public:
     MockSrsConfig conf_;
     SrsStatistic stat_;
-    SrsLiveSourceManager sources_;
+    SrsRtmpSourceManager sources_;
     SrsHttpServer *server_;
     HttpStreamUtestRequest req_;
 
 private:
     SrsConfig *saved_config_;
-    SrsLiveSourceManager *saved_sources_;
+    SrsRtmpSourceManager *saved_sources_;
     SrsStatistic *saved_stat_;
 
 public:
@@ -4119,17 +4119,17 @@ public:
         stat_.server_id_ = "vid-utest-server";
 
         saved_config_ = _srs_config;
-        saved_sources_ = _srs_sources;
+        saved_sources_ = _srs_rtmp_sources;
         saved_stat_ = _srs_stat;
         _srs_config = &conf_;
-        _srs_sources = &sources_;
+        _srs_rtmp_sources = &sources_;
         _srs_stat = &stat_;
     }
     virtual ~HttpStreamUtestServer()
     {
         srs_freep(server_);
         _srs_config = saved_config_;
-        _srs_sources = saved_sources_;
+        _srs_rtmp_sources = saved_sources_;
         _srs_stat = saved_stat_;
     }
 
@@ -4173,16 +4173,16 @@ public:
         server_->http_unmount(r);
         srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     }
-    SrsSharedPtr<SrsLiveSource> source(ISrsRequest *r = NULL)
+    SrsSharedPtr<SrsRtmpSource> source(ISrsRequest *r = NULL)
     {
-        SrsSharedPtr<SrsLiveSource> source;
+        SrsSharedPtr<SrsRtmpSource> source;
         srs_error_t err = sources_.fetch_or_create(r ? r : &req_, source);
         EXPECT_TRUE(err == srs_success) << srs_error_desc(err);
         srs_freep(err);
         source->handler_ = this;
         return source;
     }
-    // Interface ISrsLiveSourceHandler, as SrsServer.
+    // Interface ISrsRtmpSourceHandler, as SrsServer.
     virtual srs_error_t on_publish(ISrsRequest *r)
     {
         return server_->http_mount(r);
@@ -4194,12 +4194,12 @@ public:
             server_->http_unmount(r);
         }
     }
-    // The encoder's messages, in order, as the RTMP connection passes them to the live source.
+    // The encoder's messages, in order, as the RTMP connection passes them to the RTMP source.
     srs_error_t send(const HttpStreamUtestBatch &batch)
     {
         srs_error_t err = srs_success;
 
-        SrsSharedPtr<SrsLiveSource> s = source();
+        SrsSharedPtr<SrsRtmpSource> s = source();
         for (int i = 0; i < (int)batch.size(); i++) {
             const HttpStreamUtestFrame &f = batch.at(i);
 
@@ -4857,7 +4857,7 @@ VOID TEST(AppHttpStreamTest, EdgePlayerWhileEdgeStopsPull_Refused)
     HELPER_ASSERT_SUCCESS(server.start("vhost __defaultVhost__ { cluster { mode remote; origin 127.0.0.1:19350; } "
                                        "http_remux { enabled on; mount [vhost]/[app]/[stream].flv; } } "));
 
-    SrsSharedPtr<SrsLiveSource> source = server.source();
+    SrsSharedPtr<SrsRtmpSource> source = server.source();
     source->play_edge_->state_ = SrsEdgeStateIngestStopping;
 
     if (true) {

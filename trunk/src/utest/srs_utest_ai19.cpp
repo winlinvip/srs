@@ -1800,7 +1800,7 @@ VOID TEST(BufferCacheTest, ConstructorCapturesFactoryWithoutCoroutine)
 
     EXPECT_TRUE(cache.app_factory_ == _srs_app_factory);
     EXPECT_TRUE(cache.config_ == _srs_config);
-    EXPECT_TRUE(cache.live_sources_ == _srs_sources);
+    EXPECT_TRUE(cache.rtmp_sources_ == _srs_rtmp_sources);
     EXPECT_TRUE(cache.queue_ != NULL);
     EXPECT_TRUE(cache.trd_ == NULL);
 }
@@ -2541,7 +2541,7 @@ VOID TEST(PublishRecvThreadTest, BasicOperations)
     // Create mock dependencies
     SrsUniquePtr<MockRtmpServer> mock_rtmp(new MockRtmpServer());
     SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("__defaultVhost__", "live", "test_stream"));
-    SrsSharedPtr<SrsLiveSource> mock_source; // NULL is fine for this test
+    SrsSharedPtr<SrsRtmpSource> mock_source; // NULL is fine for this test
 
     // Create SrsPublishRecvThread (without starting the actual recv thread)
     SrsUniquePtr<SrsPublishRecvThread> publish_thread(new SrsPublishRecvThread(

@@ -1585,7 +1585,7 @@ VOID TEST(MpegtsSrtConnTest, BasicConnectionInfo)
     conn->config_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
     conn->hooks_ = NULL;
 }
@@ -1690,7 +1690,7 @@ VOID TEST(MpegtsSrtConnTest, OnSrtPacketValidTsPacket)
     conn->config_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
     conn->hooks_ = NULL;
 }
@@ -2010,7 +2010,7 @@ VOID TEST(MpegtsSrtConnTest, HttpHooksOnConnect)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -2078,7 +2078,7 @@ VOID TEST(MpegtsSrtConnTest, HttpHooksOnClose)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -2694,7 +2694,7 @@ VOID TEST(MpegtsSrtConnTest, HttpHooksOnPublish)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -2752,7 +2752,7 @@ VOID TEST(MpegtsSrtConnTest, HttpHooksOnUnpublish)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -2817,7 +2817,7 @@ VOID TEST(MpegtsSrtConnTest, HttpHooksOnPlay)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -2875,7 +2875,7 @@ VOID TEST(MpegtsSrtConnTest, HttpHooksOnStop)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -4766,11 +4766,11 @@ VOID TEST(MpegtsSrtConnTest, AcquirePublishBridgesThroughInjectedFactory)
 
     // The mock config enables SRT to RTMP and disables WebRTC, so only the RTMP bridge is built.
     MockAppConfig config;
-    MockLiveSourceManager live_sources;
+    MockRtmpSourceManager rtmp_sources;
     MockAppFactoryForRtmpConn factory;
 
     conn->config_ = &config;
-    conn->live_sources_ = &live_sources;
+    conn->rtmp_sources_ = &rtmp_sources;
     conn->app_factory_ = &factory;
 
     HELPER_EXPECT_SUCCESS(conn->acquire_publish());
@@ -4784,7 +4784,7 @@ VOID TEST(MpegtsSrtConnTest, AcquirePublishBridgesThroughInjectedFactory)
     EXPECT_EQ(1, srt_source->on_publish_count_);
 
     conn->config_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->app_factory_ = NULL;
 }
 
@@ -4805,11 +4805,11 @@ VOID TEST(MpegtsSrtConnTest, AcquirePublishAssemblesBridge)
 
     // The mock config enables SRT to RTMP and disables WebRTC, so only the RTMP bridge is built.
     MockAppConfig config;
-    MockLiveSourceManager live_sources;
+    MockRtmpSourceManager rtmp_sources;
     MockAppFactoryForRtmpConn factory;
 
     conn->config_ = &config;
-    conn->live_sources_ = &live_sources;
+    conn->rtmp_sources_ = &rtmp_sources;
     conn->app_factory_ = &factory;
 
     HELPER_EXPECT_SUCCESS(conn->acquire_publish());
@@ -4823,29 +4823,29 @@ VOID TEST(MpegtsSrtConnTest, AcquirePublishAssemblesBridge)
     }
 
     conn->config_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->app_factory_ = NULL;
 }
 
-MockLiveSourceForSrtPublishFailure::MockLiveSourceForSrtPublishFailure()
+MockRtmpSourceForSrtPublishFailure::MockRtmpSourceForSrtPublishFailure()
 {
     on_publish_error_ = srs_success;
     on_publish_count_ = 0;
     on_unpublish_count_ = 0;
 }
 
-MockLiveSourceForSrtPublishFailure::~MockLiveSourceForSrtPublishFailure()
+MockRtmpSourceForSrtPublishFailure::~MockRtmpSourceForSrtPublishFailure()
 {
     srs_freep(on_publish_error_);
 }
 
-srs_error_t MockLiveSourceForSrtPublishFailure::on_publish()
+srs_error_t MockRtmpSourceForSrtPublishFailure::on_publish()
 {
     on_publish_count_++;
     return srs_error_copy(on_publish_error_);
 }
 
-void MockLiveSourceForSrtPublishFailure::on_unpublish()
+void MockRtmpSourceForSrtPublishFailure::on_unpublish()
 {
     on_unpublish_count_++;
 }
@@ -4870,31 +4870,31 @@ VOID TEST(MpegtsSrtConnTest, PublishingReleasesStateWhenBridgePublishFails)
     MockAppConfig config;
     MockAppStatistic stat;
     MockHttpHooks hooks;
-    MockLiveSourceManager live_sources;
-    MockLiveSourceForSrtPublishFailure *live_source = new MockLiveSourceForSrtPublishFailure();
-    live_source->on_publish_error_ = srs_error_new(ERROR_SOCKET_CONNECT, "forward backend down");
-    live_sources.mock_source_ = SrsSharedPtr<SrsLiveSource>(live_source);
+    MockRtmpSourceManager rtmp_sources;
+    MockRtmpSourceForSrtPublishFailure *rtmp_source = new MockRtmpSourceForSrtPublishFailure();
+    rtmp_source->on_publish_error_ = srs_error_new(ERROR_SOCKET_CONNECT, "forward backend down");
+    rtmp_sources.mock_source_ = SrsSharedPtr<SrsRtmpSource>(rtmp_source);
 
     conn->config_ = &config;
     conn->stat_ = &stat;
     conn->hooks_ = &hooks;
-    conn->live_sources_ = &live_sources;
+    conn->rtmp_sources_ = &rtmp_sources;
     srs_freep(conn->security_);
     conn->security_ = new MockSecurity();
 
     err = conn->publishing();
     EXPECT_EQ(ERROR_SOCKET_CONNECT, srs_error_code(err));
     srs_freep(err);
-    EXPECT_EQ(1, live_source->on_publish_count_);
+    EXPECT_EQ(1, rtmp_source->on_publish_count_);
 
     // GOAL: the SRT source and the RTMP target are released, so the stream can be published again.
     EXPECT_TRUE(srt_source->can_publish());
-    EXPECT_EQ(1, live_source->on_unpublish_count_);
+    EXPECT_EQ(1, rtmp_source->on_unpublish_count_);
 
     conn->config_ = NULL;
     conn->stat_ = NULL;
     conn->hooks_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
 }
 
 // A session refused because the SRT stream is busy never owned it, so it must not release the
@@ -4917,12 +4917,12 @@ VOID TEST(MpegtsSrtConnTest, PublishingKeepsOtherPublisherWhenSrtStreamBusy)
     MockAppConfig config;
     MockAppStatistic stat;
     MockHttpHooks hooks;
-    MockLiveSourceManager live_sources;
+    MockRtmpSourceManager rtmp_sources;
 
     conn->config_ = &config;
     conn->stat_ = &stat;
     conn->hooks_ = &hooks;
-    conn->live_sources_ = &live_sources;
+    conn->rtmp_sources_ = &rtmp_sources;
     srs_freep(conn->security_);
     conn->security_ = new MockSecurity();
 
@@ -4936,5 +4936,5 @@ VOID TEST(MpegtsSrtConnTest, PublishingKeepsOtherPublisherWhenSrtStreamBusy)
     conn->config_ = NULL;
     conn->stat_ = NULL;
     conn->hooks_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
 }

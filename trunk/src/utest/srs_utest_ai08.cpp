@@ -160,23 +160,23 @@ void MockSrtTarget::set_packet_error(srs_error_t err)
     packet_error_ = srs_error_copy(err);
 }
 
-MockLiveSourceHandler::MockLiveSourceHandler()
+MockRtmpSourceHandler::MockRtmpSourceHandler()
 {
     on_publish_count_ = 0;
     on_unpublish_count_ = 0;
 }
 
-MockLiveSourceHandler::~MockLiveSourceHandler()
+MockRtmpSourceHandler::~MockRtmpSourceHandler()
 {
 }
 
-srs_error_t MockLiveSourceHandler::on_publish(ISrsRequest *r)
+srs_error_t MockRtmpSourceHandler::on_publish(ISrsRequest *r)
 {
     on_publish_count_++;
     return srs_success;
 }
 
-void MockLiveSourceHandler::on_unpublish(ISrsRequest *r)
+void MockRtmpSourceHandler::on_unpublish(ISrsRequest *r)
 {
     on_unpublish_count_++;
 }
@@ -705,7 +705,7 @@ VOID TEST(StreamBridgeTest, SrsSrtBridge_WithRtmpTarget)
     EXPECT_TRUE(bridge->empty());
 
     // Create and enable RTMP target
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
 
@@ -816,7 +816,7 @@ VOID TEST(StreamBridgeTest, SrsSrtBridge_OnFrameRtmpTarget)
     HELPER_EXPECT_SUCCESS(bridge->on_frame(frame.get()));
 
     // Enable RTMP target
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_srt2rtmp(rtmp_source);
@@ -882,7 +882,7 @@ VOID TEST(StreamBridgeTest, SrsSrtBridge_OnFrameBothTargets)
     SrsUniquePtr<MockStreamBridgeRequest> req(new MockStreamBridgeRequest());
 
     // Enable both RTMP and RTC targets
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_srt2rtmp(rtmp_source);
@@ -925,7 +925,7 @@ VOID TEST(StreamBridgeTest, SrsRtcBridge_WithRtmpTarget)
     SrsUniquePtr<SrsRtcBridge> bridge(new SrsRtcBridge(_srs_app_factory));
 
     // Create a mock RTMP target using shared pointer
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     bridge->enable_rtc2rtmp(rtmp_source);
 
@@ -945,7 +945,7 @@ VOID TEST(StreamBridgeTest, SrsRtcBridge_RtpPacketHandling)
     SrsUniquePtr<MockStreamBridgeRequest> req(new MockStreamBridgeRequest());
 
     // Create RTMP target for the bridge
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_rtc2rtmp(rtmp_source);
@@ -981,7 +981,7 @@ VOID TEST(StreamBridgeTest, SrsRtcBridge_RtpPacketTypes)
     SrsUniquePtr<MockStreamBridgeRequest> req(new MockStreamBridgeRequest());
 
     // Create RTMP target for the bridge
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_rtc2rtmp(rtmp_source);
@@ -1033,7 +1033,7 @@ VOID TEST(StreamBridgeTest, SrsRtcBridge_RtpLifecycle)
     SrsUniquePtr<MockStreamBridgeRequest> req(new MockStreamBridgeRequest());
 
     // Create RTMP target
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_rtc2rtmp(rtmp_source);
@@ -1127,7 +1127,7 @@ VOID TEST(StreamBridgeTest, SrsSrtBridge_MultipleTargets)
     EXPECT_TRUE(bridge->empty());
 
     // Enable both RTMP and RTC targets
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_srt2rtmp(rtmp_source);
@@ -1204,7 +1204,7 @@ VOID TEST(StreamBridgeTest, Bridge_StateConsistency)
     EXPECT_TRUE(bridge->empty());
 
     // Adding target should change empty state
-    SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+    SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
     rtmp_source->assemble();
     HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
     bridge->enable_srt2rtmp(rtmp_source);
@@ -1247,7 +1247,7 @@ VOID TEST(StreamBridgeTest, Bridge_MemoryManagement)
 
         HELPER_EXPECT_SUCCESS(bridge->initialize(req.get()));
 
-        SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+        SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
         rtmp_source->assemble();
         HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
         bridge->enable_srt2rtmp(rtmp_source);
@@ -1262,7 +1262,7 @@ VOID TEST(StreamBridgeTest, Bridge_MemoryManagement)
         SrsUniquePtr<SrsRtcBridge> bridge(new SrsRtcBridge(_srs_app_factory));
         SrsUniquePtr<MockStreamBridgeRequest> req(new MockStreamBridgeRequest());
 
-        SrsSharedPtr<SrsLiveSource> rtmp_source(new SrsLiveSource());
+        SrsSharedPtr<SrsRtmpSource> rtmp_source(new SrsRtmpSource());
         rtmp_source->assemble();
         HELPER_EXPECT_SUCCESS(rtmp_source->initialize(rtmp_source, req.get()));
         bridge->enable_rtc2rtmp(rtmp_source);

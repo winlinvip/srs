@@ -600,8 +600,8 @@ public:
 };
 
 
-// Mock live source for testing how SrsMpegtsSrtConn releases a failed publish.
-class MockLiveSourceForSrtPublishFailure : public MockLiveSource
+// Mock RTMP source for testing how SrsMpegtsSrtConn releases a failed publish.
+class MockRtmpSourceForSrtPublishFailure : public MockRtmpSource
 {
 public:
     srs_error_t on_publish_error_;
@@ -609,8 +609,8 @@ public:
     int on_unpublish_count_;
 
 public:
-    MockLiveSourceForSrtPublishFailure();
-    virtual ~MockLiveSourceForSrtPublishFailure();
+    MockRtmpSourceForSrtPublishFailure();
+    virtual ~MockRtmpSourceForSrtPublishFailure();
 
 public:
     virtual srs_error_t on_publish();

@@ -46,7 +46,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPublisher)
     // Mock all interface dependencies
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -73,7 +73,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPublisher)
 
     conn->config_ = mock_config.get();
     conn->manager_ = mock_manager.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->stat_ = mock_stat.get();
     conn->hooks_ = mock_hooks.get();
@@ -114,7 +114,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPublisher)
     }
 
     // Create an RTMP audio message to feed consumer.
-    MockLiveSource *mock_source = dynamic_cast<MockLiveSource *>(mock_sources->mock_source_.get());
+    MockRtmpSource *mock_source = dynamic_cast<MockRtmpSource *>(mock_sources->mock_source_.get());
     if (true) {
         // Create a real AAC audio message with proper format.
         // AAC audio format in RTMP/FLV:
@@ -211,7 +211,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPlayer)
     // Mock all interface dependencies
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -246,7 +246,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPlayer)
 
     conn->config_ = mock_config.get();
     conn->manager_ = mock_manager.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->stat_ = mock_stat.get();
     conn->hooks_ = mock_hooks.get();
@@ -312,7 +312,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPlayer)
         }
 
         // Feed audio to source.
-        SrsLiveSource *source = mock_sources->mock_source_.get();
+        SrsRtmpSource *source = mock_sources->mock_source_.get();
         HELPER_EXPECT_SUCCESS(source->on_audio(msg));
 
         // Wait for consumer to process the message.
@@ -353,7 +353,7 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPlayer)
         }
 
         // Feed video to source.
-        SrsLiveSource *source = mock_sources->mock_source_.get();
+        SrsRtmpSource *source = mock_sources->mock_source_.get();
         HELPER_EXPECT_SUCCESS(source->on_video(msg));
 
         // Wait for consumer to process the message.

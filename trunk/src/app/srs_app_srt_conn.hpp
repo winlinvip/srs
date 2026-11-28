@@ -19,7 +19,7 @@
 #include <srs_protocol_utility.hpp>
 
 class SrsBuffer;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsSrtSource;
 class SrsSrtServer;
 class SrsNetworkDelta;
@@ -31,7 +31,7 @@ class ISrsStatistic;
 class ISrsAppConfig;
 class ISrsStreamPublishTokenManager;
 class ISrsSrtSourceManager;
-class ISrsLiveSourceManager;
+class ISrsRtmpSourceManager;
 class ISrsRtcSourceManager;
 class ISrsHttpHooks;
 class ISrsAppFactory;
@@ -147,7 +147,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsStreamPublishTokenManager *stream_publish_tokens_;
     ISrsSrtSourceManager *srt_sources_;
-    ISrsLiveSourceManager *live_sources_;
+    ISrsRtmpSourceManager *rtmp_sources_;
     ISrsRtcSourceManager *rtc_sources_;
     ISrsHttpHooks *hooks_;
 

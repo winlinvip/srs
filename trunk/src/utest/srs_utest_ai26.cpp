@@ -87,7 +87,7 @@ public:
 };
 
 // Records the request an HTTP-FLV viewer is resolved to, then refuses it so the test stops before
-// any source is needed. The security check runs on the same request the live source is fetched by.
+// any source is needed. The security check runs on the same request the RTMP source is fetched by.
 class MockSecurityForStreamUrlRule : public ISrsSecurity
 {
 public:

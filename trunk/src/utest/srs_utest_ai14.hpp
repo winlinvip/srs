@@ -40,8 +40,8 @@ public:
     virtual ~MockMediaPacketForJitter();
 };
 
-// Mock live source for testing message queue dump_packets
-class MockLiveSourceForQueue : public SrsLiveSource
+// Mock RTMP source for testing message queue dump_packets
+class MockRtmpSourceForQueue : public SrsRtmpSource
 {
 public:
     int initialize_count_;
@@ -49,24 +49,24 @@ public:
     srs_error_t initialize_error_;
 
 public:
-    MockLiveSourceForQueue();
-    virtual ~MockLiveSourceForQueue();
-    virtual void on_consumer_destroy(SrsLiveConsumer *consumer);
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r);
+    MockRtmpSourceForQueue();
+    virtual ~MockRtmpSourceForQueue();
+    virtual void on_consumer_destroy(SrsRtmpConsumer *consumer);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> wrapper, ISrsRequest *r);
     virtual void update_auth(ISrsRequest *r);
-    virtual srs_error_t consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg);
+    virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg);
 };
 
 // Mock live consumer for testing message queue dump_packets
-class MockLiveConsumerForQueue : public SrsLiveConsumer
+class MockRtmpConsumerForQueue : public SrsRtmpConsumer
 {
 public:
     int enqueue_count_;
     std::vector<int64_t> enqueued_timestamps_;
 
 public:
-    MockLiveConsumerForQueue(MockLiveSourceForQueue *source);
-    virtual ~MockLiveConsumerForQueue();
+    MockRtmpConsumerForQueue(MockRtmpSourceForQueue *source);
+    virtual ~MockRtmpConsumerForQueue();
     virtual srs_error_t enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag);
 };
 
@@ -192,8 +192,8 @@ public:
     virtual srs_error_t on_video(SrsMediaPacket *shared_video);
 };
 
-// Mock ISrsLiveSource for testing SrsOriginHub::on_audio
-class MockLiveSourceForOriginHub : public ISrsLiveSource
+// Mock ISrsRtmpSource for testing SrsOriginHub::on_audio
+class MockRtmpSourceForOriginHub : public ISrsRtmpSource
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -217,9 +217,9 @@ public:
     srs_error_t on_meta_data_error_;
 
 public:
-    MockLiveSourceForOriginHub();
-    virtual ~MockLiveSourceForOriginHub();
-    virtual void on_consumer_destroy(SrsLiveConsumer *consumer);
+    MockRtmpSourceForOriginHub();
+    virtual ~MockRtmpSourceForOriginHub();
+    virtual void on_consumer_destroy(SrsRtmpConsumer *consumer);
     virtual SrsContextId source_id();
     virtual SrsContextId pre_source_id();
     virtual SrsMetaCache *meta();
@@ -303,7 +303,7 @@ public:
     void set_backend_urls(const std::vector<std::string> &urls);
 };
 
-// Mock ISrsHourGlass for testing SrsLiveSourceManager::setup_ticks
+// Mock ISrsHourGlass for testing SrsRtmpSourceManager::setup_ticks
 class MockHourGlassForSourceManager : public ISrsHourGlass
 {
 public:
@@ -324,15 +324,15 @@ public:
     virtual void untick(int event);
 };
 
-// Mock ISrsAppFactory for testing SrsLiveSourceManager::fetch_or_create
+// Mock ISrsAppFactory for testing SrsRtmpSourceManager::fetch_or_create
 class MockAppFactoryForSourceManager : public SrsAppFactory
 {
 public:
-    int create_live_source_count_;
+    int create_rtmp_source_count_;
     // Each created source's initialize fails with a copy of it, owned by the mock.
-    srs_error_t live_source_initialize_error_;
+    srs_error_t rtmp_source_initialize_error_;
     // The last source created, owned by the caller once returned.
-    MockLiveSourceForQueue *live_source_;
+    MockRtmpSourceForQueue *rtmp_source_;
     int create_hourglass_count_;
     std::string hourglass_name_;
     ISrsHourGlassHandler *hourglass_handler_;
@@ -343,11 +343,11 @@ public:
 public:
     MockAppFactoryForSourceManager();
     virtual ~MockAppFactoryForSourceManager();
-    virtual SrsLiveSource *create_live_source();
+    virtual SrsRtmpSource *create_rtmp_source();
     virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
 };
 
-// Mock ISrsStreamPublishTokenManager for testing SrsLiveSourceManager::notify
+// Mock ISrsStreamPublishTokenManager for testing SrsRtmpSourceManager::notify
 class MockStreamPublishTokensForSourceManager : public ISrsStreamPublishTokenManager
 {
 public:
@@ -364,16 +364,16 @@ public:
     virtual bool is_acquired(const std::string &stream_url);
 };
 
-// Mock ISrsAppFactory for testing SrsLiveSource::initialize
-class MockAppFactoryForLiveSource : public SrsAppFactory
+// Mock ISrsAppFactory for testing SrsRtmpSource::initialize
+class MockAppFactoryForRtmpSource : public SrsAppFactory
 {
 public:
     MockOriginHub *mock_hub_;
     int create_origin_hub_count_;
 
 public:
-    MockAppFactoryForLiveSource();
-    virtual ~MockAppFactoryForLiveSource();
+    MockAppFactoryForRtmpSource();
+    virtual ~MockAppFactoryForRtmpSource();
     virtual ISrsOriginHub *create_origin_hub();
 };
 

@@ -30,7 +30,7 @@ using namespace std;
  *
  * Template Design:
  * - MockOtherSourceAsyncCreator<ManagerType, SourceType>: Template for RTC, SRT, RTSP
- * - MockLiveSourceAsyncCreator: Separate class for Live sources (needs handler parameter)
+ * - MockRtmpSourceAsyncCreator: Separate class for RTMP sources (needs handler parameter)
  * - Type aliases provide backward compatibility with original class names
  */
 
@@ -114,10 +114,10 @@ public:
     }
 };
 
-// Template for non-live source async creators (RTC, SRT, RTSP)
+// Template for non-RTMP source async creators (RTC, SRT, RTSP)
 // Since SRS uses C++98, we use a simple template approach
-// Note: MockLiveSourceAsyncCreator is kept separate because it requires an additional
-// ISrsLiveSourceHandler parameter that the other source managers don't need
+// Note: MockRtmpSourceAsyncCreator is kept separate because it requires an additional
+// ISrsRtmpSourceHandler parameter that the other source managers don't need
 template <typename ManagerType, typename SourceType>
 class MockOtherSourceAsyncCreator : public ISrsCoroutineHandler
 {
@@ -159,23 +159,23 @@ public:
 };
 
 // Type aliases for convenience (C++98 compatible)
-typedef MockOtherSourceAsyncCreator<SrsLiveSourceManager, SrsLiveSource> MockLiveSourceAsyncCreator;
+typedef MockOtherSourceAsyncCreator<SrsRtmpSourceManager, SrsRtmpSource> MockRtmpSourceAsyncCreator;
 
 // Test race condition of source managers
-VOID TEST(SourceLockTest, LiveSourceManager_RaceCondition)
+VOID TEST(SourceLockTest, RtmpSourceManager_RaceCondition)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
     MockAsyncSrsRequest req("/live/test1", true); // Enable context switch
-    SrsSharedPtr<SrsLiveSource> source;
+    SrsSharedPtr<SrsRtmpSource> source;
 
     // Create a coroutine to create source2.
     SrsWaitGroup wg;
-    MockLiveSourceAsyncCreator creator(&wg, &manager, &req);
+    MockRtmpSourceAsyncCreator creator(&wg, &manager, &req);
     SrsSTCoroutine trd("test", &creator);
 
     wg.add(1);
@@ -192,12 +192,12 @@ VOID TEST(SourceLockTest, LiveSourceManager_RaceCondition)
     EXPECT_EQ(source.get(), creator.source_.get());
 
     // Test fetch - should return the same source
-    SrsSharedPtr<SrsLiveSource> fetched = manager.fetch(&req);
+    SrsSharedPtr<SrsRtmpSource> fetched = manager.fetch(&req);
     EXPECT_TRUE(fetched.get() != NULL);
     EXPECT_EQ(source.get(), fetched.get());
 
     // Test fetch_or_create again - should return existing source
-    SrsSharedPtr<SrsLiveSource> source2;
+    SrsSharedPtr<SrsRtmpSource> source2;
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
     EXPECT_EQ(source.get(), source2.get());
 }
@@ -290,49 +290,49 @@ VOID TEST(SourceLockTest, SrtSourceManager_RaceCondition)
 }
 
 // Test basic functionality of source managers
-VOID TEST(SourceLockTest, LiveSourceManager_BasicFunctionality)
+VOID TEST(SourceLockTest, RtmpSourceManager_BasicFunctionality)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
     MockAsyncSrsRequest req("/live/test1");
-    SrsSharedPtr<SrsLiveSource> source;
+    SrsSharedPtr<SrsRtmpSource> source;
 
     // Test fetch_or_create - should create new source
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
     EXPECT_TRUE(source.get() != NULL);
 
     // Test fetch - should return the same source
-    SrsSharedPtr<SrsLiveSource> fetched = manager.fetch(&req);
+    SrsSharedPtr<SrsRtmpSource> fetched = manager.fetch(&req);
     EXPECT_TRUE(fetched.get() != NULL);
     EXPECT_EQ(source.get(), fetched.get());
 
     // Test fetch_or_create again - should return existing source
-    SrsSharedPtr<SrsLiveSource> source2;
+    SrsSharedPtr<SrsRtmpSource> source2;
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
     EXPECT_EQ(source.get(), source2.get());
 }
 
 // Test concurrent access scenarios to verify race condition fixes
-VOID TEST(SourceLockTest, LiveSourceManager_ConcurrentAccess)
+VOID TEST(SourceLockTest, RtmpSourceManager_ConcurrentAccess)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
     MockAsyncSrsRequest req("/live/concurrent_test", true); // Enable context switch
 
     // Simulate multiple concurrent requests for the same stream
-    vector<SrsSharedPtr<SrsLiveSource> > sources;
+    vector<SrsSharedPtr<SrsRtmpSource> > sources;
     const int concurrent_requests = 10;
 
     for (int i = 0; i < concurrent_requests; i++) {
-        SrsSharedPtr<SrsLiveSource> source;
+        SrsSharedPtr<SrsRtmpSource> source;
         HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
         sources.push_back(source);
         EXPECT_TRUE(source.get() != NULL);
@@ -345,11 +345,11 @@ VOID TEST(SourceLockTest, LiveSourceManager_ConcurrentAccess)
 }
 
 // Test different stream URLs create different sources
-VOID TEST(SourceLockTest, LiveSourceManager_DifferentStreams)
+VOID TEST(SourceLockTest, RtmpSourceManager_DifferentStreams)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
@@ -358,7 +358,7 @@ VOID TEST(SourceLockTest, LiveSourceManager_DifferentStreams)
     MockAsyncSrsRequest req2("/live/stream2");
     MockAsyncSrsRequest req3("/live/stream3");
 
-    SrsSharedPtr<SrsLiveSource> source1, source2, source3;
+    SrsSharedPtr<SrsRtmpSource> source1, source2, source3;
 
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req1, source1));
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req2, source2));
@@ -373,9 +373,9 @@ VOID TEST(SourceLockTest, LiveSourceManager_DifferentStreams)
     EXPECT_NE(source2.get(), source3.get());
 
     // Fetch should return the same sources
-    SrsSharedPtr<SrsLiveSource> fetched1 = manager.fetch(&req1);
-    SrsSharedPtr<SrsLiveSource> fetched2 = manager.fetch(&req2);
-    SrsSharedPtr<SrsLiveSource> fetched3 = manager.fetch(&req3);
+    SrsSharedPtr<SrsRtmpSource> fetched1 = manager.fetch(&req1);
+    SrsSharedPtr<SrsRtmpSource> fetched2 = manager.fetch(&req2);
+    SrsSharedPtr<SrsRtmpSource> fetched3 = manager.fetch(&req3);
 
     EXPECT_EQ(source1.get(), fetched1.get());
     EXPECT_EQ(source2.get(), fetched2.get());
@@ -383,52 +383,52 @@ VOID TEST(SourceLockTest, LiveSourceManager_DifferentStreams)
 }
 
 // Test fetch for non-existent stream returns NULL
-VOID TEST(SourceLockTest, LiveSourceManager_FetchNonExistent)
+VOID TEST(SourceLockTest, RtmpSourceManager_FetchNonExistent)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
     MockAsyncSrsRequest req("/live/nonexistent");
 
     // Fetch non-existent source should return NULL
-    SrsSharedPtr<SrsLiveSource> source = manager.fetch(&req);
+    SrsSharedPtr<SrsRtmpSource> source = manager.fetch(&req);
     EXPECT_TRUE(source.get() == NULL);
 }
 
 // Test that created flag works correctly for initialization
-VOID TEST(SourceLockTest, LiveSourceManager_CreatedFlagLogic)
+VOID TEST(SourceLockTest, RtmpSourceManager_CreatedFlagLogic)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
     MockAsyncSrsRequest req("/live/created_flag_test");
 
     // First call should create and initialize
-    SrsSharedPtr<SrsLiveSource> source1;
+    SrsSharedPtr<SrsRtmpSource> source1;
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source1));
     EXPECT_TRUE(source1.get() != NULL);
 
     // Second call should find existing and only update auth (not initialize again)
-    SrsSharedPtr<SrsLiveSource> source2;
+    SrsSharedPtr<SrsRtmpSource> source2;
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
     EXPECT_EQ(source1.get(), source2.get());
 }
 
 // Test lock protection during source creation
-VOID TEST(SourceLockTest, LiveSourceManager_LockProtection)
+VOID TEST(SourceLockTest, RtmpSourceManager_LockProtection)
 {
     srs_error_t err;
 
     // Test that the lock scope is properly limited
     // This test verifies that no functions are called during locking
 
-    SrsLiveSourceManager live_manager;
+    SrsRtmpSourceManager live_manager;
     live_manager.assemble();
     HELPER_EXPECT_SUCCESS(live_manager.initialize());
 
@@ -444,9 +444,9 @@ VOID TEST(SourceLockTest, LiveSourceManager_LockProtection)
     MockAsyncSrsRequest req("/live/lock_test");
 
     for (int i = 0; i < 5; i++) {
-        SrsSharedPtr<SrsLiveSource> live_source;
-        HELPER_EXPECT_SUCCESS(live_manager.fetch_or_create(&req, live_source));
-        EXPECT_TRUE(live_source.get() != NULL);
+        SrsSharedPtr<SrsRtmpSource> rtmp_source;
+        HELPER_EXPECT_SUCCESS(live_manager.fetch_or_create(&req, rtmp_source));
+        EXPECT_TRUE(rtmp_source.get() != NULL);
 
         SrsSharedPtr<SrsRtcSource> rtc_source;
         HELPER_EXPECT_SUCCESS(rtc_manager.fetch_or_create(&req, rtc_source));
@@ -460,11 +460,11 @@ VOID TEST(SourceLockTest, LiveSourceManager_LockProtection)
 
 // Test that simulates the original race condition scenario from issue #1230
 // This test verifies that the fix prevents multiple sources for the same stream
-VOID TEST(SourceLockTest, LiveSourceManager_RaceConditionPrevention_Issue1230)
+VOID TEST(SourceLockTest, RtmpSourceManager_RaceConditionPrevention_Issue1230)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
@@ -472,13 +472,13 @@ VOID TEST(SourceLockTest, LiveSourceManager_RaceConditionPrevention_Issue1230)
 
     // Simulate the scenario where multiple coroutines try to create
     // sources for the same stream simultaneously
-    vector<SrsSharedPtr<SrsLiveSource> > sources;
+    vector<SrsSharedPtr<SrsRtmpSource> > sources;
     const int num_attempts = 20;
 
     // This simulates what would happen if multiple coroutines
     // called fetch_or_create simultaneously before the fix
     for (int i = 0; i < num_attempts; i++) {
-        SrsSharedPtr<SrsLiveSource> source;
+        SrsSharedPtr<SrsRtmpSource> source;
         HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
         sources.push_back(source);
 
@@ -499,12 +499,12 @@ VOID TEST(SourceLockTest, LiveSourceManager_RaceConditionPrevention_Issue1230)
     }
 
     // Verify fetch also returns the same source
-    SrsSharedPtr<SrsLiveSource> fetched = manager.fetch(&req);
+    SrsSharedPtr<SrsRtmpSource> fetched = manager.fetch(&req);
     EXPECT_EQ(sources[0].get(), fetched.get());
 }
 
 // Test the atomic nature of source creation and pool insertion
-VOID TEST(SourceLockTest, LiveSourceManager_AtomicSourceCreation)
+VOID TEST(SourceLockTest, RtmpSourceManager_AtomicSourceCreation)
 {
     srs_error_t err;
 
@@ -546,11 +546,11 @@ VOID TEST(SourceLockTest, LiveSourceManager_AtomicSourceCreation)
 
 // Test that verifies the fix addresses the specific issue mentioned in #1230
 // where DVR and HLS module initialization could cause coroutine switches
-VOID TEST(SourceLockTest, LiveSourceManager_CoroutineSwitchProtection)
+VOID TEST(SourceLockTest, RtmpSourceManager_CoroutineSwitchProtection)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
@@ -562,13 +562,13 @@ VOID TEST(SourceLockTest, LiveSourceManager_CoroutineSwitchProtection)
     stream_urls.push_back("/live/hls_test2");
     stream_urls.push_back("/live/mixed_test");
 
-    map<string, SrsSharedPtr<SrsLiveSource> > created_sources;
+    map<string, SrsSharedPtr<SrsRtmpSource> > created_sources;
 
     // Create sources for each stream
     for (size_t idx = 0; idx < stream_urls.size(); idx++) {
         const string &url = stream_urls[idx];
         MockAsyncSrsRequest req(url, true); // Enable context switch
-        SrsSharedPtr<SrsLiveSource> source;
+        SrsSharedPtr<SrsRtmpSource> source;
 
         HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
         EXPECT_TRUE(source.get() != NULL);
@@ -577,7 +577,7 @@ VOID TEST(SourceLockTest, LiveSourceManager_CoroutineSwitchProtection)
 
         // Verify subsequent calls return the same source
         for (int i = 0; i < 3; i++) {
-            SrsSharedPtr<SrsLiveSource> same_source;
+            SrsSharedPtr<SrsRtmpSource> same_source;
             HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, same_source));
             EXPECT_EQ(source.get(), same_source.get())
                 << "Source changed for stream " << url << " on attempt " << i;
@@ -585,8 +585,8 @@ VOID TEST(SourceLockTest, LiveSourceManager_CoroutineSwitchProtection)
     }
 
     // Verify all sources are different from each other
-    vector<SrsLiveSource *> source_ptrs;
-    for (map<string, SrsSharedPtr<SrsLiveSource> >::iterator it = created_sources.begin();
+    vector<SrsRtmpSource *> source_ptrs;
+    for (map<string, SrsSharedPtr<SrsRtmpSource> >::iterator it = created_sources.begin();
          it != created_sources.end(); ++it) {
         source_ptrs.push_back(it->second.get());
     }
@@ -600,11 +600,11 @@ VOID TEST(SourceLockTest, LiveSourceManager_CoroutineSwitchProtection)
 }
 
 // Test edge case with empty or invalid stream URLs
-VOID TEST(SourceLockTest, LiveSourceManager_EdgeCases_InvalidUrls)
+VOID TEST(SourceLockTest, RtmpSourceManager_EdgeCases_InvalidUrls)
 {
     srs_error_t err;
 
-    SrsLiveSourceManager manager;
+    SrsRtmpSourceManager manager;
     manager.assemble();
     HELPER_EXPECT_SUCCESS(manager.initialize());
 
@@ -619,14 +619,14 @@ VOID TEST(SourceLockTest, LiveSourceManager_EdgeCases_InvalidUrls)
     for (size_t idx = 0; idx < edge_case_urls.size(); idx++) {
         const string &url = edge_case_urls[idx];
         MockAsyncSrsRequest req(url);
-        SrsSharedPtr<SrsLiveSource> source;
+        SrsSharedPtr<SrsRtmpSource> source;
 
         // Should handle edge cases gracefully
         HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source));
         EXPECT_TRUE(source.get() != NULL);
 
         // Verify consistency
-        SrsSharedPtr<SrsLiveSource> source2;
+        SrsSharedPtr<SrsRtmpSource> source2;
         HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
         EXPECT_EQ(source.get(), source2.get());
     }
@@ -767,7 +767,7 @@ VOID TEST(SourceLockTest, RtspSourceManager_RaceCondition)
 }
 
 // Test lock protection during source creation
-VOID TEST(SourceLockTest, LiveSourceManager_LockProtection2)
+VOID TEST(SourceLockTest, RtmpSourceManager_LockProtection2)
 {
     srs_error_t err;
 
@@ -789,7 +789,7 @@ VOID TEST(SourceLockTest, LiveSourceManager_LockProtection2)
 }
 
 // Test the atomic nature of source creation and pool insertion
-VOID TEST(SourceLockTest, LiveSourceManager_AtomicSourceCreation2)
+VOID TEST(SourceLockTest, RtmpSourceManager_AtomicSourceCreation2)
 {
     srs_error_t err;
 

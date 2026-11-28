@@ -51,51 +51,51 @@ MockMediaPacketForJitter::~MockMediaPacketForJitter()
 {
 }
 
-MockLiveSourceForQueue::MockLiveSourceForQueue()
+MockRtmpSourceForQueue::MockRtmpSourceForQueue()
 {
     initialize_count_ = 0;
     initialize_error_ = srs_success;
 }
 
-MockLiveSourceForQueue::~MockLiveSourceForQueue()
+MockRtmpSourceForQueue::~MockRtmpSourceForQueue()
 {
     srs_freep(initialize_error_);
 }
 
-void MockLiveSourceForQueue::on_consumer_destroy(SrsLiveConsumer *consumer)
+void MockRtmpSourceForQueue::on_consumer_destroy(SrsRtmpConsumer *consumer)
 {
     // Do nothing in mock
 }
 
-srs_error_t MockLiveSourceForQueue::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r)
+srs_error_t MockRtmpSourceForQueue::initialize(SrsSharedPtr<SrsRtmpSource> wrapper, ISrsRequest *r)
 {
     // Mock initialize - do nothing and return the injected result
     initialize_count_++;
     return srs_error_copy(initialize_error_);
 }
 
-void MockLiveSourceForQueue::update_auth(ISrsRequest *r)
+void MockRtmpSourceForQueue::update_auth(ISrsRequest *r)
 {
     // Mock update_auth - do nothing to avoid accessing null req_
 }
 
-srs_error_t MockLiveSourceForQueue::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t MockRtmpSourceForQueue::consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg)
 {
     // Mock consumer_dumps - just return success without doing anything
     return srs_success;
 }
 
-MockLiveConsumerForQueue::MockLiveConsumerForQueue(MockLiveSourceForQueue *source)
-    : SrsLiveConsumer(source)
+MockRtmpConsumerForQueue::MockRtmpConsumerForQueue(MockRtmpSourceForQueue *source)
+    : SrsRtmpConsumer(source)
 {
     enqueue_count_ = 0;
 }
 
-MockLiveConsumerForQueue::~MockLiveConsumerForQueue()
+MockRtmpConsumerForQueue::~MockRtmpConsumerForQueue()
 {
 }
 
-srs_error_t MockLiveConsumerForQueue::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
+srs_error_t MockRtmpConsumerForQueue::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag)
 {
     enqueue_count_++;
     enqueued_timestamps_.push_back(shared_msg->timestamp_);
@@ -175,9 +175,9 @@ void MockHourGlassForSourceManager::untick(int event)
 
 MockAppFactoryForSourceManager::MockAppFactoryForSourceManager()
 {
-    create_live_source_count_ = 0;
-    live_source_initialize_error_ = srs_success;
-    live_source_ = NULL;
+    create_rtmp_source_count_ = 0;
+    rtmp_source_initialize_error_ = srs_success;
+    rtmp_source_ = NULL;
     create_hourglass_count_ = 0;
     hourglass_handler_ = NULL;
     hourglass_interval_ = 0;
@@ -186,15 +186,15 @@ MockAppFactoryForSourceManager::MockAppFactoryForSourceManager()
 
 MockAppFactoryForSourceManager::~MockAppFactoryForSourceManager()
 {
-    srs_freep(live_source_initialize_error_);
+    srs_freep(rtmp_source_initialize_error_);
 }
 
-SrsLiveSource *MockAppFactoryForSourceManager::create_live_source()
+SrsRtmpSource *MockAppFactoryForSourceManager::create_rtmp_source()
 {
-    create_live_source_count_++;
-    live_source_ = new MockLiveSourceForQueue();
-    live_source_->initialize_error_ = srs_error_copy(live_source_initialize_error_);
-    return live_source_;
+    create_rtmp_source_count_++;
+    rtmp_source_ = new MockRtmpSourceForQueue();
+    rtmp_source_->initialize_error_ = srs_error_copy(rtmp_source_initialize_error_);
+    return rtmp_source_;
 }
 
 ISrsHourGlass *MockAppFactoryForSourceManager::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
@@ -553,8 +553,8 @@ VOID TEST(MessageQueueTest, DumpPacketsTypicalScenario)
         EXPECT_EQ(2, queue->size());
 
         // Create mock source and consumer
-        SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-        SrsUniquePtr<MockLiveConsumerForQueue> consumer(new MockLiveConsumerForQueue(source.get()));
+        SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+        SrsUniquePtr<MockRtmpConsumerForQueue> consumer(new MockRtmpConsumerForQueue(source.get()));
 
         // Dump packets to consumer
         HELPER_EXPECT_SUCCESS(queue->dump_packets(consumer.get(), true, SrsRtmpJitterAlgorithmFULL));
@@ -713,15 +713,15 @@ VOID TEST(MessageQueueTest, ShrinkAndClear)
     EXPECT_EQ(0, queue->size());
 }
 
-VOID TEST(SrsLiveConsumerTest, TypicalUsage)
+VOID TEST(SrsRtmpConsumerTest, TypicalUsage)
 {
     srs_error_t err;
 
     // Create mock source
-    SrsUniquePtr<MockLiveSourceForQueue> mock_source(new MockLiveSourceForQueue());
+    SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
 
     // Create consumer with mock source - tests constructor
-    SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(mock_source.get()));
+    SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(mock_source.get()));
 
     // Test set_queue_size - typical queue size is 10 seconds
     srs_utime_t queue_size = 10 * SRS_UTIME_SECONDS;
@@ -745,15 +745,15 @@ VOID TEST(SrsLiveConsumerTest, TypicalUsage)
     // Destructor will be called automatically and should invoke on_consumer_destroy
 }
 
-VOID TEST(SrsLiveConsumerEnqueueTest, TypicalScenario)
+VOID TEST(SrsRtmpConsumerEnqueueTest, TypicalScenario)
 {
     srs_error_t err;
 
     // Create mock source
-    SrsUniquePtr<MockLiveSourceForQueue> mock_source(new MockLiveSourceForQueue());
+    SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
 
     // Create consumer with mock source
-    SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(mock_source.get()));
+    SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(mock_source.get()));
 
     // Set typical queue size (10 seconds)
     consumer->set_queue_size(10 * SRS_UTIME_SECONDS);
@@ -791,15 +791,15 @@ VOID TEST(SrsLiveConsumerEnqueueTest, TypicalScenario)
     EXPECT_EQ(49, consumer->get_time());
 }
 
-VOID TEST(SrsLiveConsumerDumpPacketsTest, TypicalScenario)
+VOID TEST(SrsRtmpConsumerDumpPacketsTest, TypicalScenario)
 {
     srs_error_t err;
 
     // Create mock source with source IDs
-    SrsUniquePtr<MockLiveSourceForQueue> mock_source(new MockLiveSourceForQueue());
+    SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
 
     // Create consumer with mock source
-    SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(mock_source.get()));
+    SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(mock_source.get()));
 
     // Set typical queue size (10 seconds)
     consumer->set_queue_size(10 * SRS_UTIME_SECONDS);
@@ -833,15 +833,15 @@ VOID TEST(SrsLiveConsumerDumpPacketsTest, TypicalScenario)
 }
 
 #ifdef SRS_PERF_QUEUE_COND_WAIT
-VOID TEST(SrsLiveConsumerWaitTest, TypicalScenario)
+VOID TEST(SrsRtmpConsumerWaitTest, TypicalScenario)
 {
     srs_error_t err;
 
     // Create mock source
-    SrsUniquePtr<MockLiveSourceForQueue> mock_source(new MockLiveSourceForQueue());
+    SrsUniquePtr<MockRtmpSourceForQueue> mock_source(new MockRtmpSourceForQueue());
 
     // Create consumer with mock source
-    SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(mock_source.get()));
+    SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(mock_source.get()));
 
     // Set typical queue size (10 seconds)
     consumer->set_queue_size(10 * SRS_UTIME_SECONDS);
@@ -880,15 +880,15 @@ VOID TEST(SrsLiveConsumerWaitTest, TypicalScenario)
 }
 #endif
 
-VOID TEST(LiveConsumerTest, OnPlayClientPauseTypicalScenario)
+VOID TEST(RtmpConsumerTest, OnPlayClientPauseTypicalScenario)
 {
     srs_error_t err = srs_success;
 
-    // Create mock live source
-    SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
+    // Create mock RTMP source
+    SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
 
     // Create live consumer
-    SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(source.get()));
+    SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(source.get()));
 
     // Test typical scenario: pause the consumer
     HELPER_EXPECT_SUCCESS(consumer->on_play_client_pause(true));
@@ -898,13 +898,13 @@ VOID TEST(LiveConsumerTest, OnPlayClientPauseTypicalScenario)
 }
 
 #ifdef SRS_PERF_QUEUE_COND_WAIT
-VOID TEST(LiveConsumerTest, WakeupTypicalScenario)
+VOID TEST(RtmpConsumerTest, WakeupTypicalScenario)
 {
-    // Create mock live source
-    SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
+    // Create mock RTMP source
+    SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
 
     // Create live consumer
-    SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(source.get()));
+    SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(source.get()));
 
     // Simulate typical scenario: consumer is waiting
     consumer->mw_waiting_ = true;
@@ -916,7 +916,7 @@ VOID TEST(LiveConsumerTest, WakeupTypicalScenario)
     EXPECT_FALSE(consumer->mw_waiting_);
 }
 
-VOID TEST(LiveConsumerTest, EnqueueWaitingSignalConditions)
+VOID TEST(RtmpConsumerTest, EnqueueWaitingSignalConditions)
 {
     srs_error_t err;
 
@@ -924,9 +924,9 @@ VOID TEST(LiveConsumerTest, EnqueueWaitingSignalConditions)
     // This simulates when sequence header timestamp is bigger than A/V packet timestamp
     // See https://github.com/ossrs/srs/pull/749
     {
-        // Create fresh mock live source and consumer for this test case
-        SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-        SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(source.get()));
+        // Create fresh mock RTMP source and consumer for this test case
+        SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+        SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(source.get()));
 
         // Set consumer to waiting state with specific requirements
         consumer->mw_waiting_ = true;
@@ -954,9 +954,9 @@ VOID TEST(LiveConsumerTest, EnqueueWaitingSignalConditions)
     // Test Case 2: Normal mode with enough messages and duration
     // This tests the typical scenario where consumer waits for enough data
     {
-        // Create fresh mock live source and consumer for this test case
-        SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-        SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(source.get()));
+        // Create fresh mock RTMP source and consumer for this test case
+        SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+        SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(source.get()));
 
         // Set consumer to waiting state with specific requirements
         consumer->mw_waiting_ = true;
@@ -989,9 +989,9 @@ VOID TEST(LiveConsumerTest, EnqueueWaitingSignalConditions)
 
     // Test Case 3: Verify no signal when conditions are not met
     {
-        // Create fresh mock live source and consumer for this test case
-        SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-        SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(source.get()));
+        // Create fresh mock RTMP source and consumer for this test case
+        SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+        SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(source.get()));
 
         // Set consumer to waiting state with specific requirements
         consumer->mw_waiting_ = true;
@@ -1010,7 +1010,7 @@ VOID TEST(LiveConsumerTest, EnqueueWaitingSignalConditions)
 // Without ATC, a stream whose timestamps jump back, with time_jitter zero or off,
 // must still wake a waiting player. The player has sent everything up to 10s, so
 // the queue's start is 10s, and a message at 5s makes the duration negative.
-VOID TEST(LiveConsumerTest, EnqueueSignalsOnBackJumpWithoutAtc)
+VOID TEST(RtmpConsumerTest, EnqueueSignalsOnBackJumpWithoutAtc)
 {
     srs_error_t err;
 
@@ -1018,8 +1018,8 @@ VOID TEST(LiveConsumerTest, EnqueueSignalsOnBackJumpWithoutAtc)
     for (int i = 0; i < (int)(sizeof(algorithms) / sizeof(algorithms[0])); i++) {
         SrsRtmpJitterAlgorithm ag = algorithms[i];
 
-        SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-        SrsUniquePtr<SrsLiveConsumer> consumer(new SrsLiveConsumer(source.get()));
+        SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+        SrsUniquePtr<SrsRtmpConsumer> consumer(new SrsRtmpConsumer(source.get()));
 
         // Publish 1s, then a jump forward to 11s, and send both to the player.
         SrsUniquePtr<MockMediaPacketForJitter> packet1(new MockMediaPacketForJitter(1000, true));
@@ -1195,8 +1195,8 @@ VOID TEST(AppRtmpSourceTest, GopCacheDumpTypicalScenario)
     EXPECT_FALSE(gop_cache->empty());
 
     // Create mock source and consumer
-    SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-    SrsUniquePtr<MockLiveConsumerForQueue> consumer(new MockLiveConsumerForQueue(source.get()));
+    SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+    SrsUniquePtr<MockRtmpConsumerForQueue> consumer(new MockRtmpConsumerForQueue(source.get()));
 
     // Dump cached GOP to consumer
     HELPER_EXPECT_SUCCESS(gop_cache->dump(consumer.get(), true, SrsRtmpJitterAlgorithmFULL));
@@ -1370,7 +1370,7 @@ VOID TEST(AppMixQueueTest, PopMixedAudioVideo)
     srs_freep(mix_queue);
 }
 
-VOID TEST(LiveSourceOnAudioImpTest, ReduceSequenceHeaderAndConsumerEnqueue)
+VOID TEST(RtmpSourceOnAudioImpTest, ReduceSequenceHeaderAndConsumerEnqueue)
 {
     srs_error_t err = srs_success;
 
@@ -1388,10 +1388,10 @@ VOID TEST(LiveSourceOnAudioImpTest, ReduceSequenceHeaderAndConsumerEnqueue)
     // Create mock request
     MockSrsRequest *mock_req = new MockSrsRequest("test.vhost", "live", "stream1");
 
-    // Create mock live source and consumers
-    MockLiveSourceForQueue *mock_source = new MockLiveSourceForQueue();
-    MockLiveConsumerForQueue *consumer1 = new MockLiveConsumerForQueue(mock_source);
-    MockLiveConsumerForQueue *consumer2 = new MockLiveConsumerForQueue(mock_source);
+    // Create mock RTMP source and consumers
+    MockRtmpSourceForQueue *mock_source = new MockRtmpSourceForQueue();
+    MockRtmpConsumerForQueue *consumer1 = new MockRtmpConsumerForQueue(mock_source);
+    MockRtmpConsumerForQueue *consumer2 = new MockRtmpConsumerForQueue(mock_source);
 
     // Setup mock source with necessary components
     mock_source->config_ = mock_config;
@@ -1741,8 +1741,8 @@ srs_error_t MockForwarderForOriginHub::on_video(SrsMediaPacket *shared_video)
     return srs_success;
 }
 
-// Mock ISrsLiveSource implementation
-MockLiveSourceForOriginHub::MockLiveSourceForOriginHub()
+// Mock ISrsRtmpSource implementation
+MockRtmpSourceForOriginHub::MockRtmpSourceForOriginHub()
 {
     format_ = new SrsRtmpFormat();
     meta_ = new SrsMetaCache();
@@ -1762,7 +1762,7 @@ MockLiveSourceForOriginHub::MockLiveSourceForOriginHub()
     on_meta_data_error_ = srs_success;
 }
 
-MockLiveSourceForOriginHub::~MockLiveSourceForOriginHub()
+MockRtmpSourceForOriginHub::~MockRtmpSourceForOriginHub()
 {
     srs_freep(format_);
     srs_freep(meta_);
@@ -1775,66 +1775,66 @@ MockLiveSourceForOriginHub::~MockLiveSourceForOriginHub()
     srs_freep(on_meta_data_error_);
 }
 
-void MockLiveSourceForOriginHub::on_consumer_destroy(SrsLiveConsumer *consumer)
+void MockRtmpSourceForOriginHub::on_consumer_destroy(SrsRtmpConsumer *consumer)
 {
 }
 
-SrsContextId MockLiveSourceForOriginHub::source_id()
-{
-    return SrsContextId();
-}
-
-SrsContextId MockLiveSourceForOriginHub::pre_source_id()
+SrsContextId MockRtmpSourceForOriginHub::source_id()
 {
     return SrsContextId();
 }
 
-SrsMetaCache *MockLiveSourceForOriginHub::meta()
+SrsContextId MockRtmpSourceForOriginHub::pre_source_id()
+{
+    return SrsContextId();
+}
+
+SrsMetaCache *MockRtmpSourceForOriginHub::meta()
 {
     return meta_;
 }
 
-SrsRtmpFormat *MockLiveSourceForOriginHub::format()
+SrsRtmpFormat *MockRtmpSourceForOriginHub::format()
 {
     return format_;
 }
 
-srs_error_t MockLiveSourceForOriginHub::on_source_id_changed(SrsContextId id)
+srs_error_t MockRtmpSourceForOriginHub::on_source_id_changed(SrsContextId id)
 {
     on_source_id_changed_count_++;
     return srs_error_copy(on_source_id_changed_error_);
 }
 
-srs_error_t MockLiveSourceForOriginHub::on_publish()
+srs_error_t MockRtmpSourceForOriginHub::on_publish()
 {
     on_publish_count_++;
     return srs_error_copy(on_publish_error_);
 }
 
-void MockLiveSourceForOriginHub::on_unpublish()
+void MockRtmpSourceForOriginHub::on_unpublish()
 {
     on_unpublish_count_++;
 }
 
-srs_error_t MockLiveSourceForOriginHub::on_audio(SrsRtmpCommonMessage *audio)
+srs_error_t MockRtmpSourceForOriginHub::on_audio(SrsRtmpCommonMessage *audio)
 {
     on_audio_count_++;
     return srs_error_copy(on_audio_error_);
 }
 
-srs_error_t MockLiveSourceForOriginHub::on_video(SrsRtmpCommonMessage *video)
+srs_error_t MockRtmpSourceForOriginHub::on_video(SrsRtmpCommonMessage *video)
 {
     on_video_count_++;
     return srs_error_copy(on_video_error_);
 }
 
-srs_error_t MockLiveSourceForOriginHub::on_aggregate(SrsRtmpCommonMessage *msg)
+srs_error_t MockRtmpSourceForOriginHub::on_aggregate(SrsRtmpCommonMessage *msg)
 {
     on_aggregate_count_++;
     return srs_error_copy(on_aggregate_error_);
 }
 
-srs_error_t MockLiveSourceForOriginHub::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
+srs_error_t MockRtmpSourceForOriginHub::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
 {
     on_meta_data_count_++;
     return srs_error_copy(on_meta_data_error_);
@@ -1988,8 +1988,8 @@ VOID TEST(AppOriginHubTest, InitializeTypicalScenario)
     srs_error_t err;
 
     // Create mock source with shared pointer
-    MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2027,8 +2027,8 @@ VOID TEST(AppOriginHubTest, InitializeTypicalScenario)
 VOID TEST(AppOriginHubTest, CleanupDelaySelectionTypicalScenario)
 {
     // Create mock source with shared pointer
-    MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2076,8 +2076,8 @@ VOID TEST(AppOriginHubTest, OnMetaDataTypicalScenario)
     srs_error_t err;
 
     // Create mock source with shared pointer
-    MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2135,7 +2135,7 @@ VOID TEST(AppOriginHubTest, OnAudioTypicalScenario)
     srs_error_t err;
 
     // Create mock source
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2197,7 +2197,7 @@ VOID TEST(AppOriginHubTest, OnAudioAacSequenceHeader)
     srs_error_t err;
 
     // Create mock source
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2454,8 +2454,8 @@ VOID TEST(AppOriginHubTest, OnPublishTypicalScenario)
     srs_error_t err;
 
     // Create mock source with shared pointer
-    MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2503,9 +2503,9 @@ VOID TEST(AppOriginHubTest, OnVideoTypicalScenario)
 {
     srs_error_t err;
 
-    // Create mock source with shared pointer - use MockLiveSourceForQueue which is a SrsLiveSource
-    MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    // Create mock source with shared pointer - use MockRtmpSourceForQueue which is a SrsRtmpSource
+    MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -2518,7 +2518,7 @@ VOID TEST(AppOriginHubTest, OnVideoTypicalScenario)
     MockDashForOriginHub *mock_dash = new MockDashForOriginHub();
     MockDvrForOriginHub *mock_dvr = new MockDvrForOriginHub();
     MockStatisticForOriginHub *mock_stat = new MockStatisticForOriginHub();
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
 
     // Access private members to inject mocks
     srs_freep(hub->hls_);
@@ -2582,13 +2582,13 @@ VOID TEST(AppOriginHubTest, CreateForwardersTypicalScenario)
     // Create mock config that will outlive the hub
     MockAppConfig *mock_config = new MockAppConfig();
     MockStatisticForOriginHub *mock_stat = new MockStatisticForOriginHub();
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
 
     // Use a scope to ensure hub is destroyed before mock_config
     {
         // Create mock source with shared pointer
-        MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-        SrsSharedPtr<SrsLiveSource> source(raw_source);
+        MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+        SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
         // Create mock request
         MockHlsRequest mock_req;
@@ -2779,8 +2779,8 @@ VOID TEST(AppMetaCacheTest, DumpsTypicalUsage)
     SrsUniquePtr<SrsMetaCache> cache(new SrsMetaCache());
 
     // Create mock source and consumer
-    MockLiveSourceForQueue mock_source;
-    SrsUniquePtr<MockLiveConsumerForQueue> consumer(new MockLiveConsumerForQueue(&mock_source));
+    MockRtmpSourceForQueue mock_source;
+    SrsUniquePtr<MockRtmpConsumerForQueue> consumer(new MockRtmpConsumerForQueue(&mock_source));
 
     // Setup metadata packet
     SrsUniquePtr<SrsMediaPacket> metadata(new SrsMediaPacket());
@@ -2937,12 +2937,12 @@ VOID TEST(AppMetaCacheTest, UpdateAshAndVsh)
     EXPECT_TRUE(cache->vsh_format() != NULL);
 }
 
-VOID TEST(LiveSourceManagerTest, SetupTicks_TypicalScenario)
+VOID TEST(RtmpSourceManagerTest, SetupTicks_TypicalScenario)
 {
     srs_error_t err;
 
-    // Create a SrsLiveSourceManager instance
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    // Create a SrsRtmpSourceManager instance
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
 
     // Create and inject mock timer
     MockHourGlassForSourceManager *mock_timer = new MockHourGlassForSourceManager();
@@ -2960,12 +2960,12 @@ VOID TEST(LiveSourceManagerTest, SetupTicks_TypicalScenario)
     EXPECT_EQ(1, mock_timer->start_count_);
 }
 
-VOID TEST(LiveSourceManagerTest, FetchOrCreate_TypicalScenario)
+VOID TEST(RtmpSourceManagerTest, FetchOrCreate_TypicalScenario)
 {
     srs_error_t err;
 
-    // Create a SrsLiveSourceManager instance
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    // Create a SrsRtmpSourceManager instance
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
 
     // Create and inject mock app factory
     MockAppFactoryForSourceManager *mock_factory = new MockAppFactoryForSourceManager();
@@ -2979,63 +2979,63 @@ VOID TEST(LiveSourceManagerTest, FetchOrCreate_TypicalScenario)
     MockHlsRequest mock_req("test.vhost", "live", "stream1");
 
     // First call to fetch_or_create - should create new source
-    SrsSharedPtr<SrsLiveSource> source1;
+    SrsSharedPtr<SrsRtmpSource> source1;
     HELPER_EXPECT_SUCCESS(manager->fetch_or_create(&mock_req, source1));
 
     // Verify source was created
     EXPECT_TRUE(source1.get() != NULL);
-    EXPECT_EQ(1, mock_factory->create_live_source_count_);
+    EXPECT_EQ(1, mock_factory->create_rtmp_source_count_);
 
     // Second call to fetch_or_create with same request - should return existing source
-    SrsSharedPtr<SrsLiveSource> source2;
+    SrsSharedPtr<SrsRtmpSource> source2;
     HELPER_EXPECT_SUCCESS(manager->fetch_or_create(&mock_req, source2));
 
     // Verify same source was returned and no new source was created
     EXPECT_TRUE(source2.get() != NULL);
     EXPECT_EQ(source1.get(), source2.get());
-    EXPECT_EQ(1, mock_factory->create_live_source_count_);
+    EXPECT_EQ(1, mock_factory->create_rtmp_source_count_);
 
     // Third call with different stream - should create new source
     MockHlsRequest mock_req2("test.vhost", "live", "stream2");
-    SrsSharedPtr<SrsLiveSource> source3;
+    SrsSharedPtr<SrsRtmpSource> source3;
     HELPER_EXPECT_SUCCESS(manager->fetch_or_create(&mock_req2, source3));
 
     // Verify new source was created
     EXPECT_TRUE(source3.get() != NULL);
     EXPECT_TRUE(source3.get() != source1.get());
-    EXPECT_EQ(2, mock_factory->create_live_source_count_);
+    EXPECT_EQ(2, mock_factory->create_rtmp_source_count_);
 }
 
 // A source whose initialize fails must not stay in the pool: the next client
 // would get it without initialize, half built. For example, an unknown
 // dvr_plan fails the DVR in initialize and leaves its plan NULL, and the next
 // publish crashed in SrsDvr::on_publish.
-VOID TEST(LiveSourceManagerTest, FetchOrCreateDropsSourceWhenInitializeFails)
+VOID TEST(RtmpSourceManagerTest, FetchOrCreateDropsSourceWhenInitializeFails)
 {
     srs_error_t err;
 
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
     SrsUniquePtr<MockAppFactoryForSourceManager> factory(new MockAppFactoryForSourceManager());
     manager->app_factory_ = factory.get();
     MockHlsRequest req("test.vhost", "live", "stream1");
 
-    factory->live_source_initialize_error_ = srs_error_new(ERROR_DVR_ILLEGAL_PLAN, "illegal plan");
-    SrsSharedPtr<SrsLiveSource> failed;
+    factory->rtmp_source_initialize_error_ = srs_error_new(ERROR_DVR_ILLEGAL_PLAN, "illegal plan");
+    SrsSharedPtr<SrsRtmpSource> failed;
     err = manager->fetch_or_create(&req, failed);
     EXPECT_EQ(ERROR_DVR_ILLEGAL_PLAN, srs_error_code(err));
     srs_freep(err);
-    EXPECT_EQ(1, factory->create_live_source_count_);
+    EXPECT_EQ(1, factory->create_rtmp_source_count_);
     EXPECT_EQ(0, (int)manager->pool_.size());
     EXPECT_TRUE(manager->fetch(&req).get() == NULL);
 
     // The next client gets a new source, and initializes it.
-    srs_freep(factory->live_source_initialize_error_);
-    SrsSharedPtr<SrsLiveSource> source;
+    srs_freep(factory->rtmp_source_initialize_error_);
+    SrsSharedPtr<SrsRtmpSource> source;
     HELPER_EXPECT_SUCCESS(manager->fetch_or_create(&req, source));
-    EXPECT_EQ(2, factory->create_live_source_count_);
-    EXPECT_TRUE(source.get() == factory->live_source_);
+    EXPECT_EQ(2, factory->create_rtmp_source_count_);
+    EXPECT_TRUE(source.get() == factory->rtmp_source_);
     EXPECT_TRUE(source.get() != failed.get());
-    EXPECT_EQ(1, factory->live_source_->initialize_count_);
+    EXPECT_EQ(1, factory->rtmp_source_->initialize_count_);
     EXPECT_EQ(1, (int)manager->pool_.size());
 
     manager->app_factory_ = NULL;
@@ -3043,9 +3043,9 @@ VOID TEST(LiveSourceManagerTest, FetchOrCreateDropsSourceWhenInitializeFails)
 
 // The constructor only captures its dependencies, so a test can inject them
 // before the timer is created.
-VOID TEST(LiveSourceManagerTest, ConstructionCapturesTokensAndCreatesNoTimer)
+VOID TEST(RtmpSourceManagerTest, ConstructionCapturesTokensAndCreatesNoTimer)
 {
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
 
     EXPECT_TRUE(manager->timer_ == NULL);
     EXPECT_TRUE(manager->app_factory_ == _srs_app_factory);
@@ -3053,11 +3053,11 @@ VOID TEST(LiveSourceManagerTest, ConstructionCapturesTokensAndCreatesNoTimer)
     EXPECT_TRUE(manager->stream_publish_tokens_ != NULL);
 }
 
-// srs_global_initialize() creates the token manager before the live source
+// srs_global_initialize() creates the token manager before the RTMP source
 // manager, which captures it, and assembles the manager so it has its timer.
-VOID TEST(LiveSourceManagerTest, GlobalManagerIsAssembledWithTokens)
+VOID TEST(RtmpSourceManagerTest, GlobalManagerIsAssembledWithTokens)
 {
-    SrsLiveSourceManager *manager = _srs_sources;
+    SrsRtmpSourceManager *manager = _srs_rtmp_sources;
     ASSERT_TRUE(manager != NULL);
 
     EXPECT_TRUE(manager->timer_ != NULL);
@@ -3067,11 +3067,11 @@ VOID TEST(LiveSourceManagerTest, GlobalManagerIsAssembledWithTokens)
 
 // assemble() creates the one-second source timer through the injected factory,
 // with the manager as its handler, and initialize() then ticks and starts it.
-VOID TEST(LiveSourceManagerTest, AssembleCreatesTimerThroughInjectedFactory)
+VOID TEST(RtmpSourceManagerTest, AssembleCreatesTimerThroughInjectedFactory)
 {
     srs_error_t err;
 
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
     SrsUniquePtr<MockAppFactoryForSourceManager> factory(new MockAppFactoryForSourceManager());
     manager->app_factory_ = factory.get();
 
@@ -3096,15 +3096,15 @@ VOID TEST(LiveSourceManagerTest, AssembleCreatesTimerThroughInjectedFactory)
 
 // notify() keeps a dead source while the injected token manager reports its
 // stream as acquired, and removes it once the token is released.
-VOID TEST(LiveSourceManagerTest, NotifyAsksInjectedTokensBeforeRemovingDeadSource)
+VOID TEST(RtmpSourceManagerTest, NotifyAsksInjectedTokensBeforeRemovingDeadSource)
 {
     srs_error_t err;
 
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
     MockStreamPublishTokensForSourceManager tokens;
     manager->stream_publish_tokens_ = &tokens;
 
-    SrsSharedPtr<SrsLiveSource> source(new MockLiveSourceForQueue());
+    SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSourceForQueue());
     source->stream_die_at_ = srs_time_now_cached() - 10 * SRS_UTIME_MINUTES;
     EXPECT_TRUE(source->stream_is_dead());
     manager->pool_["/live/pending"] = source;
@@ -3229,7 +3229,7 @@ VOID TEST(AppOriginHubTest, SequenceHeaderRequestTypicalScenario)
     srs_error_t err;
 
     // Create mock source with meta cache
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
 
     // Create metadata packet
     SrsUniquePtr<SrsMediaPacket> metadata(new SrsMediaPacket());
@@ -3334,14 +3334,14 @@ VOID TEST(AppOriginHubTest, CreateBackendForwardersTypicalScenario)
     // Create mock config that will outlive the hub
     MockAppConfig *mock_config = new MockAppConfig();
     MockStatisticForOriginHub *mock_stat = new MockStatisticForOriginHub();
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
     MockHttpHooksForBackend *mock_hooks = new MockHttpHooksForBackend();
 
     // Use a scope to ensure hub is destroyed before mock objects
     {
         // Create mock source with shared pointer
-        MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-        SrsSharedPtr<SrsLiveSource> source(raw_source);
+        MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+        SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
         // Create mock request
         MockHlsRequest mock_req;
@@ -3415,7 +3415,7 @@ VOID TEST(AppForwarderTest, RejectRtmpsDestination)
     srs_error_t err;
 
     // Create mock origin hub
-    MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
+    MockRtmpSourceForOriginHub *mock_source = new MockRtmpSourceForOriginHub();
     SrsUniquePtr<SrsOriginHub> hub(new SrsOriginHub());
     hub->source_ = mock_source;
 
@@ -3441,18 +3441,18 @@ VOID TEST(AppForwarderTest, RejectRtmpsDestination)
     srs_freep(mock_source);
 }
 
-VOID TEST(SrsLiveSourceTest, OnAggregateSelectionTypical)
+VOID TEST(SrsRtmpSourceTest, OnAggregateSelectionTypical)
 {
     srs_error_t err;
 
-    // Create mock live source
-    SrsUniquePtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
+    // Create mock RTMP source
+    SrsUniquePtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
 
     // Create mock request
     MockSrsRequest mock_req("test.vhost", "live", "stream1");
 
     // Initialize source
-    SrsSharedPtr<SrsLiveSource> wrapper;
+    SrsSharedPtr<SrsRtmpSource> wrapper;
     HELPER_EXPECT_SUCCESS(source->initialize(wrapper, &mock_req));
 
     // Create aggregate message with both audio and video packets
@@ -3514,18 +3514,18 @@ VOID TEST(SrsLiveSourceTest, OnAggregateSelectionTypical)
     delete[] payload;
 }
 
-MockAppFactoryForLiveSource::MockAppFactoryForLiveSource()
+MockAppFactoryForRtmpSource::MockAppFactoryForRtmpSource()
 {
     mock_hub_ = new MockOriginHub();
     create_origin_hub_count_ = 0;
 }
 
-MockAppFactoryForLiveSource::~MockAppFactoryForLiveSource()
+MockAppFactoryForRtmpSource::~MockAppFactoryForRtmpSource()
 {
     srs_freep(mock_hub_);
 }
 
-ISrsOriginHub *MockAppFactoryForLiveSource::create_origin_hub()
+ISrsOriginHub *MockAppFactoryForRtmpSource::create_origin_hub()
 {
     create_origin_hub_count_++;
     // Return the mock hub and transfer ownership
@@ -3534,7 +3534,7 @@ ISrsOriginHub *MockAppFactoryForLiveSource::create_origin_hub()
     return hub;
 }
 
-VOID TEST(SrsLiveSourceTest, InitializeOriginHubCreation)
+VOID TEST(SrsRtmpSourceTest, InitializeOriginHubCreation)
 {
     srs_error_t err;
 
@@ -3542,11 +3542,11 @@ VOID TEST(SrsLiveSourceTest, InitializeOriginHubCreation)
     MockAppConfig *mock_config = new MockAppConfig();
 
     // Create mock factory
-    MockAppFactoryForLiveSource *mock_factory = new MockAppFactoryForLiveSource();
+    MockAppFactoryForRtmpSource *mock_factory = new MockAppFactoryForRtmpSource();
 
     {
-        // Create live source
-        SrsLiveSource *source = new SrsLiveSource();
+        // Create RTMP source
+        SrsRtmpSource *source = new SrsRtmpSource();
 
         // Inject mock dependencies
         source->config_ = mock_config;
@@ -3557,7 +3557,7 @@ VOID TEST(SrsLiveSourceTest, InitializeOriginHubCreation)
         MockSrsRequest mock_req("test.vhost", "live", "stream1");
 
         // Create wrapper for shared pointer - this takes ownership
-        SrsSharedPtr<SrsLiveSource> wrapper(source);
+        SrsSharedPtr<SrsRtmpSource> wrapper(source);
 
         // Test typical origin server scenario (not edge)
         // get_vhost_is_edge returns false by default in MockAppConfig
@@ -3576,7 +3576,7 @@ VOID TEST(SrsLiveSourceTest, InitializeOriginHubCreation)
     srs_freep(mock_factory);
 }
 
-VOID TEST(SrsLiveSourceTest, ConsumerDumpsTypicalScenario)
+VOID TEST(SrsRtmpSourceTest, ConsumerDumpsTypicalScenario)
 {
     srs_error_t err;
 
@@ -3584,11 +3584,11 @@ VOID TEST(SrsLiveSourceTest, ConsumerDumpsTypicalScenario)
     MockAppConfig *mock_config = new MockAppConfig();
 
     // Create mock factory with hub
-    MockAppFactoryForLiveSource *mock_factory = new MockAppFactoryForLiveSource();
+    MockAppFactoryForRtmpSource *mock_factory = new MockAppFactoryForRtmpSource();
 
     {
-        // Create live source
-        SrsLiveSource *source = new SrsLiveSource();
+        // Create RTMP source
+        SrsRtmpSource *source = new SrsRtmpSource();
 
         // Inject mock dependencies
         source->config_ = mock_config;
@@ -3599,7 +3599,7 @@ VOID TEST(SrsLiveSourceTest, ConsumerDumpsTypicalScenario)
         MockSrsRequest mock_req("test.vhost", "live", "stream1");
 
         // Create wrapper for shared pointer
-        SrsSharedPtr<SrsLiveSource> wrapper(source);
+        SrsSharedPtr<SrsRtmpSource> wrapper(source);
 
         // Set hub to active state to test the typical publishing scenario
         mock_factory->mock_hub_ = new MockOriginHub();
@@ -3610,7 +3610,7 @@ VOID TEST(SrsLiveSourceTest, ConsumerDumpsTypicalScenario)
         HELPER_EXPECT_SUCCESS(source->initialize(wrapper, &mock_req));
 
         // Create a consumer
-        SrsLiveConsumer *consumer = NULL;
+        SrsRtmpConsumer *consumer = NULL;
         HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
 
         // Test consumer_dumps with typical scenario (all parameters true)
@@ -3625,7 +3625,7 @@ VOID TEST(SrsLiveSourceTest, ConsumerDumpsTypicalScenario)
     srs_freep(mock_factory);
 }
 
-VOID TEST(SrsLiveSourceTest, OnMetaDataTypicalScenario)
+VOID TEST(SrsRtmpSourceTest, OnMetaDataTypicalScenario)
 {
     srs_error_t err;
 
@@ -3633,11 +3633,11 @@ VOID TEST(SrsLiveSourceTest, OnMetaDataTypicalScenario)
     MockAppConfig *mock_config = new MockAppConfig();
 
     // Create mock factory with hub
-    MockAppFactoryForLiveSource *mock_factory = new MockAppFactoryForLiveSource();
+    MockAppFactoryForRtmpSource *mock_factory = new MockAppFactoryForRtmpSource();
 
     {
-        // Create live source
-        SrsLiveSource *source = new SrsLiveSource();
+        // Create RTMP source
+        SrsRtmpSource *source = new SrsRtmpSource();
 
         // Inject mock dependencies
         source->config_ = mock_config;
@@ -3648,7 +3648,7 @@ VOID TEST(SrsLiveSourceTest, OnMetaDataTypicalScenario)
         MockSrsRequest mock_req("test.vhost", "live", "stream1");
 
         // Create wrapper for shared pointer
-        SrsSharedPtr<SrsLiveSource> wrapper(source);
+        SrsSharedPtr<SrsRtmpSource> wrapper(source);
 
         // Set hub to active state to test the typical publishing scenario
         mock_factory->mock_hub_ = new MockOriginHub();
@@ -3659,7 +3659,7 @@ VOID TEST(SrsLiveSourceTest, OnMetaDataTypicalScenario)
         HELPER_EXPECT_SUCCESS(source->initialize(wrapper, &mock_req));
 
         // Create a consumer
-        SrsLiveConsumer *consumer = NULL;
+        SrsRtmpConsumer *consumer = NULL;
         HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
 
         // Create a mock RTMP message for metadata
@@ -3771,8 +3771,8 @@ VOID TEST(AppOriginHubTest, OnVideoSequenceHeaderWaitingMechanism)
     srs_error_t err;
 
     // Create mock source with shared pointer
-    MockLiveSourceForQueue *raw_source = new MockLiveSourceForQueue();
-    SrsSharedPtr<SrsLiveSource> source(raw_source);
+    MockRtmpSourceForQueue *raw_source = new MockRtmpSourceForQueue();
+    SrsSharedPtr<SrsRtmpSource> source(raw_source);
 
     // Create mock request
     MockHlsRequest mock_req;
@@ -3798,9 +3798,9 @@ VOID TEST(AppOriginHubTest, OnVideoSequenceHeaderWaitingMechanism)
     // Initialize the hub
     HELPER_EXPECT_SUCCESS(hub->initialize(source, &mock_req));
 
-    // Create mock live source for origin hub with format
-    SrsUniquePtr<MockLiveSourceForOriginHub> mock_live_source(new MockLiveSourceForOriginHub());
-    hub->source_ = mock_live_source.get();
+    // Create mock RTMP source for origin hub with format
+    SrsUniquePtr<MockRtmpSourceForOriginHub> mock_rtmp_source(new MockRtmpSourceForOriginHub());
+    hub->source_ = mock_rtmp_source.get();
 
     // Test 1: AVC (H.264) sequence header - the "waiting" for sequence header
     // This tests the code path: if (format->is_avc_sequence_header()) { if (c->id_ == SrsVideoCodecIdAVC) { ... } }
@@ -3819,7 +3819,7 @@ VOID TEST(AppOriginHubTest, OnVideoSequenceHeaderWaitingMechanism)
 
         // Manually set up the format state to simulate a parsed AVC sequence header
         // This avoids the complex SPS/PPS parsing that would fail with invalid data
-        SrsRtmpFormat *format = mock_live_source->format();
+        SrsRtmpFormat *format = mock_rtmp_source->format();
 
         // Initialize video codec config
         if (!format->vcodec_) {
@@ -3876,7 +3876,7 @@ VOID TEST(AppOriginHubTest, OnVideoSequenceHeaderWaitingMechanism)
         video_sh->wrap(video_data, 10);
 
         // Manually set up the format state to simulate a parsed HEVC sequence header
-        SrsRtmpFormat *format = mock_live_source->format();
+        SrsRtmpFormat *format = mock_rtmp_source->format();
 
         // Initialize video codec config
         if (!format->vcodec_) {
@@ -3923,9 +3923,9 @@ VOID TEST(AppOriginHubTest, OnVideoSequenceHeaderWaitingMechanism)
 
 // The constructor only captures the clock and reads no time, so a test can inject its
 // own clock before assemble() stamps the new source.
-VOID TEST(SrsLiveSourceTest, ConstructionCapturesClockAndReadsNoTime)
+VOID TEST(SrsRtmpSourceTest, ConstructionCapturesClockAndReadsNoTime)
 {
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
 
     EXPECT_TRUE(source->clk_ != NULL);
     EXPECT_TRUE(source->clk_ == _srs_clock);
@@ -3935,12 +3935,12 @@ VOID TEST(SrsLiveSourceTest, ConstructionCapturesClockAndReadsNoTime)
 
 // assemble() stamps a new source with the injected clock, so the cleanup timer does not
 // reap it before the cleanup delay passed, see https://github.com/ossrs/srs/issues/4449
-VOID TEST(SrsLiveSourceTest, AssembleStampsNewSourceWithInjectedClock)
+VOID TEST(SrsRtmpSourceTest, AssembleStampsNewSourceWithInjectedClock)
 {
     MockClockForPithyPrint clock;
     clock.now_ = 100 * SRS_UTIME_SECONDS;
 
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
     source->clk_ = &clock;
     source->assemble();
 
@@ -3957,7 +3957,7 @@ VOID TEST(SrsLiveSourceTest, AssembleStampsNewSourceWithInjectedClock)
 
 // The last consumer leaving stamps the death and idle times with the injected clock, and
 // publisher_is_idle_for() measures from that stamp on the same clock.
-VOID TEST(SrsLiveSourceTest, ConsumerDestroyStampsWithInjectedClock)
+VOID TEST(SrsRtmpSourceTest, ConsumerDestroyStampsWithInjectedClock)
 {
     srs_error_t err;
 
@@ -3965,13 +3965,13 @@ VOID TEST(SrsLiveSourceTest, ConsumerDestroyStampsWithInjectedClock)
     clock.now_ = 100 * SRS_UTIME_SECONDS;
     MockAppConfig config;
 
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
     source->config_ = &config;
     source->clk_ = &clock;
     source->req_ = new MockSrsRequest("test.vhost", "live", "stream1");
     source->assemble();
 
-    SrsLiveConsumer *consumer = NULL;
+    SrsRtmpConsumer *consumer = NULL;
     HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
     EXPECT_EQ((srs_utime_t)0, source->stream_die_at_);
 
@@ -3988,16 +3988,16 @@ VOID TEST(SrsLiveSourceTest, ConsumerDestroyStampsWithInjectedClock)
 
 // Publishing with no player stamps the idle time, and unpublishing with no player stamps
 // the death time, both with the injected clock.
-VOID TEST(SrsLiveSourceTest, PublishAndUnpublishStampWithInjectedClock)
+VOID TEST(SrsRtmpSourceTest, PublishAndUnpublishStampWithInjectedClock)
 {
     srs_error_t err;
 
     MockClockForPithyPrint clock;
     clock.now_ = 100 * SRS_UTIME_SECONDS;
     MockAppStatistic stat;
-    MockLiveSourceHandler handler;
+    MockRtmpSourceHandler handler;
 
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
     source->clk_ = &clock;
     source->stat_ = &stat;
     source->handler_ = &handler;
@@ -4020,10 +4020,10 @@ VOID TEST(SrsLiveSourceTest, PublishAndUnpublishStampWithInjectedClock)
 
 // The factory hands out an assembled source: stamped, and subscribed to config reloads
 // through the config it captured.
-VOID TEST(SrsLiveSourceTest, FactoryCreatesAssembledSource)
+VOID TEST(SrsRtmpSourceTest, FactoryCreatesAssembledSource)
 {
     SrsAppFactory factory;
-    SrsUniquePtr<SrsLiveSource> source(factory.create_live_source());
+    SrsUniquePtr<SrsRtmpSource> source(factory.create_rtmp_source());
 
     EXPECT_TRUE(source->clk_ == _srs_clock);
     EXPECT_TRUE(source->stream_die_at_ > 0);

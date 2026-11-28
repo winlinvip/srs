@@ -4410,7 +4410,7 @@ VOID TEST(SrsRtmpConnTest, NoOriginDrainsPlayerInput)
         conn->info_->req_->app_ = "live";
         conn->info_->req_->stream_ = "livestream";
 
-        SrsSharedPtr<SrsLiveSource> source(new SrsLiveSource());
+        SrsSharedPtr<SrsRtmpSource> source(new SrsRtmpSource());
         err = conn->playing(source);
         EXPECT_EQ(ERROR_OCLUSTER_REDIRECT, srs_error_code(err));
         srs_freep(err);
@@ -4439,7 +4439,7 @@ VOID TEST(SrsRtmpConnTest, NoOriginDrainsPlayerInput)
         conn->info_->req_->app_ = "live";
         conn->info_->req_->stream_ = "livestream";
 
-        SrsSharedPtr<SrsLiveSource> source(new SrsLiveSource());
+        SrsSharedPtr<SrsRtmpSource> source(new SrsRtmpSource());
         err = conn->playing(source);
         EXPECT_EQ(ERROR_OCLUSTER_REDIRECT, srs_error_code(err));
         srs_freep(err);
@@ -4528,8 +4528,8 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishCrossProtocolCheck)
         conn->info_->req_->stream_ = "livestream";
         conn->info_->edge_ = false;
 
-        // Create a mock live source (from srs_utest_app6.hpp)
-        SrsSharedPtr<SrsLiveSource> live_source(new MockLiveSource());
+        // Create a mock RTMP source (from srs_utest_app6.hpp)
+        SrsSharedPtr<SrsRtmpSource> rtmp_source(new MockRtmpSource());
 
         // Test major use scenario: RTC and SRT enabled, both sources can publish
         // This covers the code path where rtc_server_enabled && rtc_enabled && !info_->edge_
@@ -4542,7 +4542,7 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishCrossProtocolCheck)
             // allows publishing (can_publish() returns true when no publisher exists)
 
             // Call acquire_publish - should succeed
-            HELPER_EXPECT_SUCCESS(conn->acquire_publish(live_source));
+            HELPER_EXPECT_SUCCESS(conn->acquire_publish(rtmp_source));
 
             // Verify that fetch_or_create was called for both RTC and SRT
             EXPECT_EQ(1, mock_rtc_sources->fetch_or_create_count_);
@@ -4560,7 +4560,7 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishCrossProtocolCheck)
             mock_srt_sources->set_can_publish(false);
 
             // Call acquire_publish - should fail with ERROR_SYSTEM_STREAM_BUSY
-            err = conn->acquire_publish(live_source);
+            err = conn->acquire_publish(rtmp_source);
             EXPECT_TRUE(err != srs_success);
             EXPECT_EQ(ERROR_SYSTEM_STREAM_BUSY, srs_error_code(err));
             srs_freep(err);
@@ -4584,7 +4584,7 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishCrossProtocolCheck)
             mock_srt_sources->set_can_publish(true);
 
             // Call acquire_publish - should succeed
-            HELPER_EXPECT_SUCCESS(conn->acquire_publish(live_source));
+            HELPER_EXPECT_SUCCESS(conn->acquire_publish(rtmp_source));
 
             // Verify that fetch_or_create was NOT called for RTC and SRT (edge server)
             EXPECT_EQ(0, mock_rtc_sources->fetch_or_create_count_);
@@ -4638,8 +4638,8 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageFlashRepublish)
             mock_rtmp->decode_message_packet_ = new SrsCallPacket();
             mock_rtmp->decode_message_error_ = srs_success;
 
-            // Create a dummy live source (not used in this test path)
-            SrsSharedPtr<SrsLiveSource> source;
+            // Create a dummy RTMP source (not used in this test path)
+            SrsSharedPtr<SrsRtmpSource> source;
 
             // Call handle_publish_message - should return ERROR_CONTROL_REPUBLISH
             err = conn->handle_publish_message(source, msg.get());
@@ -4700,8 +4700,8 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageFMLERepublish)
             mock_rtmp->decode_message_error_ = srs_success;
             mock_rtmp->fmle_unpublish_error_ = srs_success;
 
-            // Create a dummy live source (not used in this test path)
-            SrsSharedPtr<SrsLiveSource> source;
+            // Create a dummy RTMP source (not used in this test path)
+            SrsSharedPtr<SrsRtmpSource> source;
 
             // Call handle_publish_message - should return ERROR_CONTROL_REPUBLISH
             err = conn->handle_publish_message(source, msg.get());
@@ -4759,8 +4759,8 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageFMLEIgnoreCommand)
             mock_rtmp->decode_message_packet_ = new SrsCallPacket();
             mock_rtmp->decode_message_error_ = srs_success;
 
-            // Create a dummy live source (not used in this test path)
-            SrsSharedPtr<SrsLiveSource> source;
+            // Create a dummy RTMP source (not used in this test path)
+            SrsSharedPtr<SrsRtmpSource> source;
 
             // Call handle_publish_message - should return success (trace and ignore)
             HELPER_EXPECT_SUCCESS(conn->handle_publish_message(source, msg.get()));
@@ -4815,9 +4815,9 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishStreamBusyCheck)
         conn->info_->edge_ = false;
 
         // Test the major use scenario: acquire_publish fails when RTMP stream is busy
-        // Create mock live source that does NOT allow publishing (stream is busy)
-        SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
-        MockLiveSource *mock_source = dynamic_cast<MockLiveSource *>(source.get());
+        // Create mock RTMP source that does NOT allow publishing (stream is busy)
+        SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
+        MockRtmpSource *mock_source = dynamic_cast<MockRtmpSource *>(source.get());
         mock_source->set_can_publish(false); // Stream is busy
 
         // Call acquire_publish - should fail with ERROR_SYSTEM_STREAM_BUSY
@@ -4866,8 +4866,8 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageVideoSuccess)
         conn->info_->type_ = SrsRtmpConnFMLEPublish;
         conn->info_->edge_ = false;
 
-        // Create mock live source
-        SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
+        // Create mock RTMP source
+        SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
 
         // Create a video message (RTMP_MSG_VideoMessage = 9)
         SrsUniquePtr<SrsRtmpCommonMessage> msg(new SrsRtmpCommonMessage());
@@ -4893,18 +4893,18 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageVideoSuccess)
     srs_freep(mock_config);
 }
 
-MockLiveConsumerForPlayControl::MockLiveConsumerForPlayControl(ISrsLiveSource *source)
-    : SrsLiveConsumer(source)
+MockRtmpConsumerForPlayControl::MockRtmpConsumerForPlayControl(ISrsRtmpSource *source)
+    : SrsRtmpConsumer(source)
 {
     on_play_client_pause_count_ = 0;
     last_pause_state_ = false;
 }
 
-MockLiveConsumerForPlayControl::~MockLiveConsumerForPlayControl()
+MockRtmpConsumerForPlayControl::~MockRtmpConsumerForPlayControl()
 {
 }
 
-srs_error_t MockLiveConsumerForPlayControl::on_play_client_pause(bool is_pause)
+srs_error_t MockRtmpConsumerForPlayControl::on_play_client_pause(bool is_pause)
 {
     on_play_client_pause_count_++;
     last_pause_state_ = is_pause;
@@ -5196,9 +5196,9 @@ VOID TEST(SrsRtmpConnTest, ProcessPlayControlMsgPauseSuccess)
         // Initialize stream_id in response object
         conn->info_->res_->stream_id_ = 1;
 
-        // Create mock live source and consumer (use MockLiveSourceForQueue which properly handles on_consumer_destroy)
-        SrsSharedPtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-        SrsUniquePtr<MockLiveConsumerForPlayControl> consumer(new MockLiveConsumerForPlayControl(source.get()));
+        // Create mock RTMP source and consumer (use MockRtmpSourceForQueue which properly handles on_consumer_destroy)
+        SrsSharedPtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+        SrsUniquePtr<MockRtmpConsumerForPlayControl> consumer(new MockRtmpConsumerForPlayControl(source.get()));
 
         // Create an AMF0 command message
         SrsRtmpCommonMessage *msg = new SrsRtmpCommonMessage();

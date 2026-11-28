@@ -26,7 +26,7 @@
 
 class SrsOriginHub;
 class SrsServer;
-class MockLiveSourceForOriginHub;
+class MockRtmpSourceForOriginHub;
 class MockAppConfig;
 
 // One packet the forwarder sent to the destination, kept after the packet is freed.
@@ -296,7 +296,7 @@ extern MockCoroutineForForwarder *utest_forward_wire(SrsForwarder *forwarder, Mo
                                                      MockAppConfig *config, int nb_pulls);
 
 // An origin hub whose HLS, DASH, DVR, encoder and exec are mocks, so only its forward parts do real work.
-extern SrsOriginHub *utest_forward_hub(MockLiveSourceForOriginHub *source, ISrsRequest *req, ISrsAppConfig *config, ISrsHttpHooks *hooks);
+extern SrsOriginHub *utest_forward_hub(MockRtmpSourceForOriginHub *source, ISrsRequest *req, ISrsAppConfig *config, ISrsHttpHooks *hooks);
 
 // Hands each accepted TCP connection to a server as if one of the server's own listeners had accepted it.
 class MockServerTcpAcceptor : public ISrsTcpHandler

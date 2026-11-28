@@ -855,28 +855,28 @@ public:
     virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req);
 };
 
-// Mock live source manager for testing SrsRtcPublishStream
-class MockLiveSourceManager : public ISrsLiveSourceManager
+// Mock RTMP source manager for testing SrsRtcPublishStream
+class MockRtmpSourceManager : public ISrsRtmpSourceManager
 {
 public:
     srs_error_t fetch_or_create_error_;
     int fetch_or_create_count_;
-    SrsSharedPtr<SrsLiveSource> mock_source_;
+    SrsSharedPtr<SrsRtmpSource> mock_source_;
     bool can_publish_;
 
 public:
-    MockLiveSourceManager();
-    virtual ~MockLiveSourceManager();
-    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps);
-    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r);
+    MockRtmpSourceManager();
+    virtual ~MockRtmpSourceManager();
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps);
+    virtual SrsSharedPtr<SrsRtmpSource> fetch(ISrsRequest *r);
     virtual void dispose();
     virtual srs_error_t initialize();
     void set_fetch_or_create_error(srs_error_t err);
     void set_can_publish(bool can_publish);
 };
 
-// Mock live source for testing SrsRtcPublishStream
-class MockLiveSource : public SrsLiveSource
+// Mock RTMP source for testing SrsRtcPublishStream
+class MockRtmpSource : public SrsRtmpSource
 {
 public:
     bool can_publish_result_;
@@ -886,13 +886,13 @@ public:
     int on_frame_count_;
 
 public:
-    MockLiveSource();
-    virtual ~MockLiveSource();
+    MockRtmpSource();
+    virtual ~MockRtmpSource();
     virtual bool can_publish(bool is_edge);
     void set_can_publish(bool can_publish);
     virtual srs_error_t on_publish();
     virtual srs_error_t on_edge_start_publish();
-    virtual srs_error_t consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg);
+    virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg);
 
 public:
     virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio);
@@ -1303,7 +1303,7 @@ class MockBufferCache : public ISrsBufferCache
 {
 public:
     int dump_cache_count_;
-    ISrsLiveConsumer *last_consumer_;
+    ISrsRtmpConsumer *last_consumer_;
     SrsRtmpJitterAlgorithm last_jitter_;
 
 public:
@@ -1312,7 +1312,7 @@ public:
     virtual srs_error_t start();
     virtual void stop();
     virtual bool alive();
-    virtual srs_error_t dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t dump_cache(ISrsRtmpConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
     virtual srs_error_t update_auth(ISrsRequest *r);
 };
 
@@ -1362,7 +1362,7 @@ public:
 public:
     MockOriginHub();
     virtual ~MockOriginHub();
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsRequest *r);
     virtual void dispose();
     virtual srs_error_t cycle();
     virtual bool active();

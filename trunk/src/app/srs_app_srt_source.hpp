@@ -21,7 +21,7 @@
 
 class SrsMediaPacket;
 class ISrsRequest;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsSrtSource;
 class SrsAlonePithyPrint;
 class SrsSrtFrameBuilder;

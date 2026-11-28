@@ -90,16 +90,16 @@ public:
     void set_packet_error(srs_error_t err);
 };
 
-// Mock live source handler for testing
-class MockLiveSourceHandler : public ISrsLiveSourceHandler
+// Mock RTMP source handler for testing
+class MockRtmpSourceHandler : public ISrsRtmpSourceHandler
 {
 public:
     int on_publish_count_;
     int on_unpublish_count_;
 
 public:
-    MockLiveSourceHandler();
-    virtual ~MockLiveSourceHandler();
+    MockRtmpSourceHandler();
+    virtual ~MockRtmpSourceHandler();
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
 };

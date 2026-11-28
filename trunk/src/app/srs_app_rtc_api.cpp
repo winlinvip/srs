@@ -35,7 +35,7 @@ SrsGoApiRtcPlay::SrsGoApiRtcPlay(ISrsRtcApiServer *server)
     config_ = _srs_config;
     stat_ = _srs_stat;
     rtc_sources_ = _srs_rtc_sources;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     hooks_ = _srs_hooks;
 }
 
@@ -46,7 +46,7 @@ SrsGoApiRtcPlay::~SrsGoApiRtcPlay()
     config_ = NULL;
     stat_ = NULL;
     rtc_sources_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     hooks_ = NULL;
 }
 
@@ -244,8 +244,8 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     }
 
     if (!is_rtc_stream_active && !rtmp_to_rtc) {
-        SrsSharedPtr<SrsLiveSource> live_source = live_sources_->fetch(ruc->req_);
-        if (live_source.get() && !live_source->inactive()) {
+        SrsSharedPtr<SrsRtmpSource> rtmp_source = rtmp_sources_->fetch(ruc->req_);
+        if (rtmp_source.get() && !rtmp_source->inactive()) {
             return srs_error_new(ERROR_RTC_DISABLED, "Disabled rtmp_to_rtc of %s, see #2728", ruc->req_->vhost_.c_str());
         }
     }

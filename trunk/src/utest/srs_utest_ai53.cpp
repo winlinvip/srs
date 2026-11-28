@@ -52,25 +52,25 @@ bool MockAppConfigForStreamBridges::get_rtsp_from_rtmp(std::string vhost)
     return rtsp_from_rtmp_;
 }
 
-MockLiveSourcesForStreamBridges::MockLiveSourcesForStreamBridges()
+MockRtmpSourcesForStreamBridges::MockRtmpSourcesForStreamBridges()
 {
 }
 
-MockLiveSourcesForStreamBridges::~MockLiveSourcesForStreamBridges()
+MockRtmpSourcesForStreamBridges::~MockRtmpSourcesForStreamBridges()
 {
 }
 
-srs_error_t MockLiveSourcesForStreamBridges::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps)
+srs_error_t MockRtmpSourcesForStreamBridges::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps)
 {
     srs_error_t err = srs_success;
 
     if (!source_.get()) {
-        SrsLiveSource *source = new SrsLiveSource();
+        SrsRtmpSource *source = new SrsRtmpSource();
         source->handler_ = &handler_;
-        SrsSharedPtr<SrsLiveSource> wrapper(source);
+        SrsSharedPtr<SrsRtmpSource> wrapper(source);
         source->assemble();
         if ((err = source->initialize(wrapper, r)) != srs_success) {
-            return srs_error_wrap(err, "live source");
+            return srs_error_wrap(err, "rtmp source");
         }
         source_ = wrapper;
     }
@@ -79,16 +79,16 @@ srs_error_t MockLiveSourcesForStreamBridges::fetch_or_create(ISrsRequest *r, Srs
     return err;
 }
 
-SrsSharedPtr<SrsLiveSource> MockLiveSourcesForStreamBridges::fetch(ISrsRequest *r)
+SrsSharedPtr<SrsRtmpSource> MockRtmpSourcesForStreamBridges::fetch(ISrsRequest *r)
 {
     return source_;
 }
 
-void MockLiveSourcesForStreamBridges::dispose()
+void MockRtmpSourcesForStreamBridges::dispose()
 {
 }
 
-srs_error_t MockLiveSourcesForStreamBridges::initialize()
+srs_error_t MockRtmpSourcesForStreamBridges::initialize()
 {
     return srs_success;
 }
@@ -206,7 +206,7 @@ class StreamBridgesUtestStream
 {
 public:
     MockAppConfigForStreamBridges config_;
-    MockLiveSourcesForStreamBridges rtmp_;
+    MockRtmpSourcesForStreamBridges rtmp_;
     MockRtcSourcesForStreamBridges rtc_;
     MockSrtSourcesForStreamBridges srt_;
 #ifdef SRS_RTSP
@@ -242,7 +242,7 @@ class StreamBridgesUtestRtmpPublisher : public StreamBridgesUtestStream
 {
 public:
     SrsRtmpConn *conn_;
-    SrsSharedPtr<SrsLiveSource> source_;
+    SrsSharedPtr<SrsRtmpSource> source_;
 
 public:
     StreamBridgesUtestRtmpPublisher()
@@ -279,7 +279,7 @@ public:
 
         if (config_.edge_) {
             srs_freep(source_->publish_edge_->forwarder_);
-            source_->publish_edge_->forwarder_ = new MockEdgeForwarderForLiveSource();
+            source_->publish_edge_->forwarder_ = new MockEdgeForwarderForRtmpSource();
         }
 
         return err;
@@ -401,7 +401,7 @@ public:
 
         conn_ = new SrsMpegtsSrtConn(NULL, 1, "192.168.1.100", 9000);
         conn_->config_ = &config_;
-        conn_->live_sources_ = &rtmp_;
+        conn_->rtmp_sources_ = &rtmp_;
         conn_->rtc_sources_ = &rtc_;
         conn_->srt_sources_ = &srt_;
         conn_->req_->vhost_ = "__defaultVhost__";
@@ -555,7 +555,7 @@ public:
         publisher_->config_ = &config_;
         publisher_->stat_ = &stat_;
         publisher_->rtc_sources_ = &rtc_;
-        publisher_->live_sources_ = &rtmp_;
+        publisher_->rtmp_sources_ = &rtmp_;
         publisher_->srt_sources_ = &srt_;
 
         SrsUniquePtr<SrsRtcSourceDescription> desc(tracks_.create_stream_description());

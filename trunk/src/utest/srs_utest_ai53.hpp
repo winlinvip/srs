@@ -43,19 +43,19 @@ public:
 
 // The source managers of one stream, as the server's are: each makes the real source of its protocol on the first
 // fetch_or_create, and returns it after.
-class MockLiveSourcesForStreamBridges : public ISrsLiveSourceManager
+class MockRtmpSourcesForStreamBridges : public ISrsRtmpSourceManager
 {
 public:
-    MockLiveSourceHandler handler_;
-    SrsSharedPtr<SrsLiveSource> source_;
+    MockRtmpSourceHandler handler_;
+    SrsSharedPtr<SrsRtmpSource> source_;
 
 public:
-    MockLiveSourcesForStreamBridges();
-    virtual ~MockLiveSourcesForStreamBridges();
+    MockRtmpSourcesForStreamBridges();
+    virtual ~MockRtmpSourcesForStreamBridges();
 
 public:
-    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps);
-    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r);
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps);
+    virtual SrsSharedPtr<SrsRtmpSource> fetch(ISrsRequest *r);
     virtual void dispose();
     virtual srs_error_t initialize();
 };

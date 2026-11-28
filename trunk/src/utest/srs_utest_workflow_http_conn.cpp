@@ -178,7 +178,7 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
 
     // Create mock dependencies
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
-    SrsUniquePtr<MockLiveSourceManager> mock_live_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_rtmp_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockResponseWriter> mock_writer(new MockResponseWriter());
@@ -195,7 +195,7 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
 
     // Inject mock dependencies into SrsLiveStream private fields
     live_stream->config_ = mock_config.get();
-    live_stream->live_sources_ = mock_live_sources.get();
+    live_stream->rtmp_sources_ = mock_rtmp_sources.get();
     live_stream->stat_ = mock_stat.get();
     live_stream->hooks_ = mock_hooks.get();
 
@@ -237,8 +237,8 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
     // Wait for coroutine to start
     srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
-    // Verify that live source has a consumer
-    MockLiveSource *mock_source = dynamic_cast<MockLiveSource *>(mock_live_sources->mock_source_.get());
+    // Verify that RTMP source has a consumer
+    MockRtmpSource *mock_source = dynamic_cast<MockRtmpSource *>(mock_rtmp_sources->mock_source_.get());
     EXPECT_EQ(1, (int)mock_source->consumers_.size());
     EXPECT_EQ(1, mock_source->on_dump_packets_count_);
 
@@ -280,7 +280,7 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
         }
 
         // Feed audio to source.
-        SrsLiveSource *source = mock_source;
+        SrsRtmpSource *source = mock_source;
         HELPER_EXPECT_SUCCESS(source->on_audio(msg));
 
         // Wait for consumer to process the message.
@@ -318,7 +318,7 @@ VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
         }
 
         // Feed video to source.
-        SrsLiveSource *source = mock_source;
+        SrsRtmpSource *source = mock_source;
         HELPER_EXPECT_SUCCESS(source->on_video(msg));
 
         // Wait for consumer to process the message.
@@ -349,7 +349,7 @@ VOID TEST(ReproduceIssue4621, PreserveForwardedIpForHttpFlvClient)
     SrsUniquePtr<SrsLiveStream> live_stream(new SrsLiveStream(mock_request.get(), mock_cache.get()));
 
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
-    SrsUniquePtr<MockLiveSourceManager> mock_live_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_rtmp_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockIssue4621Statistic> mock_stat(new MockIssue4621Statistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockResponseWriter> mock_writer(new MockResponseWriter());
@@ -363,7 +363,7 @@ VOID TEST(ReproduceIssue4621, PreserveForwardedIpForHttpFlvClient)
     conn->assemble();
 
     live_stream->config_ = mock_config.get();
-    live_stream->live_sources_ = mock_live_sources.get();
+    live_stream->rtmp_sources_ = mock_rtmp_sources.get();
     live_stream->stat_ = mock_stat.get();
     live_stream->hooks_ = mock_hooks.get();
     mock_entry->enabled = true;

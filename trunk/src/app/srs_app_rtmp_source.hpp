@@ -23,10 +23,10 @@
 
 class SrsFormat;
 class SrsRtmpFormat;
-class SrsLiveConsumer;
+class SrsRtmpConsumer;
 class SrsPlayEdge;
 class SrsPublishEdge;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsRtmpCommonMessage;
 class SrsOnMetaDataPacket;
 class SrsMediaPacket;
@@ -47,7 +47,7 @@ class SrsBuffer;
 class ISrsStatistic;
 class ISrsHttpHooks;
 class ISrsAppConfig;
-class ISrsLiveSource;
+class ISrsRtmpSource;
 class ISrsHls;
 class ISrsDash;
 class ISrsDvr;
@@ -56,7 +56,7 @@ class ISrsNgExec;
 class ISrsForwarder;
 class ISrsAppFactory;
 class ISrsStreamPublishTokenManager;
-class ISrsLiveConsumer;
+class ISrsRtmpConsumer;
 class ISrsClock;
 
 // The time_jitter config:
@@ -124,7 +124,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size) = 0;
     virtual srs_error_t enqueue(SrsMediaPacket *msg, bool *is_overflow = NULL) = 0;
     // virtual srs_error_t dump_packets(int max_count, SrsMediaPacket **pmsgs, int &count) = 0;
-    virtual srs_error_t dump_packets(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
+    virtual srs_error_t dump_packets(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
     // virtual void clear() = 0;
 };
 
@@ -159,7 +159,7 @@ public:
     virtual srs_error_t enqueue(SrsMediaPacket *msg, bool *is_overflow = NULL);
     // The caller allocates pmsgs with room for max_count messages.
     virtual srs_error_t dump_packets(int max_count, SrsMediaPacket **pmsgs, int &count);
-    virtual srs_error_t dump_packets(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag);
+    virtual srs_error_t dump_packets(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag);
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -181,11 +181,11 @@ public:
     virtual void wakeup() = 0;
 };
 
-class ISrsLiveConsumer
+class ISrsRtmpConsumer
 {
 public:
-    ISrsLiveConsumer();
-    virtual ~ISrsLiveConsumer();
+    ISrsRtmpConsumer();
+    virtual ~ISrsRtmpConsumer();
 
 public:
     virtual srs_error_t enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
@@ -194,12 +194,12 @@ public:
     virtual int64_t get_time() = 0;
 };
 
-class SrsLiveConsumer : public ISrsWakable, public ISrsLiveConsumer
+class SrsRtmpConsumer : public ISrsWakable, public ISrsRtmpConsumer
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // A raw pointer, since the source holds this consumer.
-    ISrsLiveSource *source_;
+    ISrsRtmpSource *source_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -215,8 +215,8 @@ SRS_DECLARE_PRIVATE: // clang-format on
     srs_utime_t mw_duration_;
 #endif
 public:
-    SrsLiveConsumer(ISrsLiveSource *s);
-    virtual ~SrsLiveConsumer();
+    SrsRtmpConsumer(ISrsRtmpSource *s);
+    virtual ~SrsRtmpConsumer();
 
 public:
     virtual void set_queue_size(srs_utime_t queue_size);
@@ -270,7 +270,7 @@ public:
     // The cache copies shared_msg; the caller keeps it.
     virtual srs_error_t cache(SrsMediaPacket *shared_msg);
     virtual void clear();
-    virtual srs_error_t dump(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm);
+    virtual srs_error_t dump(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm);
     // For atc, the sequence headers take the timestamp of the cached GOP.
     virtual bool empty();
     virtual srs_utime_t start_time();
@@ -278,11 +278,11 @@ public:
 };
 
 // The server implements it, to mount the HTTP stream when RTMP publishing starts.
-class ISrsLiveSourceHandler
+class ISrsRtmpSourceHandler
 {
 public:
-    ISrsLiveSourceHandler();
-    virtual ~ISrsLiveSourceHandler();
+    ISrsRtmpSourceHandler();
+    virtual ~ISrsRtmpSourceHandler();
 
 public:
     virtual srs_error_t on_publish(ISrsRequest *r) = 0;
@@ -315,7 +315,7 @@ public:
     virtual ~ISrsOriginHub();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r) = 0;
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsRequest *r) = 0;
     virtual void dispose() = 0;
     virtual srs_error_t cycle() = 0;
     virtual bool active() = 0;
@@ -348,7 +348,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // A raw pointer, since the source holds this hub.
-    ISrsLiveSource *source_;
+    ISrsRtmpSource *source_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -372,7 +372,7 @@ public:
 
 public:
     // The source owns r.
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsRequest *r);
     virtual void dispose();
     virtual srs_error_t cycle();
     virtual bool active();
@@ -433,7 +433,7 @@ public:
     virtual SrsMediaPacket *ash();
     virtual SrsFormat *ash_format();
     // dm dumps the metadata, and ds the sequence headers.
-    virtual srs_error_t dumps(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds);
+    virtual srs_error_t dumps(ISrsRtmpConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds);
 
 public:
     virtual SrsMediaPacket *previous_data();
@@ -449,24 +449,24 @@ public:
     virtual srs_error_t update_vsh(SrsMediaPacket *msg);
 };
 
-class ISrsLiveSourceManager
+class ISrsRtmpSourceManager
 {
 public:
-    ISrsLiveSourceManager();
-    virtual ~ISrsLiveSourceManager();
+    ISrsRtmpSourceManager();
+    virtual ~ISrsRtmpSourceManager();
 
 public:
     // On success, pps is never NULL.
-    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps) = 0;
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps) = 0;
     // Returns NULL when the stream has no source.
-    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r) = 0;
+    virtual SrsSharedPtr<SrsRtmpSource> fetch(ISrsRequest *r) = 0;
 
 public:
     virtual void dispose() = 0;
     virtual srs_error_t initialize() = 0;
 };
 
-class SrsLiveSourceManager : public ISrsHourGlassHandler, public ISrsLiveSourceManager
+class SrsRtmpSourceManager : public ISrsHourGlassHandler, public ISrsRtmpSourceManager
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -476,20 +476,20 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     srs_mutex_t lock_;
-    std::map<std::string, SrsSharedPtr<SrsLiveSource> > pool_;
+    std::map<std::string, SrsSharedPtr<SrsRtmpSource> > pool_;
     ISrsHourGlass *timer_;
 
 public:
-    SrsLiveSourceManager();
+    SrsRtmpSourceManager();
     void assemble(); // Creates the members, to avoid calling functions in the constructor.
-    virtual ~SrsLiveSourceManager();
+    virtual ~SrsRtmpSourceManager();
 
 public:
     virtual srs_error_t initialize();
-    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps);
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtmpSource> &pps);
 
 public:
-    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r);
+    virtual SrsSharedPtr<SrsRtmpSource> fetch(ISrsRequest *r);
 
 public:
     virtual void dispose();
@@ -503,16 +503,16 @@ public:
     virtual void destroy();
 };
 
-extern SrsLiveSourceManager *_srs_sources;
+extern SrsRtmpSourceManager *_srs_rtmp_sources;
 
-class ISrsLiveSource
+class ISrsRtmpSource
 {
 public:
-    ISrsLiveSource();
-    virtual ~ISrsLiveSource();
+    ISrsRtmpSource();
+    virtual ~ISrsRtmpSource();
 
 public:
-    virtual void on_consumer_destroy(SrsLiveConsumer *consumer) = 0;
+    virtual void on_consumer_destroy(SrsRtmpConsumer *consumer) = 0;
     virtual SrsContextId source_id() = 0;
     virtual SrsContextId pre_source_id() = 0;
     virtual SrsMetaCache *meta() = 0;
@@ -526,13 +526,13 @@ public:
     virtual srs_error_t on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata) = 0;
 };
 
-class SrsLiveSource : public ISrsReloadHandler, public ISrsFrameTarget, public ISrsLiveSource
+class SrsRtmpSource : public ISrsReloadHandler, public ISrsFrameTarget, public ISrsRtmpSource
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsStatistic *stat_;
-    ISrsLiveSourceHandler *handler_;
+    ISrsRtmpSourceHandler *handler_;
     ISrsAppFactory *app_factory_;
     ISrsClock *clk_;
 
@@ -543,7 +543,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     SrsContextId source_id_;
     SrsContextId pre_source_id_;
     ISrsRequest *req_;
-    std::vector<SrsLiveConsumer *> consumers_;
+    std::vector<SrsRtmpConsumer *> consumers_;
     SrsRtmpJitterAlgorithm jitter_algorithm_;
     bool mix_correct_;
     SrsMixQueue *mix_queue_;
@@ -569,9 +569,9 @@ SRS_DECLARE_PRIVATE: // clang-format on
     srs_utime_t publisher_idle_at_;
 
 public:
-    SrsLiveSource();
+    SrsRtmpSource();
     void assemble(); // Creates the members, to avoid calling functions in the constructor.
-    virtual ~SrsLiveSource();
+    virtual ~SrsRtmpSource();
 
 public:
     virtual void dispose();
@@ -582,7 +582,7 @@ public:
     virtual SrsRtmpFormat *format();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> wrapper, ISrsRequest *r);
     void set_bridge(ISrsRtmpBridge *v);
 
 public:
@@ -620,10 +620,10 @@ public:
     virtual void on_unpublish();
 
 public:
-    virtual srs_error_t create_consumer(SrsLiveConsumer *&consumer);
+    virtual srs_error_t create_consumer(SrsRtmpConsumer *&consumer);
     // ds dumps the sequence headers, dm the metadata, and dg the GOP cache.
-    virtual srs_error_t consumer_dumps(ISrsLiveConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
-    virtual void on_consumer_destroy(SrsLiveConsumer *consumer);
+    virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
+    virtual void on_consumer_destroy(SrsRtmpConsumer *consumer);
     virtual void set_cache(bool enabled);
     virtual void set_gop_cache_max_frames(int v);
     virtual SrsRtmpJitterAlgorithm jitter();

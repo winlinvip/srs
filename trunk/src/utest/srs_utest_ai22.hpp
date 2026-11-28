@@ -307,7 +307,7 @@ public:
     virtual ~MockEdgeIngester();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPlayEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
     void reset();
@@ -333,7 +333,7 @@ public:
 
 public:
     virtual void set_queue_size(srs_utime_t queue_size);
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
     virtual srs_error_t proxy(SrsRtmpCommonMessage *msg);

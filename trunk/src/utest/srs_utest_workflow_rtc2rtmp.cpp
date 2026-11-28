@@ -91,7 +91,7 @@ VOID TEST(BasicWorkflowRtc2RtmpTest, ManuallyVerifyTypicalScenario)
     SrsUniquePtr<MockExpire> mock_expire(new MockExpire());
     SrsUniquePtr<MockRtcPacketReceiver> mock_receiver(new MockRtcPacketReceiver());
     SrsUniquePtr<MockRtcTrackDescriptionFactory> track_factory(new MockRtcTrackDescriptionFactory());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockAppFactoryForRtc2Rtmp> mock_factory(new MockAppFactoryForRtc2Rtmp());
 
     mock_config->rtc_to_rtmp_ = true;
@@ -107,14 +107,14 @@ VOID TEST(BasicWorkflowRtc2RtmpTest, ManuallyVerifyTypicalScenario)
         // Inject mock dependencies
         publish_stream->config_ = mock_config.get();
         publish_stream->rtc_sources_ = mock_rtc_sources.get();
-        publish_stream->live_sources_ = mock_sources.get();
+        publish_stream->rtmp_sources_ = mock_sources.get();
         publish_stream->stat_ = mock_stat.get();
         publish_stream->app_factory_ = mock_factory.get();
     }
 
     // Initialize publish stream, rtc2rtmp bridge should be created
     SrsRtcBridge *bridge = NULL;
-    SrsLiveSource *live_source = NULL;
+    SrsRtmpSource *rtmp_source = NULL;
     if (true) {
         SrsUniquePtr<SrsRtcSourceDescription> stream_desc(track_factory->create_stream_description());
 
@@ -130,8 +130,8 @@ VOID TEST(BasicWorkflowRtc2RtmpTest, ManuallyVerifyTypicalScenario)
         bridge = dynamic_cast<SrsRtcBridge *>(publish_stream->source_->rtc_bridge_);
         EXPECT_TRUE(bridge != NULL);
 
-        live_source = bridge->rtmp_target_.get();
-        EXPECT_TRUE(live_source != NULL);
+        rtmp_source = bridge->rtmp_target_.get();
+        EXPECT_TRUE(rtmp_source != NULL);
     }
 
     // Start the publish stream.
@@ -160,7 +160,7 @@ VOID TEST(BasicWorkflowRtc2RtmpTest, ManuallyVerifyTypicalScenario)
     }
 
     // Got a RTP audio packet.
-    MockLiveSource *mock_source = dynamic_cast<MockLiveSource *>(mock_sources->mock_source_.get());
+    MockRtmpSource *mock_source = dynamic_cast<MockRtmpSource *>(mock_sources->mock_source_.get());
     if (true) {
         // The first SR of the audio track maps its RTP time to the publisher's clock, by the SDP rate.
         SrsNtp ntp;
@@ -185,7 +185,7 @@ VOID TEST(BasicWorkflowRtc2RtmpTest, ManuallyVerifyTypicalScenario)
 
         HELPER_EXPECT_SUCCESS(publish_stream->on_rtp_plaintext(data.get(), buf.pos()));
 
-        // The live source should got 2 audio packets, one is sequence header, another is audio data.
+        // The RTMP source should got 2 audio packets, one is sequence header, another is audio data.
         EXPECT_EQ(mock_source->on_audio_count_, 2);
         EXPECT_EQ(mock_source->on_frame_count_, 2);
         EXPECT_EQ(mock_source->on_video_count_, 0);

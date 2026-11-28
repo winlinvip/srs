@@ -1658,7 +1658,7 @@ srs_error_t MockForwarderForFanOut::record(SrsMediaPacket *pkt, srs_error_t err)
 
 // An origin hub with mock HLS, DASH, DVR, encoder and exec, on the given source, request,
 // config and hooks, so only its forward parts do real work.
-SrsOriginHub *utest_forward_hub(MockLiveSourceForOriginHub *source, ISrsRequest *req, ISrsAppConfig *config, ISrsHttpHooks *hooks)
+SrsOriginHub *utest_forward_hub(MockRtmpSourceForOriginHub *source, ISrsRequest *req, ISrsAppConfig *config, ISrsHttpHooks *hooks)
 {
     SrsOriginHub *hub = new SrsOriginHub();
 
@@ -1699,7 +1699,7 @@ VOID TEST(OriginHubForwardTest, ForwardOffCreatesNoForwarders)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     config->forward_enabled_ = false;
@@ -1724,7 +1724,7 @@ VOID TEST(OriginHubForwardTest, DestinationCreatesOneForwarderPerEntry)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("test.vhost", "live", "livestream"));
     req->param_ = "?token=abc";
 
@@ -1765,7 +1765,7 @@ VOID TEST(OriginHubForwardTest, RtmpsDestinationFailsCreate)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     std::vector<std::string> destinations;
@@ -1796,7 +1796,7 @@ VOID TEST(OriginHubForwardTest, BackendIgnoresDestination)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     config->queue_length_ = 9 * SRS_UTIME_SECONDS;
@@ -1834,7 +1834,7 @@ VOID TEST(OriginHubForwardTest, BackendWithNoUrlsIgnoresDestination)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     std::vector<std::string> destinations;
@@ -1856,7 +1856,7 @@ VOID TEST(OriginHubForwardTest, BackendErrorFailsCreate)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     std::vector<std::string> destinations;
@@ -1884,7 +1884,7 @@ VOID TEST(OriginHubForwardTest, EmptyBackendArgUsesDestination)
     for (int nb_args = 0; nb_args < 2; nb_args++) {
         SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
         SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-        SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+        SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
         SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
         std::vector<std::string> destinations;
@@ -1920,7 +1920,7 @@ VOID TEST(OriginHubForwardTest, BackendUrlDecidesEndpointAndRequest)
 
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("test.vhost", "live", "livestream"));
     req->param_ = "?pub=1";
     SrsUniquePtr<MockAppFactoryForForwarderCycle> factory(new MockAppFactoryForForwarderCycle());
@@ -1984,7 +1984,7 @@ VOID TEST(OriginHubForwardTest, FanOutReachesEveryForwarderInOrder)
     srs_error_t err;
 
     std::vector<std::string> log;
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
     SrsUniquePtr<SrsMediaPacket> metadata(utest_forward_metadata(0, 'M'));
     SrsUniquePtr<SrsMediaPacket> audio(utest_forward_audio_raw(10, 'A'));
@@ -2022,7 +2022,7 @@ VOID TEST(OriginHubForwardTest, FanOutStopsAtFirstForwarderError)
     srs_error_t err;
 
     std::vector<std::string> log;
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
     SrsUniquePtr<SrsMediaPacket> metadata(utest_forward_metadata(0, 'M'));
     SrsUniquePtr<SrsMediaPacket> audio(utest_forward_audio_raw(10, 'A'));
@@ -2073,7 +2073,7 @@ VOID TEST(OriginHubForwardTest, OnForwarderStartFeedsCachedMetadataAndHeaders)
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     if (true) {
-        SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+        SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
         source->meta()->meta_ = utest_forward_metadata(0, 'M');
         source->meta()->video_ = utest_forward_video_sh(0, 'W');
         source->meta()->audio_ = utest_forward_audio_sh(0, 'B');
@@ -2101,7 +2101,7 @@ VOID TEST(OriginHubForwardTest, OnForwarderStartFeedsCachedMetadataAndHeaders)
     }
 
     if (true) {
-        SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+        SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
         SrsUniquePtr<SrsOriginHub> hub(utest_forward_hub(source.get(), req.get(), _srs_config, _srs_hooks));
         SrsUniquePtr<SrsForwarder> forwarder(new SrsForwarder(hub.get(), req.get()));
 
@@ -2121,7 +2121,7 @@ VOID TEST(OriginHubForwardTest, UnpublishFreesForwardersAndRepublishCreatesThem)
     std::vector<std::string> log;
     SrsUniquePtr<MockAppConfigForForwardHub> config(new MockAppConfigForForwardHub());
     SrsUniquePtr<MockHttpHooksForForwardHub> hooks(new MockHttpHooksForForwardHub());
-    SrsUniquePtr<MockLiveSourceForOriginHub> source(new MockLiveSourceForOriginHub());
+    SrsUniquePtr<MockRtmpSourceForOriginHub> source(new MockRtmpSourceForOriginHub());
     SrsUniquePtr<MockRequest> req(new MockRequest("__defaultVhost__", "live", "livestream"));
 
     std::vector<std::string> destinations;

@@ -43,7 +43,7 @@ VOID TEST(BasicWorkflowSrtConnTest, ManuallyVerifyForPublisher)
     // Mock all interface dependencies
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -73,7 +73,7 @@ VOID TEST(BasicWorkflowSrtConnTest, ManuallyVerifyForPublisher)
     conn->stat_ = mock_stat.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->srt_sources_ = mock_srt_sources.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->rtc_sources_ = mock_rtc_sources.get();
     conn->hooks_ = mock_hooks.get();
     srs_freep(conn->srt_conn_);
@@ -150,7 +150,7 @@ VOID TEST(BasicWorkflowSrtConnTest, ManuallyVerifyForPlayer)
     // Mock all interface dependencies
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -184,7 +184,7 @@ VOID TEST(BasicWorkflowSrtConnTest, ManuallyVerifyForPlayer)
     conn->stat_ = mock_stat.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->srt_sources_ = mock_srt_sources.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->rtc_sources_ = mock_rtc_sources.get();
     conn->hooks_ = mock_hooks.get();
     srs_freep(conn->srt_conn_);

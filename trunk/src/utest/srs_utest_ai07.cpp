@@ -4624,13 +4624,13 @@ VOID TEST(AppTest2, RtcSourceGetTrackDescMultipleMatchingVideoTracks)
 // Reproduce issue 4449: Newly created source is immediately considered dead
 // When a new source is created with stream_die_at_=0, if notify() timer fires
 // before a publisher connects, the source gets deleted because stream_is_dead()
-// returns true. This causes "new live source, dead=1" in logs.
-VOID TEST(ReproduceIssue4449, RtmpLiveSourceNotifyDeletesNewlyCreatedSource)
+// returns true. This causes "new rtmp source, dead=1" in logs.
+VOID TEST(ReproduceIssue4449, RtmpSourceNotifyDeletesNewlyCreatedSource)
 {
     srs_error_t err;
 
     // Create a source manager
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
     manager->assemble();
     HELPER_EXPECT_SUCCESS(manager->initialize());
 
@@ -4642,7 +4642,7 @@ VOID TEST(ReproduceIssue4449, RtmpLiveSourceNotifyDeletesNewlyCreatedSource)
     req->stream_ = "thegobot";
 
     // Fetch or create source (this creates a new source)
-    SrsSharedPtr<SrsLiveSource> source;
+    SrsSharedPtr<SrsRtmpSource> source;
     HELPER_EXPECT_SUCCESS(manager->fetch_or_create(req.get(), source));
 
     // After fix: newly created source should NOT be dead
@@ -4661,11 +4661,11 @@ VOID TEST(ReproduceIssue4449, RtmpLiveSourceNotifyDeletesNewlyCreatedSource)
 
 // Reproduce issue 4656: A publisher owns a source but yields before on_publish(),
 // so the cleanup timer must not remove that source from the manager.
-VOID TEST(ReproduceIssue4656, PublishTokenKeepsPendingLiveSource)
+VOID TEST(ReproduceIssue4656, PublishTokenKeepsPendingRtmpSource)
 {
     srs_error_t err;
 
-    SrsUniquePtr<SrsLiveSourceManager> manager(new SrsLiveSourceManager());
+    SrsUniquePtr<SrsRtmpSourceManager> manager(new SrsRtmpSourceManager());
     manager->assemble();
     HELPER_EXPECT_SUCCESS(manager->initialize());
 
@@ -4675,7 +4675,7 @@ VOID TEST(ReproduceIssue4656, PublishTokenKeepsPendingLiveSource)
     req->app_ = "live";
     req->stream_ = "pending-publisher";
 
-    SrsSharedPtr<SrsLiveSource> source;
+    SrsSharedPtr<SrsRtmpSource> source;
     HELPER_EXPECT_SUCCESS(manager->fetch_or_create(req.get(), source));
 
     // Make the inactive source eligible for immediate cleanup.

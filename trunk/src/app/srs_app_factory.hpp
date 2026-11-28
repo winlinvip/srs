@@ -14,7 +14,7 @@
 class ISrsFileWriter;
 class ISrsFileReader;
 class SrsPath;
-class SrsLiveSource;
+class SrsRtmpSource;
 class ISrsOriginHub;
 class ISrsHourGlass;
 class ISrsHourGlassHandler;
@@ -75,7 +75,7 @@ public:
     virtual ISrsFileWriter *create_enc_file_writer() = 0;
     virtual ISrsFileReader *create_file_reader() = 0;
     virtual SrsPath *create_path() = 0;
-    virtual SrsLiveSource *create_live_source() = 0;
+    virtual SrsRtmpSource *create_rtmp_source() = 0;
     virtual ISrsOriginHub *create_origin_hub() = 0;
     virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval) = 0;
     virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto) = 0;
@@ -134,7 +134,7 @@ public:
     virtual ISrsFileWriter *create_enc_file_writer();
     virtual ISrsFileReader *create_file_reader();
     virtual SrsPath *create_path();
-    virtual SrsLiveSource *create_live_source();
+    virtual SrsRtmpSource *create_rtmp_source();
     virtual ISrsOriginHub *create_origin_hub();
     virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
     virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto);

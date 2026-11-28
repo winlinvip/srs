@@ -154,7 +154,7 @@ WHEP requested `livestream.flv` for stream `livestream`; use `stream=livestream`
 - Truth Record: https://github.com/ossrs/srs/issues/4656#issuecomment-5161223806
 - Status: Candidate fix, uncommitted and unreleased as of 2026-08-02
 
-New players get `active=0` while the publisher and HLS keep working. The publisher holds the publish token and fetches source A, then yields before `acquire_publish()`; cleanup erases the inactive A, and new players create an empty source B. Fix: cleanup skips a dead source while its publish token is acquired (`ReproduceIssue4656.PublishTokenKeepsPendingLiveSource`).
+New players get `active=0` while the publisher and HLS keep working. The publisher holds the publish token and fetches source A, then yields before `acquire_publish()`; cleanup erases the inactive A, and new players create an empty source B. Fix: cleanup skips a dead source while its publish token is acquired (`ReproduceIssue4656.PublishTokenKeepsPendingRtmpSource`).
 
 ## #4647 [FEATURE] Configurable proxy origin registration TTL
 

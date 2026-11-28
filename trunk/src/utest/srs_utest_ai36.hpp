@@ -116,8 +116,8 @@ public:
     }
 };
 
-// Mock live source for testing how SrsRtmpConn::process_publish_message() feeds the source.
-class MockLiveSourceForPublishMessage : public MockLiveSource
+// Mock RTMP source for testing how SrsRtmpConn::process_publish_message() feeds the source.
+class MockRtmpSourceForPublishMessage : public MockRtmpSource
 {
 public:
     int on_aggregate_count_;
@@ -125,8 +125,8 @@ public:
     int on_edge_proxy_publish_count_;
 
 public:
-    MockLiveSourceForPublishMessage();
-    virtual ~MockLiveSourceForPublishMessage();
+    MockRtmpSourceForPublishMessage();
+    virtual ~MockRtmpSourceForPublishMessage();
 
 public:
     virtual srs_error_t on_aggregate(SrsRtmpCommonMessage *msg);

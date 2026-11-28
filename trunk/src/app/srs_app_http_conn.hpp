@@ -21,9 +21,9 @@
 #include <srs_protocol_http_conn.hpp>
 
 class SrsServer;
-class SrsLiveSource;
+class SrsRtmpSource;
 class ISrsRequest;
-class SrsLiveConsumer;
+class SrsRtmpConsumer;
 class SrsStSocket;
 class SrsHttpParser;
 class ISrsHttpParser;

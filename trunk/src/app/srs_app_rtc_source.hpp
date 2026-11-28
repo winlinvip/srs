@@ -40,7 +40,7 @@ class SrsRtpNackForReceiver;
 class SrsJsonObject;
 class SrsErrorPithyPrint;
 class SrsRtcFrameBuilder;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsRtpVideoBuilder;
 class ISrsRtcConsumer;
 class ISrsCircuitBreaker;

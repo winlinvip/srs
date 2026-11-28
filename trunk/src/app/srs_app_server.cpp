@@ -95,11 +95,11 @@ srs_error_t srs_global_initialize()
     // The global objects below depend on ST. _srs_stages goes first, since the SrsServer constructor needs it.
     _srs_stages = new SrsStageManager();
 
-    // Initialize stream publish token manager before _srs_sources, which captures it.
+    // Initialize stream publish token manager before _srs_rtmp_sources, which captures it.
     _srs_stream_publish_tokens = new SrsStreamPublishTokenManager();
 
-    _srs_sources = new SrsLiveSourceManager();
-    _srs_sources->assemble();
+    _srs_rtmp_sources = new SrsRtmpSourceManager();
+    _srs_rtmp_sources->assemble();
     _srs_circuit_breaker = new SrsCircuitBreaker();
 
     // Initialize global statistic instance before _srs_hooks, as SrsHttpHooks depends on it.
@@ -226,7 +226,7 @@ SrsServer::SrsServer()
     rtc_session_manager_ = new SrsRtcSessionManager();
 
     config_ = _srs_config;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     conn_manager_ = _srs_conn_manager;
     rtc_dtls_certificate_ = _srs_rtc_dtls_certificate;
     dvr_async_ = _srs_dvr_async;
@@ -303,7 +303,7 @@ SrsServer::~SrsServer()
     srs_freep(rtc_session_manager_);
 
     config_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     conn_manager_ = NULL;
     rtc_dtls_certificate_ = NULL;
     dvr_async_ = NULL;
@@ -346,7 +346,7 @@ void SrsServer::dispose()
 
     ingester_->dispose();
 
-    live_sources_->dispose();
+    rtmp_sources_->dispose();
 
     // Connections are not disposed, which is too slow.
 }
@@ -387,7 +387,7 @@ void SrsServer::gracefully_dispose()
         srs_trace("wait for %d conns to quit", (int)conn_manager_->size());
     }
 
-    live_sources_->dispose();
+    rtmp_sources_->dispose();
     srs_trace("source disposed");
 
     srs_usleep(config_->get_grace_final_wait());
@@ -510,8 +510,8 @@ srs_error_t SrsServer::run()
         return srs_error_wrap(err, "ingest");
     }
 
-    if ((err = live_sources_->initialize()) != srs_success) {
-        return srs_error_wrap(err, "live sources");
+    if ((err = rtmp_sources_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtmp sources");
     }
 
     if ((err = srt_sources_->initialize()) != srs_success) {

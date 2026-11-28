@@ -4233,7 +4233,7 @@ VOID TEST(RtcPublishStreamTest, Initialize)
     MockAppStatistic mock_stat;
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockLiveSourceManager mock_live_sources;
+    MockRtmpSourceManager mock_rtmp_sources;
     MockSrtSourceManager mock_srt_sources;
     MockRtcPacketReceiver mock_receiver;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
@@ -4250,7 +4250,7 @@ VOID TEST(RtcPublishStreamTest, Initialize)
     publish_stream->stat_ = &mock_stat;
     publish_stream->config_ = &mock_config;
     publish_stream->rtc_sources_ = &mock_rtc_sources;
-    publish_stream->live_sources_ = &mock_live_sources;
+    publish_stream->rtmp_sources_ = &mock_rtmp_sources;
     publish_stream->srt_sources_ = &mock_srt_sources;
 
     // Create stream description with audio and video tracks
@@ -4284,7 +4284,7 @@ VOID TEST(RtcPublishStreamTest, Initialize)
     // Verify mock calls
     EXPECT_EQ(1, mock_stat.on_client_count_);
     EXPECT_EQ(1, mock_rtc_sources.fetch_or_create_count_);
-    EXPECT_EQ(1, mock_live_sources.fetch_or_create_count_);
+    EXPECT_EQ(1, mock_rtmp_sources.fetch_or_create_count_);
     EXPECT_EQ(1, mock_srt_sources.fetch_or_create_count_);
 }
 
@@ -4629,7 +4629,7 @@ bool MockAppConfigForRtcPublishEdge::get_vhost_is_edge(std::string vhost)
 }
 
 // The injected config marks the vhost as an edge, so WebRTC to RTMP is disabled: no bridge is set and
-// the GOP cache of the live source is kept. The global config has no edge vhost, so a read of the global
+// the GOP cache of the RTMP source is kept. The global config has no edge vhost, so a read of the global
 // would create the bridge.
 VOID TEST(RtcPublishStreamTest, InitializeEdgeFromInjectedConfigDisablesRtcToRtmp)
 {
@@ -4638,7 +4638,7 @@ VOID TEST(RtcPublishStreamTest, InitializeEdgeFromInjectedConfigDisablesRtcToRtm
     MockAppStatistic mock_stat;
     MockAppConfigForRtcPublishEdge mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockLiveSourceManager mock_live_sources;
+    MockRtmpSourceManager mock_rtmp_sources;
     MockSrtSourceManager mock_srt_sources;
     MockRtcPacketReceiver mock_receiver;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
@@ -4652,7 +4652,7 @@ VOID TEST(RtcPublishStreamTest, InitializeEdgeFromInjectedConfigDisablesRtcToRtm
     publish_stream->stat_ = &mock_stat;
     publish_stream->config_ = &mock_config;
     publish_stream->rtc_sources_ = &mock_rtc_sources;
-    publish_stream->live_sources_ = &mock_live_sources;
+    publish_stream->rtmp_sources_ = &mock_rtmp_sources;
     publish_stream->srt_sources_ = &mock_srt_sources;
 
     mock_config.set_rtc_to_rtmp(true);
@@ -4664,11 +4664,11 @@ VOID TEST(RtcPublishStreamTest, InitializeEdgeFromInjectedConfigDisablesRtcToRtm
 
     EXPECT_EQ(1, mock_config.get_vhost_is_edge_count_);
     EXPECT_TRUE(mock_rtc_sources.mock_source_->rtc_bridge_ == NULL);
-    EXPECT_TRUE(mock_live_sources.mock_source_->gop_cache_->enabled());
+    EXPECT_TRUE(mock_rtmp_sources.mock_source_->gop_cache_->enabled());
 }
 
 // The injected config marks the vhost as an origin, so WebRTC to RTMP stays on: the bridge is set and
-// the GOP cache of the live source is disabled, with the edge switch read once from the injected config.
+// the GOP cache of the RTMP source is disabled, with the edge switch read once from the injected config.
 VOID TEST(RtcPublishStreamTest, InitializeOriginFromInjectedConfigKeepsRtcToRtmp)
 {
     srs_error_t err;
@@ -4676,7 +4676,7 @@ VOID TEST(RtcPublishStreamTest, InitializeOriginFromInjectedConfigKeepsRtcToRtmp
     MockAppStatistic mock_stat;
     MockAppConfigForRtcPublishEdge mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockLiveSourceManager mock_live_sources;
+    MockRtmpSourceManager mock_rtmp_sources;
     MockSrtSourceManager mock_srt_sources;
     MockRtcPacketReceiver mock_receiver;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
@@ -4690,7 +4690,7 @@ VOID TEST(RtcPublishStreamTest, InitializeOriginFromInjectedConfigKeepsRtcToRtmp
     publish_stream->stat_ = &mock_stat;
     publish_stream->config_ = &mock_config;
     publish_stream->rtc_sources_ = &mock_rtc_sources;
-    publish_stream->live_sources_ = &mock_live_sources;
+    publish_stream->rtmp_sources_ = &mock_rtmp_sources;
     publish_stream->srt_sources_ = &mock_srt_sources;
 
     mock_config.set_rtc_to_rtmp(true);
@@ -4702,7 +4702,7 @@ VOID TEST(RtcPublishStreamTest, InitializeOriginFromInjectedConfigKeepsRtcToRtmp
 
     EXPECT_EQ(1, mock_config.get_vhost_is_edge_count_);
     EXPECT_TRUE(mock_rtc_sources.mock_source_->rtc_bridge_ != NULL);
-    EXPECT_FALSE(mock_live_sources.mock_source_->gop_cache_->enabled());
+    EXPECT_FALSE(mock_rtmp_sources.mock_source_->gop_cache_->enabled());
 }
 
 MockDtlsCertificateForDtlsCtx::MockDtlsCertificateForDtlsCtx(bool ecdsa)

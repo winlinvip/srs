@@ -1903,7 +1903,7 @@ srs_error_t SrsRtcFrameBuilder::on_rtp(SrsRtpPacket *pkt)
     }
 
     // Before the first Sender Report of the track, or when the SDP has no sample rate, the packet has no time on
-    // the stream's clock, so it is discarded to avoid timestamp problems in the live source.
+    // the stream's clock, so it is discarded to avoid timestamp problems in the RTMP source.
     const SrsRtpHeader &h = pkt->header_;
     if (pkt->get_avsync_time() <= 0) {
         if (sync_state_ < 0) {

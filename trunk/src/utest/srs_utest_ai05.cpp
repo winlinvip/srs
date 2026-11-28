@@ -360,7 +360,7 @@ VOID TEST(KernelPacketTest, SrsMediaPacketTypeChecking)
     EXPECT_FALSE(packet.is_video());
 }
 
-// The live source copies each message once per player, so an empty shared ptr must not allocate.
+// The RTMP source copies each message once per player, so an empty shared ptr must not allocate.
 VOID TEST(KernelPacketTest, SharedPtrNullHoldsNoCount)
 {
     SrsSharedPtr<int> empty(NULL);

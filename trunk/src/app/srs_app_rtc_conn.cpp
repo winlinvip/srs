@@ -1339,7 +1339,7 @@ SrsRtcPublishStream::SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire 
     stat_ = _srs_stat;
     config_ = _srs_config;
     rtc_sources_ = _srs_rtc_sources;
-    live_sources_ = _srs_sources;
+    rtmp_sources_ = _srs_rtmp_sources;
     srt_sources_ = _srs_srt_sources;
     circuit_breaker_ = _srs_circuit_breaker;
     app_factory_ = _srs_app_factory;
@@ -1386,7 +1386,7 @@ SrsRtcPublishStream::~SrsRtcPublishStream()
     stat_ = NULL;
     config_ = NULL;
     rtc_sources_ = NULL;
-    live_sources_ = NULL;
+    rtmp_sources_ = NULL;
     srt_sources_ = NULL;
     circuit_breaker_ = NULL;
     app_factory_ = NULL;
@@ -1471,11 +1471,11 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     source_->set_publish_stream(this);
 
     // TODO: FIXME: Check it in SrsRtcConnection::add_publisher?
-    SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = live_sources_->fetch_or_create(r, live_source)) != srs_success) {
-        return srs_error_wrap(err, "create live source");
+    SrsSharedPtr<SrsRtmpSource> rtmp_source;
+    if ((err = rtmp_sources_->fetch_or_create(r, rtmp_source)) != srs_success) {
+        return srs_error_wrap(err, "create rtmp source");
     }
-    if (!live_source->can_publish(false)) {
+    if (!rtmp_source->can_publish(false)) {
         return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp stream %s busy", r->get_stream_url().c_str());
     }
 
@@ -1505,9 +1505,9 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
 
     if (rtc_to_rtmp) {
         // No GOP cache for RTC to RTMP, to keep the streams in sync, especially for stream merging.
-        live_source->set_cache(false);
+        rtmp_source->set_cache(false);
 
-        bridge->enable_rtc2rtmp(live_source);
+        bridge->enable_rtc2rtmp(rtmp_source);
     }
 
     if (bridge->empty()) {

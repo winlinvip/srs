@@ -21,7 +21,7 @@ class ISrsSecurity;
 class ISrsAppConfig;
 class ISrsStatistic;
 class ISrsRtcSourceManager;
-class ISrsLiveSourceManager;
+class ISrsRtmpSourceManager;
 class ISrsHttpHooks;
 
 class SrsGoApiRtcPlay : public ISrsHttpHandler
@@ -31,7 +31,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsStatistic *stat_;
     ISrsRtcSourceManager *rtc_sources_;
-    ISrsLiveSourceManager *live_sources_;
+    ISrsRtmpSourceManager *rtmp_sources_;
     ISrsHttpHooks *hooks_;
 
 // clang-format off

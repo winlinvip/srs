@@ -425,7 +425,7 @@ SrsEdgeIngester::~SrsEdgeIngester()
 
 // Called after fetch_or_create adds the source to the pool (PR 4449). It must not switch
 // coroutines, which let other coroutines create duplicate sources for the same stream.
-srs_error_t SrsEdgeIngester::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r)
+srs_error_t SrsEdgeIngester::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPlayEdge *e, ISrsRequest *r)
 {
     source_ = s.get();
 
@@ -719,7 +719,7 @@ void SrsEdgeForwarder::set_queue_size(srs_utime_t queue_size)
 
 // Called after fetch_or_create adds the source to the pool (PR 4449). It must not switch
 // coroutines, which let other coroutines create duplicate sources for the same stream.
-srs_error_t SrsEdgeForwarder::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r)
+srs_error_t SrsEdgeForwarder::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r)
 {
     source_ = s.get();
 
@@ -935,7 +935,7 @@ SrsPlayEdge::~SrsPlayEdge()
 
 // Called after fetch_or_create adds the source to the pool (PR 4449). It must not switch
 // coroutines, which let other coroutines create duplicate sources for the same stream.
-srs_error_t SrsPlayEdge::initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req)
+srs_error_t SrsPlayEdge::initialize(SrsSharedPtr<SrsRtmpSource> source, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -1019,7 +1019,7 @@ void SrsPublishEdge::set_queue_size(srs_utime_t queue_size)
 
 // Called after fetch_or_create adds the source to the pool (PR 4449). It must not switch
 // coroutines, which let other coroutines create duplicate sources for the same stream.
-srs_error_t SrsPublishEdge::initialize(SrsSharedPtr<SrsLiveSource> source, ISrsRequest *req)
+srs_error_t SrsPublishEdge::initialize(SrsSharedPtr<SrsRtmpSource> source, ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 

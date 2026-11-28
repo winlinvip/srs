@@ -2045,7 +2045,7 @@ VOID TEST(MpegtsOverUdpTsTest, InitializeTakesOutputOfConfig)
     caster->config_ = NULL;
 }
 
-MockEdgeForwarderForLiveSource::MockEdgeForwarderForLiveSource()
+MockEdgeForwarderForRtmpSource::MockEdgeForwarderForRtmpSource()
 {
     start_count_ = 0;
     stop_count_ = 0;
@@ -2053,32 +2053,32 @@ MockEdgeForwarderForLiveSource::MockEdgeForwarderForLiveSource()
     start_error_ = srs_success;
 }
 
-MockEdgeForwarderForLiveSource::~MockEdgeForwarderForLiveSource()
+MockEdgeForwarderForRtmpSource::~MockEdgeForwarderForRtmpSource()
 {
     srs_freep(start_error_);
 }
 
-void MockEdgeForwarderForLiveSource::set_queue_size(srs_utime_t queue_size)
+void MockEdgeForwarderForRtmpSource::set_queue_size(srs_utime_t queue_size)
 {
 }
 
-srs_error_t MockEdgeForwarderForLiveSource::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r)
+srs_error_t MockEdgeForwarderForRtmpSource::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPublishEdge *e, ISrsRequest *r)
 {
     return srs_success;
 }
 
-srs_error_t MockEdgeForwarderForLiveSource::start()
+srs_error_t MockEdgeForwarderForRtmpSource::start()
 {
     start_count_++;
     return srs_error_copy(start_error_);
 }
 
-void MockEdgeForwarderForLiveSource::stop()
+void MockEdgeForwarderForRtmpSource::stop()
 {
     stop_count_++;
 }
 
-srs_error_t MockEdgeForwarderForLiveSource::proxy(SrsRtmpCommonMessage *msg)
+srs_error_t MockEdgeForwarderForRtmpSource::proxy(SrsRtmpCommonMessage *msg)
 {
     proxy_count_++;
     return srs_success;
@@ -2086,12 +2086,12 @@ srs_error_t MockEdgeForwarderForLiveSource::proxy(SrsRtmpCommonMessage *msg)
 
 // A publish to an edge source goes to its publish edge: the publish starts the push to the origin,
 // each message is proxied, and the unpublish stops the push.
-VOID TEST(LiveSourceEdgeTest, EdgePublishGoesToPublishEdge)
+VOID TEST(RtmpSourceEdgeTest, EdgePublishGoesToPublishEdge)
 {
     srs_error_t err;
 
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
-    MockEdgeForwarderForLiveSource *forwarder = new MockEdgeForwarderForLiveSource();
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
+    MockEdgeForwarderForRtmpSource *forwarder = new MockEdgeForwarderForRtmpSource();
     srs_freep(source->publish_edge_->forwarder_);
     source->publish_edge_->forwarder_ = forwarder;
 
@@ -2115,9 +2115,9 @@ VOID TEST(LiveSourceEdgeTest, EdgePublishGoesToPublishEdge)
 }
 
 // The source plays with the jitter algorithm of its vhost, off until it is configured.
-VOID TEST(LiveSourceEdgeTest, JitterIsOffByDefault)
+VOID TEST(RtmpSourceEdgeTest, JitterIsOffByDefault)
 {
-    SrsUniquePtr<SrsLiveSource> source(new SrsLiveSource());
+    SrsUniquePtr<SrsRtmpSource> source(new SrsRtmpSource());
     EXPECT_EQ(SrsRtmpJitterAlgorithmOFF, source->jitter());
 
     source->jitter_algorithm_ = SrsRtmpJitterAlgorithmZERO;
@@ -2125,7 +2125,7 @@ VOID TEST(LiveSourceEdgeTest, JitterIsOffByDefault)
 }
 
 // The GOP cache starts at the time of its first packet, or 0 when it is empty.
-VOID TEST(LiveSourceEdgeTest, GopCacheStartsAtFirstPacket)
+VOID TEST(RtmpSourceEdgeTest, GopCacheStartsAtFirstPacket)
 {
     SrsUniquePtr<SrsGopCache> cache(new SrsGopCache());
     EXPECT_EQ(0, cache->start_time());
@@ -2146,7 +2146,7 @@ extern bool srs_hls_can_continue(int ret, SrsMediaPacket *sh, SrsMediaPacket *ms
 
 // HLS goes on after a decode error only for a packet of the size of the sequence header, which
 // is taken as a copy of the sequence header.
-VOID TEST(LiveSourceEdgeTest, HlsContinuesOnlyForSequenceHeaderCopy)
+VOID TEST(RtmpSourceEdgeTest, HlsContinuesOnlyForSequenceHeaderCopy)
 {
     SrsMediaPacket sh;
     sh.wrap(new char[4], 4);

@@ -78,7 +78,7 @@ VOID TEST(BasicWorkflowRtmp2RtcTest, ManuallyVerifyTypicalScenario)
     SrsUniquePtr<MockAppFactoryForRtmp2Rtc> mock_factory(new MockAppFactoryForRtmp2Rtc());
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -110,7 +110,7 @@ VOID TEST(BasicWorkflowRtmp2RtcTest, ManuallyVerifyTypicalScenario)
     conn->app_factory_ = mock_factory.get();
     conn->config_ = mock_config.get();
     conn->manager_ = mock_manager.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->stat_ = mock_stat.get();
     conn->hooks_ = mock_hooks.get();
@@ -127,7 +127,7 @@ VOID TEST(BasicWorkflowRtmp2RtcTest, ManuallyVerifyTypicalScenario)
     conn->security_ = mock_security;
 
     // Start the RTMP connection.
-    MockLiveSource *mock_source = dynamic_cast<MockLiveSource *>(mock_sources->mock_source_.get());
+    MockRtmpSource *mock_source = dynamic_cast<MockRtmpSource *>(mock_sources->mock_source_.get());
     SrsRtmpBridge *bridge = NULL;
     SrsRtcRtpBuilder *builder = NULL;
     if (true) {

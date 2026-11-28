@@ -1480,30 +1480,30 @@ VOID TEST(ServerSrtClientTest, ManagesConnectionOfClient)
     server->conn_manager_ = NULL;
 }
 
-MockLiveSourceForPublishMessage::MockLiveSourceForPublishMessage()
+MockRtmpSourceForPublishMessage::MockRtmpSourceForPublishMessage()
 {
     on_aggregate_count_ = 0;
     on_meta_data_count_ = 0;
     on_edge_proxy_publish_count_ = 0;
 }
 
-MockLiveSourceForPublishMessage::~MockLiveSourceForPublishMessage()
+MockRtmpSourceForPublishMessage::~MockRtmpSourceForPublishMessage()
 {
 }
 
-srs_error_t MockLiveSourceForPublishMessage::on_aggregate(SrsRtmpCommonMessage *msg)
+srs_error_t MockRtmpSourceForPublishMessage::on_aggregate(SrsRtmpCommonMessage *msg)
 {
     on_aggregate_count_++;
     return srs_success;
 }
 
-srs_error_t MockLiveSourceForPublishMessage::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
+srs_error_t MockRtmpSourceForPublishMessage::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
 {
     on_meta_data_count_++;
     return srs_success;
 }
 
-srs_error_t MockLiveSourceForPublishMessage::on_edge_proxy_publish(SrsRtmpCommonMessage *msg)
+srs_error_t MockRtmpSourceForPublishMessage::on_edge_proxy_publish(SrsRtmpCommonMessage *msg)
 {
     on_edge_proxy_publish_count_++;
     return srs_success;
@@ -1622,8 +1622,8 @@ VOID TEST(RtmpConnPublishMessageTest, EdgeProxiesAndOriginFeedsSource)
     srs_freep(conn->rtmp_);
     conn->rtmp_ = rtmp;
 
-    MockLiveSourceForPublishMessage *mock = new MockLiveSourceForPublishMessage();
-    SrsSharedPtr<SrsLiveSource> source(mock);
+    MockRtmpSourceForPublishMessage *mock = new MockRtmpSourceForPublishMessage();
+    SrsSharedPtr<SrsRtmpSource> source(mock);
 
     // An edge proxies even a video, which the origin would feed to the source.
     if (true) {
@@ -1686,8 +1686,8 @@ VOID TEST(RtmpConnPlayControlTest, AnswersCallAndClosesOnCloseStream)
     srs_freep(conn->rtmp_);
     conn->rtmp_ = rtmp;
 
-    SrsSharedPtr<MockLiveSourceForQueue> source(new MockLiveSourceForQueue());
-    SrsUniquePtr<MockLiveConsumerForPlayControl> consumer(new MockLiveConsumerForPlayControl(source.get()));
+    SrsSharedPtr<MockRtmpSourceForQueue> source(new MockRtmpSourceForQueue());
+    SrsUniquePtr<MockRtmpConsumerForPlayControl> consumer(new MockRtmpConsumerForPlayControl(source.get()));
 
     if (true) {
         SrsCallPacket *call = new SrsCallPacket();
@@ -1777,7 +1777,7 @@ VOID TEST(RtmpConnClusterTest, RedirectsToCoworkerThatHasTheStream)
     req->app_ = "live";
     req->stream_ = "livestream";
 
-    SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
+    SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
     err = conn->redirect_to_origin_cluster(source);
     EXPECT_EQ(ERROR_CONTROL_REDIRECT, srs_error_code(err));
     srs_freep(err);
@@ -1809,7 +1809,7 @@ VOID TEST(RtmpConnClusterTest, FailsWhenNoCoworkerRedirects)
         conn->assemble();
         conn->hooks_ = &hooks;
 
-        SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
+        SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
         err = conn->redirect_to_origin_cluster(source);
         EXPECT_EQ(ERROR_HTTP_DVR_NO_TAEGET, srs_error_code(err));
         srs_freep(err);
@@ -1838,7 +1838,7 @@ VOID TEST(RtmpConnClusterTest, FailsWhenNoCoworkerRedirects)
         srs_freep(conn->rtmp_);
         conn->rtmp_ = rtmp;
 
-        SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
+        SrsSharedPtr<SrsRtmpSource> source(new MockRtmpSource());
         err = conn->redirect_to_origin_cluster(source);
         EXPECT_EQ(ERROR_OCLUSTER_REDIRECT, srs_error_code(err));
         srs_freep(err);

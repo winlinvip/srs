@@ -1548,7 +1548,7 @@ VOID TEST(HookRejectionTest, SrtRejectedViewerIsRefusedWithoutStatusChannel)
     conn->stat_ = NULL;
     conn->stream_publish_tokens_ = NULL;
     conn->srt_sources_ = NULL;
-    conn->live_sources_ = NULL;
+    conn->rtmp_sources_ = NULL;
     conn->rtc_sources_ = NULL;
 }
 
@@ -1844,13 +1844,13 @@ static srs_error_t mock_whep_play_with_hook(SrsStatistic *stat, MockRtcApiServer
     config.on_play_directive_->args_.push_back("http://127.0.0.1:8085/api/v1/sessions");
 
     MockRtcSourceManager rtc_sources;
-    MockLiveSourceManager live_sources;
+    MockRtmpSourceManager rtmp_sources;
 
     SrsUniquePtr<SrsGoApiRtcPlay> api(new SrsGoApiRtcPlay(server));
     api->config_ = &config;
     api->stat_ = stat;
     api->rtc_sources_ = &rtc_sources;
-    api->live_sources_ = &live_sources;
+    api->rtmp_sources_ = &rtmp_sources;
     api->hooks_ = hooks;
     srs_freep(api->security_);
     api->security_ = new MockSecurity();
@@ -1870,7 +1870,7 @@ static srs_error_t mock_whep_play_with_hook(SrsStatistic *stat, MockRtcApiServer
     api->config_ = NULL;
     api->stat_ = NULL;
     api->rtc_sources_ = NULL;
-    api->live_sources_ = NULL;
+    api->rtmp_sources_ = NULL;
     api->hooks_ = NULL;
     return err;
 }
@@ -2198,7 +2198,7 @@ VOID TEST(RtmpPublishFrameStatsTest, FirstFramesReportedAtOnce)
 
     SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatisticForFrames> mock_stat(new MockAppStatisticForFrames());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -2223,7 +2223,7 @@ VOID TEST(RtmpPublishFrameStatsTest, FirstFramesReportedAtOnce)
 
     conn->config_ = mock_config.get();
     conn->manager_ = mock_manager.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->stat_ = mock_stat.get();
     conn->hooks_ = mock_hooks.get();
@@ -2310,7 +2310,7 @@ VOID TEST(RtmpPublishFrameStatsTest, PauseAfterBurstKeepsPublisher)
 
     SrsUniquePtr<MockAppConfigForPublishTimeout> mock_config(new MockAppConfigForPublishTimeout());
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
-    SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
+    SrsUniquePtr<MockRtmpSourceManager> mock_sources(new MockRtmpSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
     SrsUniquePtr<MockAppStatisticForPublishTimeout> mock_stat(new MockAppStatisticForPublishTimeout());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
@@ -2335,7 +2335,7 @@ VOID TEST(RtmpPublishFrameStatsTest, PauseAfterBurstKeepsPublisher)
 
     conn->config_ = mock_config.get();
     conn->manager_ = mock_manager.get();
-    conn->live_sources_ = mock_sources.get();
+    conn->rtmp_sources_ = mock_sources.get();
     conn->stream_publish_tokens_ = mock_tokens.get();
     conn->stat_ = mock_stat.get();
     conn->hooks_ = mock_hooks.get();

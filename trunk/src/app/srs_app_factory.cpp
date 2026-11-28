@@ -80,9 +80,9 @@ SrsPath *SrsAppFactory::create_path()
     return new SrsPath();
 }
 
-SrsLiveSource *SrsAppFactory::create_live_source()
+SrsRtmpSource *SrsAppFactory::create_rtmp_source()
 {
-    SrsLiveSource *source = new SrsLiveSource();
+    SrsRtmpSource *source = new SrsRtmpSource();
     source->assemble();
     return source;
 }

@@ -186,7 +186,7 @@ void SrsRtmpBridge::on_unpublish()
     }
 #endif
 
-    // The RTMP live source frees this bridge right after on_unpublish(), so the components are not freed here.
+    // The RTMP source frees this bridge right after on_unpublish(), so the components are not freed here.
 }
 
 srs_error_t SrsRtmpBridge::on_frame(SrsMediaPacket *frame)
@@ -252,7 +252,7 @@ bool SrsSrtBridge::empty()
     return !rtmp_target_.get() && !rtc_target_.get();
 }
 
-void SrsSrtBridge::enable_srt2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_source)
+void SrsSrtBridge::enable_srt2rtmp(SrsSharedPtr<SrsRtmpSource> rtmp_source)
 {
     rtmp_target_ = rtmp_source;
 }
@@ -390,7 +390,7 @@ SrsRtcBridge::~SrsRtcBridge()
     app_factory_ = NULL;
 }
 
-void SrsRtcBridge::enable_rtc2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_target)
+void SrsRtcBridge::enable_rtc2rtmp(SrsSharedPtr<SrsRtmpSource> rtmp_target)
 {
     rtmp_target_ = rtmp_target;
 }

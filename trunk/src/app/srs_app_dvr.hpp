@@ -12,7 +12,7 @@
 #include <sstream>
 #include <string>
 
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsOriginHub;
 class ISrsRequest;
 class SrsBuffer;

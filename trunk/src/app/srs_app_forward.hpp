@@ -20,7 +20,7 @@ class SrsMessageQueue;
 class SrsRtmpJitter;
 class SrsRtmpClient;
 class ISrsRequest;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsOriginHub;
 class ISrsOriginHub;
 class SrsKbps;

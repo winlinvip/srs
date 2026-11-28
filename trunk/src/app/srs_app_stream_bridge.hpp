@@ -14,7 +14,7 @@
 
 class ISrsRequest;
 class SrsMediaPacket;
-class SrsLiveSource;
+class SrsRtmpSource;
 class SrsRtcSource;
 class SrsRtmpFormat;
 class SrsMetaCache;
@@ -130,7 +130,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     SrsSrtFrameBuilder *frame_builder_;
-    SrsSharedPtr<SrsLiveSource> rtmp_target_;
+    SrsSharedPtr<SrsRtmpSource> rtmp_target_;
 #ifdef SRS_FFMPEG_FIT
     SrsRtcRtpBuilder *rtp_builder_;
 #endif
@@ -143,7 +143,7 @@ public:
 
 public:
     bool empty();
-    void enable_srt2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_source);
+    void enable_srt2rtmp(SrsSharedPtr<SrsRtmpSource> rtmp_source);
     void enable_srt2rtc(SrsSharedPtr<SrsRtcSource> rtc_source);
 
 public:
@@ -179,7 +179,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 #ifdef SRS_FFMPEG_FIT
     SrsRtcFrameBuilder *frame_builder_;
 #endif
-    SrsSharedPtr<SrsLiveSource> rtmp_target_;
+    SrsSharedPtr<SrsRtmpSource> rtmp_target_;
 
 public:
     SrsRtcBridge(ISrsAppFactory *factory);
@@ -187,7 +187,7 @@ public:
 
 public:
     bool empty();
-    void enable_rtc2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_target);
+    void enable_rtc2rtmp(SrsSharedPtr<SrsRtmpSource> rtmp_target);
 
 public:
     virtual srs_error_t initialize(ISrsRequest *r);

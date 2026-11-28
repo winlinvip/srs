@@ -739,7 +739,9 @@ void SrsRtcSource::on_unpublish()
             shared_timer_->timer100ms()->unsubscribe(this);
         }
 
-        rtc_bridge_->on_unpublish();
+        if (is_delivering_packets_) {
+            rtc_bridge_->on_unpublish();
+        }
         srs_freep(rtc_bridge_);
     }
 

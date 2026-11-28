@@ -587,7 +587,8 @@ public:
     }
 
 public:
-    srs_error_t publish()
+    // The SDP is done: the publish stream claims the sources, and waits for DTLS to start.
+    srs_error_t create()
     {
         srs_error_t err = srs_success;
 
@@ -617,7 +618,24 @@ public:
             return srs_error_wrap(err, "initialize");
         }
 
+        return err;
+    }
+    // The SDP and DTLS are done: the publish stream starts and publishes.
+    srs_error_t publish()
+    {
+        srs_error_t err = srs_success;
+
+        if ((err = create()) != srs_success) {
+            return srs_error_wrap(err, "create");
+        }
+
         return publisher_->start();
+    }
+    // The session is freed with no stop, as when its DTLS fails or times out, or its connection is disposed.
+    void drop()
+    {
+        srs_freep(publisher_);
+        srs_freep(exec_.last_task_);
     }
     void unpublish()
     {
@@ -661,6 +679,39 @@ VOID TEST(StreamBridgesTest, WhipPublisherFeedsNoRtmpWithoutRtcToRtmp)
 
     s.unpublish();
     EXPECT_FALSE(s.rtc_claimed());
+}
+
+// With rtc_to_rtmp, a WHIP publisher whose DTLS never completes claims the WebRTC source and never feeds the RTMP
+// source; freeing its session frees the WebRTC source, the RTMP source was never claimed, and the next WHIP publisher
+// publishes and feeds the RTMP source.
+VOID TEST(StreamBridgesTest, WhipPublisherDroppedBeforeDtls)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestStream stream;
+    stream.config_.rtc_to_rtmp_ = true;
+
+    if (true) {
+        StreamBridgesUtestWhipPublisher s(&stream);
+        HELPER_EXPECT_SUCCESS(s.create());
+        EXPECT_TRUE(stream.rtc_claimed());
+        EXPECT_FALSE(stream.rtmp_claimed());
+
+        s.drop();
+        EXPECT_FALSE(stream.rtc_claimed());
+        EXPECT_FALSE(stream.rtmp_claimed());
+    }
+
+    if (true) {
+        StreamBridgesUtestWhipPublisher s(&stream);
+        HELPER_EXPECT_SUCCESS(s.publish());
+        EXPECT_TRUE(stream.rtc_claimed());
+        EXPECT_TRUE(stream.rtmp_claimed());
+
+        s.unpublish();
+        EXPECT_FALSE(stream.rtc_claimed());
+        EXPECT_FALSE(stream.rtmp_claimed());
+    }
 }
 
 // On an edge vhost, a WHIP publisher feeds nothing, even with rtc_to_rtmp.

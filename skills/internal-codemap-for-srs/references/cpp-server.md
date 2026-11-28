@@ -107,14 +107,15 @@ Server core:
 
 RTMP:
 - `app_rtmp_conn` — RTMP client connection lifecycle (publish, play)
-- `app_rtmp_source` — RTMP live source: manages consumers, GOP cache, hub
+- `app_rtmp_source` — RTMP source (`SrsRtmpSource`): RTMP consumers, GOP and metadata cache, origin hub, edge; installs its outgoing bridges on publish and feeds the HTTP source
 
 HTTP:
 - `app_http_api` — HTTP API endpoints (/api/v1/...)
 - `app_http_conn` — HTTP connection handler (routes to static/stream/api)
 - `app_http_hooks` — HTTP callback hooks (on_connect, on_publish, etc.)
 - `app_http_static` — HTTP static file serving
-- `app_http_stream` — HTTP live streaming (FLV, TS, AAC, MP3 over HTTP)
+- `app_http_source` — HTTP source (`SrsHttpSource`, `SrsHttpConsumer`, `SrsHttpSourceManager`): the players of HTTP-FLV, TS, AAC and MP3, with their own GOP and metadata cache; mounts the HTTP stream while it publishes
+- `app_http_stream` — HTTP live streaming (FLV, TS, AAC, MP3 over HTTP): the mount table, the per-player muxers, and the AAC/MP3 fast cache, all reading the HTTP source
 - `app_http_client` — HTTP client utilities
 
 WebRTC:
@@ -150,7 +151,7 @@ DVR:
 Edge/Forward/Bridge:
 - `app_edge` — Edge mode: pull/push from origin
 - `app_forward` — Forward: push stream to another RTMP server; restarts from live at a keyframe after each connect or queue overflow, and reports its state to `app_statistic`
-- `app_stream_bridge` — Bridge between sources (RTMP↔RTC↔SRT)
+- `app_stream_bridge` — Bridges between sources (RTMP↔RTC↔SRT, RTMP→RTSP) and the bridge table `SrsBridgeRow`
 
 Ingest/Transcode:
 - `app_ingest` — Ingest: pull external streams through an external FFmpeg-compatible binary
@@ -171,6 +172,24 @@ Utilities:
 - `app_mpegts_udp` — MPEG-TS over UDP ingest
 - `app_stream_token` — Stream publish token management
 - `app_circuit_breaker` — Circuit breaker for overload protection
+
+**Sources and bridges**
+
+A stream has one source per protocol, where that protocol's players read and its publishers write. Bridges convert between the sources; there is no per-stream owner object, and a player may create a source before any publisher.
+
+- **Sources** — `SrsRtmpSource` (`app_rtmp_source`), `SrsHttpSource` (`app_http_source`), `SrsRtcSource` (`app_rtc_source`), `SrsSrtSource` (`app_srt_source`), `SrsRtspSource` (`app_rtsp_source`). Each has a manager, such as `_srs_rtmp_sources` and `_srs_http_sources`.
+- **Consumers** — one per player. `SrsRtmpConsumer` and `SrsHttpConsumer` share `SrsMediaConsumer`, the queue and timestamp jitter, and the caches dump into `ISrsMediaConsumer`. WebRTC, SRT and RTSP have their own consumers.
+- **Bridge table** — `SrsBridgeRow` in `app_stream_bridge`. For a publisher's protocol (`SrsStreamProtocol`) and the vhost's switches and edge flag, it says:
+  - which other sources the publisher claims (`claim_rtmp_`, `claim_rtc_`, `claim_srt_`), so a second publisher of another protocol is busy;
+  - which bridges run, named by edge: `rtmp_to_rtc_`, `rtmp_to_rtsp_`, `srt_to_rtmp_`, `srt_to_rtc_`, `rtc_to_rtmp_`, `rtmp_to_http_`.
+- **Claim** — the RTMP, SRT and WebRTC publish paths (`SrsRtmpConn::acquire_publish`, `SrsMpegtsSrtConn::acquire_publish`, `SrsRtcPublishStream::initialize`) check their own source and call `SrsBridgeRow::claim()`, which fetches every source before checking any.
+- **Outgoing bridges of the RTMP source** — installed by the RTMP source itself in `do_publish()` from the row of its feeder: `on_publish()` for an RTMP publisher or edge ingest, `on_publish_by(protocol)` for the SRT and WebRTC bridges. `SrsRtmpBridge` builds RTP for WebRTC and RTSP only for an RTMP publisher, so nothing loops back to the publisher's protocol.
+- **Incoming bridges** — `SrsSrtBridge`, set on the SRT source by the SRT connection, feeds the RTMP source (`srt_to_rtmp`) and WebRTC directly (`rtc.rtmp_to_rtc`). `SrsRtcBridge`, set on the WebRTC source by the WebRTC publisher, feeds the RTMP source (`rtc_to_rtmp`).
+- **HTTP source** — fed by the RTMP source through `http_target_` (the `rtmp_to_http_` edge, on wherever `http_remux` is on, edge included), with the RTMP source's sequence-header and drop decisions, so it does not parse again. It mounts and unmounts the HTTP stream through `ISrsHttpSourceHandler` (`SrsServer`).
+- **HTTP players and the RTMP source** — an HTTP player still counts as a player of the RTMP source by `SrsRtmpSource::on_http_play()` and `on_http_stop()`, so a publisher watched only over HTTP is not idle, and on an edge the first HTTP player starts the pull and the last one stops it.
+- **Edge** — an edge vhost runs no conversion bridge, only `rtmp_to_http_`.
+- **Origin hub** — HLS, DVR, DASH, forward and transcode hang on the RTMP source (`SrsOriginHub`), so they see any publisher that reaches RTMP.
+- **Tests** — `StreamBridgesTest` (`srs_utest_ai53`) covers the table and the claims; `HttpSourceTest` (`srs_utest_ai54`) covers the HTTP source.
 
 **File naming convention:** All C++ source files use `srs_{module}_{topic}.cpp/.hpp` — e.g. `srs_app_rtmp_conn.cpp`, `srs_protocol_amf0.hpp`, `srs_kernel_flv.cpp`.
 

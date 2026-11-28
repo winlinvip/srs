@@ -56,6 +56,39 @@ void MockHttpSourceHandler::http_unmount(ISrsRequest *r)
     nb_unmounts_++;
 }
 
+MockEdgePullForHttpPlayers::MockEdgePullForHttpPlayers()
+{
+    nb_starts_ = 0;
+    nb_stops_ = 0;
+}
+
+MockEdgePullForHttpPlayers::~MockEdgePullForHttpPlayers()
+{
+}
+
+srs_error_t MockEdgePullForHttpPlayers::initialize(SrsSharedPtr<SrsRtmpSource> s, ISrsPlayEdge *e, ISrsRequest *r)
+{
+    return srs_success;
+}
+
+srs_error_t MockEdgePullForHttpPlayers::start()
+{
+    nb_starts_++;
+    return srs_success;
+}
+
+void MockEdgePullForHttpPlayers::stop()
+{
+    nb_stops_++;
+}
+
+void mock_edge_pull_for_http_players(SrsRtmpSource *source, MockEdgePullForHttpPlayers *pull)
+{
+    SrsPlayEdge *edge = source->play_edge_;
+    srs_freep(edge->ingester_);
+    edge->ingester_ = pull;
+}
+
 // The media of an encoder as FLV tags: H.264 and AAC.
 static const uint8_t hsource_avc_sh[] = {
     0x17, 0x00, 0x00, 0x00, 0x00, 0x01, 0x64, 0x00, 0x20, 0xff, 0xe1, 0x00, 0x19, 0x67, 0x64, 0x00, 0x20, 0xac,
@@ -386,4 +419,100 @@ VOID TEST(HttpSourceTest, IdleHttpSourceCleanedUp)
     s.http_source_->stream_die_at_ = 0;
     HELPER_EXPECT_SUCCESS(s.http_.notify(0, 0, 0));
     EXPECT_TRUE(s.http_.fetch(&s.req_).get() == NULL);
+}
+
+// On an edge, the stream is pulled from the origin only while someone plays it. The first HTTP player starts the pull,
+// a second one joins it, and the pull stops when the last one leaves; the next player starts it again.
+VOID TEST(HttpSourceTest, EdgePullFollowsHttpPlayers)
+{
+    srs_error_t err;
+
+    HttpSourceUtestStream s;
+    s.config_.edge_ = true;
+    HELPER_EXPECT_SUCCESS(s.initialize());
+
+    MockEdgePullForHttpPlayers *pull = new MockEdgePullForHttpPlayers();
+    mock_edge_pull_for_http_players(s.rtmp_source_.get(), pull);
+
+    HELPER_EXPECT_SUCCESS(s.rtmp_source_->on_http_play());
+    EXPECT_EQ(1, pull->nb_starts_);
+    EXPECT_EQ(0, pull->nb_stops_);
+
+    HELPER_EXPECT_SUCCESS(s.rtmp_source_->on_http_play());
+    EXPECT_EQ(1, pull->nb_starts_);
+
+    s.rtmp_source_->on_http_stop();
+    EXPECT_EQ(0, pull->nb_stops_);
+
+    s.rtmp_source_->on_http_stop();
+    EXPECT_EQ(1, pull->nb_stops_);
+    EXPECT_FALSE(s.rtmp_source_->has_players());
+
+    HELPER_EXPECT_SUCCESS(s.rtmp_source_->on_http_play());
+    EXPECT_EQ(2, pull->nb_starts_);
+    s.rtmp_source_->on_http_stop();
+    EXPECT_EQ(2, pull->nb_stops_);
+}
+
+// RTMP and HTTP players of an edge stream share one pull: whichever comes first starts it, and it stops only when the
+// last player leaves, whichever protocol that one plays.
+VOID TEST(HttpSourceTest, EdgePullSharedByRtmpAndHttpPlayers)
+{
+    srs_error_t err;
+
+    HttpSourceUtestStream s;
+    s.config_.edge_ = true;
+    HELPER_EXPECT_SUCCESS(s.initialize());
+
+    MockEdgePullForHttpPlayers *pull = new MockEdgePullForHttpPlayers();
+    mock_edge_pull_for_http_players(s.rtmp_source_.get(), pull);
+
+    // An HTTP player first, then an RTMP player; the HTTP player leaves first.
+    if (true) {
+        HELPER_EXPECT_SUCCESS(s.rtmp_source_->on_http_play());
+        EXPECT_EQ(1, pull->nb_starts_);
+
+        SrsRtmpConsumer *consumer_raw = NULL;
+        HELPER_EXPECT_SUCCESS(s.rtmp_source_->create_consumer(consumer_raw));
+        SrsUniquePtr<SrsRtmpConsumer> consumer(consumer_raw);
+        EXPECT_EQ(1, pull->nb_starts_);
+
+        s.rtmp_source_->on_http_stop();
+        EXPECT_EQ(0, pull->nb_stops_);
+    }
+    EXPECT_EQ(1, pull->nb_stops_);
+
+    // An RTMP player first, then an HTTP player; the RTMP player leaves first.
+    if (true) {
+        SrsRtmpConsumer *consumer_raw = NULL;
+        HELPER_EXPECT_SUCCESS(s.rtmp_source_->create_consumer(consumer_raw));
+        EXPECT_EQ(2, pull->nb_starts_);
+
+        HELPER_EXPECT_SUCCESS(s.rtmp_source_->on_http_play());
+        EXPECT_EQ(2, pull->nb_starts_);
+
+        srs_freep(consumer_raw);
+        EXPECT_EQ(1, pull->nb_stops_);
+
+        s.rtmp_source_->on_http_stop();
+        EXPECT_EQ(2, pull->nb_stops_);
+    }
+    EXPECT_FALSE(s.rtmp_source_->has_players());
+}
+
+// An origin has no pull: its HTTP players never start one.
+VOID TEST(HttpSourceTest, OriginHttpPlayersPullNothing)
+{
+    srs_error_t err;
+
+    HttpSourceUtestStream s;
+    HELPER_EXPECT_SUCCESS(s.initialize());
+
+    MockEdgePullForHttpPlayers *pull = new MockEdgePullForHttpPlayers();
+    mock_edge_pull_for_http_players(s.rtmp_source_.get(), pull);
+
+    HELPER_EXPECT_SUCCESS(s.rtmp_source_->on_http_play());
+    s.rtmp_source_->on_http_stop();
+    EXPECT_EQ(0, pull->nb_starts_);
+    EXPECT_EQ(0, pull->nb_stops_);
 }

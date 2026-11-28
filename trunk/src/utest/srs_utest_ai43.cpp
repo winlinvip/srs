@@ -46,6 +46,7 @@
 #include <srs_utest_ai19.hpp>
 #include <srs_utest_ai23.hpp>
 #include <srs_utest_ai34.hpp>
+#include <srs_utest_ai54.hpp>
 #include <srs_utest_ai36.hpp>
 #include <srs_utest_ai40.hpp>
 #include <srs_utest_ai42.hpp>
@@ -4892,6 +4893,59 @@ VOID TEST(AppHttpStreamTest, EdgePlayerWhileEdgeStopsPull_Refused)
     // The player's request mounted the stream, as an edge mounts on demand.
     EXPECT_TRUE(server.mounted(server.req_.get_stream_url()) != NULL);
     source->play_edge_->state_ = SrsEdgeStateInit;
+    server.unmount(&server.req_);
+}
+
+// The socket of an HTTP player of an edge, which notes, each time it waits for the stream, how often the edge has
+// started and stopped its pull from the origin.
+class HttpStreamUtestEdgePlayerSocket : public HttpStreamUtestPlayerSocket
+{
+public:
+    MockEdgePullForHttpPlayers *pull_;
+    int nb_starts_while_playing_;
+    int nb_stops_while_playing_;
+
+public:
+    HttpStreamUtestEdgePlayerSocket(HttpStreamUtestServer *server, MockEdgePullForHttpPlayers *pull)
+        : HttpStreamUtestPlayerSocket(server)
+    {
+        pull_ = pull;
+        nb_starts_while_playing_ = -1;
+        nb_stops_while_playing_ = -1;
+    }
+    virtual bool on_wait(int n)
+    {
+        nb_starts_while_playing_ = pull_->nb_starts_;
+        nb_stops_while_playing_ = pull_->nb_stops_;
+        return n < 1;
+    }
+};
+
+// An HTTP-FLV player of an edge stream nobody plays yet: its request mounts the stream and the edge starts to pull it
+// from the origin while the player waits for it; when the player leaves, as the last player, the edge stops the pull.
+VOID TEST(AppHttpStreamTest, EdgeHttpPlayerStartsAndStopsPull)
+{
+    srs_error_t err;
+
+    HttpStreamUtestServer server;
+    HELPER_ASSERT_SUCCESS(server.start("vhost __defaultVhost__ { cluster { mode remote; origin 127.0.0.1:19350; } "
+                                       "http_remux { enabled on; mount [vhost]/[app]/[stream].flv; } } "));
+
+    SrsSharedPtr<SrsRtmpSource> source = server.source();
+    MockEdgePullForHttpPlayers *pull = new MockEdgePullForHttpPlayers();
+    mock_edge_pull_for_http_players(source.get(), pull);
+
+    HttpStreamUtestEdgePlayerSocket *io = new HttpStreamUtestEdgePlayerSocket(&server, pull);
+    if (true) {
+        HttpStreamUtestPlayer player(&server, "/live/livestream.flv", io);
+        player.play();
+        EXPECT_EQ(1, io->nb_starts_while_playing_);
+        EXPECT_EQ(0, io->nb_stops_while_playing_);
+    }
+    EXPECT_EQ(1, pull->nb_starts_);
+    EXPECT_EQ(1, pull->nb_stops_);
+    EXPECT_FALSE(source->has_players());
+
     server.unmount(&server.req_);
 }
 

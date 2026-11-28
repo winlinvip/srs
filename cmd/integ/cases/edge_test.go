@@ -74,6 +74,22 @@ func TestEdge_Rtmp(t *testing.T) {
 		checkPlayed(c, &a.Report, "h264", "aac")
 	})
 
+	// HttpFlvPlayBeforePublish is PlayBeforePublish with an HTTP-FLV player
+	// of the edge: it starts the edge's pull as an RTMP player does. The
+	// edge guesses the player's FLV header from the first messages
+	// (GuessFromFirstMessages), so only the video is checked.
+	check.Case(t, "HttpFlvPlayBeforePublish", check.Normal, func(c *check.C) {
+		stream := streamName(c)
+		p := httpFlvPlayer(c, edge, "live/"+stream+".flv", nil)
+		waitHook(c, origin, "on_play", stream)
+		startPublisher(c, rtmpURL(origin, "live/"+stream), media.Path(c, media.H264HighAAC), 0)
+
+		var a flv.Analyzer
+		c.Must(readUntil(p, &a, report.Until{VideoHeader: true, Keyframes: 1, VideoFrames: 5}, 2*time.Second), "play")
+		checkVideo(c, &a.Report, "h264")
+		c.CheckEqual(a.Report.Video.LeadingFrames, 0, "video frames before the first keyframe")
+	})
+
 	edgePushCases(t, origin, edge)
 }
 
@@ -147,6 +163,18 @@ func edgePullCases(t *testing.T, origin, edge *server.Server) {
 		var a flv.Analyzer
 		c.Must(readUntil(player, &a, playedUntil, 2*time.Second), "play")
 		player.Close()
+		waitHook(c, origin, "on_stop", stream)
+	})
+
+	// HttpFlvLastPlayerStopsPull is LastPlayerStopsPull with an HTTP-FLV
+	// player of the edge.
+	check.Case(t, "HttpFlvLastPlayerStopsPull", check.Normal, func(c *check.C) {
+		stream := streamName(c)
+		publishRTMP(c, origin, stream, media.H264HighAAC)
+		p := httpFlvPlayer(c, edge, "live/"+stream+".flv", nil)
+		var a flv.Analyzer
+		c.Must(readUntil(p, &a, playedUntil, 2*time.Second), "play")
+		p.Close()
 		waitHook(c, origin, "on_stop", stream)
 	})
 }

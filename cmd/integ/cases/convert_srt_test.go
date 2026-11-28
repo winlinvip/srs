@@ -75,6 +75,33 @@ func srtCells(t *testing.T, srsOf func(c *check.C) *server.Server, p convertPlay
 	}
 }
 
+// srtJoinCell adds the case of a player p that joins live/name by join before
+// the SRT publisher of H.264 and AAC comes: it gets the stream from its first
+// keyframe, as the player of an RTMP stream does (PlayBeforePublish). With
+// guessed, the player's FLV header has the tracks of the first messages
+// (GuessFromFirstMessages), so only its video is checked: whether the audio
+// plays depends on which track SRS converts first.
+func srtJoinCell(t *testing.T, srsOf func(c *check.C) *server.Server, p convertPlayer, guessed bool,
+	join func(c *check.C, srs *server.Server, name string) func(u report.Until) *report.Report) {
+	codec := srtCodecs[0]
+	check.Case(t, srtSource.name+"To"+p.name+"_PlayBeforePublish", check.Normal, func(c *check.C) {
+		srs := srsOf(c)
+		name := streamName(c)
+		read := join(c, srs, name)
+		srtRealTime(c, srs, "live/"+name, codec.file, 0)
+		w := p.want(codec)
+		if !guessed {
+			checkConverted(c, read(convertUntil(w)), w, p.gap, max(p.sync, srtSync))
+			return
+		}
+		r := read(report.Until{VideoHeader: true, Keyframes: 1, VideoFrames: 5})
+		if c.Check(r.Video != nil, "no video: %v", r) {
+			checkVideo(c, r, w.video)
+			c.CheckEqual(r.Video.LeadingFrames, 0, "video frames before the first keyframe")
+		}
+	})
+}
+
 // srtRealTime publishes a TS file over SRT to a stream path, such as live/s,
 // in real time until the case ends, lead of it at once. A WebRTC player that
 // joined before needs no lead.
@@ -136,6 +163,7 @@ func srtCommonCells(t *testing.T) {
 	for _, p := range []convertPlayer{rtmpPlayer, httpFlvConvert, hlsTsPlayer, dashPlayer, srtConvertPlayer} {
 		srtCells(t, common, p)
 	}
+	srtJoinCell(t, common, httpFlvConvert, true, joinHTTPFlv)
 
 	// SRS bridges an SRT stream to RTMP and WebRTC, not to RTSP: DESCRIBE is
 	// 404 while an RTMP player plays the stream.

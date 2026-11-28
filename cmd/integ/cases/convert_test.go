@@ -489,6 +489,7 @@ func TestConvert_TsMount(t *testing.T) {
 	convertCells(t, srsOf, whepPlayer)
 	whipCells(t, srsOf, whipTsPlayer)
 	srtCells(t, srsOf, ts)
+	srtJoinCell(t, srsOf, ts, false, joinRemux("ts"))
 	srtCells(t, srsOf, whepPlayer)
 	gbCells(t, srsOf, ts)
 	gbCells(t, srsOf, whepPlayer)
@@ -534,6 +535,7 @@ func TestConvert_AacMount(t *testing.T) {
 	convertCells(t, srsOf, aac)
 	whipCells(t, srsOf, whipAacPlayer)
 	srtCells(t, srsOf, aac)
+	srtJoinCell(t, srsOf, aac, false, joinRemux("aac"))
 	gbCells(t, srsOf, aac)
 }
 

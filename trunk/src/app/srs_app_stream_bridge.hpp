@@ -9,13 +9,20 @@
 
 #include <srs_core.hpp>
 
+#include <string>
+
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_codec.hpp>
 
 class ISrsRequest;
+class ISrsAppConfig;
+class ISrsRtmpSourceManager;
+class ISrsRtcSourceManager;
+class ISrsSrtSourceManager;
 class SrsMediaPacket;
 class SrsRtmpSource;
 class SrsRtcSource;
+class SrsSrtSource;
 class SrsRtmpFormat;
 class SrsMetaCache;
 class SrsRtpPacket;
@@ -29,6 +36,40 @@ class ISrsStreamBridge;
 class SrsSrtFrameBuilder;
 class SrsSrtPacket;
 class ISrsAppFactory;
+
+enum SrsStreamProtocol {
+    SrsStreamProtocolRtmp = 0,
+    SrsStreamProtocolSrt,
+    SrsStreamProtocolRtc,
+};
+
+// The row of the bridge table for a publisher of one protocol, by the switches of its vhost: the sources it claims,
+// which refuse a publisher of another protocol while it publishes, and the bridges between the sources its stream
+// goes through. No bridge feeds the publisher's own protocol, and an edge vhost has none.
+class SrsBridgeRow
+{
+public:
+    bool claim_rtmp_;
+    bool claim_rtc_;
+    bool claim_srt_;
+    bool rtmp_to_rtc_;
+    bool rtmp_to_rtsp_;
+    bool srt_to_rtmp_;
+    bool srt_to_rtc_;
+    bool rtc_to_rtmp_;
+    SrsSharedPtr<SrsRtmpSource> rtmp_source_;
+    SrsSharedPtr<SrsRtcSource> rtc_source_;
+    SrsSharedPtr<SrsSrtSource> srt_source_;
+
+public:
+    SrsBridgeRow();
+    virtual ~SrsBridgeRow();
+
+public:
+    void initialize(ISrsAppConfig *config, SrsStreamProtocol publisher, std::string vhost);
+    // Every source is fetched or created before any is checked, so no coroutine switch splits the checks.
+    srs_error_t claim(ISrsRequest *r, ISrsRtmpSourceManager *rtmp_sources, ISrsRtcSourceManager *rtc_sources, ISrsSrtSourceManager *srt_sources);
+};
 
 class ISrsFrameTarget
 {

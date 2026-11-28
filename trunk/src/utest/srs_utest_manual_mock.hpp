@@ -891,6 +891,7 @@ public:
     virtual bool can_publish(bool is_edge);
     void set_can_publish(bool can_publish);
     virtual srs_error_t on_publish();
+    virtual srs_error_t on_publish_by(SrsStreamProtocol publisher);
     virtual srs_error_t on_edge_start_publish();
     virtual srs_error_t consumer_dumps(ISrsRtmpConsumer *consumer, bool ds, bool dm, bool dg);
 

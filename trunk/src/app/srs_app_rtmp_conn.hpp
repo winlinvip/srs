@@ -48,7 +48,6 @@ class ISrsHttpHooks;
 class ISrsAppFactory;
 class ISrsRtcSourceManager;
 class ISrsSrtSourceManager;
-class ISrsRtspSourceManager;
 class ISrsRtmpServer;
 class ISrsRtmpTransport;
 class ISrsSecurity;
@@ -163,9 +162,6 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsHttpHooks *hooks_;
     ISrsRtcSourceManager *rtc_sources_;
     ISrsSrtSourceManager *srt_sources_;
-#ifdef SRS_RTSP
-    ISrsRtspSourceManager *rtsp_sources_;
-#endif
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on

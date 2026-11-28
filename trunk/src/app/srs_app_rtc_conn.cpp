@@ -1470,54 +1470,23 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     }
     source_->set_publish_stream(this);
 
-    // TODO: FIXME: Check it in SrsRtcConnection::add_publisher?
-    SrsSharedPtr<SrsRtmpSource> rtmp_source;
-    if ((err = rtmp_sources_->fetch_or_create(r, rtmp_source)) != srs_success) {
-        return srs_error_wrap(err, "create rtmp source");
+    SrsBridgeRow row;
+    row.initialize(config_, SrsStreamProtocolRtc, req_->vhost_);
+    if ((err = row.claim(req_, rtmp_sources_, rtc_sources_, srt_sources_)) != srs_success) {
+        return srs_error_wrap(err, "claim");
     }
-    if (!rtmp_source->can_publish(false)) {
-        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp stream %s busy", r->get_stream_url().c_str());
-    }
-
-    bool srt_server_enabled = config_->get_srt_enabled();
-    bool srt_enabled = config_->get_srt_enabled(r->vhost_);
-    if (srt_server_enabled && srt_enabled) {
-        SrsSharedPtr<SrsSrtSource> srt;
-        if ((err = srt_sources_->fetch_or_create(r, srt)) != srs_success) {
-            return srs_error_wrap(err, "create source");
-        }
-
-        if (!srt->can_publish()) {
-            return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "srt stream %s busy", r->get_stream_url().c_str());
-        }
-    }
-
-    SrsRtcBridge *bridge = new SrsRtcBridge(app_factory_);
 
     // TODO: Support bridge to RTSP.
-    bool rtc_to_rtmp = config_->get_rtc_to_rtmp(req_->vhost_);
-    bool edge = config_->get_vhost_is_edge(req_->vhost_);
-
-    if (rtc_to_rtmp && edge) {
-        rtc_to_rtmp = false;
-        srs_warn("disable WebRTC to RTMP for edge vhost=%s", req_->vhost_.c_str());
-    }
-
-    if (rtc_to_rtmp) {
+    if (row.rtc_to_rtmp_) {
         // No GOP cache for RTC to RTMP, to keep the streams in sync, especially for stream merging.
-        rtmp_source->set_cache(false);
+        row.rtmp_source_->set_cache(false);
 
-        bridge->enable_rtc2rtmp(rtmp_source);
+        SrsRtcBridge *bridge = new SrsRtcBridge(app_factory_);
+        bridge->enable_rtc2rtmp(row.rtmp_source_);
+        source_->set_bridge(bridge);
+    } else {
+        source_->set_bridge(NULL);
     }
-
-    if (bridge->empty()) {
-        srs_freep(bridge);
-    } else if ((err = bridge->initialize(r)) != srs_success) {
-        srs_freep(bridge);
-        return srs_error_wrap(err, "create bridge");
-    }
-
-    source_->set_bridge(bridge);
 
     return err;
 }

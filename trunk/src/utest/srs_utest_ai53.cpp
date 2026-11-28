@@ -54,6 +54,11 @@ bool MockAppConfigForStreamBridges::get_rtsp_from_rtmp(std::string vhost)
 
 MockRtmpSourcesForStreamBridges::MockRtmpSourcesForStreamBridges()
 {
+    config_ = NULL;
+    rtc_sources_ = NULL;
+#ifdef SRS_RTSP
+    rtsp_sources_ = NULL;
+#endif
 }
 
 MockRtmpSourcesForStreamBridges::~MockRtmpSourcesForStreamBridges()
@@ -67,6 +72,11 @@ srs_error_t MockRtmpSourcesForStreamBridges::fetch_or_create(ISrsRequest *r, Srs
     if (!source_.get()) {
         SrsRtmpSource *source = new SrsRtmpSource();
         source->handler_ = &handler_;
+        source->config_ = config_;
+        source->rtc_sources_ = rtc_sources_;
+#ifdef SRS_RTSP
+        source->rtsp_sources_ = rtsp_sources_;
+#endif
         SrsSharedPtr<SrsRtmpSource> wrapper(source);
         source->assemble();
         if ((err = source->initialize(wrapper, r)) != srs_success) {
@@ -214,6 +224,16 @@ public:
 #endif
 
 public:
+    StreamBridgesUtestStream()
+    {
+        rtmp_.config_ = &config_;
+        rtmp_.rtc_sources_ = &rtc_;
+#ifdef SRS_RTSP
+        rtmp_.rtsp_sources_ = &rtsp_;
+#endif
+    }
+
+public:
     // Whether the RTMP source refuses another publisher, on an origin or on an edge.
     bool rtmp_claimed()
     {
@@ -237,16 +257,24 @@ public:
     }
 };
 
-// An RTMP encoder publishing live/livestream to the stream, through its connection.
+// An RTMP encoder publishing live/livestream to the stream, through its connection. Its stream is its own, or the
+// stream of another publisher.
 class StreamBridgesUtestRtmpPublisher : public StreamBridgesUtestStream
 {
 public:
+    StreamBridgesUtestStream *stream_;
     SrsRtmpConn *conn_;
     SrsSharedPtr<SrsRtmpSource> source_;
 
 public:
     StreamBridgesUtestRtmpPublisher()
     {
+        stream_ = this;
+        conn_ = NULL;
+    }
+    StreamBridgesUtestRtmpPublisher(StreamBridgesUtestStream *stream)
+    {
+        stream_ = stream;
         conn_ = NULL;
     }
     virtual ~StreamBridgesUtestRtmpPublisher()
@@ -261,23 +289,21 @@ public:
         srs_error_t err = srs_success;
 
         conn_ = new SrsRtmpConn(new MockRtmpTransportForDoCycle(), "192.168.1.100", 1935);
-        conn_->config_ = &config_;
+        conn_->config_ = &stream_->config_;
         conn_->assemble();
-        conn_->rtc_sources_ = &rtc_;
-        conn_->srt_sources_ = &srt_;
-#ifdef SRS_RTSP
-        conn_->rtsp_sources_ = &rtsp_;
-#endif
+        conn_->rtmp_sources_ = &stream_->rtmp_;
+        conn_->rtc_sources_ = &stream_->rtc_;
+        conn_->srt_sources_ = &stream_->srt_;
         conn_->info_->req_->vhost_ = "__defaultVhost__";
         conn_->info_->req_->app_ = "live";
         conn_->info_->req_->stream_ = "livestream";
-        conn_->info_->edge_ = config_.edge_;
+        conn_->info_->edge_ = stream_->config_.edge_;
 
-        if ((err = rtmp_.fetch_or_create(conn_->info_->req_, source_)) != srs_success) {
+        if ((err = stream_->rtmp_.fetch_or_create(conn_->info_->req_, source_)) != srs_success) {
             return srs_error_wrap(err, "rtmp source");
         }
 
-        if (config_.edge_) {
+        if (stream_->config_.edge_) {
             srs_freep(source_->publish_edge_->forwarder_);
             source_->publish_edge_->forwarder_ = new MockEdgeForwarderForRtmpSource();
         }
@@ -378,15 +404,23 @@ VOID TEST(StreamBridgesTest, RtmpPublisherOnEdgeFeedsNothing)
     EXPECT_FALSE(s.rtmp_claimed());
 }
 
-// An SRT encoder publishing live/livestream to the stream, through its connection.
+// An SRT encoder publishing live/livestream to the stream, through its connection. Its stream is its own, or the
+// stream of another publisher.
 class StreamBridgesUtestSrtPublisher : public StreamBridgesUtestStream
 {
 public:
+    StreamBridgesUtestStream *stream_;
     SrsMpegtsSrtConn *conn_;
 
 public:
     StreamBridgesUtestSrtPublisher()
     {
+        stream_ = this;
+        conn_ = NULL;
+    }
+    StreamBridgesUtestSrtPublisher(StreamBridgesUtestStream *stream)
+    {
+        stream_ = stream;
         conn_ = NULL;
     }
     virtual ~StreamBridgesUtestSrtPublisher()
@@ -400,15 +434,15 @@ public:
         srs_error_t err = srs_success;
 
         conn_ = new SrsMpegtsSrtConn(NULL, 1, "192.168.1.100", 9000);
-        conn_->config_ = &config_;
-        conn_->rtmp_sources_ = &rtmp_;
-        conn_->rtc_sources_ = &rtc_;
-        conn_->srt_sources_ = &srt_;
+        conn_->config_ = &stream_->config_;
+        conn_->rtmp_sources_ = &stream_->rtmp_;
+        conn_->rtc_sources_ = &stream_->rtc_;
+        conn_->srt_sources_ = &stream_->srt_;
         conn_->req_->vhost_ = "__defaultVhost__";
         conn_->req_->app_ = "live";
         conn_->req_->stream_ = "livestream";
 
-        if ((err = srt_.fetch_or_create(conn_->req_, conn_->srt_source_)) != srs_success) {
+        if ((err = stream_->srt_.fetch_or_create(conn_->req_, conn_->srt_source_)) != srs_success) {
             return srs_error_wrap(err, "srt source");
         }
 
@@ -522,10 +556,12 @@ VOID TEST(StreamBridgesTest, SrtPublisherOnEdgeFeedsNothing)
 }
 
 // A WHIP publisher of Opus and H.264 publishing live/livestream to the stream: its publish stream claims the WebRTC
-// source once DTLS is done, and the WHIP DELETE frees it.
+// source when its SDP is done, as SrsRtcConnection::add_publisher does, and the WHIP DELETE frees it. Its stream is
+// its own, or the stream of another publisher.
 class StreamBridgesUtestWhipPublisher : public StreamBridgesUtestStream
 {
 public:
+    StreamBridgesUtestStream *stream_;
     MockAppStatistic stat_;
     MockRtcAsyncCallRequest req_;
     MockRtcAsyncTaskExecutor exec_;
@@ -537,6 +573,12 @@ public:
 public:
     StreamBridgesUtestWhipPublisher() : req_("__defaultVhost__", "live", "livestream")
     {
+        stream_ = this;
+        publisher_ = NULL;
+    }
+    StreamBridgesUtestWhipPublisher(StreamBridgesUtestStream *stream) : req_("__defaultVhost__", "live", "livestream")
+    {
+        stream_ = stream;
         publisher_ = NULL;
     }
     virtual ~StreamBridgesUtestWhipPublisher()
@@ -549,22 +591,29 @@ public:
     {
         srs_error_t err = srs_success;
 
+        SrsUniquePtr<SrsRtcSourceDescription> desc(tracks_.create_stream_description());
+        SrsSharedPtr<SrsRtcSource> source;
+        if ((err = stream_->rtc_.fetch_or_create(&req_, source)) != srs_success) {
+            return srs_error_wrap(err, "rtc source");
+        }
+        if (!source->can_publish()) {
+            return srs_error_new(ERROR_RTC_SOURCE_BUSY, "stream %s busy", req_.get_stream_url().c_str());
+        }
+        source->set_stream_created();
+        source->set_stream_desc(desc.get());
+
         SrsContextId cid;
         cid.set_value("stream-bridges-whip");
         publisher_ = new SrsRtcPublishStream(&exec_, &expire_, &receiver_, cid);
-        publisher_->config_ = &config_;
+        publisher_->config_ = &stream_->config_;
         publisher_->stat_ = &stat_;
-        publisher_->rtc_sources_ = &rtc_;
-        publisher_->rtmp_sources_ = &rtmp_;
-        publisher_->srt_sources_ = &srt_;
-
-        SrsUniquePtr<SrsRtcSourceDescription> desc(tracks_.create_stream_description());
-        if ((err = rtc_.fetch_or_create(&req_, publisher_->source_)) != srs_success) {
-            return srs_error_wrap(err, "rtc source");
-        }
-        rtc_.source_->set_stream_desc(desc.get());
+        publisher_->rtc_sources_ = &stream_->rtc_;
+        publisher_->rtmp_sources_ = &stream_->rtmp_;
+        publisher_->srt_sources_ = &stream_->srt_;
 
         if ((err = publisher_->initialize(&req_, desc.get())) != srs_success) {
+            srs_freep(publisher_);
+            srs_freep(exec_.last_task_);
             return srs_error_wrap(err, "initialize");
         }
 
@@ -630,4 +679,366 @@ VOID TEST(StreamBridgesTest, WhipPublisherOnEdgeFeedsNothing)
 
     s.unpublish();
     EXPECT_FALSE(s.rtc_claimed());
+}
+
+// The bridge table on an origin with every server and switch on. Each publisher claims the sources of the other
+// protocols, and feeds them as the switches say: only RTMP feeds RTSP, SRT feeds WebRTC itself, as rtmp_to_rtc
+// switches it, and no bridge feeds the publisher's own protocol.
+VOID TEST(StreamBridgesTest, TableOnOriginWithEverySwitch)
+{
+    MockAppConfigForStreamBridges config;
+    config.rtsp_enabled_ = true;
+    config.rtsp_from_rtmp_ = true;
+    config.rtc_from_rtmp_ = true;
+    config.srt_to_rtmp_ = true;
+    config.rtc_to_rtmp_ = true;
+
+    SrsBridgeRow rtmp;
+    rtmp.initialize(&config, SrsStreamProtocolRtmp, "__defaultVhost__");
+    EXPECT_FALSE(rtmp.claim_rtmp_);
+    EXPECT_TRUE(rtmp.claim_rtc_);
+    EXPECT_TRUE(rtmp.claim_srt_);
+    EXPECT_TRUE(rtmp.rtmp_to_rtc_);
+#ifdef SRS_RTSP
+    EXPECT_TRUE(rtmp.rtmp_to_rtsp_);
+#else
+    EXPECT_FALSE(rtmp.rtmp_to_rtsp_);
+#endif
+    EXPECT_FALSE(rtmp.srt_to_rtmp_);
+    EXPECT_FALSE(rtmp.srt_to_rtc_);
+    EXPECT_FALSE(rtmp.rtc_to_rtmp_);
+
+    SrsBridgeRow srt;
+    srt.initialize(&config, SrsStreamProtocolSrt, "__defaultVhost__");
+    EXPECT_TRUE(srt.claim_rtmp_);
+    EXPECT_TRUE(srt.claim_rtc_);
+    EXPECT_FALSE(srt.claim_srt_);
+    EXPECT_FALSE(srt.rtmp_to_rtc_);
+    EXPECT_FALSE(srt.rtmp_to_rtsp_);
+    EXPECT_TRUE(srt.srt_to_rtmp_);
+    EXPECT_TRUE(srt.srt_to_rtc_);
+    EXPECT_FALSE(srt.rtc_to_rtmp_);
+
+    SrsBridgeRow rtc;
+    rtc.initialize(&config, SrsStreamProtocolRtc, "__defaultVhost__");
+    EXPECT_TRUE(rtc.claim_rtmp_);
+    EXPECT_FALSE(rtc.claim_rtc_);
+    EXPECT_TRUE(rtc.claim_srt_);
+    EXPECT_FALSE(rtc.rtmp_to_rtc_);
+    EXPECT_FALSE(rtc.rtmp_to_rtsp_);
+    EXPECT_FALSE(rtc.srt_to_rtmp_);
+    EXPECT_FALSE(rtc.srt_to_rtc_);
+    EXPECT_TRUE(rtc.rtc_to_rtmp_);
+}
+
+// With every conversion off, a publisher feeds nothing, and still claims the sources of the other protocols.
+VOID TEST(StreamBridgesTest, TableWithSwitchesOff)
+{
+    MockAppConfigForStreamBridges config;
+    config.rtsp_enabled_ = true;
+
+    SrsBridgeRow rtmp;
+    rtmp.initialize(&config, SrsStreamProtocolRtmp, "__defaultVhost__");
+    EXPECT_TRUE(rtmp.claim_rtc_);
+    EXPECT_TRUE(rtmp.claim_srt_);
+    EXPECT_FALSE(rtmp.rtmp_to_rtc_);
+    EXPECT_FALSE(rtmp.rtmp_to_rtsp_);
+
+    SrsBridgeRow srt;
+    srt.initialize(&config, SrsStreamProtocolSrt, "__defaultVhost__");
+    EXPECT_TRUE(srt.claim_rtmp_);
+    EXPECT_TRUE(srt.claim_rtc_);
+    EXPECT_FALSE(srt.srt_to_rtmp_);
+    EXPECT_FALSE(srt.srt_to_rtc_);
+
+    SrsBridgeRow rtc;
+    rtc.initialize(&config, SrsStreamProtocolRtc, "__defaultVhost__");
+    EXPECT_TRUE(rtc.claim_rtmp_);
+    EXPECT_TRUE(rtc.claim_srt_);
+    EXPECT_FALSE(rtc.rtc_to_rtmp_);
+}
+
+// With the WebRTC and SRT servers off, their sources have no publisher to refuse, so only the RTMP source is claimed,
+// and rtmp_to_rtc feeds no WebRTC.
+VOID TEST(StreamBridgesTest, TableWithServersOff)
+{
+    MockAppConfigForStreamBridges config;
+    config.rtc_server_enabled_ = false;
+    config.srt_enabled_ = false;
+    config.rtc_from_rtmp_ = true;
+    config.srt_to_rtmp_ = true;
+
+    SrsBridgeRow rtmp;
+    rtmp.initialize(&config, SrsStreamProtocolRtmp, "__defaultVhost__");
+    EXPECT_FALSE(rtmp.claim_rtc_);
+    EXPECT_FALSE(rtmp.claim_srt_);
+    EXPECT_FALSE(rtmp.rtmp_to_rtc_);
+
+    SrsBridgeRow srt;
+    srt.initialize(&config, SrsStreamProtocolSrt, "__defaultVhost__");
+    EXPECT_TRUE(srt.claim_rtmp_);
+    EXPECT_FALSE(srt.claim_rtc_);
+    EXPECT_TRUE(srt.srt_to_rtmp_);
+    EXPECT_FALSE(srt.srt_to_rtc_);
+
+    SrsBridgeRow rtc;
+    rtc.initialize(&config, SrsStreamProtocolRtc, "__defaultVhost__");
+    EXPECT_TRUE(rtc.claim_rtmp_);
+    EXPECT_FALSE(rtc.claim_srt_);
+}
+
+// An edge vhost converts nothing, whatever the switches say. An RTMP publisher there goes to the origin and claims no
+// other source; an SRT publisher claims the RTMP source; a WHIP publisher claims the RTMP and SRT sources.
+VOID TEST(StreamBridgesTest, TableOnEdge)
+{
+    MockAppConfigForStreamBridges config;
+    config.edge_ = true;
+    config.rtsp_enabled_ = true;
+    config.rtsp_from_rtmp_ = true;
+    config.rtc_from_rtmp_ = true;
+    config.srt_to_rtmp_ = true;
+    config.rtc_to_rtmp_ = true;
+
+    SrsBridgeRow rtmp;
+    rtmp.initialize(&config, SrsStreamProtocolRtmp, "__defaultVhost__");
+    EXPECT_FALSE(rtmp.claim_rtc_);
+    EXPECT_FALSE(rtmp.claim_srt_);
+    EXPECT_FALSE(rtmp.rtmp_to_rtc_);
+    EXPECT_FALSE(rtmp.rtmp_to_rtsp_);
+
+    SrsBridgeRow srt;
+    srt.initialize(&config, SrsStreamProtocolSrt, "__defaultVhost__");
+    EXPECT_TRUE(srt.claim_rtmp_);
+    EXPECT_FALSE(srt.claim_rtc_);
+    EXPECT_FALSE(srt.srt_to_rtmp_);
+    EXPECT_FALSE(srt.srt_to_rtc_);
+
+    SrsBridgeRow rtc;
+    rtc.initialize(&config, SrsStreamProtocolRtc, "__defaultVhost__");
+    EXPECT_TRUE(rtc.claim_rtmp_);
+    EXPECT_TRUE(rtc.claim_srt_);
+    EXPECT_FALSE(rtc.rtc_to_rtmp_);
+}
+
+// The RTMP source installs its own bridges when an RTMP publisher starts, with no connection to set them up: with
+// rtmp_to_rtc and rtsp_from_rtmp, it feeds the WebRTC and RTSP sources.
+VOID TEST(StreamBridgesTest, RtmpSourceInstallsBridgesOnPublish)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestStream s;
+    s.config_.rtc_from_rtmp_ = true;
+    s.config_.rtsp_enabled_ = true;
+    s.config_.rtsp_from_rtmp_ = true;
+
+    MockSrsRequest req("__defaultVhost__", "live", "livestream");
+    SrsSharedPtr<SrsRtmpSource> source;
+    HELPER_EXPECT_SUCCESS(s.rtmp_.fetch_or_create(&req, source));
+
+    HELPER_EXPECT_SUCCESS(source->on_publish());
+    EXPECT_TRUE(s.rtmp_claimed());
+#ifdef SRS_FFMPEG_FIT
+    EXPECT_TRUE(s.rtc_claimed());
+#endif
+#ifdef SRS_RTSP
+    EXPECT_TRUE(s.rtsp_claimed());
+#endif
+
+    source->on_unpublish();
+    EXPECT_FALSE(s.rtmp_claimed());
+    EXPECT_FALSE(s.rtc_claimed());
+    EXPECT_FALSE(s.rtsp_claimed());
+}
+
+// When an SRT or WHIP publisher feeds the RTMP source, the RTMP source feeds no WebRTC or RTSP source: SRT feeds
+// WebRTC itself, and no bridge loops back to WebRTC.
+VOID TEST(StreamBridgesTest, RtmpSourceFedByBridgeInstallsNoBridge)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestStream s;
+    s.config_.rtc_from_rtmp_ = true;
+    s.config_.rtsp_enabled_ = true;
+    s.config_.rtsp_from_rtmp_ = true;
+
+    MockSrsRequest req("__defaultVhost__", "live", "livestream");
+    SrsSharedPtr<SrsRtmpSource> source;
+    HELPER_EXPECT_SUCCESS(s.rtmp_.fetch_or_create(&req, source));
+
+    HELPER_EXPECT_SUCCESS(source->on_publish_by(SrsStreamProtocolSrt));
+    EXPECT_TRUE(s.rtmp_claimed());
+    EXPECT_FALSE(s.rtc_claimed());
+    EXPECT_FALSE(s.rtsp_claimed());
+    source->on_unpublish();
+
+    HELPER_EXPECT_SUCCESS(source->on_publish_by(SrsStreamProtocolRtc));
+    EXPECT_TRUE(s.rtmp_claimed());
+    EXPECT_FALSE(s.rtc_claimed());
+    EXPECT_FALSE(s.rtsp_claimed());
+    source->on_unpublish();
+    EXPECT_FALSE(s.rtmp_claimed());
+}
+
+// Whether a publisher is refused because another protocol publishes the stream.
+static bool stream_bridges_utest_busy(srs_error_t err)
+{
+    int code = srs_error_code(err);
+    srs_freep(err);
+    return code == ERROR_SYSTEM_STREAM_BUSY;
+}
+
+// An RTMP publisher has the stream, so an SRT publisher is refused and claims nothing, until the RTMP publisher stops.
+VOID TEST(StreamBridgesTest, RtmpThenSrtIsBusy)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestRtmpPublisher a;
+    StreamBridgesUtestSrtPublisher b(&a);
+    HELPER_EXPECT_SUCCESS(a.connect());
+    HELPER_EXPECT_SUCCESS(b.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+    EXPECT_TRUE(stream_bridges_utest_busy(b.publish()));
+    EXPECT_TRUE(a.rtmp_claimed());
+    EXPECT_FALSE(a.srt_claimed());
+
+    a.unpublish();
+    HELPER_EXPECT_SUCCESS(b.publish());
+    EXPECT_TRUE(a.srt_claimed());
+    b.unpublish();
+    EXPECT_FALSE(a.srt_claimed());
+}
+
+// An RTMP publisher has the stream, so a WHIP publisher is refused and claims nothing, until the RTMP publisher stops.
+VOID TEST(StreamBridgesTest, RtmpThenWhipIsBusy)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestRtmpPublisher a;
+    StreamBridgesUtestWhipPublisher b(&a);
+    HELPER_EXPECT_SUCCESS(a.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+    EXPECT_TRUE(stream_bridges_utest_busy(b.publish()));
+    EXPECT_TRUE(a.rtmp_claimed());
+    EXPECT_FALSE(a.rtc_claimed());
+
+    a.unpublish();
+    HELPER_EXPECT_SUCCESS(b.publish());
+    EXPECT_TRUE(a.rtc_claimed());
+    b.unpublish();
+    EXPECT_FALSE(a.rtc_claimed());
+}
+
+// An SRT publisher has the stream, so an RTMP publisher is refused and claims nothing, until the SRT publisher stops.
+VOID TEST(StreamBridgesTest, SrtThenRtmpIsBusy)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestSrtPublisher a;
+    StreamBridgesUtestRtmpPublisher b(&a);
+    HELPER_EXPECT_SUCCESS(a.connect());
+    HELPER_EXPECT_SUCCESS(b.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+    EXPECT_TRUE(stream_bridges_utest_busy(b.publish()));
+    EXPECT_TRUE(a.srt_claimed());
+    EXPECT_FALSE(a.rtmp_claimed());
+
+    a.unpublish();
+    HELPER_EXPECT_SUCCESS(b.publish());
+    EXPECT_TRUE(a.rtmp_claimed());
+    b.unpublish();
+    EXPECT_FALSE(a.rtmp_claimed());
+}
+
+// An SRT publisher has the stream, so a WHIP publisher is refused and claims nothing, until the SRT publisher stops.
+VOID TEST(StreamBridgesTest, SrtThenWhipIsBusy)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestSrtPublisher a;
+    StreamBridgesUtestWhipPublisher b(&a);
+    HELPER_EXPECT_SUCCESS(a.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+    EXPECT_TRUE(stream_bridges_utest_busy(b.publish()));
+    EXPECT_TRUE(a.srt_claimed());
+    EXPECT_FALSE(a.rtc_claimed());
+
+    a.unpublish();
+    HELPER_EXPECT_SUCCESS(b.publish());
+    EXPECT_TRUE(a.rtc_claimed());
+    b.unpublish();
+    EXPECT_FALSE(a.rtc_claimed());
+}
+
+// A WHIP publisher has the stream, so an RTMP publisher is refused and claims nothing, until the WHIP publisher stops.
+VOID TEST(StreamBridgesTest, WhipThenRtmpIsBusy)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestWhipPublisher a;
+    StreamBridgesUtestRtmpPublisher b(&a);
+    HELPER_EXPECT_SUCCESS(b.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+    EXPECT_TRUE(stream_bridges_utest_busy(b.publish()));
+    EXPECT_TRUE(a.rtc_claimed());
+    EXPECT_FALSE(a.rtmp_claimed());
+
+    a.unpublish();
+    HELPER_EXPECT_SUCCESS(b.publish());
+    EXPECT_TRUE(a.rtmp_claimed());
+    b.unpublish();
+    EXPECT_FALSE(a.rtmp_claimed());
+}
+
+// A WHIP publisher has the stream, so an SRT publisher is refused and claims nothing, until the WHIP publisher stops.
+VOID TEST(StreamBridgesTest, WhipThenSrtIsBusy)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestWhipPublisher a;
+    StreamBridgesUtestSrtPublisher b(&a);
+    HELPER_EXPECT_SUCCESS(b.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+    EXPECT_TRUE(stream_bridges_utest_busy(b.publish()));
+    EXPECT_TRUE(a.rtc_claimed());
+    EXPECT_FALSE(a.srt_claimed());
+
+    a.unpublish();
+    HELPER_EXPECT_SUCCESS(b.publish());
+    EXPECT_TRUE(a.srt_claimed());
+    b.unpublish();
+    EXPECT_FALSE(a.srt_claimed());
+}
+
+// A WHIP publisher has the WebRTC source, so an SRT publisher that would feed RTMP and WebRTC is refused, and claims
+// neither the SRT source nor the RTMP source it would feed; an RTMP publisher with rtmp_to_rtc is refused the same.
+VOID TEST(StreamBridgesTest, FailedClaimLeavesNothingClaimed)
+{
+    srs_error_t err;
+
+    StreamBridgesUtestWhipPublisher a;
+    a.config_.srt_to_rtmp_ = true;
+    a.config_.rtc_from_rtmp_ = true;
+    StreamBridgesUtestSrtPublisher srt(&a);
+    StreamBridgesUtestRtmpPublisher rtmp(&a);
+    HELPER_EXPECT_SUCCESS(srt.connect());
+    HELPER_EXPECT_SUCCESS(rtmp.connect());
+
+    HELPER_EXPECT_SUCCESS(a.publish());
+
+    EXPECT_TRUE(stream_bridges_utest_busy(srt.publish()));
+    EXPECT_FALSE(a.srt_claimed());
+    EXPECT_FALSE(a.rtmp_claimed());
+
+    EXPECT_TRUE(stream_bridges_utest_busy(rtmp.publish()));
+    EXPECT_FALSE(a.rtmp_claimed());
+    EXPECT_TRUE(a.rtc_claimed());
+
+    a.unpublish();
+    EXPECT_FALSE(a.rtc_claimed());
 }

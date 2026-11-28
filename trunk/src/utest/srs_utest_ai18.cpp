@@ -4839,7 +4839,7 @@ MockRtmpSourceForSrtPublishFailure::~MockRtmpSourceForSrtPublishFailure()
     srs_freep(on_publish_error_);
 }
 
-srs_error_t MockRtmpSourceForSrtPublishFailure::on_publish()
+srs_error_t MockRtmpSourceForSrtPublishFailure::on_publish_by(SrsStreamProtocol publisher)
 {
     on_publish_count_++;
     return srs_error_copy(on_publish_error_);

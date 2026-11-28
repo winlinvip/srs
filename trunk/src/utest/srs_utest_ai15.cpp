@@ -4450,6 +4450,7 @@ VOID TEST(SrsRtmpConnTest, NoOriginDrainsPlayerInput)
 // Mock config implementation for SrsRtmpConn::acquire_publish() testing
 MockAppConfigForAcquirePublish::MockAppConfigForAcquirePublish()
 {
+    edge_ = false;
     rtc_server_enabled_ = true;
     rtc_enabled_ = true;
     srt_enabled_ = true;
@@ -4489,6 +4490,11 @@ bool MockAppConfigForAcquirePublish::get_rtsp_server_enabled()
 bool MockAppConfigForAcquirePublish::get_rtsp_enabled(std::string vhost)
 {
     return rtsp_enabled_;
+}
+
+bool MockAppConfigForAcquirePublish::get_vhost_is_edge(std::string vhost)
+{
+    return edge_;
 }
 
 // Test SrsRtmpConn::acquire_publish() method to verify proper cross-protocol stream
@@ -4579,6 +4585,7 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishCrossProtocolCheck)
 
             // Set connection as edge
             conn->info_->edge_ = true;
+            mock_config->edge_ = true;
 
             // Configure SRT source to allow publishing
             mock_srt_sources->set_can_publish(true);

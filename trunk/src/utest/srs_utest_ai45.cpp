@@ -1324,6 +1324,10 @@ private:
 
         source_ = new RtmpConnUtestSource();
         source_->config_ = &conf_;
+        source_->rtc_sources_ = &rtc_sources_;
+#ifdef SRS_RTSP
+        source_->rtsp_sources_ = &rtsp_sources_;
+#endif
         sources_.mock_source_ = SrsSharedPtr<SrsRtmpSource>(source_);
 
         conn_ = new SrsRtmpConn(new MockRtmpTransport(), "192.168.1.100", 50000);
@@ -1334,9 +1338,6 @@ private:
         conn_->stream_publish_tokens_ = &tokens_;
         conn_->rtc_sources_ = &rtc_sources_;
         conn_->srt_sources_ = &srt_sources_;
-#ifdef SRS_RTSP
-        conn_->rtsp_sources_ = &rtsp_sources_;
-#endif
         conn_->manager_ = &manager_;
         conn_->assemble();
         dynamic_cast<SrsSecurity *>(dynamic_cast<SrsEnhancedSecurity *>(conn_->security_)->security_)->config_ = &conf_;
@@ -2069,10 +2070,7 @@ VOID TEST(AppRtmpConnTest, PublisherOnEdgeWithRtc_ForwardedWithoutRtc)
     ASSERT_TRUE(c.done_);
     EXPECT_EQ(1, c.source_->on_edge_proxy_unpublish_count_);
     EXPECT_EQ(0, c.rtc_sources_.fetch_or_create_count_);
-    EXPECT_EQ(1, log.warns("disable WebRTC for edge vhost=__defaultVhost__"));
-#ifdef SRS_FFMPEG_FIT
-    EXPECT_EQ(1, log.warns("disable RTMP to WebRTC for edge vhost=__defaultVhost__"));
-#endif
+    EXPECT_EQ(1, log.warns("disable bridges for edge vhost=__defaultVhost__"));
 }
 
 #ifdef SRS_RTSP

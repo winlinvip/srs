@@ -36,9 +36,6 @@ using namespace std;
 #include <srs_protocol_rtmp_msg_array.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
-#ifdef SRS_RTSP
-#include <srs_app_rtsp_source.hpp>
-#endif
 
 #define SRS_REPUBLISH_SEND_TIMEOUT (3 * SRS_UTIME_MINUTES)
 
@@ -230,9 +227,6 @@ SrsRtmpConn::SrsRtmpConn(ISrsRtmpTransport *transport, string cip, int cport)
     hooks_ = _srs_hooks;
     rtc_sources_ = _srs_rtc_sources;
     srt_sources_ = _srs_srt_sources;
-#ifdef SRS_RTSP
-    rtsp_sources_ = _srs_rtsp_sources;
-#endif
 }
 
 void SrsRtmpConn::assemble()
@@ -283,9 +277,6 @@ SrsRtmpConn::~SrsRtmpConn()
     hooks_ = NULL;
     rtc_sources_ = NULL;
     srt_sources_ = NULL;
-#ifdef SRS_RTSP
-    rtsp_sources_ = NULL;
-#endif
 }
 
 std::string SrsRtmpConn::desc()
@@ -1017,80 +1008,11 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsRtmpSource> source)
         return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp: stream %s is busy", req->get_stream_url().c_str());
     }
 
-    SrsSharedPtr<SrsRtcSource> rtc;
-    bool rtc_server_enabled = config_->get_rtc_server_enabled();
-    bool rtc_enabled = config_->get_rtc_enabled(req->vhost_);
-    bool edge = config_->get_vhost_is_edge(req->vhost_);
-
-    if (rtc_enabled && edge) {
-        rtc_enabled = false;
-        srs_warn("disable WebRTC for edge vhost=%s", req->vhost_.c_str());
+    SrsBridgeRow row;
+    row.initialize(config_, SrsStreamProtocolRtmp, req->vhost_);
+    if ((err = row.claim(req, rtmp_sources_, rtc_sources_, srt_sources_)) != srs_success) {
+        return srs_error_wrap(err, "claim");
     }
-
-    if (rtc_server_enabled && rtc_enabled && !info_->edge_) {
-        if ((err = rtc_sources_->fetch_or_create(req, rtc)) != srs_success) {
-            return srs_error_wrap(err, "create source");
-        }
-
-        if (!rtc->can_publish()) {
-            return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtc stream %s busy", req->get_stream_url().c_str());
-        }
-    }
-
-    bool srt_server_enabled = config_->get_srt_enabled();
-    bool srt_enabled = config_->get_srt_enabled(req->vhost_);
-    if (srt_server_enabled && srt_enabled && !info_->edge_) {
-        SrsSharedPtr<SrsSrtSource> srt;
-        if ((err = srt_sources_->fetch_or_create(req, srt)) != srs_success) {
-            return srs_error_wrap(err, "create source");
-        }
-
-        if (!srt->can_publish()) {
-            return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "srt stream %s busy", req->get_stream_url().c_str());
-        }
-    }
-
-#ifdef SRS_RTSP
-    // RTSP only supports viewers, so it needs no busy check.
-    SrsSharedPtr<SrsRtspSource> rtsp;
-    bool rtsp_server_enabled = config_->get_rtsp_server_enabled();
-    bool rtsp_enabled = config_->get_rtsp_enabled(req->vhost_);
-    if (rtsp_server_enabled && rtsp_enabled && !info_->edge_) {
-        if ((err = rtsp_sources_->fetch_or_create(req, rtsp)) != srs_success) {
-            return srs_error_wrap(err, "create source");
-        }
-    }
-#endif
-
-    // TODO: FIXME: Need to convert RTMP to SRT.
-    SrsRtmpBridge *bridge = new SrsRtmpBridge(app_factory_);
-
-#if defined(SRS_FFMPEG_FIT)
-    bool rtmp_to_rtc = config_->get_rtc_from_rtmp(req->vhost_);
-    if (rtmp_to_rtc && edge) {
-        rtmp_to_rtc = false;
-        srs_warn("disable RTMP to WebRTC for edge vhost=%s", req->vhost_.c_str());
-    }
-
-    if (rtc.get() && rtmp_to_rtc) {
-        bridge->enable_rtmp2rtc(rtc);
-    }
-#endif
-
-#ifdef SRS_RTSP
-    if (rtsp.get() && config_->get_rtsp_from_rtmp(req->vhost_)) {
-        bridge->enable_rtmp2rtsp(rtsp);
-    }
-#endif
-
-    if (bridge->empty()) {
-        srs_freep(bridge);
-    } else if ((err = bridge->initialize(req)) != srs_success) {
-        srs_freep(bridge);
-        return srs_error_wrap(err, "bridge init");
-    }
-
-    source->set_bridge(bridge);
 
     if (info_->edge_) {
         err = source->on_edge_start_publish();

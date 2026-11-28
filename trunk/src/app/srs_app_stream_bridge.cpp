@@ -12,6 +12,8 @@
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_core_autofree.hpp>
+#include <srs_kernel_error.hpp>
+#include <srs_kernel_log.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_format.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
@@ -21,6 +23,87 @@
 #include <srs_app_rtc_source.hpp>
 
 using namespace std;
+
+SrsBridgeRow::SrsBridgeRow()
+{
+    claim_rtmp_ = false;
+    claim_rtc_ = false;
+    claim_srt_ = false;
+    rtmp_to_rtc_ = false;
+    rtmp_to_rtsp_ = false;
+    srt_to_rtmp_ = false;
+    srt_to_rtc_ = false;
+    rtc_to_rtmp_ = false;
+    rtmp_source_ = NULL;
+    rtc_source_ = NULL;
+    srt_source_ = NULL;
+}
+
+SrsBridgeRow::~SrsBridgeRow()
+{
+    rtmp_source_ = NULL;
+    rtc_source_ = NULL;
+    srt_source_ = NULL;
+}
+
+void SrsBridgeRow::initialize(ISrsAppConfig *config, SrsStreamProtocol publisher, std::string vhost)
+{
+    bool edge = config->get_vhost_is_edge(vhost);
+    bool rtc = config->get_rtc_server_enabled() && config->get_rtc_enabled(vhost);
+    bool srt = config->get_srt_enabled() && config->get_srt_enabled(vhost);
+
+    bool rtmp_publisher = publisher == SrsStreamProtocolRtmp;
+    bool srt_publisher = publisher == SrsStreamProtocolSrt;
+    bool rtc_publisher = publisher == SrsStreamProtocolRtc;
+
+    claim_rtmp_ = !rtmp_publisher;
+    claim_rtc_ = !rtc_publisher && rtc && !edge;
+    claim_srt_ = !srt_publisher && srt && (rtc_publisher || !edge);
+
+    rtmp_to_rtc_ = rtmp_publisher && rtc && config->get_rtc_from_rtmp(vhost);
+#ifdef SRS_RTSP
+    rtmp_to_rtsp_ = rtmp_publisher && config->get_rtsp_server_enabled() && config->get_rtsp_enabled(vhost) && config->get_rtsp_from_rtmp(vhost);
+#endif
+    srt_to_rtmp_ = srt_publisher && config->get_srt_to_rtmp(vhost);
+    srt_to_rtc_ = srt_publisher && rtc && config->get_rtc_from_rtmp(vhost);
+    rtc_to_rtmp_ = rtc_publisher && config->get_rtc_to_rtmp(vhost);
+
+    if (edge && (rtmp_to_rtc_ || rtmp_to_rtsp_ || srt_to_rtmp_ || srt_to_rtc_ || rtc_to_rtmp_)) {
+        rtmp_to_rtc_ = rtmp_to_rtsp_ = srt_to_rtmp_ = srt_to_rtc_ = rtc_to_rtmp_ = false;
+        srs_warn("disable bridges for edge vhost=%s", vhost.c_str());
+    }
+}
+
+srs_error_t SrsBridgeRow::claim(ISrsRequest *r, ISrsRtmpSourceManager *rtmp_sources, ISrsRtcSourceManager *rtc_sources, ISrsSrtSourceManager *srt_sources)
+{
+    srs_error_t err = srs_success;
+
+    if (claim_rtmp_ && (err = rtmp_sources->fetch_or_create(r, rtmp_source_)) != srs_success) {
+        return srs_error_wrap(err, "create source");
+    }
+
+    if (claim_rtc_ && (err = rtc_sources->fetch_or_create(r, rtc_source_)) != srs_success) {
+        return srs_error_wrap(err, "create source");
+    }
+
+    if (claim_srt_ && (err = srt_sources->fetch_or_create(r, srt_source_)) != srs_success) {
+        return srs_error_wrap(err, "create source");
+    }
+
+    if (rtmp_source_.get() && !rtmp_source_->can_publish(false)) {
+        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp stream %s busy", r->get_stream_url().c_str());
+    }
+
+    if (rtc_source_.get() && !rtc_source_->can_publish()) {
+        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtc stream %s busy", r->get_stream_url().c_str());
+    }
+
+    if (srt_source_.get() && !srt_source_->can_publish()) {
+        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "srt stream %s busy", r->get_stream_url().c_str());
+    }
+
+    return err;
+}
 
 ISrsFrameTarget::ISrsFrameTarget()
 {
@@ -294,7 +377,7 @@ srs_error_t SrsSrtBridge::on_publish()
 
     // TODO: FIXME: Should sync with bridge?
     if (rtmp_target_.get()) {
-        if ((err = rtmp_target_->on_publish()) != srs_success) {
+        if ((err = rtmp_target_->on_publish_by(SrsStreamProtocolSrt)) != srs_success) {
             return srs_error_wrap(err, "rtmp target publish");
         }
     }
@@ -435,7 +518,7 @@ srs_error_t SrsRtcBridge::on_publish()
     srs_error_t err = srs_success;
 
     srs_assert(rtmp_target_.get());
-    if ((err = rtmp_target_->on_publish()) != srs_success) {
+    if ((err = rtmp_target_->on_publish_by(SrsStreamProtocolRtc)) != srs_success) {
         return srs_error_wrap(err, "rtmp target publish");
     }
 

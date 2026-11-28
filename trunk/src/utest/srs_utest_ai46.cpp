@@ -1429,9 +1429,31 @@ public:
     }
 };
 
+// The WebRTC source manager of the stream, which has its one WebRTC source.
+class StreamBridgeUtestRtcSources : public ISrsRtcSourceManager
+{
+public:
+    SrsSharedPtr<SrsRtcSource> source_;
+
+public:
+    virtual srs_error_t initialize()
+    {
+        return srs_success;
+    }
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps)
+    {
+        pps = source_;
+        return srs_success;
+    }
+    virtual SrsSharedPtr<SrsRtcSource> fetch(ISrsRequest *r)
+    {
+        return source_;
+    }
+};
+
 // A stream of the server converted between RTMP and WebRTC: the real SrsRtmpSource of its RTMP side and the real
-// SrsRtcSource of its WebRTC side, with the vhost from config text and a real statistic, joined by the bridge the
-// encoder's connection makes: SrsRtcBridge for a WHIP publisher (rtc_to_rtmp), SrsRtmpBridge for an RTMP encoder
+// SrsRtcSource of its WebRTC side, with the vhost from config text and a real statistic, joined by the bridges:
+// SrsRtcBridge for a WHIP publisher (rtc_to_rtmp), SrsRtmpBridge that the RTMP source installs for an RTMP encoder
 // (rtmp_to_rtc), SrsSrtBridge for an SRT encoder (srt_to_rtmp and rtmp_to_rtc) with its real SrsSrtSource. Players of
 // both sides take what the stream gets.
 class StreamBridgeUtestStream
@@ -1443,6 +1465,7 @@ public:
     MockClockForPithyPrint clock_;
     StreamBridgeUtestHubFactory factory_;
     SrsRequest req_;
+    StreamBridgeUtestRtcSources rtc_sources_;
     SrsSharedPtr<SrsRtmpSource> live_;
     SrsSharedPtr<SrsRtcSource> rtc_;
     SrsSharedPtr<SrsSrtSource> srt_;
@@ -1489,6 +1512,7 @@ public:
         live->handler_ = &handler_;
         live->app_factory_ = &factory_;
         live->clk_ = &clock_;
+        live->rtc_sources_ = &rtc_sources_;
         live_ = SrsSharedPtr<SrsRtmpSource>(live);
         live->assemble();
         if ((err = live->initialize(live_, &req_)) != srs_success) {
@@ -1499,6 +1523,7 @@ public:
         rtc->config_ = &conf_;
         rtc->stat_ = &stat_;
         rtc_ = SrsSharedPtr<SrsRtcSource>(rtc);
+        rtc_sources_.source_ = rtc_;
         if ((err = rtc->initialize(&req_)) != srs_success) {
             return srs_error_wrap(err, "rtc source");
         }
@@ -1555,19 +1580,9 @@ public:
 
         return rtc_->on_rtp(&pkt);
     }
-    // An RTMP encoder starts to publish, as SrsRtmpConn::acquire_publish does on a vhost with rtmp_to_rtc.
+    // An RTMP encoder starts to publish; on a vhost with rtmp_to_rtc, the RTMP source feeds the WebRTC source.
     srs_error_t rtmp_publish()
     {
-        srs_error_t err = srs_success;
-
-        SrsRtmpBridge *bridge = new SrsRtmpBridge(_srs_app_factory);
-        bridge->enable_rtmp2rtc(rtc_);
-        if ((err = bridge->initialize(&req_)) != srs_success) {
-            srs_freep(bridge);
-            return srs_error_wrap(err, "bridge");
-        }
-        live_->set_bridge(bridge);
-
         return live_->on_publish();
     }
     srs_error_t rtmp_video(int64_t timestamp, const uint8_t *data, int size)
@@ -2069,7 +2084,7 @@ VOID TEST(AppStreamBridgeTest, RtmpToRtcCorruptAacFrame_PublisherDisconnected)
     ASSERT_EQ(30, (int)aac.size());
 
     StreamBridgeUtestStream s;
-    HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { rtc { enabled on; rtmp_to_rtc on; } }"));
+    HELPER_ASSERT_SUCCESS(s.open("rtc_server { enabled on; listen 8000; } vhost __defaultVhost__ { rtc { enabled on; rtmp_to_rtc on; } }"));
     HELPER_ASSERT_SUCCESS(s.rtmp_publish());
     SrsRtmpConsumer *rtmp_player = s.rtmp_play();
     SrsRtcConsumer *rtc_player = s.rtc_play();
@@ -2101,7 +2116,7 @@ VOID TEST(AppStreamBridgeTest, RtmpHevcParameterSetsInBandToRtc_KeyFrameNalusSen
     srs_error_t err;
 
     StreamBridgeUtestStream s;
-    HELPER_ASSERT_SUCCESS(s.open("vhost __defaultVhost__ { rtc { enabled on; rtmp_to_rtc on; } }"));
+    HELPER_ASSERT_SUCCESS(s.open("rtc_server { enabled on; listen 8000; } vhost __defaultVhost__ { rtc { enabled on; rtmp_to_rtc on; } }"));
     HELPER_ASSERT_SUCCESS(s.rtmp_publish());
     SrsRtcConsumer *player = s.rtc_play();
     ASSERT_TRUE(player != NULL);

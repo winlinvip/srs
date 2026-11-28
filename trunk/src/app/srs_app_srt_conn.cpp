@@ -479,7 +479,6 @@ srs_error_t SrsMpegtsSrtConn::playing()
     return err;
 }
 
-// TODO: FIXME: It's not atomic and has risk between multiple source checking.
 srs_error_t SrsMpegtsSrtConn::acquire_publish()
 {
     srs_error_t err = srs_success;
@@ -488,64 +487,26 @@ srs_error_t SrsMpegtsSrtConn::acquire_publish()
         return srs_error_new(ERROR_SRT_SOURCE_BUSY, "srt stream %s busy", req_->get_stream_url().c_str());
     }
 
-    SrsSharedPtr<SrsRtmpSource> rtmp_source = rtmp_sources_->fetch(req_);
-    if (rtmp_source.get() && !rtmp_source->can_publish(false)) {
-        return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtmp stream %s busy", req_->get_stream_url().c_str());
+    SrsBridgeRow row;
+    row.initialize(config_, SrsStreamProtocolSrt, req_->vhost_);
+    if ((err = row.claim(req_, rtmp_sources_, rtc_sources_, srt_sources_)) != srs_success) {
+        return srs_error_wrap(err, "claim");
     }
-
-    if ((err = rtmp_sources_->fetch_or_create(req_, rtmp_source)) != srs_success) {
-        return srs_error_wrap(err, "create source");
-    }
-
-    srs_assert(rtmp_source.get() != NULL);
 
     bool enabled_cache = config_->get_gop_cache(req_->vhost_);
     int gcmf = config_->get_gop_cache_max_frames(req_->vhost_);
-    rtmp_source->set_cache(enabled_cache);
-    rtmp_source->set_gop_cache_max_frames(gcmf);
-
-    // TODO: FIXME: the code below is repeat in srs_app_rtmp_conn.cpp, refactor it later, use function instead.
-    SrsSharedPtr<SrsRtcSource> rtc;
-    bool rtc_server_enabled = config_->get_rtc_server_enabled();
-    bool rtc_enabled = config_->get_rtc_enabled(req_->vhost_);
-    bool edge = config_->get_vhost_is_edge(req_->vhost_);
-
-    if (rtc_enabled && edge) {
-        rtc_enabled = false;
-        srs_warn("disable WebRTC for edge vhost=%s", req_->vhost_.c_str());
-    }
-
-    if (rtc_server_enabled && rtc_enabled) {
-        if ((err = rtc_sources_->fetch_or_create(req_, rtc)) != srs_success) {
-            return srs_error_wrap(err, "create source");
-        }
-
-        if (!rtc->can_publish()) {
-            return srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "rtc stream %s busy", req_->get_stream_url().c_str());
-        }
-    }
+    row.rtmp_source_->set_cache(enabled_cache);
+    row.rtmp_source_->set_gop_cache_max_frames(gcmf);
 
     SrsSrtBridge *bridge = new SrsSrtBridge(app_factory_);
     bridge->assemble();
 
-    bool srt_to_rtmp = config_->get_srt_to_rtmp(req_->vhost_);
-    if (srt_to_rtmp && edge) {
-        srt_to_rtmp = false;
-        srs_warn("disable SRT to RTMP for edge vhost=%s", req_->vhost_.c_str());
+    if (row.srt_to_rtmp_) {
+        bridge->enable_srt2rtmp(row.rtmp_source_);
     }
 
-    if (srt_to_rtmp) {
-        bridge->enable_srt2rtmp(rtmp_source);
-    }
-
-    bool rtmp_to_rtc = config_->get_rtc_from_rtmp(req_->vhost_);
-    if (rtmp_to_rtc && edge) {
-        rtmp_to_rtc = false;
-        srs_warn("disable RTMP to WebRTC for edge vhost=%s", req_->vhost_.c_str());
-    }
-
-    if (rtc.get() && rtmp_to_rtc) {
-        bridge->enable_srt2rtc(rtc);
+    if (row.srt_to_rtc_) {
+        bridge->enable_srt2rtc(row.rtc_source_);
     }
 
     if (bridge->empty()) {

@@ -1193,6 +1193,11 @@ srs_error_t MockRtmpSource::on_publish()
     return srs_success;
 }
 
+srs_error_t MockRtmpSource::on_publish_by(SrsStreamProtocol publisher)
+{
+    return srs_success;
+}
+
 srs_error_t MockRtmpSource::on_edge_start_publish()
 {
     // Mock implementation - just return success

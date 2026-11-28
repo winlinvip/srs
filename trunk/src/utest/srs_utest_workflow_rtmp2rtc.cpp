@@ -31,6 +31,7 @@
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_utest_ai11.hpp>
+#include <srs_utest_ai08.hpp>
 #include <srs_utest_ai15.hpp>
 #include <srs_utest_ai18.hpp>
 #include <srs_utest_ai22.hpp>
@@ -67,6 +68,29 @@ public:
 #endif
 };
 
+// The RTMP source of the stream, which publishes as SrsRtmpSource does, so it sets up its bridge to WebRTC.
+class MockRtmpSourceForRtmp2Rtc : public MockRtmpSource
+{
+public:
+    MockRtmpSourceHandler handler_mock_;
+
+public:
+    MockRtmpSourceForRtmp2Rtc()
+    {
+        handler_ = &handler_mock_;
+    }
+    virtual ~MockRtmpSourceForRtmp2Rtc()
+    {
+        handler_ = NULL;
+    }
+
+public:
+    virtual srs_error_t on_publish()
+    {
+        return SrsRtmpSource::on_publish();
+    }
+};
+
 // This test is used to verify the basic workflow of the RTMP connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
@@ -84,9 +108,6 @@ VOID TEST(BasicWorkflowRtmp2RtcTest, ManuallyVerifyTypicalScenario)
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
     SrsUniquePtr<MockSrtSourceManager> mock_srt_sources(new MockSrtSourceManager());
-#ifdef SRS_RTSP
-    SrsUniquePtr<MockRtspSourceManager> mock_rtsp_sources(new MockRtspSourceManager());
-#endif
     MockRtmpServer *mock_rtmp_server = new MockRtmpServer();
     MockSecurity *mock_security = new MockSecurity();
 
@@ -100,6 +121,12 @@ VOID TEST(BasicWorkflowRtmp2RtcTest, ManuallyVerifyTypicalScenario)
     mock_config->rtc_server_enabled_ = true;
     mock_config->rtc_enabled_ = true;
     mock_config->rtc_from_rtmp_ = true;
+
+    MockRtmpSourceForRtmp2Rtc *source = new MockRtmpSourceForRtmp2Rtc();
+    source->config_ = mock_config.get();
+    source->app_factory_ = mock_factory.get();
+    source->rtc_sources_ = mock_rtc_sources.get();
+    mock_sources->mock_source_ = SrsSharedPtr<SrsRtmpSource>(source);
 
     mock_rtmp_server->set_request(SrsRtmpConnFMLEPublish, "192.168.1.100", "utest.ossrs.io", "utest", "livestream", "rtmp://127.0.0.1/utest", "rtmp", 1935, "127.0.0.1");
 
@@ -116,9 +143,6 @@ VOID TEST(BasicWorkflowRtmp2RtcTest, ManuallyVerifyTypicalScenario)
     conn->hooks_ = mock_hooks.get();
     conn->rtc_sources_ = mock_rtc_sources.get();
     conn->srt_sources_ = mock_srt_sources.get();
-#ifdef SRS_RTSP
-    conn->rtsp_sources_ = mock_rtsp_sources.get();
-#endif
     conn->assemble();
 
     srs_freep(conn->rtmp_);

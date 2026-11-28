@@ -1046,6 +1046,7 @@ public:
 class MockAppConfigForAcquirePublish : public MockAppConfigForRtmpConn
 {
 public:
+    bool edge_;
     bool rtc_server_enabled_;
     bool rtc_enabled_;
     bool srt_enabled_;
@@ -1063,6 +1064,7 @@ public:
     virtual bool get_srt_enabled(std::string vhost);
     virtual bool get_rtsp_server_enabled();
     virtual bool get_rtsp_enabled(std::string vhost);
+    virtual bool get_vhost_is_edge(std::string vhost);
 };
 
 #endif

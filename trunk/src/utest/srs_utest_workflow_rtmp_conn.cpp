@@ -52,9 +52,6 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPublisher)
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
     SrsUniquePtr<MockSrtSourceManager> mock_srt_sources(new MockSrtSourceManager());
-#ifdef SRS_RTSP
-    SrsUniquePtr<MockRtspSourceManager> mock_rtsp_sources(new MockRtspSourceManager());
-#endif
     MockRtmpServer *mock_rtmp_server = new MockRtmpServer();
     MockSecurity *mock_security = new MockSecurity();
 
@@ -79,9 +76,6 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPublisher)
     conn->hooks_ = mock_hooks.get();
     conn->rtc_sources_ = mock_rtc_sources.get();
     conn->srt_sources_ = mock_srt_sources.get();
-#ifdef SRS_RTSP
-    conn->rtsp_sources_ = mock_rtsp_sources.get();
-#endif
     conn->assemble();
 
     srs_freep(conn->rtmp_);
@@ -217,9 +211,6 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPlayer)
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
     SrsUniquePtr<MockSrtSourceManager> mock_srt_sources(new MockSrtSourceManager());
-#ifdef SRS_RTSP
-    SrsUniquePtr<MockRtspSourceManager> mock_rtsp_sources(new MockRtspSourceManager());
-#endif
     MockRtmpServer *mock_rtmp_server = new MockRtmpServer();
     MockSecurity *mock_security = new MockSecurity();
 
@@ -252,9 +243,6 @@ VOID TEST(BasicWorkflowRtmpConnTest, ManuallyVerifyForPlayer)
     conn->hooks_ = mock_hooks.get();
     conn->rtc_sources_ = mock_rtc_sources.get();
     conn->srt_sources_ = mock_srt_sources.get();
-#ifdef SRS_RTSP
-    conn->rtsp_sources_ = mock_rtsp_sources.get();
-#endif
     conn->assemble();
 
     srs_freep(conn->rtmp_);

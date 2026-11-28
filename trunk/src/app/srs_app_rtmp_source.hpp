@@ -58,6 +58,10 @@ class ISrsAppFactory;
 class ISrsStreamPublishTokenManager;
 class ISrsRtmpConsumer;
 class ISrsClock;
+class ISrsRtcSourceManager;
+#ifdef SRS_RTSP
+class ISrsRtspSourceManager;
+#endif
 
 // The time_jitter config:
 // full: the stream starts at zero and its timestamps always increase.
@@ -535,6 +539,10 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRtmpSourceHandler *handler_;
     ISrsAppFactory *app_factory_;
     ISrsClock *clk_;
+    ISrsRtcSourceManager *rtc_sources_;
+#ifdef SRS_RTSP
+    ISrsRtspSourceManager *rtsp_sources_;
+#endif
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -585,6 +593,10 @@ public:
     virtual srs_error_t initialize(SrsSharedPtr<SrsRtmpSource> wrapper, ISrsRequest *r);
     void set_bridge(ISrsRtmpBridge *v);
 
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    srs_error_t create_bridge(SrsStreamProtocol publisher);
+
 public:
     virtual srs_error_t on_source_id_changed(SrsContextId id);
     virtual SrsContextId source_id();
@@ -617,6 +629,14 @@ SRS_DECLARE_PRIVATE: // clang-format on
 public:
     virtual srs_error_t on_aggregate(SrsRtmpCommonMessage *msg);
     virtual srs_error_t on_publish();
+    // A publisher of another protocol starts to feed the source by its bridge.
+    virtual srs_error_t on_publish_by(SrsStreamProtocol publisher);
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    srs_error_t do_publish(SrsStreamProtocol publisher);
+
+public:
     virtual void on_unpublish();
 
 public:

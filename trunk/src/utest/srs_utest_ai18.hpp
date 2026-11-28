@@ -613,7 +613,7 @@ public:
     virtual ~MockRtmpSourceForSrtPublishFailure();
 
 public:
-    virtual srs_error_t on_publish();
+    virtual srs_error_t on_publish_by(SrsStreamProtocol publisher);
     virtual void on_unpublish();
 };
 

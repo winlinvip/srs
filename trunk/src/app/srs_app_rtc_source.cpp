@@ -656,8 +656,6 @@ void SrsRtcSource::on_consumer_destroy(ISrsRtcConsumer *consumer)
 
 bool SrsRtcSource::can_publish()
 {
-    // TODO: FIXME: Should check the status of bridge.
-
     return !is_created_;
 }
 

@@ -21,6 +21,9 @@ using namespace std;
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_ng_exec.hpp>
 #include <srs_app_rtc_source.hpp>
+#ifdef SRS_RTSP
+#include <srs_app_rtsp_source.hpp>
+#endif
 #include <srs_app_server.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_stream_token.hpp>
@@ -1723,6 +1726,10 @@ SrsRtmpSource::SrsRtmpSource()
     handler_ = _srs_server;
     app_factory_ = _srs_app_factory;
     clk_ = _srs_clock;
+    rtc_sources_ = _srs_rtc_sources;
+#ifdef SRS_RTSP
+    rtsp_sources_ = _srs_rtsp_sources;
+#endif
 }
 
 void SrsRtmpSource::assemble()
@@ -1763,6 +1770,10 @@ SrsRtmpSource::~SrsRtmpSource()
     handler_ = NULL;
     app_factory_ = NULL;
     clk_ = NULL;
+    rtc_sources_ = NULL;
+#ifdef SRS_RTSP
+    rtsp_sources_ = NULL;
+#endif
 }
 
 void SrsRtmpSource::dispose()
@@ -1882,6 +1893,50 @@ void SrsRtmpSource::set_bridge(ISrsRtmpBridge *v)
     rtmp_bridge_ = v;
 }
 
+srs_error_t SrsRtmpSource::create_bridge(SrsStreamProtocol publisher)
+{
+    srs_error_t err = srs_success;
+
+    SrsBridgeRow row;
+    row.initialize(config_, publisher, req_->vhost_);
+
+    // TODO: FIXME: Need to convert RTMP to SRT.
+    SrsRtmpBridge *bridge = new SrsRtmpBridge(app_factory_);
+
+#ifdef SRS_FFMPEG_FIT
+    if (row.rtmp_to_rtc_) {
+        SrsSharedPtr<SrsRtcSource> rtc;
+        if ((err = rtc_sources_->fetch_or_create(req_, rtc)) != srs_success) {
+            srs_freep(bridge);
+            return srs_error_wrap(err, "create rtc source");
+        }
+        bridge->enable_rtmp2rtc(rtc);
+    }
+#endif
+
+#ifdef SRS_RTSP
+    if (row.rtmp_to_rtsp_) {
+        SrsSharedPtr<SrsRtspSource> rtsp;
+        if ((err = rtsp_sources_->fetch_or_create(req_, rtsp)) != srs_success) {
+            srs_freep(bridge);
+            return srs_error_wrap(err, "create rtsp source");
+        }
+        bridge->enable_rtmp2rtsp(rtsp);
+    }
+#endif
+
+    if (bridge->empty()) {
+        srs_freep(bridge);
+    } else if ((err = bridge->initialize(req_)) != srs_success) {
+        srs_freep(bridge);
+        return srs_error_wrap(err, "bridge init");
+    }
+
+    set_bridge(bridge);
+
+    return err;
+}
+
 srs_error_t SrsRtmpSource::on_source_id_changed(SrsContextId id)
 {
     srs_error_t err = srs_success;
@@ -1926,8 +1981,6 @@ void SrsRtmpSource::update_auth(ISrsRequest *r)
 
 bool SrsRtmpSource::can_publish(bool is_edge)
 {
-    // TODO: FIXME: Should check the status of bridge.
-
     if (is_edge) {
         return publish_edge_->can_publish();
     }
@@ -2294,9 +2347,23 @@ srs_error_t SrsRtmpSource::on_aggregate(SrsRtmpCommonMessage *msg)
 
 srs_error_t SrsRtmpSource::on_publish()
 {
+    return do_publish(SrsStreamProtocolRtmp);
+}
+
+srs_error_t SrsRtmpSource::on_publish_by(SrsStreamProtocol publisher)
+{
+    return do_publish(publisher);
+}
+
+srs_error_t SrsRtmpSource::do_publish(SrsStreamProtocol publisher)
+{
     srs_error_t err = srs_success;
 
     srs_assert(req_);
+
+    if ((err = create_bridge(publisher)) != srs_success) {
+        return srs_error_wrap(err, "create bridge");
+    }
 
     can_publish_ = false;
 

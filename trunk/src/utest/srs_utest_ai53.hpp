@@ -48,6 +48,11 @@ class MockRtmpSourcesForStreamBridges : public ISrsRtmpSourceManager
 public:
     MockRtmpSourceHandler handler_;
     SrsSharedPtr<SrsRtmpSource> source_;
+    ISrsAppConfig *config_;
+    ISrsRtcSourceManager *rtc_sources_;
+#ifdef SRS_RTSP
+    ISrsRtspSourceManager *rtsp_sources_;
+#endif
 
 public:
     MockRtmpSourcesForStreamBridges();
